@@ -1,0 +1,25 @@
+{
+    "@@locale": "ja",
+
+    "title": "わかない",
+    "@title": {
+        "description": "日本語が下手です"
+    },
+    "newFormTitle": "新しい予算",
+    "editFormTitle": "予算修正",
+    "amount": "額",
+    "date": "日付",
+    "note": "メモ",
+    "expense": "支出",
+    "income": "収入",
+    "balance": "残高",
+    "settings": "設置",
+    "emptyListDisplay" : "ここ何もない！",
+    "themeMode" : "テーマ",
+    "currency" : "貨幣",
+    "changeCurrency" : "貨幣変更",
+    "searchCurrency" : "ここ貨幣検索しよう...",
+    "language" : "言語",
+    "changeLanguage" : "言語変更",
+    "categories": "'{'\"sports\": \"スポーツ\", \"food\": \"食事\", \"transport\": \"交通\", \"entertainment\": \"娯楽\", \"car\": \"車\", \"home\": \"家庭\", \"gift\": \"ギフト\", \"loan\": \"贷款\", \"grocery\": \"ショッピング\", \"repair\": \"修理\", \"education\": \"教育\", \"insurance\": \"保険\", \"medicine\": \"治療\", \"salary\": \"給料\", \"partTime\": \"アパート\", \"investment\": \"投資\", \"bonus\": \"ボーナス\"'}'"
+}

@@ -1,0 +1,25 @@
+{
+    "@@locale": "zh",
+
+    "title": "记账APP",
+    "@title": {
+        "description": "APP的标题"
+    },
+    "newFormTitle": "新预算",
+    "editFormTitle": "更改预算",
+    "amount": "数额",
+    "date": "日期",
+    "note": "注释",
+    "expense": "费用",
+    "income": "收入",
+    "balance": "存款",
+    "settings": "设定",
+    "emptyListDisplay" : "这里没有东西!",
+    "themeMode" : "模式",
+    "currency" : "货币",
+    "changeCurrency" : "更换货币",
+    "searchCurrency" : "搜索货币...",
+    "language" : "语言",
+    "changeLanguage" : "更换语言",
+    "categories": "'{'\"sports\": \"运动\", \"food\": \"饮食\", \"transport\": \"交通\", \"entertainment\": \"娱乐\", \"car\": \"车费\", \"home\": \"家用\", \"gift\": \"送礼\", \"loan\": \"贷款\", \"grocery\": \"Grocery\", \"repair\": \"维修\", \"education\": \"教育\", \"insurance\": \"保险\", \"medicine\": \"医疗\", \"salary\": \"工资\", \"partTime\": \"兼职\", \"investment\": \"投资\", \"bonus\": \"花红\"'}'"
+}

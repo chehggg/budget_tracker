@@ -1,0 +1,26 @@
+{
+    "@@locale": "en",
+
+    "title": "Money Tracker",
+    "@title": {
+        "description": "Title of the app"
+    },
+    "newFormTitle": "New Entry",
+    "editFormTitle": "Edit Entry",
+    "amount": "Amount",
+    "date": "Date",
+    "note": "Note",
+    "expense": "Expense",
+    "income": "Income",
+    "balance": "Balance",
+    "settings": "Settings",
+    "emptyListDisplay" : "Nothing here!",
+    "themeMode" : "Theme",
+    "currency" : "Currency",
+    "changeCurrency" : "Change Currency",
+    "searchCurrency" : "Search currency...",
+    "language" : "Language",
+    "blurSettings" : "Blur Amount When App Launch",
+    "changeLanguage" : "Change Language",
+    "categories": "'{'\"sports\": \"Sports\", \"food\": \"Food\", \"transport\": \"Transport\", \"entertainment\": \"Entertainment\", \"car\": \"Car\", \"home\": \"Home\", \"gift\": \"Gift\", \"loan\": \"Loan\", \"grocery\": \"Grocery\", \"repair\": \"Repair\", \"education\": \"Education\", \"insurance\": \"Insurance\", \"medicine\": \"Medicine\", \"salary\": \"Salary\", \"partTime\": \"Part Time\", \"investment\": \"Investment\", \"bonus\": \"Bonus\"'}'"
+}

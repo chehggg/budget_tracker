@@ -1,0 +1,65 @@
+{
+    "sports": "Sports", 
+    "food": "Food", 
+    "transport": "Transport", 
+    "entertainment": "Entertainment", 
+    "car": "Car", 
+    "home": "Home", 
+    "gift": "Gift", 
+    "loan": "Loan", 
+    "grocery": "Grocery", 
+    "repair": "Repair", 
+    "education": "Education", 
+    "insurance": "Insurance", 
+    "medicine": "Medicine", 
+    "salary": "Salary", 
+    "partTime": "Part Time", 
+    "investment": "Investment", 
+    "bonus": "Bonus" 
+}
+
+{
+    "sports": "运动", 
+    "food": "饮食", 
+    "transport": "交通", 
+    "entertainment": "娱乐", 
+    "car": "车费", 
+    "home": "家用", 
+    "gift": "送礼", 
+    "loan": "贷款", 
+    "grocery": "Grocery", 
+    "repair": "维修", 
+    "education": "教育", 
+    "insurance": "保险", 
+    "medicine": "医疗", 
+    "salary": "工资", 
+    "partTime": "兼职", 
+    "investment": "投资", 
+    "bonus": "花红" 
+}
+
+{
+    "sports": "スポーツ", 
+    "food": "食事", 
+    "transport": "交通", 
+    "entertainment": "娯楽", 
+    "car": "車", 
+    "home": "家庭", 
+    "gift": "ギフト", 
+    "loan": "贷款", 
+    "grocery": "ショッピング", 
+    "repair": "修理", 
+    "education": "教育", 
+    "insurance": "保険", 
+    "medicine": "治療", 
+    "salary": "給料", 
+    "partTime": "アパート", 
+    "investment": "投資", 
+    "bonus": "ボーナス" 
+}
+
+"{\"sports\": \"Sports\", \"food\": \"Food\", \"transport\": \"Transport\", \"entertainment\": \"Entertainment\", \"car\": \"Car\", \"home\": \"Home\", \"gift\": \"Gift\", \"loan\": \"Loan\", \"grocery\": \"Grocery\", \"repair\": \"Repair\", \"education\": \"Education\", \"insurance\": \"Insurance\", \"medicine\": \"Medicine\", \"salary\": \"Salary\", \"partTime\": \"Part Time\", \"investment\": \"Investment\", \"bonus\": \"Bonus\"}"
+
+"{\"sports\": \"运动\", \"food\": \"饮食\", \"transport\": \"交通\", \"entertainment\": \"娱乐\", \"car\": \"车费\", \"home\": \"家用\", \"gift\": \"送礼\", \"loan\": \"贷款\", \"grocery\": \"Grocery\", \"repair\": \"维修\", \"education\": \"教育\", \"insurance\": \"保险\", \"medicine\": \"医疗\", \"salary\": \"工资\", \"partTime\": \"兼职\", \"investment\": \"投资\", \"bonus\": \"花红\" }"
+
+"{\"sports\": \"スポーツ\", \"food\": \"食事\", \"transport\": \"交通\", \"entertainment\": \"娯楽\", \"car\": \"車\", \"home\": \"家庭\", \"gift\": \"ギフト\", \"loan\": \"贷款\", \"grocery\": \"ショッピング\", \"repair\": \"修理\", \"education\": \"教育\", \"insurance\": \"保険\", \"medicine\": \"治療\", \"salary\": \"給料\", \"partTime\": \"アパート\", \"investment\": \"投資\", \"bonus\": \"ボーナス\"}"
