@@ -22,5 +22,5 @@
     "language" : "Language",
     "blurSettings" : "Blur Amount When App Launch",
     "changeLanguage" : "Change Language",
-    "categories": "'{'\"sports\": \"Sports\", \"food\": \"Food\", \"transport\": \"Transport\", \"entertainment\": \"Entertainment\", \"car\": \"Car\", \"home\": \"Home\", \"gift\": \"Gift\", \"loan\": \"Loan\", \"grocery\": \"Grocery\", \"repair\": \"Repair\", \"education\": \"Education\", \"insurance\": \"Insurance\", \"medicine\": \"Medicine\", \"salary\": \"Salary\", \"partTime\": \"Part Time\", \"investment\": \"Investment\", \"bonus\": \"Bonus\"'}'"
+    "categories": "'{'\"sports\": \"Sports\", \"food\": \"Food\", \"transport\": \"Transport\", \"entertainment\": \"Entertainment\", \"car\": \"Car\", \"home\": \"Home\", \"gift\": \"Gift\", \"loan\": \"Loan\", \"grocery\": \"Grocery\", \"repair\": \"Repair\", \"education\": \"Education\", \"insurance\": \"Insurance\", \"medicine\": \"Medicine\", \"salary\": \"Salary\", \"partTime\": \"Part Time\", \"investment\": \"Investment\", \"bonus\": \"Bonus\", \"shopping\": \"Shopping\", \"luxury\": \"Luxury\", \"pet\": \"Pet\", \"travel\": \"Travel\", \"recreation\": \"Recreation\", \"charity\": \"Charity\"'}'"
 }

@@ -1,27 +1,42 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:budget_tracker/categories.dart';
-import 'package:budget_tracker/currency.dart';
-import 'package:budget_tracker/extensions.dart';
-import 'package:budget_tracker/models/theme_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:csv/csv.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import 'package:budget_tracker/utility/categories.dart';
+import 'package:budget_tracker/utility/currency.dart';
+import 'package:budget_tracker/extensions.dart';
+import 'package:budget_tracker/models/theme_model.dart';
 
 class AppModel extends ChangeNotifier {
-
   AppModel(){
     setInitSettings();
   }
 
   String _localeName = "en";
+  final Map<String, CostMetric> _yearMonthMetrics = {};
+  final SplayTreeMap<String, CostMetric> _dayMetrics = SplayTreeMap<String,CostMetric>((a,b) => b.standardDateParse().compareTo(a.standardDateParse()));
+  final Map<String, Map<String, CostMetric>> _yearMonthCategoryMetrics = {};
+  // final Map<String, Map<String, CostMetric>> _summarizedYearMonthCategoryMetrics = {};
+  final Map<String, Map<String, List<CostItem>>> _yearMonthCategoryGroupedList = {};
+
+  final SplayTreeMap<String, List<CostItem>> _dailyCostItems = SplayTreeMap<String,List<CostItem>>((a,b) => 
+    b.standardDateParse().compareTo(a.standardDateParse())
+  );
+  UnmodifiableMapView<String, List<CostItem>> get currentMonthDailyCostItems => UnmodifiableMapView(
+    Map.from(_dailyCostItems)..removeWhere((key, value) => !key.startsWith(formatedSelectedYearMonth))
+  );
 
   List<CostItem> _costItems = [];
   UnmodifiableListView<CostItem> get costItems => UnmodifiableListView(_costItems);
@@ -37,6 +52,17 @@ class AppModel extends ChangeNotifier {
     );
   }
 
+  List<double> getPercentiles() {
+    final sortedAmountList = _filteredCostItems.map((costItem) => costItem.amount).toList()..sort((a,b) => a.compareTo(b));
+    return [
+      sortedAmountList[(0 * sortedAmountList.length).round()],
+      sortedAmountList[(1/4 * sortedAmountList.length - 1/2).round()],
+      sortedAmountList[(1/2 * sortedAmountList.length - 1/2).round()],
+      sortedAmountList[(3/4 * sortedAmountList.length - 1/2).round()],
+      sortedAmountList[(1 * sortedAmountList.length - 1).round()]
+    ];
+  }
+
   // filter items by month
   // date format: yyyy-MM-dd
   UnmodifiableListView<CostItem> get _filteredCostItems {
@@ -48,6 +74,9 @@ class AppModel extends ChangeNotifier {
     }
     ));
   }
+
+
+  UnmodifiableListView<CostItem> get filteredCostItems => _filteredCostItems;
 
   UnmodifiableMapView<String, List<CostItem>> get dateGroupedItem {
     if (_filteredCostItems.isNotEmpty) {
@@ -80,136 +109,67 @@ class AppModel extends ChangeNotifier {
     );
   }
 
-  UnmodifiableListView<Map<String,dynamic>> categoryGroupDataForCustomCostType(CostType customCostType) {
-    if (categoryGroupedData.isEmpty) return UnmodifiableListView([]); // return empty map
-    
-    // filter items by cost tyle
-    final temp = [...categoryGroupedData];
-    temp.removeWhere((Map category) => 
-      defaultCostItemCategories.where((CostItemCategory categoryEntry) => 
-        category['name'] == categoryEntry.name
-      ).first.costType != customCostType
-    );
-
-    // sort key by amount (descending)
-    temp.sort((a, b) => 
-      (b['amount'] as double).compareTo((a['amount'] as double)),
-    );
-
-    // return map with sorted key 
-    return UnmodifiableListView<Map<String,dynamic>>(temp);
+  UnmodifiableMapView<String,List<CostItem>> get currentCategoryList {
+    return UnmodifiableMapView(_yearMonthCategoryGroupedList[formatedSelectedYearMonth]!);
   }
 
-  UnmodifiableListView<Map<String,dynamic>> summarizedCategoryGroupDataForCustomCostType(CostType customCostType) {
-    if (categoryGroupedData.isEmpty) return UnmodifiableListView([]); // return empty map
-    
-    final initList = categoryGroupDataForCustomCostType(customCostType); 
-    // get only the top 5 category by amount
-    // if category less than 5, then return the ori list 
-    if (initList.length <= 5) return initList; 
-
-    // add up amount beyond the 5 categories
-    double otherAmount = 0;
-    double otherPercentage = 0;
-    int i = 4;
-    for (i; i < initList.length; i ++) {
-      otherAmount += initList[i]['amount'] as double;
-      otherPercentage += initList[i]['percentage'] as double;
-    }
-
-    final resultList = [...initList.getRange(0, 4), {
-        "name": "Other",
-        "amount": otherAmount,
-        "percentage": otherPercentage 
-      }]
-    ;
-    
-    return UnmodifiableListView(resultList);
-  }
-
-  UnmodifiableListView<Map<String,dynamic>> get monthlyOverview {
-    // grouped by year & month, yyyy-MM
-    final monthGroupedMap = groupBy(_costItems, (item) => item.date.substring(0,7));
-    return UnmodifiableListView<Map<String,dynamic>>(
-      monthGroupedMap.map((month, monthlyCostItems) {
-        return MapEntry(
-          month, 
-          {
-            "month": month,
-            "expense": calculateTotal(CostType.expense, monthlyCostItems), 
-            "income": calculateTotal(CostType.income, monthlyCostItems), 
-            "balance": calculateTotal(CostType.income, monthlyCostItems) - calculateTotal(CostType.expense, monthlyCostItems), 
-          }
-        );
-      }).values
-    );
-  }
+  UnmodifiableMapView<String,CostMetric> get yearMonthOverview => UnmodifiableMapView(_yearMonthMetrics);
 
   // get daily total
   // to display via bar chart
-  UnmodifiableListView<double> getDailyTotalList(CostType costType, {int monthDifference = 0}) {
-    int totalDays = getDayRange(monthDifference: monthDifference);
-
-    return UnmodifiableListView(
-      List<double>.generate(totalDays, (day) {
-          final dateString = DateTime(
-            _selectedYearMonth.year,
-            _selectedYearMonth.month + monthDifference,
-            day + 1
-          ).standardFormat();
-
-          return calculateDailyTotal(dateString, costType);
-        }
+  UnmodifiableMapView<int, CostMetric> getDailyMetric(CostType costType, {int monthDifference = 0}) {
+    int totalDays = selectedYearMonth.getTotalDayInMonth(pastMonth: monthDifference);
+    return UnmodifiableMapView(
+      Map.fromIterable(List.generate(totalDays, (day) => day),
+        key: (i) => (i + 1),
+        value: (i) {
+          final formattedDate = DateTime(selectedYearMonth.year, selectedYearMonth.month - monthDifference, i + 1);
+          return _dayMetrics[formattedDate.standardFormat()] ?? CostMetric(); 
+        } 
       )
     );
   }
 
-  int getDayRange({int monthDifference = 0}) {
-    int totalDays;
-    // if calculating value for this month, show up to latest data only
-    if (monthDifference == 0 && _selectedYearMonth.month == DateTime.now().month) {
-      // generate graph until latest date where there is entry (prioritized)
-      // else get up to today
-      if (_filteredCostItems.first.getDateTime().isAfter(_selectedYearMonth)) {
-        totalDays = _filteredCostItems.first.getDateTime().day;
-      } else {
-        totalDays = _selectedYearMonth.day;
-      }
-    } else {
-      totalDays = _selectedYearMonth.getTotalDayInMonth(monthDif: monthDifference);
-    }
-    return totalDays;
-  }
-
   // get cumulative total
-  UnmodifiableListView<double> getDailyCumulativeTotalList(CostType costType, {int monthDifference = 0}) {
+  UnmodifiableMapView<int, double> getDailyCumulative(CostType costType, {int monthDifference = 0}) {
     double cumulative = 0;
-    return UnmodifiableListView(
-      getDailyTotalList(costType, monthDifference: monthDifference).map((double dailyTotal) {
-        cumulative += dailyTotal;
-        return cumulative;
+    return UnmodifiableMapView(
+      getDailyMetric(costType, monthDifference: monthDifference).map((int key, CostMetric value) {
+        cumulative += value.expense ?? 0;
+        return MapEntry(
+          key, 
+          cumulative
+        );
       })
     );
   }
 
   // get cumulative divided by the number of day (normaized)
-  UnmodifiableListView<double> getDailyCumulativeAverageList(CostType costType, {int monthDifference = 0}) {
-    return UnmodifiableListView(
-      getDailyCumulativeTotalList(costType, monthDifference: monthDifference).asMap().map((int dayInt, double cumulativeTotal) {
-        return MapEntry(dayInt, cumulativeTotal/(dayInt+1));
-      }).values.toList()
+  UnmodifiableMapView<int, double> getCumulativeAverage(CostType costType, {int monthDifference = 0}) {
+    return UnmodifiableMapView(
+      getDailyCumulative(costType, monthDifference: monthDifference).map((int dayInt, double cumulativeTotal) {
+        return MapEntry(dayInt, cumulativeTotal/dayInt);
+      })
     );
   }
 
+  UnmodifiableMapView<int, CostMetric> get currentDailyMetric => getDailyMetric(CostType.expense);
+  UnmodifiableMapView<int, double> get currentCumulative => getDailyCumulative(CostType.expense);
+  UnmodifiableMapView<int, double> get currentCumulativeAverage => getCumulativeAverage(CostType.expense);
+  // UnmodifiableMapView<int, CostMetric> get currentDailyMetric => getDailyMetric(CostType.expense);
+  UnmodifiableMapView<int, double> get previousCumulative => getDailyCumulative(CostType.expense, monthDifference: 1);
+  UnmodifiableMapView<int, double> get previousCumulativeAverage => getCumulativeAverage(CostType.expense, monthDifference: 1);
+
   UnmodifiableListView<Map<String,dynamic>> summarizedDateGroupDataForCustomCostType(CostType costType) {
     //create sorted list
-    final tempList = getDailyTotalList(costType).asMap().map((dateInt,amount) {
+    final tempList = getDailyMetric(costType).map((dateInt,metric) {
       return MapEntry<int,Map<String,dynamic>>(
+
         dateInt, 
         {
           "date": DateTime(_selectedYearMonth.year,_selectedYearMonth.month,dateInt).displayFormat(),
-          "amount": amount,
-          "percentage": amount/totalCurrentMonthExpense
+          "amount": metric.expense,
+          "percentage": metric.expense!/totalCurrentMonthExpense
         }
       );
     }).values.toList()
@@ -236,18 +196,6 @@ class AppModel extends ChangeNotifier {
     return UnmodifiableListView(resultList);
   }
 
-  double maximumCategoryAmount(CostType providedCostType) {
-    double max = 0;
-    for (var i in categoryGroupDataForCustomCostType(providedCostType)) {
-      final double categoryAmount = i['amount'] as double;
-
-      if (categoryAmount > max) {
-        max = categoryAmount;
-      }
-    }
-    return max;
-  }
-
   String get currencySymbol => currencies.where((currency) =>
     currency['name'] == _currencyName 
   ).first['symbol'];
@@ -265,6 +213,7 @@ class AppModel extends ChangeNotifier {
   
   DateTime _selectedYearMonth = DateTime.now();
   DateTime get selectedYearMonth => _selectedYearMonth;
+  String get formatedSelectedYearMonth => DateFormat('yyyy-MM').format(_selectedYearMonth);
 
   double calculateDailyTotal(String date, [CostType? costType]) {
     final dailyFilteredCostItems = _costItems.where((costItem) => costItem.date == date).toList();
@@ -279,14 +228,15 @@ class AppModel extends ChangeNotifier {
   }
   
   String getFormattedDailyTotal(String date) {
-    final double total = calculateDailyTotal(date);
-    return customFormatAmount(total, false, true);
+    return customCurrencyFormat(_dayMetrics[date]?.balance?? 0, false, true);
   }
 
   // return accumulated expense
-  double get totalCurrentMonthExpense => calculateTotal(CostType.expense, _filteredCostItems); 
-
-  double get totalCurrentMonthIncome => calculateTotal(CostType.income, _filteredCostItems);
+  double get totalCurrentMonthExpense => _yearMonthMetrics[formatedSelectedYearMonth]?.expense ?? 0;
+  double get totalCurrentMonthIncome => _yearMonthMetrics[formatedSelectedYearMonth]?.income ?? 0;
+  
+  
+  Map<String,List<CostItem>> get currentMonthCategoryList => _yearMonthCategoryGroupedList[formatedSelectedYearMonth] ?? {};
 
   double get totalCurrentMonthbalance => totalCurrentMonthIncome - totalCurrentMonthExpense;
 
@@ -299,15 +249,32 @@ class AppModel extends ChangeNotifier {
     return (totalBudget - totalCurrentMonthExpense)/remainingDay;
   }
 
+  Map<String,CostMetric> getcurrentMonthCategoryView(bool isDescending, CostType costType) {
+    final initCategoryView = _yearMonthCategoryMetrics[formatedSelectedYearMonth] ?? {};
+
+    final sorted = initCategoryView.entries.toList()..sort((a, b) {
+      if (isDescending) {
+        return b.value.expense!.compareTo(a.value.expense!); 
+      } else {
+        return a.value.expense!.compareTo(b.value.expense!);
+      }
+    })..removeWhere((item) => costType == CostType.expense ? item.value.expense == 0 : item.value.income == 0);
+
+    return {for (var entry in sorted) entry.key: entry.value};
+  }
+
+  double getMaxCurrentMonthCategoryAmount(CostType costType) {
+    return getcurrentMonthCategoryView(true, costType).entries.toList().first.value.expense!;
+  }
 
   String getTotalAsString(String type, {bool useSuffix = false}) {
     switch (type) {
       case 'expense':
-        return customFormatAmount(totalCurrentMonthExpense, useSuffix);
+        return customCurrencyFormat(totalCurrentMonthExpense, useSuffix);
       case 'income':
-        return customFormatAmount(totalCurrentMonthIncome, useSuffix) ;
+        return customCurrencyFormat(totalCurrentMonthIncome, useSuffix) ;
       case 'balance':
-        return  customFormatAmount(totalCurrentMonthbalance, useSuffix);
+        return  customCurrencyFormat(totalCurrentMonthbalance, useSuffix);
       default:
         return "";
     }
@@ -335,16 +302,29 @@ class AppModel extends ChangeNotifier {
 
   String getFormattedCostItemValue(CostItem costItem) {
     if (costItem.costType == CostType.expense) {
-      return customFormatAmount(costItem.amount, false, true, "-");
+      return customCurrencyFormat(costItem.amount, false, true, "-");
     } else {
-      return customFormatAmount(costItem.amount, false, true, "+");
+      return customCurrencyFormat(costItem.amount, false, true, "+");
     }
   }
 
-  CostItemCategory getCategoryEntry(String categoryname) => 
-    categories.where((categoryItem) => categoryItem.name == categoryname).first;
+  CostItemCategory? getCategoryEntry(String categoryname) {
+    if (categories.any((categoryItem) => categoryItem.name == categoryname)) {
+      return categories.where((categoryItem) => categoryItem.name == categoryname).first;
+    } else {
+      return null;
+    }
+  }
   
-  String customFormatAmount(double value, bool useSuffix, [bool? usePositiveSign, String? overrideSign]) {
+  String getCategoryPercentage(double categoryAmount) {
+    double percentage = categoryAmount/totalCurrentMonthExpense;
+    if (percentage > 0.01) {
+      return NumberFormat('#0%').format(percentage);
+    } else {
+      return "<1%";
+    }
+  }
+  String customCurrencyFormat(double value, bool useSuffix, [bool? usePositiveSign, String? overrideSign]) {
     final String sign; 
     if (overrideSign != null) {
       sign = overrideSign;
@@ -358,11 +338,8 @@ class AppModel extends ChangeNotifier {
 
     String formatDecimal(double value, double div, String suffix) {
       if (value % div == 0) {
-        // return NumberFormat("$sign$currencySymbol#0$suffix").format(value / div);
         return NumberFormat.compact(locale: _localeName).format(value / div);
       } else {
-        // return NumberFormat("$sign$currencySymbol#.00$suffix").format(value / div);
-        // return NumberFormat.compact(locale: _localeName).format(value / div);
         return NumberFormat.compact(locale: _localeName).format(value);
       }
     }
@@ -414,10 +391,13 @@ class AppModel extends ChangeNotifier {
       _currencyName = currencies.first['name'];
     }
     // get file for cost items
-    readCostItemsFromFile();
+    await loadCostItemOnLoad();
 
     // get note history
-    readNoteFromFile();
+    await readNoteFromFile();
+    
+    refreshMetric();
+    debugPrint("refresh");
   }
   
   void changeCurrency(Map<String,dynamic> currency) {
@@ -456,9 +436,9 @@ class AppModel extends ChangeNotifier {
   void createNewItem(CostItemFormResult result) {
     final newCostItem = CostItem.fromForm(result);
     
-    if (result.name.trim() != "") {
-      createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
-    }
+    // if (result.name.trim() != "") {
+    //   createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
+    // }
     
     if (_costItems.isEmpty) {
       _costItems.add(newCostItem);
@@ -474,20 +454,102 @@ class AppModel extends ChangeNotifier {
           break;
         }
       }
-      _costItems.insert(insertIndex,newCostItem);
+      _costItems.insert(insertIndex, newCostItem);
     }
+    addDailyCostItems(newCostItem);
+    updateMetric(newCostItem);
+    updateCategoryList(newCostItem.getYearMonthString());
 
     notifyListeners();
     writeCostItemsToFile();
   }
 
+  void addDailyCostItems(CostItem newCostItem) {
+    if (_dailyCostItems.containsKey(newCostItem.date)) {
+      _dailyCostItems[newCostItem.date]!.insert(0,newCostItem);
+    } else {
+      _dailyCostItems[newCostItem.date] = [newCostItem];
+    }
+    notifyListeners();
+  }
+
+  void deleteDailyCostItems(CostItem oldCostItem) {
+    _dailyCostItems[oldCostItem.date]!.removeWhere((costItem) => costItem.uuid == oldCostItem.uuid);
+    notifyListeners();
+  }
+
+  void updateMetric(CostItem costItem) {
+    // update day metrics
+    if (!_dayMetrics.containsKey(costItem.date)) {
+      _dayMetrics[costItem.date] = CostMetric();
+    } 
+    _dayMetrics[costItem.date]!.add(costItem);
+
+    // update yearmonth metrics
+    var yearMonthString = costItem.getYearMonthString();
+    if (!_yearMonthMetrics.containsKey(yearMonthString)) {
+      _yearMonthMetrics[yearMonthString] = CostMetric();
+    }
+    _yearMonthMetrics[yearMonthString]!.add(costItem);
+
+    // update yearmonth metric metrics
+    if (!_yearMonthCategoryMetrics.containsKey(yearMonthString)) {
+      _yearMonthCategoryMetrics[yearMonthString] = {};
+    }
+    if (!_yearMonthCategoryMetrics[yearMonthString]!.containsKey(costItem.category)) {
+      _yearMonthCategoryMetrics[yearMonthString]![costItem.category] = CostMetric();
+    }
+
+    _yearMonthCategoryMetrics[yearMonthString]![costItem.category]!.add(costItem);
+
+    notifyListeners();
+  }
+
+  void removeMetric(CostItem initCostItem) {
+    _dayMetrics[initCostItem.date]!.minus(initCostItem);
+    
+    final yearMonthString = initCostItem.getYearMonthString();
+    _yearMonthMetrics[yearMonthString]!.minus(initCostItem);
+
+    _yearMonthCategoryMetrics[yearMonthString]![initCostItem.category]!.minus(initCostItem);
+  }
+
+  void updateCategoryList(String yearMonth) {
+    final dateItem = _costItems.where((item) => 
+      item.getYearMonthString() == yearMonth
+    );
+    _yearMonthCategoryGroupedList[yearMonth] = groupBy(dateItem, (item) => item.category);
+  }
+
+  void refreshMetric() {
+    clearMetric();
+
+    for (var item in _costItems) {
+      updateMetric(item);
+      addDailyCostItems(item);
+    }
+
+    for (var yearMonth in _yearMonthMetrics.keys) {
+      updateCategoryList(yearMonth);
+    }
+
+    notifyListeners();
+  }
+
+  void clearMetric() {
+    _yearMonthMetrics.clear();
+    _dayMetrics.clear();
+    _yearMonthCategoryMetrics.clear();
+    notifyListeners();
+  }
+
   void updateCostItem(CostItemFormResult result, String itemUuid) {
     final int initIndex = _costItems.indexWhere((costItem) => costItem.uuid == itemUuid);
+    final CostItem initCostItem = _costItems.firstWhere((costItem) => costItem.uuid == itemUuid);
     final CostItem updatedCostItem = CostItem.update(result, itemUuid);
-
-    if (result.name.trim() != "") {
-      createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
-    }
+    // if (result.name.trim() != "") {
+    //   createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
+    // }
 
     // if date the same, no need to perform sorting
     if (_costItems[initIndex].date == result.date) {
@@ -501,7 +563,7 @@ class AppModel extends ChangeNotifier {
       final DateTime updatedDate = updatedCostItem.getDateTime();
       
       while (i >= 0 && i < _costItems.length) {
-        debugPrint("current i: $i");
+        // debugPrint("current i: $i");
 
         final afterDate = _costItems[i].getDateTime();
         
@@ -523,27 +585,48 @@ class AppModel extends ChangeNotifier {
       }
       _costItems.insert(insertIndex, updatedCostItem);
 
+      removeMetric(initCostItem);
+      updateMetric(updatedCostItem);
     }
+
+    deleteDailyCostItems(initCostItem);
+    addDailyCostItems(updatedCostItem);
+    updateCategoryList(initCostItem.getYearMonthString());
+    updateCategoryList(updatedCostItem.getYearMonthString());
 
     notifyListeners();
     writeCostItemsToFile();
   }
 
   void deleteCostItem(String costItemId) {
+    final CostItem deletedCostItem = _costItems.where((costItem) => costItem.uuid == costItemId).first;
     _costItems.removeWhere((costItem) => costItem.uuid == costItemId);
     
-    writeCostItemsToFile();
+    deleteDailyCostItems(deletedCostItem);
+    removeMetric(deletedCostItem);
+    updateCategoryList(deletedCostItem.getYearMonthString());
     notifyListeners();
+    writeCostItemsToFile();
   }
 
   // convert cost item list into csv and 
   // update file 
-  void writeCostItemsToFile() async {
+  Future<void> writeCostItemsToFile() async {
     final List<List<dynamic>> result = List.generate(
       _costItems.length, 
       (i) => _costItems[i].toList()
     );
-    final String csv = ListToCsvConverter().convert(result);
+
+    const List<String> headers = [
+      'uuid',
+      'date',
+      'costType',
+      'category',
+      'amount',
+      'name',
+    ];
+
+    final String csv = '${headers.join(',')},\r\n${ListToCsvConverter().convert(result)}';
 
     try {
       final directory = await getApplicationDocumentsDirectory();
@@ -553,23 +636,85 @@ class AppModel extends ChangeNotifier {
     } catch (e)  {
       debugPrint("error finding file");
     }
+
+    // try {
+    //   await writeDataToFirebase();
+    // } catch (e) {
+    //   debugPrint("error writing data to firebase: $e");
+    // }
   }
 
-  void readCostItemsFromFile() async {
+  Future<void> loadCostItemOnLoad() async {
     try {
       debugPrint("the file is red!");
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/budget.csv');
-
-      final csvString = file.readAsStringSync();
-      final List<List<dynamic>> costItemLists = CsvToListConverter().convert(csvString);
-
-      _costItems = costItemLists.map((List<dynamic> item) => CostItem.fromList(item)).toList();
-      
-      notifyListeners();
+      parseCostItemData(file);
     } catch (e) {
       debugPrint("error reading file");
+      return;
+    }
+  }
+
+  Future<String?> exportCostItem() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/budget.csv');
+      final csvString = file.readAsStringSync();
+      final List<int> list = csvString.codeUnits;
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Please select an output file:',
+        fileName: 'budget_output.csv',
+        bytes: Uint8List.fromList(list)
+      );
+      return outputFile;
+    } catch (e) {
+      debugPrint("error: $e");
       return null;
+    }
+  }
+
+  Future<int> loadCostItemFromFile() async {
+    try{
+      final result = await FilePicker.platform.pickFiles(
+        // allowedExtensions: ['csv'],
+        // type: FileType.custom
+      );
+      if (result != null) {
+        final file = File(result.files.single.path!);
+        final parsedResult  = await parseCostItemData(file);
+        if (parsedResult == 0) return 0;
+        await writeCostItemsToFile();
+        return 1;
+      } 
+      return 2;
+    } catch (e) {
+      debugPrint("error in loading data from file: $e");
+      return 0;
+    }
+  }
+
+  Future<int> parseCostItemData(File file) async {
+    try {
+      final csvString = file.readAsStringSync();
+      final List<List<dynamic>> costItemLists = CsvToListConverter().convert(csvString);
+      costItemLists.removeAt(0);
+      _costItems = costItemLists.map((List<dynamic> item) => CostItem.fromList(item)).toList();
+      notifyListeners();
+      return 1;
+    } catch (e) {
+      debugPrint('error in parsing data: $e');
+      return 0;
+    }
+  }
+
+  Future<void> clearCostItem() async {
+    try {
+      _costItems = [];
+      await writeCostItemsToFile();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('error in parsing data: $e');
     }
   }
 
@@ -598,7 +743,7 @@ class AppModel extends ChangeNotifier {
     }
   }
 
-  void readNoteFromFile() async {
+  Future<void> readNoteFromFile() async {
     try {
       final Directory directory  = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/notes.txt');
@@ -610,6 +755,32 @@ class AppModel extends ChangeNotifier {
       ).toList(); 
     } catch (e) {
       debugPrint("error in reading note history file, error: $e");
+    }
+  }
+
+  Future<void> writeDataToFirebase() async {
+    try {
+      FirebaseFirestore db = FirebaseFirestore.instance;
+      // DocumentReference result =  await db.collection('costItem').add(user);
+      db.collection('costItem')
+        .doc('entry')
+        // .update({'value':'new'})
+        .update({'entry':_costItems.map((costItem) => costItem.toJson()).toList()})
+        .then((_) =>
+          debugPrint("Written data to firebase! Result")
+        )
+      ;
+      // await ref.set({
+      //   'value': {
+      //     'c': [
+      //       'this is a test',
+      //       'this is a test 2',
+      //       'this is a test 3',
+      //     ]
+      //   }
+      // });
+    } catch (e) {
+      debugPrint('Error when writing data to firebase: $e');
     }
   }
 }
@@ -635,30 +806,30 @@ class CostItem {
 
   // create a instance of cost item from form
   CostItem.fromForm(CostItemFormResult result) :
-    name  = result.name,
-    amount = result.amount,
     uuid = Uuid().v4(),
-    category = result.category,
     date = result.date,
-    costType = result.costType
+    costType = result.costType,
+    category = result.category,
+    amount = result.amount,
+    name  = result.name
   ;
 
   CostItem.update(CostItemFormResult result, String id) :
-    name  = result.name,
-    amount = result.amount,
     uuid = id,
-    category = result.category,
     date = result.date,
-    costType = result.costType
+    costType = result.costType,
+    category = result.category,
+    amount = result.amount,
+    name  = result.name
   ;
 
   // create cost item into json
   Map<String, dynamic> toJson() => {
     'uuid': uuid,
-    'category': category,
-    'costType': costType.name,
-    'amount': amount,
     'date': date,
+    'costType': costType.name,
+    'category': category,
+    'amount': amount,
     'name': name,
   };
 
@@ -676,13 +847,14 @@ class CostItem {
 
   CostItem.fromList(List<dynamic> list) :
     uuid = list[0] as String,
-    category = list[1] as String,
+    date = list[1] as String, 
     costType = CostType.values.where((costType) => costType.name == list[2] as String).first,
-    amount = list[3] as double,
-    date = list[4] as String, 
+    category = list[3] as String,
+    amount = list[4] as double,
     name = list[5] as String;
 
-  DateTime getDateTime() => date.standardDateParse();
+  DateTime getDateTime() => date.standardDateParse(); 
+  String getYearMonthString() => date.substring(0,7); //DateFormat: yyyy-MM-dd
 
   String getCurrencyValue(String currencySymbol, [bool? includeSign]) {
     final String value = amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);
@@ -795,10 +967,10 @@ class CostItemCategory {
     );
   }
 
-  String getLocalizedName(BuildContext context) {
-    final Map<String,dynamic> categoryJson = jsonDecode(AppLocalizations.of(context)!.categories);
-    return categoryJson[name] ?? "NA";
-  }
+  // String getLocalizedName(BuildContext context) {
+  //   final Map<String,dynamic> categoryJson = jsonDecode(AppLocalizations.of(context)!.categories);
+  //   return categoryJson[name] ?? "NA";
+  // }
 }
 
 
@@ -829,3 +1001,39 @@ class NoteHistory {
   };
 }
 
+class CostMetric {
+  CostMetric({
+    this.expense = 0,
+    this.income = 0,
+  });
+
+  double? expense;
+  double? income;
+  
+  get balance => (income ?? 0) - (expense ?? 0);
+
+  // CostMetric.update(CostMetric initMetric, double newExpense, double newIncome): 
+  //   expense =  initMetric.expense! + newExpense,
+  //   income = initMetric.income! + newIncome;
+
+  void add(CostItem costItem) {
+    expense = expense! + (costItem.costType == CostType.expense ? costItem.amount: 0); 
+    income = income! + (costItem.costType == CostType.income ? costItem.amount: 0);
+  }
+
+  void minus(CostItem costItem) {
+    expense = expense! - (costItem.costType == CostType.expense ? costItem.amount: 0); 
+    income = income! - (costItem.costType == CostType.income ? costItem.amount: 0);
+  }
+}
+
+
+class CategoryGroupMetric {
+  const CategoryGroupMetric({
+    this.costItem,
+    this.metric,
+  });
+
+  final List<CostItem>? costItem;
+  final CostMetric? metric;
+}

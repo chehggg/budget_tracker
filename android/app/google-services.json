@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "223594003555",
+    "firebase_url": "https://budget-tracker-xz-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "budget-tracker-xz",
+    "storage_bucket": "budget-tracker-xz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:223594003555:android:6facebc57105f1cf9ecc56",
+        "android_client_info": {
+          "package_name": "com.example.budget_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjpzcdwqqVEIA4fiMbJIPDRdkGHz3yXxM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

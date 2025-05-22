@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 
 import 'package:budget_tracker/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
@@ -18,7 +19,7 @@ class ChartScreen extends StatefulWidget {
 
 class _ChartScreenState extends State<ChartScreen> {
   String? _selectedCategory;
-  CostType _selectedCostType = CostType.expense;
+  final CostType _selectedCostType = CostType.expense;
 
   void updateSelectedCategory(String categoryName) {
     setState(() {
@@ -41,16 +42,14 @@ class _ChartScreenState extends State<ChartScreen> {
         ),
         // axisNameSize: 40,
         sideTitles: SideTitles(
-          getTitlesWidget: (value, meta) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: Text(
-                value.toStringAsFixed(value % 1 == 0? 0 : 1),
-                textAlign: TextAlign.right,
-                style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 10),
-              ),
-            );
-          },
+          getTitlesWidget: (value, meta) => Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Text(
+              value.toStringAsFixed(value % 1 == 0? 0 : 1),
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 10),
+            ),
+          ),
           reservedSize: 40,
           showTitles: true,
           maxIncluded: true,
@@ -119,7 +118,7 @@ class _ChartScreenState extends State<ChartScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: OverviewBudgetBar(),
+                      // child: OverviewBudgetBar(),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -167,8 +166,9 @@ class DailyTotalBarChart extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    final List<double> data = context.select((AppModel state) => state.getDailyTotalList(CostType.expense));
-    final max = data.max.ceilingToFirstDigit();
+    final data = context.select((AppModel state) => state.getDailyMetric(CostType.expense));
+    final maxValue = (data.values.map<double>((metric) => metric.expense!)).toList().maxCeiling();
+    // debugPrint('max value: ${maxValue}');
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,15 +184,15 @@ class DailyTotalBarChart extends StatelessWidget {
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(),
                 titlesData: titleData,
-                maxY: max,
-                barGroups: data.asMap().map((dayInt, amount) =>
+                maxY: maxValue,
+                barGroups: data.map((dayInt, metric) =>
                   MapEntry(
                     dayInt, 
                     BarChartGroupData(
-                      x: dayInt + 1,
+                      x: dayInt,
                       barRods: [
                         BarChartRodData(
-                          toY: amount,
+                          toY: metric.expense?? 0,
                           // rodStackItems: [
                           //   BarChartRodStackItem(fromY, toY, color)
                           // ]
@@ -254,7 +254,7 @@ class OverviewBudgetBar extends StatelessWidget {
                     spacing: 8,
                     children: [
                       Text("Threshold", textAlign: TextAlign.center,),
-                      Container(
+                      SizedBox(
                         height: 20,
                         child: VerticalDivider(thickness: 2,)
                       ),
@@ -360,14 +360,14 @@ class _CustomChartSectionState extends State<CustomChartSection> {
             ),
             Expanded(
               // child: const DateTrendLineChart()
-              child: PageView(
+              child: PageView.builder(
+                itemCount: widget.pageChildren.length,
                 // padEnds: false,
                 physics: NeverScrollableScrollPhysics(),
                 controller: _controller,
-                // onPageChanged: (value) => setState(() {
-                //   _currentDateTrendPageIndex = value;
-                // }),
-                children: widget.pageChildren
+                itemBuilder: (context, index) {
+                  return widget.pageChildren[index];
+                },
               )
             ),
           ],
@@ -396,9 +396,26 @@ class BreakdownPieChart extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    final categoryData = context.select((AppModel state) => 
-      state.summarizedCategoryGroupDataForCustomCostType(selectedCostType)
-    );
+    final summarizedCategoryData = context.select((AppModel state) {
+      final categoryData = state.getcurrentMonthCategoryView(true, CostType.expense);
+      final Map<String,CostMetric> summarizedData = {};
+      int i = 0;
+      double totalOtherExpense = 0;
+      if (categoryData.length < 5) {
+        return categoryData;
+      } else {
+        for(i; i < categoryData.length; i ++) {
+          if (i < 4) {
+            summarizedData[categoryData.entries.toList()[i].key] = categoryData.entries.toList()[i].value;  
+          } else {
+            totalOtherExpense += categoryData.entries.toList()[i].value.expense!;
+          }
+        }
+        summarizedData['other'] = CostMetric(expense: totalOtherExpense);  
+        return summarizedData;
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -431,9 +448,8 @@ class BreakdownPieChart extends StatelessWidget {
                           }
                         },
                       ),
-                      sections: categoryData.map((data) {
-                        final currentCategory = data['category'] as CostItemCategory?;
-                        // final ColorScheme categoryColorScheme;
+                      sections: summarizedCategoryData.entries.map((data) {
+                        final currentCategory = context.read<AppModel>().getCategoryEntry(data.key);
                         Color primaryColor;
                         Color secColor;
                         if (currentCategory != null) {
@@ -445,7 +461,7 @@ class BreakdownPieChart extends StatelessWidget {
                           secColor = Colors.amber.shade700;
                         }
                         return PieChartSectionData(
-                          value: data['amount'],
+                          value: data.value.expense!.abs(),
                           radius: 20,
                           // title: category,
                           // badgeWidget: currentCategory.generateRoundedIcon(30, categoryColorScheme.primary, categoryColorScheme.onPrimary),
@@ -470,8 +486,10 @@ class BreakdownPieChart extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: categoryData.map((data) {
-                      final category = data['category'] as CostItemCategory?;
+                    children: summarizedCategoryData.entries.map((data) {
+                      final category = context.read<AppModel>().getCategoryEntry(data.key);
+                      final totalAmount = context.read<AppModel>().totalCurrentMonthExpense;
+                      // final category = data['category'] as CostItemCategory?;
                       Color primaryColor;
                       if (category != null) {
                         primaryColor = category.colorScheme.primary;
@@ -482,9 +500,10 @@ class BreakdownPieChart extends StatelessWidget {
                         height: 28,
                         child: ChartLegendItem(
                           primaryColor: primaryColor,
-                          title: data['name'],
+                          title: data.key,
                           trailing: Text(
-                            NumberFormat('#0%').format(data['percentage']),
+                            // NumberFormat('#0%').format(data['percentage']),
+                            context.read<AppModel>().getCategoryPercentage(data.value.expense!),
                             style: Theme.of(context).textTheme.bodySmall!.copyWith(
                               fontSize: 13, 
                               // color: Theme.of(context).colorScheme.primary
@@ -684,16 +703,8 @@ class DateTrendLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // some bug with cumulative in the formula
-    // which cause the value to be added again 
-    // whenever the function is called again, so
-    // wrap the result from function in another list
-    final data = [...context.select((AppModel state) => 
-      state.getDailyCumulativeAverageList(CostType.expense)
-    )];
-    final previousMonthData = [...context.select((AppModel state) => 
-      state.getDailyCumulativeAverageList(CostType.expense, monthDifference: -1)
-    )];
+    final currentMonthData = context.select((AppModel state) => state.currentCumulativeAverage);
+    final previousMonthData = context.select((AppModel state) => state.previousCumulativeAverage);
     
     final colorTheme = Theme.of(context).colorScheme;
     return Column(
@@ -707,31 +718,31 @@ class DateTrendLineChart extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16,16,16,0),
             child: SpendTrendLineChart(
-              currentMonthData: data, 
+              currentMonthData: currentMonthData, 
               previousMonthData: previousMonthData,
               titleData: titleData,
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.center,
-          child: Row(
-            spacing: 12,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ChartLegendItem(
-                primaryColor: colorTheme.primary, 
-                title: "This month",
-                tileWidth: 200,
-              ),
-              ChartLegendItem(
-                primaryColor: colorTheme.tertiary, 
-                title: "Previous month",
-                tileWidth: 200,
-              ),
-            ],
-          ),
-        )
+        // Align(
+        //   alignment: Alignment.center,
+        //   child: Row(
+        //     spacing: 12,
+        //     mainAxisSize: MainAxisSize.min,
+        //     children: [
+        //       ChartLegendItem(
+        //         primaryColor: colorTheme.primary, 
+        //         title: "This month",
+        //         tileWidth: 200,
+        //       ),
+        //       ChartLegendItem(
+        //         primaryColor: colorTheme.tertiary, 
+        //         title: "Previous month",
+        //         tileWidth: 200,
+        //       ),
+        //     ],
+        //   ),
+        // )
       ],
     );
   }
@@ -747,12 +758,8 @@ class DailyCumulativeSpendLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = [...context.select((AppModel state) => 
-      state.getDailyCumulativeTotalList(CostType.expense)
-    )];
-    final previousMonthData = [...context.select((AppModel state) => 
-      state.getDailyCumulativeTotalList(CostType.expense, monthDifference: -1)
-    )];
+    final currentMonthData = context.select((AppModel state) => state.currentCumulative);
+    final previousMonthData = context.select((AppModel state) => state.previousCumulative);
     
     final colorTheme = Theme.of(context).colorScheme;
     return Column(
@@ -766,37 +773,37 @@ class DailyCumulativeSpendLineChart extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16,16,16,0),
             child: SpendTrendLineChart(
-              currentMonthData: data, 
+              currentMonthData: currentMonthData, 
               previousMonthData: previousMonthData,
               titleData: titleData,
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.center,
-          child: Container(
-            // decoration: ,
-            child: Row(
-              spacing: 12,
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ChartLegendItem(
-                  primaryColor: colorTheme.primary, 
-                  title: "This month",
-                  tileWidth: 160,
-                  fontSize: 10,
-                ),
-                ChartLegendItem(
-                  primaryColor: colorTheme.tertiary, 
-                  title: "Previous month",
-                  tileWidth: 160,
-                  fontSize: 10,
-                ),
-              ],
-            ),
-          ),
-        )
+        // Align(
+        //   alignment: Alignment.center,
+        //   child: Container(
+        //     // decoration: ,
+        //     child: Row(
+        //       spacing: 12,
+        //       mainAxisSize: MainAxisSize.min,
+        //       mainAxisAlignment: MainAxisAlignment.center,
+        //       children: [
+        //         ChartLegendItem(
+        //           primaryColor: colorTheme.primary, 
+        //           title: "This month",
+        //           tileWidth: 160,
+        //           fontSize: 10,
+        //         ),
+        //         ChartLegendItem(
+        //           primaryColor: colorTheme.tertiary, 
+        //           title: "Previous month",
+        //           tileWidth: 160,
+        //           fontSize: 10,
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // )
       ],
     );
   }
@@ -810,8 +817,9 @@ class SpendTrendLineChart extends StatelessWidget {
     required this.titleData,
   });
 
-  final List<double> currentMonthData;
-  final List<double> previousMonthData;
+  final Map<int,double> currentMonthData;
+  final Map<int,double> previousMonthData;
+  // final List<double> previousMonthData;
   final FlTitlesData titleData;
 
   @override
@@ -822,19 +830,31 @@ class SpendTrendLineChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
+            // fitInsideHorizontally: true,
+            fitInsideVertically: true,
             getTooltipColor:(touchedSpot) => Colors.transparent,
             getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) =>
-                LineTooltipItem(
-                  spot.spotIndex.toString(), 
-                  Theme.of(context).textTheme.labelMedium!
-                )
-              ).toList();  
+              return touchedSpots.map((spot){
+                final modelRead = context.read<AppModel>();
+                final index = spot.spotIndex + 1;
+                final lineIndex = spot.barIndex;
+                String tooltipText = "";
+                if (lineIndex == 0) {
+                  tooltipText = "Current: ${modelRead.customCurrencyFormat(currentMonthData[index]!, true)}";
+                } else {
+                  tooltipText = "Previous: ${modelRead.customCurrencyFormat(previousMonthData[index]!, true) }";
+                }
+                return LineTooltipItem(
+                  tooltipText, 
+                  Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: 10, color: spot.bar.color),
+                );
+              }).toList();  
             },
           )
         ),
-        maxY: [...currentMonthData, ...previousMonthData].max.ceilingToFirstDigit(),
+        maxY: [...currentMonthData.values, ...previousMonthData.values].maxCeiling(),
         minY: 0,
+        minX: 1,
         gridData: FlGridData(show: true),
         titlesData: titleData,
         lineBarsData: [
@@ -862,22 +882,21 @@ class SpendTrendLineChart extends StatelessWidget {
         checkToShowDot: (spot, barData) {
           // if the month is completed, do not show dot
           if (!yearMonth.isInSameYearMonthAs(DateTime.now())) return false;
-          
           // only show dot for the latest date
           if (spot.x == displayData.length) return true;
           
           return false;
         },
       ),
-      spots: displayData.asMap().map((int dayInt, double amount){
-        return MapEntry(dayInt, FlSpot(dayInt.toDouble() + 1, amount));
+      spots: displayData.map((int dayInt, double amount){
+        return MapEntry(dayInt, FlSpot(dayInt.toDouble(), amount));
       }).values.toList(),
     );
   }
 
 }
 
-class CategoryList extends StatelessWidget {
+class CategoryList extends StatefulWidget {
   const CategoryList({
     super.key,
     required this.selectedCostType
@@ -885,21 +904,28 @@ class CategoryList extends StatelessWidget {
 
   final CostType selectedCostType;
 
-  List<Widget> categoryListTile(List<Map> data, BuildContext context) => data.map((categoryData) {
-    final categoryName = categoryData['name'] as String;
-    final categoryEntry = categoryData['category'] as CostItemCategory;
-    final categoryAmount = categoryData['amount'] as double;
-    final categoryColorScheme = categoryEntry.colorScheme;
-    final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);    
-    final percentageString = NumberFormat('#0%').format(categoryData['percentage'] as double);
-    final currencySymbol = context.select((AppModel state) => state.currencySymbol);
-    final maxAmount = context.select((AppModel state) => 
-      state.maximumCategoryAmount(selectedCostType)
-    );
+  @override
+  State<CategoryList> createState() => _CategoryListState();
+}
 
+class _CategoryListState extends State<CategoryList> {
+  bool _isSortDescending = true;
+
+  List<Widget> categoryListTile(Map<String,CostMetric> data, BuildContext context) => data.entries.map((categoryData) {
+    final categoryName = categoryData.key;
+    final categoryEntry = context.read<AppModel>().getCategoryEntry(categoryName);
+    final categoryAmount = categoryData.value.expense as double;
+    final categoryColorScheme = categoryEntry!.colorScheme;
+    final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);    
+    final currencySymbol = context.select((AppModel state) => state.currencySymbol);
+    final maxAmount = context.select((AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense));
+    final percentageString = context.read<AppModel>().getCategoryPercentage(categoryAmount);
+    final List<CostItem> costItems = context.select((AppModel state) => state.currentMonthCategoryList[categoryName]?? []);
+    
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
+        key: ValueKey(categoryName),
         tilePadding: EdgeInsets.fromLTRB(24,4,30,4),
         childrenPadding: EdgeInsets.fromLTRB(24,0,30,8),
         title: Row(
@@ -931,9 +957,9 @@ class CategoryList extends StatelessWidget {
         subtitle: PercentageBar(
           height: 8, 
           color: categoryColorScheme.primaryFixed, 
-          percentage: categoryData['amount']/maxAmount as double
+          percentage: categoryAmount/maxAmount
         ), 
-        children: (categoryData['items'] as List<CostItem>).map((CostItem costItem) {
+        children: costItems.map((CostItem costItem) {
           return ListTile(
             contentPadding: const EdgeInsets.only(),
             visualDensity: VisualDensity(vertical: -4),
@@ -953,19 +979,33 @@ class CategoryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryData = context.select((AppModel state) => 
-      state.categoryGroupDataForCustomCostType(selectedCostType)
+    final Map<String,CostMetric> categoryData = context.select((AppModel state) => 
+      state.getcurrentMonthCategoryView(_isSortDescending, CostType.expense)
     );
-
+ 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: ChartTitleBar(
-            title: "Expense overview",
-            description: "by Category",
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Expanded(
+                child: ChartTitleBar(
+                  title: "Expense overview",
+                  description: "by Category",
+                ),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _isSortDescending = !_isSortDescending), 
+                icon: Transform.scale(
+                  scaleY: _isSortDescending? 1 : -1,
+                  child: Icon(Icons.sort)
+                )
+              )
+            ],
           ),
         ),
         ...categoryListTile(categoryData, context)
@@ -975,8 +1015,7 @@ class CategoryList extends StatelessWidget {
 }
 
 class FastCustomScrollPhysics extends ScrollPhysics {
-  const FastCustomScrollPhysics({ScrollPhysics? parent})
-    : super(parent: parent);
+  const FastCustomScrollPhysics({super.parent});
 
   @override
   FastCustomScrollPhysics applyTo(ScrollPhysics? ancestor) {
@@ -1020,7 +1059,7 @@ class PercentageBar extends StatelessWidget {
             ),
             Container(
               height: height,
-              width: constraint.maxWidth * percentage,
+              width: constraint.maxWidth * (percentage).abs(),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(12)

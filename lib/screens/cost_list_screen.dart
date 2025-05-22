@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:budget_tracker/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -8,11 +9,263 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class CostListScreen extends StatelessWidget {
+class CostListScreen extends StatefulWidget {
   const CostListScreen({super.key});
-  
+
+  @override
+  State<CostListScreen> createState() => _CostListScreenState();
+}
+
+class _CostListScreenState extends State<CostListScreen> {
+  bool _isSearchOpened = false;
+  final TextEditingController _controller = TextEditingController();
+
+  Future<void> showFilterCategoryDialog() {
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        final categories = context.read<AppModel>().categories;
+        Set<String> selectedCategories = {};
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Column(
+                children: [
+                  Text("Filter Category"),
+                  Text(
+                    "${selectedCategories.length} selected ${selectedCategories.length <= 1? "category": "categories"}", 
+                    overflow: TextOverflow.fade,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+              content: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.4,
+                width: MediaQuery.of(context).size.width * 0.7,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: categories.map((category) {
+                      final bool isCategorySelected = selectedCategories.contains(category.name);
+                      return ListTile(
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                        // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
+                        title: Text(category.name),
+                        leading: Padding(
+                          padding: const EdgeInsets.only(left: 12.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: category.colorScheme.primaryContainer
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                category.imagePath, 
+                                width: 28, 
+                                height: 28,
+                                color: category.colorScheme.onPrimaryContainer,
+                              ),
+                            )
+                          ),
+                        ),
+                        // trailing: isCategorySelected? Icon(Icons.check) : null,
+                        trailing: Checkbox(
+                          value: isCategorySelected, 
+                          onChanged: (newValue) {
+                            if (!selectedCategories.remove(category.name)) {
+                              debugPrint('adding new item');
+                              selectedCategories.add(category.name);
+                            }
+                            setState(() => {});
+                          }
+                        ),
+                        tileColor: isCategorySelected? Theme.of(context).colorScheme.primary.withAlpha(30): null,
+                        onTap: (){
+                          if (!selectedCategories.remove(category.name)) {
+                            debugPrint('adding new item');
+                            selectedCategories.add(category.name);
+                          }
+                          setState(()=>{});
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: (){}, child: Text("Save"))
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
+  Future<void> showFilterAmountDialog() {
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        final percentiles = context.read<AppModel>().getPercentiles();
+        final max = percentiles.last;
+        final percentileString = percentiles.map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false)).toList();
+        final Map<String,String> percentileMap = {
+          "<25%": "<${percentileString[1]}",
+          "25% - 50%": "${percentileString[1]} - ${percentileString[2]}",
+          "50% - 75%": "${percentileString[2]} - ${percentileString[3]}",
+          ">75%": ">${percentileString[3]}",
+        };
+        RangeValues _rangeValue = RangeValues(0, max);
+        Set<String> _selectedPercentileRange = {};
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("Filter Amount"),
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+              content: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    // mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Filter by range", textAlign: TextAlign.left,),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          sliderTheme: SliderThemeData(
+                            valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall, 
+                            valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50)
+                          )
+                        ),
+                        child: RangeSlider(
+                          values: _rangeValue,   
+                          onChanged: (newValue) {
+                            setState(() =>  _rangeValue = newValue);
+                          },
+                          divisions: max.round(),
+                          labels: RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
+                          min: 0,
+                          max: max,
+                        ),
+                      ),
+                      const Divider(),
+                      Text("Filter by quartile", textAlign: TextAlign.left,),
+                      ...percentileMap.map((key, value) => MapEntry(
+                        key,
+                        ListTile(
+                          title: Row(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Expanded(child: Text(key)),
+                              Text("(${value})"),
+                            ],
+                          ),
+                          trailing: Checkbox(
+                            value: _selectedPercentileRange.contains(key), 
+                            onChanged: (newValue) {
+                              newValue == true? _selectedPercentileRange.add(key):_selectedPercentileRange.remove(key);
+                              setState(()=>{});
+                            }
+                          ),
+                        )
+                      )).values
+                    ]
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: (){}, child: Text("Save"))
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
+  Widget appTitle() {
+    if (!_isSearchOpened) {
+      return Text("App title");
+    } else {
+      var theme = Theme.of(context);
+      var hintColor = theme.colorScheme.primary.withAlpha(100);
+      return PopScope(
+        onPopInvokedWithResult: (didPop, result) {
+          debugPrint("this triggered");
+          setState(() => _isSearchOpened = false);
+        },
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            focusedBorder: OutlineInputBorder(borderRadius:  BorderRadius.circular(200), borderSide: BorderSide(width: 0, color: theme.colorScheme.primary)),
+            border: OutlineInputBorder(borderRadius:  BorderRadius.circular(200), borderSide: BorderSide(width: 0, color: theme.colorScheme.primary)),
+            fillColor: theme.colorScheme.primary.withAlpha(10),
+            filled: true,
+            isDense: true,
+            // contentPadding: EdgeInsets.symmetric(vertical: 15),
+            prefixIcon: IconButton(
+              iconSize: 24,
+              onPressed: () => setState(() => _isSearchOpened = false),
+              icon: Icon(Icons.arrow_back)
+            ),
+            suffixIcon: IconButton(
+              iconSize: 24,
+              onPressed: () => setState(() => _controller.clear()),
+              icon: Icon(Icons.cancel)
+            ),
+            hint: Row(
+              spacing: 8,
+              children: [
+                Icon(
+                  Icons.search,
+                  color: hintColor
+                ),
+                Text(
+                  "Search for a cost item...", 
+                  style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
+                ),
+              ],
+            ),
+            hintStyle: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      );
+    }
+  }
+
+  AppBar bottomFilterAppBar() {
+    return AppBar(
+      title: Row(
+        spacing: 8,
+        children: [
+          ActionChip(
+            label: Text("Category"), 
+            // avatar: Icon(Icons.category),
+            avatar: Icon(Icons.check),
+            onPressed: () async {showFilterCategoryDialog();},
+            backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(50),
+          ),
+          ActionChip(label: Text("Time Range"), avatar: Icon(Icons.timer)),
+          ActionChip(
+            label: Text("Amount"), 
+            avatar: Icon(Icons.money),
+            onPressed: () async {showFilterAmountDialog();},
+          ),
+          // ActionChip(label: Text("Amount"), avatar: Icon(Icons.money)),
+        ],
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrint("list screen is build");
@@ -30,19 +283,23 @@ class CostListScreen extends StatelessWidget {
       ),
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        // title: Text("Main"),
-        title: Text(AppLocalizations.of(context)!.title),
-        // centerTitle: true,
-        actions: [
+        // title: Text(AppLocalizations.of(context)!.title),
+        title: appTitle(),
+        bottom: _isSearchOpened? bottomFilterAppBar() : null,
+        actions: !_isSearchOpened? [
           IconButton(
-            onPressed: null, 
+            onPressed: () => setState(() => _isSearchOpened = !_isSearchOpened), 
             icon: Icon(Icons.search)
           ),
           IconButton(
             onPressed: () => context.read<ThemeModel>().toggleBlur(),
             icon: Icon(!isBlur?  Icons.visibility : Icons.visibility_off)
+          ),
+          IconButton(
+            onPressed: () => context.read<AppModel>().refreshMetric(),
+            icon: Icon(Icons.refresh)
           )
-        ],
+        ] : [],
       ),
       // bottomNavigationBar: CustomNavigationBottomBar(),
       // floatingActionButton: FloatingActionButton.large(
@@ -100,7 +357,8 @@ class DateSelector extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Text(
-                  DateFormat("yMMMM", context.select((ThemeModel state) => state.appLocale.toLanguageTag())).format(context.select((AppModel state) => state.selectedYearMonth)),
+                  // DateFormat("yMMMM", context.select((ThemeModel state) => state.appLocale.toLanguageTag())).format(context.select((AppModel state) => state.selectedYearMonth)),
+                  DateFormat("yMMMM").format(context.select((AppModel state) => state.selectedYearMonth)),
                   style: Theme.of(context).textTheme.titleLarge!.copyWith(fontSize: 20),
                 ),
               )
@@ -127,38 +385,29 @@ class CostEntryList extends StatefulWidget {
 
 class _CostEntryListState extends State<CostEntryList> {
 
-  @override 
-  void didChangeDependencies() {
-    // TODO: implement didChangeDependencies
-    super.didChangeDependencies();
-  }
   @override
   Widget build(BuildContext context) {
-    // final appState = context.watch<AppModel>();
-    final groupedCostItems = context.select((AppModel model) => model.dateGroupedItem);
-    final locale = context.select((ThemeModel model) => model.appLocale);
-    // final mode = context.select((ThemeModel model) => model.theme); // include this so that the list change color when theme change
-    final appModelFunction = context.watch<AppModel>();
+    final groupedCostItems = context.select((AppModel model) => model.currentMonthDailyCostItems);
+    final appModelFunction = context.read<AppModel>();
     
     if (groupedCostItems.isEmpty) {
       return Center(
-        child: Text(AppLocalizations.of(context)!.emptyListDisplay),
+        child: const Text("Empty list"),
       );
     } else {
       return Scrollbar(
         thickness: 4,
-        // trackVisibility: true,
         thumbVisibility: true,
         radius: Radius.circular(200),
         child: NotificationListener<OverscrollIndicatorNotification>(
           child: ListView.builder(
             itemCount: groupedCostItems.length,
             itemBuilder:(context, index) {
-              final String groupedDate = groupedCostItems.keys.elementAt(index);
+              final String dateString = groupedCostItems.keys.elementAt(index);
               final List<CostItem> costItems = groupedCostItems.values.elementAt(index);
-              // final String formattedDate = DateFormat('dd MMMM',locale.toLanguageTag()).format(costItems.first.getDateTime());
-              final String formattedDate = DateFormat('d MMM (E)',locale.toLanguageTag()).format(costItems.first.getDateTime());
-              final String dailyBudget = appModelFunction.getFormattedDailyTotal(groupedDate);
+              final String formattedDateString = DateFormat('d MMM (E)').format(dateString.standardDateParse());
+              final String dailyBudget = appModelFunction.getFormattedDailyTotal(dateString);
+
               return Theme(
                 data: Theme.of(context).copyWith(
                   dividerColor: Colors.transparent, 
@@ -172,10 +421,9 @@ class _CostEntryListState extends State<CostEntryList> {
                   minTileHeight: 10,
                   childrenPadding: const EdgeInsets.fromLTRB(0,0,0,12),
                   title: Text(
-                    formattedDate, 
+                    formattedDateString, 
                     style: Theme.of(context).textTheme.labelSmall!.copyWith(
                       fontSize: 12,
-                      // letterSpacing: 4,
                       color: Theme.of(context).colorScheme.primary
                     ),
                   ),
@@ -187,8 +435,9 @@ class _CostEntryListState extends State<CostEntryList> {
                     ),
                   ),
                   children: costItems.map((costItem) {
-                    final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category);
+                    final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category)!;
                     final ColorScheme categoryColorScheme = category.colorScheme;
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Theme(
@@ -200,7 +449,6 @@ class _CostEntryListState extends State<CostEntryList> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              // color: categoryColorScheme.primaryContainer
                             ),
                             child: ListTile(
                               dense: true,
@@ -213,7 +461,6 @@ class _CostEntryListState extends State<CostEntryList> {
                                 maxLines: 3,
                                 softWrap: false,
                                 overflow: TextOverflow.fade,
-                                // style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: categoryColorScheme.onSurface),
                                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
                                   fontSize: 14
                                 ),
@@ -223,7 +470,6 @@ class _CostEntryListState extends State<CostEntryList> {
                                 appModelFunction.getFormattedCostItemValue(costItem),
                                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
                                   fontSize: 14
-                                  // color: categoryColorScheme.onPrimaryContainer
                                 ),
                               ),
                               onTap: () => context.read<NavigationModel>().openForm(
@@ -289,6 +535,7 @@ class BudgetSummaryBar extends StatelessWidget {
     });
 
     final screenSize = MediaQuery.of(context).size; 
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Container( // main box
@@ -315,9 +562,10 @@ class BudgetSummaryBar extends StatelessWidget {
                     children: [
                       costCard(
                         context,
-                        AppLocalizations.of(context)!.balance, 
+                        // AppLocalizations.of(context)!.balance, 
+                        "Balance", 
                         totalCost['balance']!,
-                        true
+                        isBig: true
                       ),
                       Expanded(
                         flex: 1,
@@ -329,18 +577,18 @@ class BudgetSummaryBar extends StatelessWidget {
                               width: constraints.maxWidth * 1.3/5,
                               child: costCard(
                                 context,
-                                AppLocalizations.of(context)!.expense, 
+                                "Expense", 
+                                // AppLocalizations.of(context)!.expense, 
                                 totalCost['expense']!,
-                                false
                               )
                             ),
                             SizedBox(
                               width: constraints.maxWidth * 1.3/5,
                               child: costCard(
                                 context,
-                                AppLocalizations.of(context)!.income, 
+                                "Income", 
+                                // AppLocalizations.of(context)!.income, 
                                 totalCost['income']!,
-                                false
                               )
                             ),
                           ]
@@ -366,7 +614,7 @@ class BudgetSummaryBar extends StatelessWidget {
     BuildContext context,
     String labelText,
     Map<String,dynamic> value,
-    bool isBig
+    {bool isBig = false}
   ) {
     final appTheme = Theme.of(context);
     final appTextTheme = appTheme.textTheme;
@@ -457,7 +705,7 @@ class _SummaryChartState extends State<SummaryChart> {
   Widget build(BuildContext context) {
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
-    final month = context.select((AppModel state) => state.selectedYearMonth);
+    // final month = context.select((AppModel state) => state.selectedYearMonth);
     final List<Widget> charts = [];
 
     if (widget.summaryData['expense']!['value'] > 0) {
@@ -508,7 +756,7 @@ class _SummaryChartState extends State<SummaryChart> {
       barColor = Colors.greenAccent;
     } else { // budget
       dividend = totalCost['expense']!['value'];
-      divisor = 2000; //TODO: change this to actual map
+      divisor = 4000;
       barColor = Colors.redAccent;
     }
 
@@ -544,7 +792,7 @@ class _SummaryChartState extends State<SummaryChart> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "$chartValue",
+              chartValue,
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 fontSize: 12,
               ),

@@ -1,10 +1,9 @@
 import 'dart:math';
-
 import 'package:intl/intl.dart';
 
 extension DayExtension on DateTime {
-  int getTotalDayInMonth({int monthDif = 0}) {
-    return DateTime(year, month + 1 + monthDif, 0).day; 
+  int getTotalDayInMonth({int pastMonth = 0}) {
+    return DateTime(year, month + 1 - pastMonth, 0).day; 
   }
 
   bool isInSameYearMonthAs(DateTime anotherDate) {
@@ -70,5 +69,14 @@ extension StringExtension on String {
 
   double parseCustomDecimalPlace(int decimalPlace) {
     return double.parse(double.parse(this).toStringAsFixed(decimalPlace));
+  }
+}
+
+extension IterableExtension on Iterable<double> {
+  double? maxCeiling() {
+    final double maxValue = reduce(max);
+    final digit = maxValue.round().toString().length - 2;
+    // debugPrint("digit: ${digit}, maxvalue: ${maxValue}, ${(maxValue/(pow(10,4)))}");
+    return (maxValue/(pow(10,digit))).ceil() * (pow(10,digit).toDouble());
   }
 }

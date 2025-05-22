@@ -1,7 +1,7 @@
 import 'package:budget_tracker/models/model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CostReportScreen extends StatelessWidget {
   const CostReportScreen({super.key});
@@ -25,30 +25,33 @@ class CostReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reportData = context.select((AppModel state) => state.monthlyOverview,);
+    final reportData = context.select((AppModel state) => state.yearMonthOverview,);
     return DataTable(
       columns: [
         DataColumn(
           label: const Text("Month")
         ),
         DataColumn(
-          label: Text(AppLocalizations.of(context)!.expense)
+          // label: Text(AppLocalizations.of(context)!.expense)
+          label: Text("Expense")
         ),
         DataColumn(
-          label: Text(AppLocalizations.of(context)!.income)
+          // label: Text(AppLocalizations.of(context)!.income)
+          label: Text("Income")
         ),
         DataColumn(
-          label: Text(AppLocalizations.of(context)!.balance)
+          // label: Text(AppLocalizations.of(context)!.balance)
+          label: Text("Balance")
         ),
       ]
       , 
-      rows: reportData.map((monthlyData) {
+      rows: reportData.entries.toList().map((data) {
         return DataRow(
           cells: [
-            DataCell(Text(monthlyData['month'])),
-            DataCell(Text((monthlyData['expense'] as double).toString()) ),
-            DataCell(Text((monthlyData['income'] as double).toString())),
-            DataCell(Text((monthlyData['balance'] as double).toString())),
+            DataCell(Text(data.key)),
+            DataCell(Text((data.value.expense as double).toString())),
+            DataCell(Text((data.value.income as double).toString())),
+            DataCell(Text((data.value.balance as double).toString())),
           ]
         );
       }).toList()

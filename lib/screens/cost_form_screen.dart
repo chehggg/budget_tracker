@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // screen for user to input a new cost item
 // or edit a existing cost item
@@ -26,8 +26,10 @@ class CostItemFormScreen extends StatelessWidget {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(arg.isNew ? 
-          AppLocalizations.of(context)!.newFormTitle :
-          AppLocalizations.of(context)!.editFormTitle
+          // AppLocalizations.of(context)!.newFormTitle :
+          // AppLocalizations.of(context)!.editFormTitle
+          "New item":
+          "Edit item"
         ) ,
         leading: BackButton(
           onPressed: () => context.read<NavigationModel>().popFormToMain(),
@@ -86,7 +88,7 @@ class _CostItemFormState extends State<CostItemForm> {
 
   late FocusNode textFocusNode;
 
-  double _messageOpacity = 0;
+  final double _messageOpacity = 0;
 
   Widget titleLabel(String labelText, IconData icon, ColorScheme colorScheme) {
     return Padding(
@@ -369,7 +371,8 @@ class _CostItemFormState extends State<CostItemForm> {
                       ),
                       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       title: Text(
-                        localCategory.getLocalizedName(context),
+                        // localCategory.getLocalizedName(context),
+                        localCategory.name,
                         style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontSize: 24),
                       ),
                       leading: localCategory.createIcon(24),
@@ -745,7 +748,8 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                           ),
                         ),
                         Text(
-                          category.getLocalizedName(context), 
+                          // category.getLocalizedName(context), 
+                          category.name, 
                           style: Theme.of(context).textTheme.labelMedium,
                         )
                       ],

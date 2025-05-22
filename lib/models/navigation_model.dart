@@ -21,14 +21,6 @@ class NavigationModel extends ChangeNotifier {
   String get currentMainScreenRoute => _routeName.elementAt(_currentRouteIndex);
   
 
-  void popFormToMain() {
-    _isFormOpened = false;
-    notifyListeners();
-
-    navigationKey.currentState!.pushNamedAndRemoveUntil(
-      _routeName[_currentRouteIndex], ModalRoute.withName(_routeName[_currentRouteIndex])
-    );
-  }
 
   void navigateMainScreen(int index) {
     _currentRouteIndex = index;
@@ -41,6 +33,16 @@ class NavigationModel extends ChangeNotifier {
     debugPrint("navigator push new page, index: $index ");
   }
 
+  void backToHomeScreen() {
+    navigationKey.currentState!.pushNamedAndRemoveUntil(
+      '/',
+      ModalRoute.withName('/'),
+    );
+    _currentRouteIndex = 0;
+
+    notifyListeners();
+  }
+  
   void openForm(FormArgument argument) {
     navigationKey.currentState!.pushNamedAndRemoveUntil(
       '/form',
@@ -51,4 +53,15 @@ class NavigationModel extends ChangeNotifier {
     _isFormOpened = true;
     notifyListeners();
   }
+
+  void popFormToMain() {
+    _isFormOpened = false;
+    notifyListeners();
+
+    navigationKey.currentState!.pushNamedAndRemoveUntil(
+      _routeName[_currentRouteIndex], 
+      ModalRoute.withName(_routeName[_currentRouteIndex])
+    );
+  }
+  
 }

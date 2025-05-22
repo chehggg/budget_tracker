@@ -345,7 +345,7 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
     });
     return AlertDialog(
       title: Text("Selected: ${DateFormat('MMM yyyy').format(getDateTimeFromSelection())}" ),
-      content: Container(
+      content: SizedBox(
         width: MediaQuery.sizeOf(context).width * 0.7,
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -405,7 +405,7 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: list.map( (monthInt) => monthButton(monthInt)).toList()
+      children: list.map((monthInt) => monthButton(monthInt)).toList()
     );
   }
 
@@ -415,9 +415,7 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
     final yearMonthMapping = DateFormat('yyyy-MM').format(DateTime(_selectedYear, monthInt));
     final appColor = Theme.of(context).colorScheme;
     final appTextTheme = Theme.of(context).textTheme;
-    final yearMonthData = appState.monthlyOverview.where((monthlyValue) => 
-      monthlyValue['month'] == yearMonthMapping
-    );
+    final yearMonthData = appState.yearMonthOverview;
 
     Text subText(dynamic value) {
       String text;
@@ -456,7 +454,7 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
         child: Column(
           children: [
             Text(monthName, style: appTextTheme.bodyMedium!.copyWith(fontSize: 20),),
-            subText(yearMonthData.isNotEmpty ? (yearMonthData.first['balance'] as double) : "--")
+            subText((yearMonthData[yearMonthMapping]?.balance?? "--"))
           ],
         )
       ),
@@ -483,7 +481,7 @@ class ExpenseCalendarView extends StatelessWidget {
       state.selectedYearMonth
     ).getFullMonthWeekdayList();
     
-    return Container(
+    return SizedBox(
       height: 500,
       child: Column(
         children: [
