@@ -30,9 +30,7 @@ class CostListScreen extends StatelessWidget {
       ),
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        // title: Text("Main"),
         title: Text(AppLocalizations.of(context)!.title),
-        // centerTitle: true,
         actions: [
           IconButton(
             onPressed: null, 
@@ -41,6 +39,10 @@ class CostListScreen extends StatelessWidget {
           IconButton(
             onPressed: () => context.read<ThemeModel>().toggleBlur(),
             icon: Icon(!isBlur?  Icons.visibility : Icons.visibility_off)
+          ),
+          IconButton(
+            onPressed: () => context.read<AppModel>().refreshMetric(),
+            icon: Icon(Icons.refresh)
           )
         ],
       ),
@@ -187,7 +189,7 @@ class _CostEntryListState extends State<CostEntryList> {
                     ),
                   ),
                   children: costItems.map((costItem) {
-                    final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category);
+                    final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category)!;
                     final ColorScheme categoryColorScheme = category.colorScheme;
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -289,6 +291,7 @@ class BudgetSummaryBar extends StatelessWidget {
     });
 
     final screenSize = MediaQuery.of(context).size; 
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Container( // main box
@@ -317,7 +320,7 @@ class BudgetSummaryBar extends StatelessWidget {
                         context,
                         AppLocalizations.of(context)!.balance, 
                         totalCost['balance']!,
-                        true
+                        isBig: true
                       ),
                       Expanded(
                         flex: 1,
@@ -331,7 +334,6 @@ class BudgetSummaryBar extends StatelessWidget {
                                 context,
                                 AppLocalizations.of(context)!.expense, 
                                 totalCost['expense']!,
-                                false
                               )
                             ),
                             SizedBox(
@@ -340,7 +342,6 @@ class BudgetSummaryBar extends StatelessWidget {
                                 context,
                                 AppLocalizations.of(context)!.income, 
                                 totalCost['income']!,
-                                false
                               )
                             ),
                           ]
@@ -366,7 +367,7 @@ class BudgetSummaryBar extends StatelessWidget {
     BuildContext context,
     String labelText,
     Map<String,dynamic> value,
-    bool isBig
+    {bool isBig = false}
   ) {
     final appTheme = Theme.of(context);
     final appTextTheme = appTheme.textTheme;
@@ -457,7 +458,7 @@ class _SummaryChartState extends State<SummaryChart> {
   Widget build(BuildContext context) {
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
-    final month = context.select((AppModel state) => state.selectedYearMonth);
+    // final month = context.select((AppModel state) => state.selectedYearMonth);
     final List<Widget> charts = [];
 
     if (widget.summaryData['expense']!['value'] > 0) {
@@ -508,7 +509,7 @@ class _SummaryChartState extends State<SummaryChart> {
       barColor = Colors.greenAccent;
     } else { // budget
       dividend = totalCost['expense']!['value'];
-      divisor = 2000; //TODO: change this to actual map
+      divisor = 4000;
       barColor = Colors.redAccent;
     }
 

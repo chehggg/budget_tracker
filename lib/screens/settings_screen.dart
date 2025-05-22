@@ -1,5 +1,7 @@
 
-import 'package:budget_tracker/currency.dart';
+import 'package:another_flushbar/flushbar.dart';
+import 'package:budget_tracker/models/navigation_model.dart';
+import 'package:budget_tracker/utility/currency.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +37,7 @@ IconData getThemeModeIcon(ThemeMode themeMode) {
       return Icons.computer;
   }
 }
+
 class SettingsList extends StatelessWidget {
   const SettingsList({super.key});
 
@@ -59,49 +62,9 @@ class SettingsList extends StatelessWidget {
     return Material(
       child: ListView(
         children: [
-          ListTile(
-            // title: Text("Theme Mode"),
-            title: Text(AppLocalizations.of(context)!.themeMode),
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            trailing: DropdownMenu(
-              inputDecorationTheme: InputDecorationTheme(
-                border: InputBorder.none
-              ),
-              leadingIcon: Icon(getThemeModeIcon(selectedThemeMode)),
-              initialSelection: selectedThemeMode,
-              dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
-                return DropdownMenuEntry(
-                  value: mode, 
-                  label: mode.name,
-                  leadingIcon: Icon(getThemeModeIcon(mode)) 
-                );
-              }).toList(), 
-              onSelected: (ThemeMode? mode) {
-                if (mode != null) {
-                  context.read<ThemeModel>().updateTheme(mode);
-                }
-              }
-            ),
-            // subtitle: Text("Theme Mode"),
-          ),
-          ListTile(
-            title: Text(AppLocalizations.of(context)!.currency),
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            trailing: Text(
-              selectedCurrencySymbol,
-              style: Theme.of(context).textTheme.labelLarge
-            ),
-            onTap: () => changeCurrencyDialog(context) 
-          ),
-          ListTile(
-            title: Text(AppLocalizations.of(context)!.language),
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            trailing: Text(
-              selectedLanguage,
-              style: Theme.of(context).textTheme.labelLarge
-            ),
-            onTap: () => changeLanguageDialog(context) 
-          ),
+          ThemeModeSetting(selectedThemeMode: selectedThemeMode),
+          CurrencySettings(selectedCurrencySymbol: selectedCurrencySymbol),
+          LanguageSetting(selectedLanguage: selectedLanguage),
           ListTile(
             title: Text(AppLocalizations.of(context)!.blurSettings),
             contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
@@ -112,27 +75,149 @@ class SettingsList extends StatelessWidget {
             title: Text("Font Size"),
             contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
             // trailing: Text(selectedLanguage, style: Theme.of(context).textTheme.labelLarge),
-          )
+          ),
+          const ListTile(
+            title: Text("Data"),
+          ),
+          const Divider(thickness: 1,),
+          const ExportDataSetting(),
+          const LoadDataSetting(),
+          const ClearDataSetting(),
+          const SyncFirebaseDataSetting()
         ],
       ),
     );
   }
-  
-  Future changeCurrencyDialog(BuildContext context) {
-    return showDialog(
-      context: context, 
-      builder:(context) {
-        return CurrencyListDialog();
-      }
+}
+
+class LanguageSetting extends StatelessWidget {
+  const LanguageSetting({
+    super.key,
+    required this.selectedLanguage,
+  });
+
+  final String selectedLanguage;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.language),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+      trailing: Text(
+        selectedLanguage,
+        style: Theme.of(context).textTheme.labelLarge
+      ),
+      onTap: () => changeLanguageDialog(context) 
     );
   }
 
   Future changeLanguageDialog(BuildContext context) {
+    const List<Map<String,String>>languages = [
+      {
+        "display": "English",
+        "locale": "en",
+      },
+      {
+        "display": "中文（简体）",
+        "locale": "zh",
+      },
+      {
+        "display": "日本語",
+        "locale": "ja",
+      },
+    ];
+
     return showDialog(
       context: context, 
       builder:(context) {
-        return LanguageListDialog();
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context)!.changeLanguage),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: languages.map((language) =>
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.only(),
+                title: Text(language['display']!),
+                onTap: () {
+                  context.read<ThemeModel>().updateLanguage(language['locale']!);
+                  Navigator.pop(context);
+                },
+              ),
+            ).toList(),
+          )
+        );
       }
+    );
+  }
+}
+
+class CurrencySettings extends StatelessWidget {
+  const CurrencySettings({
+    super.key,
+    required this.selectedCurrencySymbol,
+  });
+
+  final String selectedCurrencySymbol;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(AppLocalizations.of(context)!.currency),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+      trailing: Text(
+        selectedCurrencySymbol,
+        style: Theme.of(context).textTheme.labelLarge
+      ),
+      onTap: () => changeCurrencyDialog(context) 
+    );
+  }
+
+  Future changeCurrencyDialog(BuildContext context) {
+
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        return const CurrencyListDialog();
+      }
+    );
+  }
+}
+
+class ThemeModeSetting extends StatelessWidget {
+  const ThemeModeSetting({
+    super.key,
+    required this.selectedThemeMode,
+  });
+
+  final ThemeMode selectedThemeMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      // title: Text("Theme Mode"),
+      title: Text(AppLocalizations.of(context)!.themeMode),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+      trailing: DropdownMenu(
+        inputDecorationTheme: InputDecorationTheme(
+          border: InputBorder.none
+        ),
+        leadingIcon: Icon(getThemeModeIcon(selectedThemeMode)),
+        initialSelection: selectedThemeMode,
+        dropdownMenuEntries: ThemeMode.values.map((ThemeMode mode) {
+          return DropdownMenuEntry(
+            value: mode, 
+            label: mode.name,
+            leadingIcon: Icon(getThemeModeIcon(mode)) 
+          );
+        }).toList(), 
+        onSelected: (ThemeMode? mode) {
+          if (mode != null) {
+            context.read<ThemeModel>().updateTheme(mode);
+          }
+        }
+      ),
+      // subtitle: Text("Theme Mode"),
     );
   }
 }
@@ -274,47 +359,180 @@ class _CurrencyListDialogState extends State<CurrencyListDialog> {
       ),
     );
   }
-
-
-
 }
 
-class LanguageListDialog extends StatelessWidget {
-  LanguageListDialog({super.key});
-
-  final List<Map<String,String>>languages = [
-    {
-      "display": "English",
-      "locale": "en",
-    },
-    {
-      "display": "中文（简体）",
-      "locale": "zh",
-    },
-    {
-      "display": "日本語",
-      "locale": "ja",
-    },
-  ];
+class ExportDataSetting extends StatelessWidget {
+  const ExportDataSetting({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(AppLocalizations.of(context)!.changeLanguage),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: languages.map((language) =>
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.only(),
-            title: Text(language['display']!),
-            onTap: () {
-              context.read<ThemeModel>().updateLanguage(language['locale']!);
-              Navigator.pop(context);
-            },
-          ),
-        ).toList(),
-      )
+    return ListTile(
+      title: const Text("Export data"),
+      onTap: () => showExportDialog(context),
+    );
+  }
+
+  Future showExportDialog(BuildContext context) {
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        return AlertDialog(
+          title: const Text("Export data"),
+          content: const Text("Press confirm to export the cost item as CSV into your desired location"),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final outputPath = await context.read<AppModel>().exportCostItem();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  if (outputPath != null) {
+                    Flushbar(
+                      // title: "Saved!",
+                      message: "File successfully saved to $outputPath",
+                      flushbarPosition: FlushbarPosition.TOP,
+                      duration: Duration(seconds: 3),
+                      flushbarStyle: FlushbarStyle.GROUNDED,
+                    ).show(context);
+                  }
+                }
+              }, 
+              child: const Text("confirm")
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text("cancel")
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class LoadDataSetting extends StatelessWidget {
+  const LoadDataSetting({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: const Text("Load data"),
+      onTap: () => showExportDialog(context),
+    );
+  }
+
+  Future showExportDialog(BuildContext context) {
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        return AlertDialog(
+          title: const Text("Load data"),
+          content: const Text("Warning: Loading a csv file will overwrite all existing data. Please make sure you have exported current data for backup to prevent data loss"),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final result = await context.read<AppModel>().loadCostItemFromFile();
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  switch (result) {
+                    case 0: // error reading file
+                      Flushbar(
+                        title: "Error",
+                        message: 'File is not readable, please try another file',
+                      ).show(context); 
+                      break; 
+                    case 1: // file read successfully
+                      context.read<NavigationModel>().backToHomeScreen();
+                      Flushbar(
+                        message: 'File loaded successfully!',
+                        flushbarPosition: FlushbarPosition.TOP,
+                        duration: Duration(seconds: 3),
+                        flushbarStyle: FlushbarStyle.GROUNDED,
+                      ).show(context);
+                      break; 
+                    case 2: // user cancels file picker
+                      break;
+                    default:
+                      break;
+                  }
+                }
+              }, 
+              child: const Text("Proceed")
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text("Cancel")
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class ClearDataSetting extends StatelessWidget {
+  const ClearDataSetting({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: const Text("Clear data"),
+      onTap: () => showClearDialog(context),
+    );
+  }
+
+  Future showClearDialog(BuildContext context) {
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        return AlertDialog(
+          title: const Text("Clear data"),
+          content: const Text("Warning: This will remove all existing data. It is advisable to perform backup beforehand"),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await context.read<AppModel>().clearCostItem();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  context.read<NavigationModel>().backToHomeScreen();
+                }
+              }, 
+              child: const Text("Clear")
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text("Cancel")
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class TestingSettings extends StatelessWidget {
+  const TestingSettings({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: const Text("Test sending data to firebase"),
+      onTap: () => context.read<AppModel>().writeDataToFirebase(),
+    );
+  }
+}
+
+class SyncFirebaseDataSetting extends StatelessWidget {
+  const SyncFirebaseDataSetting({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text("Sync data to cloud"),
+      trailing: Switch(
+        value: false, 
+        onChanged: (value) {}
+      ),
     );
   }
 }

@@ -21,6 +21,12 @@ List<CostItemCategory> defaultCostItemCategories = [
     costType: CostType.expense
   ),
   CostItemCategory(
+    name: "shopping", 
+    color: Colors.orange, 
+    imagePath: "assets/images/shopping.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
     name: "entertainment", 
     color: Colors.grey, 
     imagePath: "assets/images/entertainment.png",
@@ -63,6 +69,12 @@ List<CostItemCategory> defaultCostItemCategories = [
     costType: CostType.expense
   ),
   CostItemCategory(
+    name: "luxury", 
+    color: Colors.yellow, 
+    imagePath: "assets/images/luxury.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
     name: "education", 
     color: Colors.redAccent, 
     imagePath: "assets/images/education.png",
@@ -70,19 +82,43 @@ List<CostItemCategory> defaultCostItemCategories = [
   ),
   CostItemCategory(
     name: "insurance", 
-    color: Colors.pink, 
+    color: Colors.cyan, 
     imagePath: "assets/images/insurance.png",
     costType: CostType.expense
   ),
   CostItemCategory(
     name: "medicine", 
-    color: Colors.cyan, 
+    color: Colors.pink, 
     imagePath: "assets/images/medicine.png",
     costType: CostType.expense
   ),
   CostItemCategory(
+    name: "pet", 
+    color: Colors.teal, 
+    imagePath: "assets/images/veterinary.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "travel", 
+    color: Colors.indigo, 
+    imagePath: "assets/images/plane.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "recreation", 
+    color: Colors.lime, 
+    imagePath: "assets/images/group.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "charity", 
+    color: Colors.red, 
+    imagePath: "assets/images/charity.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
     name: "salary", 
-    color: Colors.cyan, 
+    color: Colors.deepOrange, 
     imagePath: "assets/images/salary.png",
     costType: CostType.income
   ),
