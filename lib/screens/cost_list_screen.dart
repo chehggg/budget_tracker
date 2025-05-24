@@ -157,6 +157,7 @@ class _CostListScreenState extends State<CostListScreen> {
                         ),
                       ),
                       const Divider(),
+                      
                       Text("Filter by quartile", textAlign: TextAlign.left,),
                       ...percentileMap.map((key, value) => MapEntry(
                         key,
