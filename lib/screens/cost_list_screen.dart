@@ -26,12 +26,22 @@ class _CostListScreenState extends State<CostListScreen> {
     return showDialog(
       context: context, 
       builder:(context) {
-        final categories = context.read<AppModel>().categories;
-        Set<String> selectedCategories = {};
+        final fullCategories = context.read<AppModel>().categories;
+        Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
+        Set<CostItemCategory> displayCategories = {};
+        final TextEditingController controller = TextEditingController();
         return StatefulBuilder(
           builder: (context, setState) {
+            final theme = Theme.of(context);
+            final hintColor = theme.colorScheme.primary.withAlpha(100);
+            displayCategories = Set.from(
+              controller.text == ""? 
+              fullCategories: 
+              fullCategories.where((category) => category.name.contains(controller.text))
+            );
             return AlertDialog(
               title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("Filter Category"),
                   Text(
@@ -44,61 +54,116 @@ class _CostListScreenState extends State<CostListScreen> {
               ),
               contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
               content: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
+                height: MediaQuery.of(context).size.height * 0.5,
                 width: MediaQuery.of(context).size.width * 0.7,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: categories.map((category) {
-                      final bool isCategorySelected = selectedCategories.contains(category.name);
-                      return ListTile(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-                        // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
-                        title: Text(category.name),
-                        leading: Padding(
-                          padding: const EdgeInsets.only(left: 12.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: category.colorScheme.primaryContainer
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Image.asset(
-                                category.imagePath, 
-                                width: 28, 
-                                height: 28,
-                                color: category.colorScheme.onPrimaryContainer,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
+                      child: TextField(
+                        controller: controller,
+                        style: theme.textTheme.bodyMedium!,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(borderRadius:  BorderRadius.circular(200), borderSide: BorderSide.none),
+                          fillColor: theme.colorScheme.primary.withAlpha(30),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          filled: true,
+                          isDense: true,
+                          hint: Row(
+                            spacing: 8,
+                            children: [
+                              Icon(
+                                Icons.search,
+                                color: hintColor
                               ),
-                            )
+                              Text(
+                                "Search for categories...", 
+                                style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
+                              ),
+                            ],
                           ),
+                          hintStyle: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        // trailing: isCategorySelected? Icon(Icons.check) : null,
-                        trailing: Checkbox(
-                          value: isCategorySelected, 
-                          onChanged: (newValue) {
-                            if (!selectedCategories.remove(category.name)) {
-                              debugPrint('adding new item');
-                              selectedCategories.add(category.name);
-                            }
-                            setState(() => {});
-                          }
-                        ),
-                        tileColor: isCategorySelected? Theme.of(context).colorScheme.primary.withAlpha(30): null,
-                        onTap: (){
-                          if (!selectedCategories.remove(category.name)) {
-                            debugPrint('adding new item');
-                            selectedCategories.add(category.name);
-                          }
-                          setState(()=>{});
+                        onChanged: (value) {
+                          setState((){});
                         },
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ...displayCategories.map((category) {
+                              final bool isCategorySelected = selectedCategories.contains(category.name);
+                              return ListTile(
+                                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                                // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
+                                title: Text(category.name),
+                                leading: Padding(
+                                  padding: const EdgeInsets.only(left: 12.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: category.colorScheme.primaryContainer
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Image.asset(
+                                        category.imagePath, 
+                                        width: 28, 
+                                        height: 28,
+                                        color: category.colorScheme.onPrimaryContainer,
+                                      ),
+                                    )
+                                  ),
+                                ),
+                                // trailing: isCategorySelected? Icon(Icons.check) : null,
+                                trailing: Checkbox(
+                                  value: isCategorySelected, 
+                                  onChanged: (newValue) {
+                                    if (!selectedCategories.remove(category.name)) {
+                                      debugPrint('adding new item');
+                                      selectedCategories.add(category.name);
+                                    }
+                                    setState(() => {});
+                                  }
+                                ),
+                                // tileColor: isCategorySelected? Theme.of(context).colorScheme.primary.withAlpha(30): null,
+                                onTap: (){
+                                  if (!selectedCategories.remove(category.name)) {
+                                    debugPrint('adding new item');
+                                    selectedCategories.add(category.name);
+                                  }
+                                  setState(()=>{});
+                                },
+                              );
+                            }),
+                          ]
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               actions: [
-                TextButton(onPressed: (){}, child: Text("Save"))
+                TextButton(
+                  onPressed: (){
+                    if (selectedCategories.length == fullCategories.length) {
+                      selectedCategories.clear();
+                    } else {
+                      selectedCategories = Set.from(fullCategories.map((category) => category.name));
+                    } 
+                    setState((){});
+                  }, 
+                  child: Text(selectedCategories.length == fullCategories.length? "Unselect all" : "Select all")),
+                TextButton(
+                  onPressed: () {
+                    context.read<AppModel>().updateFilteredCategories(selectedCategories);
+                    Navigator.of(context).pop();
+                  }, 
+                  child: const Text("Save")
+                )
               ],
             );
           }
@@ -192,7 +257,7 @@ class _CostListScreenState extends State<CostListScreen> {
     );
   }
 
-  Widget appTitle() {
+  Widget titleAppBar() {
     if (!_isSearchOpened) {
       return Text("App title");
     } else {
@@ -215,13 +280,22 @@ class _CostListScreenState extends State<CostListScreen> {
             // contentPadding: EdgeInsets.symmetric(vertical: 15),
             prefixIcon: IconButton(
               iconSize: 24,
-              onPressed: () => setState(() => _isSearchOpened = false),
+              onPressed: () {
+                setState(() => _isSearchOpened = false);
+                context.read<AppModel>().clearFilter();
+              },
               icon: Icon(Icons.arrow_back)
             ),
             suffixIcon: IconButton(
               iconSize: 24,
-              onPressed: () => setState(() => _controller.clear()),
-              icon: Icon(Icons.cancel)
+              onPressed: () {
+                _controller.clear();
+                context.read<AppModel>().updateFilterString("");
+                setState(() {
+                  
+                });
+              },
+              icon: Icon(Icons.clear)
             ),
             hint: Row(
               spacing: 8,
@@ -238,6 +312,10 @@ class _CostListScreenState extends State<CostListScreen> {
             ),
             hintStyle: Theme.of(context).textTheme.bodyMedium,
           ),
+          onChanged: (value) {
+            debugPrint("controller value updated");
+            context.read<AppModel>().updateFilterString(value);
+          },
         ),
       );
     }
@@ -285,7 +363,7 @@ class _CostListScreenState extends State<CostListScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         // title: Text(AppLocalizations.of(context)!.title),
-        title: appTitle(),
+        title: titleAppBar(),
         bottom: _isSearchOpened? bottomFilterAppBar() : null,
         actions: !_isSearchOpened? [
           IconButton(
@@ -297,7 +375,7 @@ class _CostListScreenState extends State<CostListScreen> {
             icon: Icon(!isBlur?  Icons.visibility : Icons.visibility_off)
           ),
           IconButton(
-            onPressed: () => context.read<AppModel>().refreshMetric(),
+            onPressed: () => context.read<AppModel>().resetMetric(),
             icon: Icon(Icons.refresh)
           )
         ] : [],
@@ -343,32 +421,43 @@ class DateSelector extends StatelessWidget {
         }
       },
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+        padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainer,
         ),
         child: Row(
           children: [
-            IconButton(
-              onPressed: () {
-                context.read<AppModel>().changeYearMonth(false);
-              }, 
-              icon: Icon(Icons.arrow_back_ios)
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.25,
+              child: IconButton(
+                style: ElevatedButton.styleFrom(
+                  splashFactory: NoSplash.splashFactory,
+                ),
+                onPressed: () {
+                  context.read<AppModel>().changeYearMonth(false);
+                }, 
+                icon: Icon(Icons.arrow_back_ios)
+              ),
             ),
             Expanded(
               child: Center(
                 child: Text(
-                  // DateFormat("yMMMM", context.select((ThemeModel state) => state.appLocale.toLanguageTag())).format(context.select((AppModel state) => state.selectedYearMonth)),
                   DateFormat("yMMMM").format(context.select((AppModel state) => state.selectedYearMonth)),
                   style: Theme.of(context).textTheme.titleLarge!.copyWith(fontSize: 20),
                 ),
               )
             ),
-            IconButton(
-              onPressed: () {
-                context.read<AppModel>().changeYearMonth(true);
-              }, 
-              icon: Icon(Icons.arrow_forward_ios)
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.25,
+              child: IconButton(
+                style: ElevatedButton.styleFrom(
+                  splashFactory: NoSplash.splashFactory,
+                ),
+                onPressed: () {
+                  context.read<AppModel>().changeYearMonth(true);
+                }, 
+                icon: Icon(Icons.arrow_forward_ios)
+              ),
             ),
           ],
         ),
@@ -388,7 +477,8 @@ class _CostEntryListState extends State<CostEntryList> {
 
   @override
   Widget build(BuildContext context) {
-    final groupedCostItems = context.select((AppModel model) => model.currentMonthDailyCostItems);
+    // final groupedCostItems = context.select((AppModel model) => model.currentMonthDailyCostItems);
+    final groupedCostItems = context.watch<AppModel>().currentMonthDailyCostItems;
     final appModelFunction = context.read<AppModel>();
     
     if (groupedCostItems.isEmpty) {
@@ -407,7 +497,7 @@ class _CostEntryListState extends State<CostEntryList> {
               final String dateString = groupedCostItems.keys.elementAt(index);
               final List<CostItem> costItems = groupedCostItems.values.elementAt(index);
               final String formattedDateString = DateFormat('d MMM (E)').format(dateString.standardDateParse());
-              final String dailyBudget = appModelFunction.getFormattedDailyTotal(dateString);
+              final String dailyBudget = appModelFunction.customCurrencyFormat(context.watch<AppModel>().getDailyTotal(dateString), false, true);
 
               return Theme(
                 data: Theme.of(context).copyWith(

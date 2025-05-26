@@ -49,9 +49,9 @@ class CostReport extends StatelessWidget {
         return DataRow(
           cells: [
             DataCell(Text(data.key)),
-            DataCell(Text((data.value.expense as double).toString())),
-            DataCell(Text((data.value.income as double).toString())),
-            DataCell(Text((data.value.balance as double).toString())),
+            DataCell(Text(context.read<AppModel>().customCurrencyFormat(data.value.expense!, false))),
+            DataCell(Text(context.read<AppModel>().customCurrencyFormat(data.value.income!, false))),
+            DataCell(Text(context.read<AppModel>().customCurrencyFormat(data.value.balance!, false))),
           ]
         );
       }).toList()

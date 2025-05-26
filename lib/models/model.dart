@@ -25,6 +25,10 @@ class AppModel extends ChangeNotifier {
   }
 
   String _localeName = "en";
+  String? _filteredString = null;
+  // bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length;  
+  bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length;  
+
   final Map<String, CostMetric> _yearMonthMetrics = {};
   final SplayTreeMap<String, CostMetric> _dayMetrics = SplayTreeMap<String,CostMetric>((a,b) => b.standardDateParse().compareTo(a.standardDateParse()));
   final Map<String, Map<String, CostMetric>> _yearMonthCategoryMetrics = {};
@@ -34,9 +38,26 @@ class AppModel extends ChangeNotifier {
   final SplayTreeMap<String, List<CostItem>> _dailyCostItems = SplayTreeMap<String,List<CostItem>>((a,b) => 
     b.standardDateParse().compareTo(a.standardDateParse())
   );
-  UnmodifiableMapView<String, List<CostItem>> get currentMonthDailyCostItems => UnmodifiableMapView(
-    Map.from(_dailyCostItems)..removeWhere((key, value) => !key.startsWith(formatedSelectedYearMonth))
-  );
+
+  
+  UnmodifiableMapView<String, List<CostItem>> get currentMonthDailyCostItems {
+    final Map<String,List<CostItem>> currentMonthCostItem = Map.from(_dailyCostItems)..removeWhere((key, value) => !key.startsWith(formatedSelectedYearMonth));
+    if (isFilteredActive) {
+      final Map<String,List<CostItem>> temp = {};
+      // debugPrint("this triggeredd!");
+      currentMonthCostItem.forEach((key, value){
+        bool isCategoryIncluded(CostItem costItem) => _filteredCategories.contains(costItem.category); 
+        bool isFilterStringMatch(CostItem costItem) => _filteredString != null? costItem.name.contains(_filteredString!) : true; 
+        bool isMatch(CostItem costItem) => isCategoryIncluded(costItem) && isFilterStringMatch(costItem);
+
+        if (value.any(isMatch)) temp.putIfAbsent(key, () => []).addAll(value.where(isMatch)); 
+      });
+
+      return UnmodifiableMapView(temp);
+    } else {
+      return UnmodifiableMapView(currentMonthCostItem);
+    }
+  }
 
   List<CostItem> _costItems = [];
   UnmodifiableListView<CostItem> get costItems => UnmodifiableListView(_costItems);
@@ -75,6 +96,8 @@ class AppModel extends ChangeNotifier {
     ));
   }
 
+  Set<String> _filteredCategories = {};
+  Set<String> get filteredCategories => _filteredCategories;
 
   UnmodifiableListView<CostItem> get filteredCostItems => _filteredCostItems;
 
@@ -142,6 +165,12 @@ class AppModel extends ChangeNotifier {
         );
       })
     );
+  }
+
+  void updateFilterString(String? newString) {
+    _filteredString = newString == "" ? null : newString;
+    debugPrint('new string: $newString');
+    notifyListeners();
   }
 
   // get cumulative divided by the number of day (normaized)
@@ -227,14 +256,49 @@ class AppModel extends ChangeNotifier {
     }
   }
   
-  String getFormattedDailyTotal(String date) {
-    return customCurrencyFormat(_dayMetrics[date]?.balance?? 0, false, true);
+  void clearFilter() {
+    updateFilterString(null);
+    updateFilteredCategories(Set.from(categories.map((category)=> category.name)));
+    resetMetric();
+    notifyListeners();
+  }
+
+  double getDailyTotal(String date) {
+    if (isFilteredActive) {
+      return currentMonthDailyCostItems[date]?.fold<double>(0, (double value, CostItem costItem) => value + costItem.getAbsoluteAmount()) ?? 0;
+    } else {
+      return _dayMetrics[date]?.balance?? 0;
+    }
   }
 
   // return accumulated expense
-  double get totalCurrentMonthExpense => _yearMonthMetrics[formatedSelectedYearMonth]?.expense ?? 0;
-  double get totalCurrentMonthIncome => _yearMonthMetrics[formatedSelectedYearMonth]?.income ?? 0;
-  
+  double get totalCurrentMonthExpense {
+    if (isFilteredActive) {
+      double amount = 0;
+      currentMonthDailyCostItems.forEach((key, value) {
+        for (var costItem in value) {
+          if (costItem.costType == CostType.expense) amount += costItem.amount;
+        }
+      });
+      return amount;
+    } else {
+      return _yearMonthMetrics[formatedSelectedYearMonth]?.expense ?? 0;
+    }
+  }
+
+  double get totalCurrentMonthIncome {
+    if (isFilteredActive) {
+      double amount = 0;
+      currentMonthDailyCostItems.forEach((key, value) {
+        for (var costItem in value) {
+          if (costItem.costType == CostType.income) amount += costItem.amount;
+        }
+      });
+      return amount;
+    } else {
+      return _yearMonthMetrics[formatedSelectedYearMonth]?.income ?? 0;
+    }
+  }
   
   Map<String,List<CostItem>> get currentMonthCategoryList => _yearMonthCategoryGroupedList[formatedSelectedYearMonth] ?? {};
 
@@ -371,6 +435,12 @@ class AppModel extends ChangeNotifier {
     .replaceAll(RegExp(r'\?'), decimalSeparator);
   }
 
+  void updateFilteredCategories(Set<String> newFilteredCategories) {
+    _filteredCategories =  newFilteredCategories;
+    debugPrint("new filtered categories: length: ${_filteredCategories.length}");
+    notifyListeners();
+  }
+
   void setInitSettings() async {
     // set currency setting in initial run
     // var format = NumberFormat.simpleCurrency(locale: Platform.localeName);
@@ -381,6 +451,7 @@ class AppModel extends ChangeNotifier {
 
     // add default categories
     _categories = [...defaultCostItemCategories];
+    _filteredCategories.addAll(_categories.map((category) => category.name));
     
     final sharedPref = SharedPreferencesAsync();
     final sharedPrefCurrency = await sharedPref.getString('currency');
@@ -390,13 +461,15 @@ class AppModel extends ChangeNotifier {
     } else {
       _currencyName = currencies.first['name'];
     }
+    
+
     // get file for cost items
     await loadCostItemOnLoad();
 
     // get note history
     await readNoteFromFile();
     
-    refreshMetric();
+    resetMetric();
     debugPrint("refresh");
   }
   
@@ -480,27 +553,17 @@ class AppModel extends ChangeNotifier {
 
   void updateMetric(CostItem costItem) {
     // update day metrics
-    if (!_dayMetrics.containsKey(costItem.date)) {
-      _dayMetrics[costItem.date] = CostMetric();
-    } 
-    _dayMetrics[costItem.date]!.add(costItem);
+    _dayMetrics.putIfAbsent(costItem.date, () => CostMetric()).add(costItem);
 
     // update yearmonth metrics
     var yearMonthString = costItem.getYearMonthString();
-    if (!_yearMonthMetrics.containsKey(yearMonthString)) {
-      _yearMonthMetrics[yearMonthString] = CostMetric();
-    }
-    _yearMonthMetrics[yearMonthString]!.add(costItem);
+    _yearMonthMetrics.putIfAbsent(yearMonthString, () => CostMetric()).add(costItem);
 
     // update yearmonth metric metrics
-    if (!_yearMonthCategoryMetrics.containsKey(yearMonthString)) {
-      _yearMonthCategoryMetrics[yearMonthString] = {};
-    }
-    if (!_yearMonthCategoryMetrics[yearMonthString]!.containsKey(costItem.category)) {
-      _yearMonthCategoryMetrics[yearMonthString]![costItem.category] = CostMetric();
-    }
-
-    _yearMonthCategoryMetrics[yearMonthString]![costItem.category]!.add(costItem);
+    _yearMonthCategoryMetrics
+      .putIfAbsent(yearMonthString, () => {})
+      .putIfAbsent(costItem.category, () => CostMetric())
+      .add(costItem);
 
     notifyListeners();
   }
@@ -521,7 +584,7 @@ class AppModel extends ChangeNotifier {
     _yearMonthCategoryGroupedList[yearMonth] = groupBy(dateItem, (item) => item.category);
   }
 
-  void refreshMetric() {
+  void resetMetric() {
     clearMetric();
 
     for (var item in _costItems) {
@@ -540,6 +603,7 @@ class AppModel extends ChangeNotifier {
     _yearMonthMetrics.clear();
     _dayMetrics.clear();
     _yearMonthCategoryMetrics.clear();
+    _dailyCostItems.clear();
     notifyListeners();
   }
 
@@ -867,6 +931,7 @@ class CostItem {
     return '$sign $currencySymbol$value';
   }
 
+  double getAbsoluteAmount() => costType == CostType.expense? 0 - amount: amount;
   // CostItemCategory get categoryItem {
   //   return AppModel().categories.where((categoryItem) => categoryItem.name == category).first;
   // }
