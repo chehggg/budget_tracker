@@ -5,6 +5,8 @@ import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/widgets.dart';
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -22,155 +24,151 @@ class _CostListScreenState extends State<CostListScreen> {
   bool _isSearchOpened = false;
   final TextEditingController _controller = TextEditingController();
 
-  Future<void> showFilterCategoryDialog() {
-    return showDialog(
-      context: context, 
-      builder:(context) {
-        final fullCategories = context.read<AppModel>().categories;
-        Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
-        Set<CostItemCategory> displayCategories = {};
-        final TextEditingController controller = TextEditingController();
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final theme = Theme.of(context);
-            final hintColor = theme.colorScheme.primary.withAlpha(100);
-            displayCategories = Set.from(
-              controller.text == ""? 
-              fullCategories: 
-              fullCategories.where((category) => category.name.contains(controller.text))
-            );
-            return AlertDialog(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Future<void> showFilterCategoryDialog() => showDialog(
+    context: context, 
+    builder:(context) {
+      final fullCategories = context.read<AppModel>().categories;
+      Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
+      Set<CostItemCategory> displayCategories = {};
+      final TextEditingController controller = TextEditingController();
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final theme = Theme.of(context);
+          final hintColor = theme.colorScheme.primary.withAlpha(100);
+          displayCategories = Set.from(
+            controller.text == ""? 
+            fullCategories: 
+            fullCategories.where((category) => category.name.contains(controller.text))
+          );
+          return AlertDialog(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Filter Category"),
+                Text(
+                  "${selectedCategories.length} selected ${selectedCategories.length <= 1? "category": "categories"}", 
+                  overflow: TextOverflow.fade,
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+            content: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.5,
+              width: MediaQuery.of(context).size.width * 0.7,
+              child: Column(
                 children: [
-                  Text("Filter Category"),
-                  Text(
-                    "${selectedCategories.length} selected ${selectedCategories.length <= 1? "category": "categories"}", 
-                    overflow: TextOverflow.fade,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-              content: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                width: MediaQuery.of(context).size.width * 0.7,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
-                      child: TextField(
-                        controller: controller,
-                        style: theme.textTheme.bodyMedium!,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(borderRadius:  BorderRadius.circular(200), borderSide: BorderSide.none),
-                          fillColor: theme.colorScheme.primary.withAlpha(30),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          filled: true,
-                          isDense: true,
-                          hint: Row(
-                            spacing: 8,
-                            children: [
-                              Icon(
-                                Icons.search,
-                                color: hintColor
-                              ),
-                              Text(
-                                "Search for categories...", 
-                                style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
-                              ),
-                            ],
-                          ),
-                          hintStyle: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        onChanged: (value) {
-                          setState((){});
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
+                    child: TextField(
+                      controller: controller,
+                      style: theme.textTheme.bodyMedium!,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius:  BorderRadius.circular(200), borderSide: BorderSide.none),
+                        fillColor: theme.colorScheme.primary.withAlpha(30),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        filled: true,
+                        isDense: true,
+                        hint: Row(
+                          spacing: 8,
                           children: [
-                            ...displayCategories.map((category) {
-                              final bool isCategorySelected = selectedCategories.contains(category.name);
-                              return ListTile(
-                                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-                                // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
-                                title: Text(category.name),
-                                leading: Padding(
-                                  padding: const EdgeInsets.only(left: 12.0),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: category.colorScheme.primaryContainer
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Image.asset(
-                                        category.imagePath, 
-                                        width: 28, 
-                                        height: 28,
-                                        color: category.colorScheme.onPrimaryContainer,
-                                      ),
-                                    )
+                            Icon(
+                              Icons.search,
+                              color: hintColor
+                            ),
+                            Text(
+                              "Search for categories...", 
+                              style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
+                            ),
+                          ],
+                        ),
+                        hintStyle: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      onChanged: (value) {
+                        setState((){});
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ...displayCategories.map((category) {
+                            final bool isCategorySelected = selectedCategories.contains(category.name);
+                            return ListTile(
+                              contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                              // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
+                              title: Text(category.name),
+                              leading: Padding(
+                                padding: const EdgeInsets.only(left: 12.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: category.colorScheme.primaryContainer
                                   ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Image.asset(
+                                      category.imagePath, 
+                                      width: 28, 
+                                      height: 28,
+                                      color: category.colorScheme.onPrimaryContainer,
+                                    ),
+                                  )
                                 ),
-                                // trailing: isCategorySelected? Icon(Icons.check) : null,
-                                trailing: Checkbox(
-                                  value: isCategorySelected, 
-                                  onChanged: (newValue) {
-                                    if (!selectedCategories.remove(category.name)) {
-                                      debugPrint('adding new item');
-                                      selectedCategories.add(category.name);
-                                    }
-                                    setState(() => {});
-                                  }
-                                ),
-                                // tileColor: isCategorySelected? Theme.of(context).colorScheme.primary.withAlpha(30): null,
-                                onTap: (){
+                              ),
+                              trailing: Checkbox(
+                                value: isCategorySelected, 
+                                onChanged: (newValue) {
                                   if (!selectedCategories.remove(category.name)) {
                                     debugPrint('adding new item');
                                     selectedCategories.add(category.name);
                                   }
-                                  setState(()=>{});
-                                },
-                              );
-                            }),
-                          ]
-                        ),
+                                  setState(() => {});
+                                }
+                              ),
+                              onTap: (){
+                                if (!selectedCategories.remove(category.name)) {
+                                  debugPrint('adding new item');
+                                  selectedCategories.add(category.name);
+                                }
+                                setState(()=>{});
+                              },
+                            );
+                          }),
+                        ]
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: (){
-                    if (selectedCategories.length == fullCategories.length) {
-                      selectedCategories.clear();
-                    } else {
-                      selectedCategories = Set.from(fullCategories.map((category) => category.name));
-                    } 
-                    setState((){});
-                  }, 
-                  child: Text(selectedCategories.length == fullCategories.length? "Unselect all" : "Select all")),
-                TextButton(
-                  onPressed: () {
-                    context.read<AppModel>().updateFilteredCategories(selectedCategories);
-                    Navigator.of(context).pop();
-                  }, 
-                  child: const Text("Save")
-                )
-              ],
-            );
-          }
-        );
-      },
-    );
-  }
+            ),
+            actions: [
+              TextButton(
+                onPressed: (){
+                  if (selectedCategories.length == fullCategories.length) {
+                    selectedCategories.clear();
+                  } else {
+                    selectedCategories = Set.from(fullCategories.map((category) => category.name));
+                  } 
+                  setState((){});
+                }, 
+                child: Text(selectedCategories.length == fullCategories.length? "Unselect all" : "Select all")),
+              TextButton(
+                onPressed: () {
+                  context.read<AppModel>().updateFilteredCategories(selectedCategories);
+                  Navigator.of(context).pop();
+                }, 
+                child: const Text("Save")
+              )
+            ],
+          );
+        }
+      );
+    },
+  );
 
   Future<void> showFilterAmountDialog() {
     return showDialog(
@@ -257,6 +255,191 @@ class _CostListScreenState extends State<CostListScreen> {
     );
   }
 
+  Future<void> showFilterDateDialog() {
+    return showDialog(
+      context: context, 
+      builder:(context) {
+        DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
+        bool _isCustomRangeSelected = context.select((AppModel state) => state.isCustomDateRangeUsed);
+        final now = DateTime.now();
+        final today = DateTime(now.year,now.month,now.day);
+        final Map<String, DateTimeRange> dateRanges = {
+          "Today": DateTimeRange(
+            start: today, 
+            end: today
+          ),
+          "Yesterday": DateTimeRange(
+            start: today.subtract(const Duration(days: 1)), 
+            end: today.subtract(const Duration(days: 1))
+          ),
+          "Last 3 Days": DateTimeRange(
+            start: today.subtract(const Duration(days: 2)), 
+            end: today
+          ),
+          "Last 5 Days": DateTimeRange(
+            start: today.subtract(const Duration(days: 4)), 
+            end: today
+          ),
+          "Last 7 Days": DateTimeRange(
+            start: today.subtract(const Duration(days: 6)), 
+            end: today
+          ),
+          "This week": DateTimeRange(
+            start: today.subtract(Duration(days: today.weekday - 1)), 
+            end: today
+          ),
+          "Last week": DateTimeRange(
+            start: today.subtract(Duration(days: today.weekday - 1 + 7)), 
+            end: today.subtract(Duration(days: today.weekday % 7))
+          ),
+          "Last 2 weeks": DateTimeRange(
+            start: today.subtract(Duration(days: today.weekday - 1 + 7)), 
+            end: today
+          ),
+          "Last 3 weeks": DateTimeRange(
+            start: today.subtract(Duration(days: today.weekday - 1 + 14)), 
+            end: today
+          )
+        };
+        String subtitleText = "";
+        return StatefulBuilder(
+          builder: (context, setState) {
+            if (_selectedDateRange != null) {
+              if (_selectedDateRange!.start == _selectedDateRange!.end) {
+                subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
+              } else {
+                subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}"; 
+              }
+            } else {
+              subtitleText = "No range selected";
+            }
+            return AlertDialog(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Filter Date"),
+                  Text(
+                    subtitleText,
+                    overflow: TextOverflow.fade,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+              content: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: SizedBox(
+                  // height: MediaQuery.of(context).size.height * 0.4,
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 12,
+                    children: [
+                      Row(
+                        spacing: 16,
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: 40,
+                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: !_isCustomRangeSelected, onChanged: (value) {
+                              _isCustomRangeSelected = !value;
+                              _selectedDateRange = null;
+                              setState((){});
+                            }))
+                          ),
+                          Expanded(
+                            child: Text(
+                              "Relative range", 
+                              textAlign: TextAlign.left,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            )
+                          ) 
+                        ],
+                      ),
+                      Wrap(
+                        spacing: 2,
+                        runSpacing: 0,
+                        alignment: WrapAlignment.spaceBetween,
+                        children: dateRanges.map((String name, DateTimeRange dateRange) => MapEntry(
+                          name,
+                          ChoiceChip(
+                            label: Text(name, style: Theme.of(context).textTheme.labelSmall!.copyWith(fontSize: 10),),
+                            selected: _selectedDateRange == dateRanges[name],
+                            shape:RoundedRectangleBorder(borderRadius: BorderRadius.circular(200)), 
+                            selectedColor: Theme.of(context).colorScheme.primary.withAlpha(100),
+                            onSelected: (bool newValue) {
+                              if (_isCustomRangeSelected) return;
+                              if (newValue) {
+                                _selectedDateRange = dateRanges[name];
+                              } else {
+                                _selectedDateRange = null;
+                              }
+                              setState((){});
+                            }
+                          ),
+                        )).values.toList(),
+                      ),
+                      const Divider(),
+                      Row(
+                        spacing: 16,
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: 40,
+                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: _isCustomRangeSelected, onChanged: (value) async {
+                              _isCustomRangeSelected = value;
+                              _selectedDateRange = null;
+                              if (value) {
+                                final dateRange = await showCalendarDatePicker2Dialog(
+                                  context: context, 
+                                  config: CalendarDatePicker2WithActionButtonsConfig(
+                                    calendarType: CalendarDatePicker2Type.range
+                                  ),
+                                  dialogSize: Size(MediaQuery.of(context).size.width * 0.6, MediaQuery.of(context).size.height * 0.6),
+                                  value: [DateTime(now.year,now.month,1), DateTime(now.year,now.month + 1, 0)],
+                                );
+                                if (dateRange!= null) {
+                                  _selectedDateRange = DateTimeRange(start: dateRange.first!, end: dateRange.last!);
+                                }
+                              }
+                              setState((){});
+                            }))
+                          ),
+                          Expanded(
+                            child: Text(
+                              "Custom range", 
+                              textAlign: TextAlign.left,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            )
+                          ) 
+                        ],
+                      ),
+                    ]
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: (){
+                    if (_selectedDateRange != null) {
+                      context.read<AppModel>().updateFilteredDateRange(_selectedDateRange!,_isCustomRangeSelected);
+                      Navigator.of(context).pop();
+                    }
+                  }, 
+                  child: Text("Save")
+                )
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
   Widget titleAppBar() {
     if (!_isSearchOpened) {
       return Text("App title");
@@ -333,7 +516,10 @@ class _CostListScreenState extends State<CostListScreen> {
             onPressed: () async {showFilterCategoryDialog();},
             backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(50),
           ),
-          ActionChip(label: Text("Time Range"), avatar: Icon(Icons.timer)),
+          ActionChip(
+            label: Text("Date"), avatar: Icon(Icons.timer),
+            onPressed: () async {showFilterDateDialog();},
+          ),
           ActionChip(
             label: Text("Amount"), 
             avatar: Icon(Icons.money),

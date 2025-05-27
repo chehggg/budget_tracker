@@ -26,8 +26,17 @@ class AppModel extends ChangeNotifier {
 
   String _localeName = "en";
   String? _filteredString = null;
-  // bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length;  
-  bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length;  
+
+  Set<String> _filteredCategories = {};
+  Set<String> get filteredCategories => _filteredCategories;
+
+  DateTimeRange? _filterDateRange;
+  DateTimeRange? get filterDateRange => _filterDateRange;
+
+  bool _isCustomDateRangeUsed = false;
+  bool get isCustomDateRangeUsed => _isCustomDateRangeUsed;
+
+  bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length || _filterDateRange != null;  
 
   final Map<String, CostMetric> _yearMonthMetrics = {};
   final SplayTreeMap<String, CostMetric> _dayMetrics = SplayTreeMap<String,CostMetric>((a,b) => b.standardDateParse().compareTo(a.standardDateParse()));
@@ -48,11 +57,14 @@ class AppModel extends ChangeNotifier {
       currentMonthCostItem.forEach((key, value){
         bool isCategoryIncluded(CostItem costItem) => _filteredCategories.contains(costItem.category); 
         bool isFilterStringMatch(CostItem costItem) => _filteredString != null? costItem.name.contains(_filteredString!) : true; 
-        bool isMatch(CostItem costItem) => isCategoryIncluded(costItem) && isFilterStringMatch(costItem);
+        bool isDateWithinFilter(CostItem costItem) => _filterDateRange != null? 
+          costItem.getDateTime().isBefore(_filterDateRange!.end.add(Duration(days: 1))) && 
+          costItem.getDateTime().isAfter(_filterDateRange!.start.subtract(Duration(days: 1))) : 
+          true; 
+        bool isMatch(CostItem costItem) => isCategoryIncluded(costItem) && isFilterStringMatch(costItem) && isDateWithinFilter(costItem);
 
         if (value.any(isMatch)) temp.putIfAbsent(key, () => []).addAll(value.where(isMatch)); 
       });
-
       return UnmodifiableMapView(temp);
     } else {
       return UnmodifiableMapView(currentMonthCostItem);
@@ -68,9 +80,7 @@ class AppModel extends ChangeNotifier {
   List<NoteHistory> _notes = [];
   UnmodifiableListView<NoteHistory> notes(String? category) {
     if (category == null) return UnmodifiableListView([]);
-    return UnmodifiableListView(
-      _notes.where((note) => note.categoryName == category).toList()
-    );
+    return UnmodifiableListView(_notes.where((note) => note.categoryName == category).toList());
   }
 
   List<double> getPercentiles() {
@@ -96,41 +106,8 @@ class AppModel extends ChangeNotifier {
     ));
   }
 
-  Set<String> _filteredCategories = {};
-  Set<String> get filteredCategories => _filteredCategories;
 
   UnmodifiableListView<CostItem> get filteredCostItems => _filteredCostItems;
-
-  UnmodifiableMapView<String, List<CostItem>> get dateGroupedItem {
-    if (_filteredCostItems.isNotEmpty) {
-      return UnmodifiableMapView(
-        groupBy(_filteredCostItems, (item) => item.date)
-      );
-    } else {
-      return UnmodifiableMapView({}); // return empty map
-    }
-  }
-
-  UnmodifiableListView<Map<String,dynamic>> get categoryGroupedData {
-    if (_filteredCostItems.isEmpty) return UnmodifiableListView([]); // return empty map
-    
-    return UnmodifiableListView(
-      groupBy(_filteredCostItems, (item) => item.category).map((category, costItems) {
-        final categoryAmount = calculateTotal(costItems.first.costType, costItems); 
-        final totalAmount = calculateTotal(costItems.first.costType, _filteredCostItems); 
-        return MapEntry<String,Map<String,dynamic>>(
-          category, 
-          {
-            'name': category,
-            'amount': categoryAmount,
-            'percentage': categoryAmount/totalAmount,
-            'items' : costItems..sort((a,b) => b.amount.compareTo(a.amount)), // sort descending
-            'category' : getCategoryEntry(category)
-          }
-        );
-      }).values.toList()
-    );
-  }
 
   UnmodifiableMapView<String,List<CostItem>> get currentCategoryList {
     return UnmodifiableMapView(_yearMonthCategoryGroupedList[formatedSelectedYearMonth]!);
@@ -138,8 +115,13 @@ class AppModel extends ChangeNotifier {
 
   UnmodifiableMapView<String,CostMetric> get yearMonthOverview => UnmodifiableMapView(_yearMonthMetrics);
 
-  // get daily total
-  // to display via bar chart
+  void updateFilterString(String? newString) {
+    _filteredString = newString == "" ? null : newString;
+    debugPrint('new string: $newString');
+    notifyListeners();
+  }
+
+  // get daily total for bar chart
   UnmodifiableMapView<int, CostMetric> getDailyMetric(CostType costType, {int monthDifference = 0}) {
     int totalDays = selectedYearMonth.getTotalDayInMonth(pastMonth: monthDifference);
     return UnmodifiableMapView(
@@ -153,7 +135,7 @@ class AppModel extends ChangeNotifier {
     );
   }
 
-  // get cumulative total
+  // get cumulative total for line chart
   UnmodifiableMapView<int, double> getDailyCumulative(CostType costType, {int monthDifference = 0}) {
     double cumulative = 0;
     return UnmodifiableMapView(
@@ -167,13 +149,8 @@ class AppModel extends ChangeNotifier {
     );
   }
 
-  void updateFilterString(String? newString) {
-    _filteredString = newString == "" ? null : newString;
-    debugPrint('new string: $newString');
-    notifyListeners();
-  }
-
-  // get cumulative divided by the number of day (normaized)
+ 
+  // get cumulative average for line chart 
   UnmodifiableMapView<int, double> getCumulativeAverage(CostType costType, {int monthDifference = 0}) {
     return UnmodifiableMapView(
       getDailyCumulative(costType, monthDifference: monthDifference).map((int dayInt, double cumulativeTotal) {
@@ -185,7 +162,6 @@ class AppModel extends ChangeNotifier {
   UnmodifiableMapView<int, CostMetric> get currentDailyMetric => getDailyMetric(CostType.expense);
   UnmodifiableMapView<int, double> get currentCumulative => getDailyCumulative(CostType.expense);
   UnmodifiableMapView<int, double> get currentCumulativeAverage => getCumulativeAverage(CostType.expense);
-  // UnmodifiableMapView<int, CostMetric> get currentDailyMetric => getDailyMetric(CostType.expense);
   UnmodifiableMapView<int, double> get previousCumulative => getDailyCumulative(CostType.expense, monthDifference: 1);
   UnmodifiableMapView<int, double> get previousCumulativeAverage => getCumulativeAverage(CostType.expense, monthDifference: 1);
 
@@ -193,7 +169,6 @@ class AppModel extends ChangeNotifier {
     //create sorted list
     final tempList = getDailyMetric(costType).map((dateInt,metric) {
       return MapEntry<int,Map<String,dynamic>>(
-
         dateInt, 
         {
           "date": DateTime(_selectedYearMonth.year,_selectedYearMonth.month,dateInt).displayFormat(),
@@ -259,6 +234,7 @@ class AppModel extends ChangeNotifier {
   void clearFilter() {
     updateFilterString(null);
     updateFilteredCategories(Set.from(categories.map((category)=> category.name)));
+    updateFilteredDateRange(null, false);
     resetMetric();
     notifyListeners();
   }
@@ -441,6 +417,11 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateFilteredDateRange(DateTimeRange? newDateRange, bool isCustomDateRange) {
+    _filterDateRange = newDateRange;
+    _isCustomDateRangeUsed = isCustomDateRange;
+    notifyListeners();
+  }
   void setInitSettings() async {
     // set currency setting in initial run
     // var format = NumberFormat.simpleCurrency(locale: Platform.localeName);
@@ -1101,4 +1082,19 @@ class CategoryGroupMetric {
 
   final List<CostItem>? costItem;
   final CostMetric? metric;
+}
+
+class RelativeDateRange {
+  RelativeDateRange({
+    required this.name, 
+    required this.startDate, 
+    required this.endDate
+  });
+
+  final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  RelativeDateRange.toCurrent({required this.name, required this.startDate}) :
+    endDate = DateTime.now();
 }
