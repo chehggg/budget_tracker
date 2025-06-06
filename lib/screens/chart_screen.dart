@@ -911,10 +911,11 @@ class _CategoryListState extends State<CategoryList> {
 
   List<Widget> categoryListTile(Map<String,CostMetric> data, BuildContext context) => data.entries.map((categoryData) {
     final categoryName = categoryData.key;
-    final categoryEntry = context.read<AppModel>().getCategoryEntry(categoryName);
-    final categoryAmount = categoryData.value.expense as double;
-    final categoryColorScheme = categoryEntry!.colorScheme;
-    final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);    
+    final CostItemCategory categoryEntry = context.read<AppModel>().getCategoryEntry(categoryName)!;
+    final double categoryAmount = categoryData.value.expense!;
+    final ColorScheme categoryColorScheme = categoryEntry.colorScheme;
+    // final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);    
+    final amountString = context.read<AppModel>().customCurrencyFormat(categoryAmount, false);    
     final currencySymbol = context.select((AppModel state) => state.currencySymbol);
     final maxAmount = context.select((AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense));
     final percentageString = context.read<AppModel>().getCategoryPercentage(categoryAmount);
@@ -934,7 +935,7 @@ class _CategoryListState extends State<CategoryList> {
               TextSpan(
                 children: [
                   TextSpan(
-                    text: '$currencySymbol$amountString ',
+                    text: '$amountString ',
                     style: Theme.of(context).textTheme.labelMedium!.copyWith(
                       fontSize: 12
                     )
@@ -959,15 +960,31 @@ class _CategoryListState extends State<CategoryList> {
         ), 
         children: costItems.map((CostItem costItem) {
           return ListTile(
-            contentPadding: const EdgeInsets.only(),
-            visualDensity: VisualDensity(vertical: -4),
-            leading: Text((costItem.getDateTime()).displayFormat()),
-            title: Text(costItem.name),
-            trailing: Text(
-              costItem.getCurrencyValue(currencySymbol, false),
-              style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                fontSize: 12
-              )
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            visualDensity: VisualDensity(vertical: -3),
+            dense: true,
+            leading: Container(
+              width: MediaQuery.of(context).size.width* 0.1,  
+              child: Text((costItem.getDateTime()).displayFormat())
+            ),
+            title: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              // mainAxisAlignment: MainAxisAlignment.end,
+              spacing: 20,
+              children: [
+                Text(costItem.name),
+                Expanded(child: Divider(color: Colors.white.withAlpha(80),))
+              ],
+            ),
+            trailing: Container(
+              width: MediaQuery.of(context).size.width* 0.12,  
+              child: Text(
+                costItem.getCurrencyValue(currencySymbol, false),
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                  fontSize: 12
+                )
+              ),
             ),
           );
         }).toList(),
@@ -1059,7 +1076,12 @@ class PercentageBar extends StatelessWidget {
               height: height,
               width: constraint.maxWidth * (percentage).abs(),
               decoration: BoxDecoration(
-                color: color,
+                gradient: LinearGradient(
+                  colors: [
+                    color.withAlpha(100),
+                    color,
+                  ]
+                ),
                 borderRadius: BorderRadius.circular(12)
               ),
             )

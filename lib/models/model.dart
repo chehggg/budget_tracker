@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
@@ -25,7 +26,7 @@ class AppModel extends ChangeNotifier {
   }
 
   String _localeName = "en";
-  String? _filteredString = null;
+  String? _filteredString;
 
   Set<String> _filteredCategories = {};
   Set<String> get filteredCategories => _filteredCategories;
@@ -33,8 +34,8 @@ class AppModel extends ChangeNotifier {
   DateTimeRange? _filterDateRange;
   DateTimeRange? get filterDateRange => _filterDateRange;
 
-  bool _isCustomDateRangeUsed = false;
-  bool get isCustomDateRangeUsed => _isCustomDateRangeUsed;
+  dateRangeFilterType _dateRangeFilter = dateRangeFilterType.none;
+  dateRangeFilterType get dateRangeFilter => _dateRangeFilter;
 
   bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length || _filterDateRange != null;  
 
@@ -234,7 +235,7 @@ class AppModel extends ChangeNotifier {
   void clearFilter() {
     updateFilterString(null);
     updateFilteredCategories(Set.from(categories.map((category)=> category.name)));
-    updateFilteredDateRange(null, false);
+    updateFilteredDateRange(null, dateRangeFilterType.none);
     resetMetric();
     notifyListeners();
   }
@@ -417,9 +418,9 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateFilteredDateRange(DateTimeRange? newDateRange, bool isCustomDateRange) {
+  void updateFilteredDateRange(DateTimeRange? newDateRange, dateRangeFilterType dateFilter) {
     _filterDateRange = newDateRange;
-    _isCustomDateRangeUsed = isCustomDateRange;
+    _dateRangeFilter = dateFilter;
     notifyListeners();
   }
   void setInitSettings() async {
@@ -980,7 +981,7 @@ class CostItemCategory {
     // debugPrint("getColorScheme, brightness: ${brightness.name}, theme: ${themeMode}");
     return ColorScheme.fromSeed(
       seedColor: color,
-      dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
+      dynamicSchemeVariant: DynamicSchemeVariant.rainbow,
       contrastLevel: 0,
       brightness: brightness 
     );
@@ -1004,7 +1005,21 @@ class CostItemCategory {
       width: size + 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: bg
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            bg.withValues(
+              red: min<double>((bg.r + 20/255), 1),
+              blue: min<double>((bg.b + 20/255), 1),
+              green: min<double>((bg.g + 20/255), 1),
+            ),
+            bg,
+            bg.withAlpha(100),
+
+          ]
+        ),
+        // color: bg
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -1097,4 +1112,10 @@ class RelativeDateRange {
 
   RelativeDateRange.toCurrent({required this.name, required this.startDate}) :
     endDate = DateTime.now();
+}
+
+enum dateRangeFilterType {
+  relative,
+  absolute,
+  none
 }

@@ -260,7 +260,7 @@ class _CostListScreenState extends State<CostListScreen> {
       context: context, 
       builder:(context) {
         DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
-        bool _isCustomRangeSelected = context.select((AppModel state) => state.isCustomDateRangeUsed);
+        dateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
         final now = DateTime.now();
         final today = DateTime(now.year,now.month,now.day);
         final Map<String, DateTimeRange> dateRanges = {
@@ -302,6 +302,7 @@ class _CostListScreenState extends State<CostListScreen> {
           )
         };
         String subtitleText = "";
+        bool showReset = dateFilter != dateRangeFilterType.none? true: false;
         return StatefulBuilder(
           builder: (context, setState) {
             if (_selectedDateRange != null) {
@@ -330,7 +331,6 @@ class _CostListScreenState extends State<CostListScreen> {
               content: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: SizedBox(
-                  // height: MediaQuery.of(context).size.height * 0.4,
                   width: MediaQuery.of(context).size.width * 0.6,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -344,8 +344,8 @@ class _CostListScreenState extends State<CostListScreen> {
                         children: [
                           SizedBox(
                             height: 40,
-                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: !_isCustomRangeSelected, onChanged: (value) {
-                              _isCustomRangeSelected = !value;
+                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: dateFilter ==  dateRangeFilterType.relative, onChanged: (value) {
+                              dateFilter = value? dateRangeFilterType.relative: dateRangeFilterType.none;
                               _selectedDateRange = null;
                               setState((){});
                             }))
@@ -354,33 +354,37 @@ class _CostListScreenState extends State<CostListScreen> {
                             child: Text(
                               "Relative range", 
                               textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: Theme.of(context).textTheme.bodyMedium,
                             )
-                          ) 
+                          ),
                         ],
                       ),
-                      Wrap(
-                        spacing: 2,
-                        runSpacing: 0,
-                        alignment: WrapAlignment.spaceBetween,
-                        children: dateRanges.map((String name, DateTimeRange dateRange) => MapEntry(
-                          name,
-                          ChoiceChip(
-                            label: Text(name, style: Theme.of(context).textTheme.labelSmall!.copyWith(fontSize: 10),),
-                            selected: _selectedDateRange == dateRanges[name],
-                            shape:RoundedRectangleBorder(borderRadius: BorderRadius.circular(200)), 
-                            selectedColor: Theme.of(context).colorScheme.primary.withAlpha(100),
-                            onSelected: (bool newValue) {
-                              if (_isCustomRangeSelected) return;
-                              if (newValue) {
-                                _selectedDateRange = dateRanges[name];
-                              } else {
-                                _selectedDateRange = null;
-                              }
-                              setState((){});
-                            }
+                      DropdownMenu(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        menuHeight: 300,
+                        initialSelection: dateRanges.values.first,
+                        inputDecorationTheme: InputDecorationTheme(
+                          border: const UnderlineInputBorder(),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                          constraints: BoxConstraints.tight(const 
+                            Size.fromHeight(40)
                           ),
-                        )).values.toList(),
+                        ),
+                        textStyle: Theme.of(context).textTheme.bodyMedium,
+                        dropdownMenuEntries: dateRanges.map((key, value) => MapEntry(key, 
+                          DropdownMenuEntry(
+                            value: value, 
+                            label: key,
+                            enabled: dateFilter == dateRangeFilterType.relative,
+                          )
+                        ),).values.toList(),
+                        onSelected: (value) {
+                          if (dateFilter != dateRangeFilterType.relative) return;
+                          _selectedDateRange = value as DateTimeRange;
+                          setState((){});
+                        },
+                        selectedTrailingIcon: Icon(Icons.check),
                       ),
                       const Divider(),
                       Row(
@@ -390,8 +394,8 @@ class _CostListScreenState extends State<CostListScreen> {
                         children: [
                           SizedBox(
                             height: 40,
-                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: _isCustomRangeSelected, onChanged: (value) async {
-                              _isCustomRangeSelected = value;
+                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: dateFilter == dateRangeFilterType.absolute, onChanged: (value) async {
+                              dateFilter = value ? dateRangeFilterType.absolute: dateRangeFilterType.none;
                               _selectedDateRange = null;
                               if (value) {
                                 final dateRange = await showCalendarDatePicker2Dialog(
@@ -404,6 +408,8 @@ class _CostListScreenState extends State<CostListScreen> {
                                 );
                                 if (dateRange!= null) {
                                   _selectedDateRange = DateTimeRange(start: dateRange.first!, end: dateRange.last!);
+                                } else {
+                                  dateFilter = dateRangeFilterType.none;
                                 }
                               }
                               setState((){});
@@ -413,22 +419,35 @@ class _CostListScreenState extends State<CostListScreen> {
                             child: Text(
                               "Custom range", 
                               textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: Theme.of(context).textTheme.bodyMedium,
                             )
-                          ) 
+                          ),
                         ],
                       ),
+                      dateFilter == dateRangeFilterType.absolute && _selectedDateRange != null? 
+                        GestureDetector(
+                          child: Text('${subtitleText.split(":").last} (Change date)')
+                        )
+                        : SizedBox.shrink()
                     ]
                   ),
                 ),
               ),
               actions: [
+                showReset? TextButton(
+                  onPressed: (){
+                    context.read<AppModel>().updateFilteredDateRange(null, dateRangeFilterType.none);
+                    Navigator.of(context).pop();
+                  }, 
+                  child: Text(
+                    "Reset to default",
+                    style: TextStyle(color: Colors.lightBlue),
+                  )
+                ) : SizedBox.shrink(),
                 TextButton(
                   onPressed: (){
-                    if (_selectedDateRange != null) {
-                      context.read<AppModel>().updateFilteredDateRange(_selectedDateRange!,_isCustomRangeSelected);
-                      Navigator.of(context).pop();
-                    }
+                    context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
+                    Navigator.of(context).pop();
                   }, 
                   child: Text("Save")
                 )
@@ -505,31 +524,72 @@ class _CostListScreenState extends State<CostListScreen> {
   }
 
   AppBar bottomFilterAppBar() {
+    final isCategoryFiltered = context.select((AppModel state) => state.filteredCategories.length < state.categories.length);
+    final isDateFiltered = context.select((AppModel state) => state.filterDateRange != null);
+    final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
+    final contextTheme = Theme.of(context);
+    final borderRadius = BorderRadius.circular(20);
+
+    Widget createCustomFilterChip({IconData? icon, String text = "", Function()? onTap, bool isActive = false}) {
+      return Expanded(
+        child: Material(
+          borderRadius: borderRadius,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: onTap,
+            child: Container(
+              height: toolbarHeight - 16,
+              // padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.rectangle,
+                border: BoxBorder.all(color: contextTheme.colorScheme.primary, width: 0.5),
+                borderRadius: borderRadius,
+                color: isActive? contextTheme.colorScheme.primary.withAlpha(50) : contextTheme.colorScheme.primary.withAlpha(10)
+              ),
+              child: Row(
+                spacing: 10,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(isActive? Icons.check : icon, color: contextTheme.colorScheme.primary, size: toolbarHeight/2 - 10,),
+                  Text(text, style: contextTheme.textTheme.labelSmall)
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return AppBar(
+      toolbarHeight: toolbarHeight,
       title: Row(
         spacing: 8,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          ActionChip(
-            label: Text("Category"), 
-            // avatar: Icon(Icons.category),
-            avatar: Icon(Icons.check),
-            onPressed: () async {showFilterCategoryDialog();},
-            backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(50),
+          createCustomFilterChip(
+            icon: Icons.category,
+            text: "Category",
+            onTap: () async => showFilterCategoryDialog(),
+            isActive: isCategoryFiltered
           ),
-          ActionChip(
-            label: Text("Date"), avatar: Icon(Icons.timer),
-            onPressed: () async {showFilterDateDialog();},
+          createCustomFilterChip(
+            icon: Icons.date_range,
+            text: "Date",
+            onTap: () async => showFilterDateDialog(),
+            isActive: isDateFiltered
           ),
-          ActionChip(
-            label: Text("Amount"), 
-            avatar: Icon(Icons.money),
-            onPressed: () async {showFilterAmountDialog();},
+          createCustomFilterChip(
+            icon: Icons.money,
+            text: "Amount",
+            onTap: () async => showFilterAmountDialog(),
+            isActive: isDateFiltered
           ),
-          // ActionChip(label: Text("Amount"), avatar: Icon(Icons.money)),
         ],
       )
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:another_flushbar/flushbar.dart';
@@ -738,7 +739,21 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                             duration: Durations.medium1,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: bgColor
+                              color: bgColor,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  bgColor.withValues(
+                                    red: min<double>((bgColor.r + 20/255), 1),
+                                    blue: min<double>((bgColor.b + 20/255), 1),
+                                    green: min<double>((bgColor.g + 20/255), 1),
+                                  ),
+                                  bgColor,
+                                  bgColor.withAlpha(100),
+
+                                ]
+                              ),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(20.0),

@@ -17,7 +17,7 @@ List<CostItemCategory> defaultCostItemCategories = [
   CostItemCategory(
     name: "transport", 
     color: Colors.amberAccent, 
-    imagePath: "assets/images/bus.png",
+    imagePath: "assets/images/train.png",
     costType: CostType.expense
   ),
   CostItemCategory(
@@ -34,7 +34,7 @@ List<CostItemCategory> defaultCostItemCategories = [
   ),
   CostItemCategory(
     name: "car", 
-    color: Colors.green, 
+    color: const Color.fromARGB(255, 96, 98, 231), 
     imagePath: "assets/images/car.png",
     costType: CostType.expense
   ),
@@ -76,7 +76,7 @@ List<CostItemCategory> defaultCostItemCategories = [
   ),
   CostItemCategory(
     name: "education", 
-    color: Colors.redAccent, 
+    color: const Color.fromARGB(255, 130, 55, 228), 
     imagePath: "assets/images/education.png",
     costType: CostType.expense
   ),
@@ -107,13 +107,37 @@ List<CostItemCategory> defaultCostItemCategories = [
   CostItemCategory(
     name: "recreation", 
     color: Colors.lime, 
-    imagePath: "assets/images/group.png",
+    imagePath: "assets/images/psychology.png",
     costType: CostType.expense
   ),
   CostItemCategory(
     name: "charity", 
     color: Colors.red, 
     imagePath: "assets/images/charity.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "subscription", 
+    color: const Color.fromARGB(255, 98, 172, 221), 
+    imagePath: "assets/images/subscription.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "hobby", 
+    color: const Color.fromARGB(255, 231, 148, 40), 
+    imagePath: "assets/images/artist.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "self-help", 
+    color: const Color.fromARGB(255, 131, 197, 125), 
+    imagePath: "assets/images/determination.png",
+    costType: CostType.expense
+  ),
+  CostItemCategory(
+    name: "business", 
+    color: const Color.fromARGB(255, 131, 197, 125), 
+    imagePath: "assets/images/shop.png",
     costType: CostType.expense
   ),
   CostItemCategory(
@@ -138,6 +162,30 @@ List<CostItemCategory> defaultCostItemCategories = [
     name: "bonus", 
     color: Colors.brown, 
     imagePath: "assets/images/bonus.png",
+    costType: CostType.income
+  ),
+  CostItemCategory(
+    name: "allowance", 
+    color: const Color.fromARGB(255, 60, 173, 107), 
+    imagePath: "assets/images/allowance.png",
+    costType: CostType.income
+  ),
+  CostItemCategory(
+    name: "refund", 
+    color: const Color.fromARGB(255, 71, 51, 187), 
+    imagePath: "assets/images/refund.png",
+    costType: CostType.income
+  ),
+  CostItemCategory(
+    name: "cashback", 
+    color: const Color.fromARGB(255, 82, 36, 50), 
+    imagePath: "assets/images/cashback.png",
+    costType: CostType.income
+  ),
+  CostItemCategory(
+    name: "passive", 
+    color: const Color.fromARGB(255, 33, 177, 182), 
+    imagePath: "assets/images/passive-income.png",
     costType: CostType.income
   ),
 ];
