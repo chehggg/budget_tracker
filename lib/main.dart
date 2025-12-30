@@ -1,7 +1,10 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:budget_tracker/firebase_options.dart';
+import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
+import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +18,7 @@ import 'package:budget_tracker/screens/chart_screen.dart';
 import 'package:budget_tracker/screens/cost_form_screen.dart';
 import 'package:budget_tracker/screens/cost_list_screen.dart';
 import 'package:budget_tracker/screens/report_screen.dart';
-import 'package:budget_tracker/screens/settings_screen.dart';
+import 'package:budget_tracker/screens/settings/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +31,9 @@ void main() async {
       providers: [
         ChangeNotifierProvider<ThemeModel>(
           create: (context) => ThemeModel(),
+        ),
+        ChangeNotifierProvider<CurrencyModel>(
+          create: (context) => CurrencyModel(),
         ),
         ChangeNotifierProvider<NavigationModel>(
           create: (context) => NavigationModel(),
@@ -48,25 +54,26 @@ class MainApp extends StatelessWidget {
   final FlutterLocalization localization = FlutterLocalization.instance;
   
   ThemeData _baseTheme(BuildContext context, Brightness brightness) {
-
     final ColorScheme seedColorScheme;
-    if (brightness == Brightness.dark) {
+    if (brightness == Brightness.light) {
       seedColorScheme = ColorScheme.fromSeed(
-        seedColor: Colors.orange, 
+        // seedColor: const Color.fromARGB(255, 20, 175, 85), 
+        seedColor: context.select((ThemeModel state) => state.color), 
         brightness: brightness,
-        dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
-        contrastLevel: 0.5,
-        surface: const Color.fromARGB(255, 13, 13, 13),
-        surfaceBright: const Color.fromARGB(255, 50, 48, 48),
-        surfaceContainer: const Color.fromARGB(255, 36, 34, 34),
-        surfaceDim: const Color.fromARGB(255, 19, 17, 17),
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        contrastLevel: 0,
+        // surface: const Color.fromARGB(255, 22, 24, 22),
+        // surfaceBright: const Color.fromARGB(255, 50, 48, 48),
+        // surfaceContainer: const Color.fromARGB(255, 23, 37, 25),
+        // surfaceDim: const Color.fromARGB(255, 19, 17, 17),
       );
     } else {
       seedColorScheme = ColorScheme.fromSeed(
-        seedColor: Colors.orange, 
+        // seedColor: const Color.fromARGB(255, 20, 175, 85), 
+        seedColor: context.select((ThemeModel state) => state.color), 
         brightness: brightness,
-        dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
-        contrastLevel: 0.5,
+        dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+        contrastLevel: 0,
         // surface: const Color.fromARGB(255, 13, 13, 13),
         // surfaceBright: const Color.fromARGB(255, 36, 34, 34),
         // surfaceContainer: const Color.fromARGB(255, 244, 238, 238),
@@ -81,9 +88,9 @@ class MainApp extends StatelessWidget {
     final TextStyle customNumberMedium = GoogleFonts.poppins(fontWeight: FontWeight.w600);
     final TextStyle customNumberBold = GoogleFonts.poppins(fontWeight: FontWeight.w700);
     final TextStyle customNumberBlack = GoogleFonts.poppins(fontWeight: FontWeight.w800);
-    final TextStyle customDisplayMedium = GoogleFonts.alike(fontWeight: FontWeight.w300);
-    final TextStyle customDisplayBold = GoogleFonts.alike(fontWeight: FontWeight.w500);
-    final TextStyle customDisplayBlack = GoogleFonts.alike(fontWeight: FontWeight.w700);
+    final TextStyle customDisplayMedium = GoogleFonts.inter(fontWeight: FontWeight.w300);
+    final TextStyle customDisplayBold = GoogleFonts.inter(fontWeight: FontWeight.w500);
+    final TextStyle customDisplayBlack = GoogleFonts.inter(fontWeight: FontWeight.w700);
 
     final TextTheme customTextTheme = TextTheme(
       displayLarge: customDisplayBold.copyWith(fontSize: 50), // Custom bold and size (Regular is default)
@@ -107,14 +114,18 @@ class MainApp extends StatelessWidget {
       ), // Medium is default
     );
 
-
+    final spacing = context.select((ThemeModel state) => state.spacingValue);
     return ThemeData(
       textTheme: customTextTheme,
       primaryTextTheme: customTextTheme,
       colorScheme: seedColorScheme, 
       brightness: brightness,
       listTileTheme: ListTileThemeData(
-        titleTextStyle: customTextTheme.titleMedium
+        contentPadding: EdgeInsets.symmetric(horizontal: 8),
+        titleTextStyle: customTextTheme.titleMedium,
+        visualDensity: VisualDensity(vertical: spacing - 3, horizontal: -2),
+        dense: true,
+        leadingAndTrailingTextStyle: customTextTheme.headlineLarge
       ),
       appBarTheme: AppBarTheme(
         color: seedColorScheme.surfaceContainer,
@@ -136,7 +147,8 @@ class MainApp extends StatelessWidget {
       ),
       dialogTheme: DialogThemeData(
         titleTextStyle: customTextTheme.displayLarge!.copyWith(fontSize: 24),
-        backgroundColor: seedColorScheme.surfaceContainer
+        backgroundColor: seedColorScheme.surfaceContainer,
+        insetPadding: EdgeInsets.symmetric(horizontal: 20)
       ),
       datePickerTheme: DatePickerThemeData(
         backgroundColor: seedColorScheme.surfaceContainer,
@@ -159,11 +171,22 @@ class MainApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0))
         )
       ),
+      menuButtonTheme: MenuButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          textStyle: customTextTheme.headlineLarge,
+          visualDensity: VisualDensity(horizontal: -2, vertical: -2)
+        )
+      ),
+      radioTheme: RadioThemeData(
+        visualDensity: VisualDensity(horizontal: -2)
+      ),
       menuTheme: MenuThemeData(
         style: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(seedColorScheme.surfaceBright)
+          backgroundColor: WidgetStatePropertyAll(seedColorScheme.surfaceBright),
+          // visualDensity: VisualDensity(horizontal: -2, vertical: -4)
         )
-      )
+      ),
+      switchTheme: SwitchThemeData()
       // dividerColor: Colors.transparent,
     );
   }
@@ -175,7 +198,7 @@ class MainApp extends StatelessWidget {
     ]);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(1)
+        textScaler: TextScaler.linear(context.select((ThemeModel state) => state.fontSizeFactor.toDouble()/10 + 0.7))
       ),
       child: MaterialApp(
         locale: context.select((ThemeModel state) => state.appLocale),
@@ -213,47 +236,59 @@ class HomeScreen extends StatelessWidget {
         }
       },
       child: Scaffold(
-        body: Navigator(
-          key: navKey,
-          initialRoute: "/",
-          onGenerateRoute: (settings) {
-            debugPrint("navigator generate route");
-            // debugPrint("navigator model current route -> $currentNavRoute");
-            // debugPrint("navigator current route -> ${settings.name}");
-            switch (settings.name) {
-              case '/':
-                return MaterialPageRoute(
-                  builder:(context) => CostListScreen(),
-                  settings: RouteSettings(name: settings.name)
-                );
-              case '/form':
-                return MaterialPageRoute(builder:(context) {
-                  return CostItemFormScreen(arg: settings.arguments as FormArgument);
-                },
-                  settings: RouteSettings(name: settings.name)
-                );
-              case '/data':
-                return MaterialPageRoute(builder:(context) => 
-                  const ChartScreen(),
-                  settings: RouteSettings(name: settings.name)
-                );
-              case '/report':
-                return MaterialPageRoute(builder:(context) => 
-                  const CostReportScreen(),
-                  settings: RouteSettings(name: settings.name)
-                );
-              case '/settings':
-                return MaterialPageRoute(builder:(context) => 
-                  const SettingsScreen(),
-                  settings: RouteSettings(name: settings.name)
-                );
-              default:
-                throw UnimplementedError();
-            } 
-          },
+        body: DefaultTextStyle(
+          style: Theme.of(context).textTheme.bodyMedium!,
+          child: Navigator(
+            key: navKey,
+            initialRoute: "/",
+            onGenerateRoute: (settings) {
+              debugPrint("navigator generate route");
+              // debugPrint("navigator model current route -> $currentNavRoute");
+              // debugPrint("navigator current route -> ${settings.name}");
+              switch (settings.name) {
+                case '/':
+                  return MaterialPageRoute(
+                    builder:(context) => CostListScreen(),
+                    settings: RouteSettings(name: settings.name)
+                  );
+                case '/form':
+                  return MaterialPageRoute(builder:(context) {
+                    return CostItemFormScreen(arg: settings.arguments as FormArgument);
+                  },
+                    settings: RouteSettings(name: settings.name)
+                  );
+                case '/data':
+                  return MaterialPageRoute(builder:(context) => 
+                    const ChartScreen(),
+                    settings: RouteSettings(name: settings.name)
+                  );
+                case '/report':
+                  return MaterialPageRoute(builder:(context) => 
+                    const CostReportScreen(),
+                    settings: RouteSettings(name: settings.name)
+                  );
+                case '/settings':
+                  return MaterialPageRoute(builder:(context) => 
+                    const SettingsScreen(),
+                    settings: RouteSettings(name: settings.name)
+                  );
+                case '/budgets':
+                  return MaterialPageRoute(builder:(context) => 
+                    const SetBudgetScreen(),
+                    // settings: RouteSettings(name: settings.name)
+                  );
+                case '/recurring':
+                  return MaterialPageRoute(builder:(context) => 
+                    const RecurringCostScreen(),
+                    // settings: RouteSettings(name: settings.name)
+                  );
+                default:
+                  throw UnimplementedError();
+              } 
+            },
+          ),
         ),
-        floatingActionButton: navigationModel.isFormOpened ? null : CustomFAB(
-        ),
+        floatingActionButton: navigationModel.isFormOpened ? null : CustomFAB(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: isFormOpened ? null : CustomNavigationBottomBar(),
       ),
@@ -283,12 +318,11 @@ class CustomFAB extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.large(
-      onPressed: (){
-        context.read<NavigationModel>().openForm(FormArgument(isNew: true));
-      },
+      onPressed: ()=> context.read<NavigationModel>().openForm(FormArgument(isNew: true)),
       shape: CircleBorder(),
       enableFeedback: true,
       elevation: 0,
+      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       child: Icon(Icons.add),
       
     );
@@ -320,7 +354,7 @@ class CustomNavigationBottomBar extends StatelessWidget{
           Widget iconButton; 
           if (pageIndex == index) {
             iconButton = IconButton.filled(
-              onPressed: () => context.read<NavigationModel>().navigateMainScreen(index),
+              onPressed: () => {},
               icon: Icon(buttonIcon),
               iconSize: 32,
             );

@@ -6,7 +6,7 @@ import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -24,11 +24,11 @@ class _CostListScreenState extends State<CostListScreen> {
   bool _isSearchOpened = false;
   final TextEditingController _controller = TextEditingController();
 
-  Future<void> showFilterCategoryDialog() => showDialog(
-    context: context, 
-    builder:(context) {
+  Future<void> showFilterCategoryDialog() {
+    return showDialog(context: context, builder:(context) {
       final fullCategories = context.read<AppModel>().categories;
       Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
+      final selectedThemeMode = context.select((ThemeModel state) => state.theme);
       Set<CostItemCategory> displayCategories = {};
       final TextEditingController controller = TextEditingController();
       return StatefulBuilder(
@@ -106,7 +106,7 @@ class _CostListScreenState extends State<CostListScreen> {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: category.colorScheme.primaryContainer
+                                    color: category.colorScheme(selectedThemeMode).primaryContainer
                                   ),
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
@@ -114,7 +114,7 @@ class _CostListScreenState extends State<CostListScreen> {
                                       category.imagePath, 
                                       width: 28, 
                                       height: 28,
-                                      color: category.colorScheme.onPrimaryContainer,
+                                      color: category.colorScheme(selectedThemeMode).onPrimaryContainer,
                                     ),
                                   )
                                 ),
@@ -167,301 +167,295 @@ class _CostListScreenState extends State<CostListScreen> {
           );
         }
       );
-    },
-  );
+    },);
+  }
 
   Future<void> showFilterAmountDialog() {
-    return showDialog(
-      context: context, 
-      builder:(context) {
-        final percentiles = context.read<AppModel>().getPercentiles();
-        final max = percentiles.last;
-        final percentileString = percentiles.map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false)).toList();
-        final Map<String,String> percentileMap = {
-          "<25%": "<${percentileString[1]}",
-          "25% - 50%": "${percentileString[1]} - ${percentileString[2]}",
-          "50% - 75%": "${percentileString[2]} - ${percentileString[3]}",
-          ">75%": ">${percentileString[3]}",
-        };
-        RangeValues _rangeValue = RangeValues(0, max);
-        Set<String> _selectedPercentileRange = {};
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text("Filter Amount"),
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-              content: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  width: MediaQuery.of(context).size.width * 0.7,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    // mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Filter by range", textAlign: TextAlign.left,),
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          sliderTheme: SliderThemeData(
-                            valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall, 
-                            valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50)
-                          )
-                        ),
-                        child: RangeSlider(
-                          values: _rangeValue,   
-                          onChanged: (newValue) {
-                            setState(() =>  _rangeValue = newValue);
-                          },
-                          divisions: max.round(),
-                          labels: RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
-                          min: 0,
-                          max: max,
-                        ),
-                      ),
-                      const Divider(),
-                      
-                      Text("Filter by quartile", textAlign: TextAlign.left,),
-                      ...percentileMap.map((key, value) => MapEntry(
-                        key,
-                        ListTile(
-                          title: Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              Expanded(child: Text(key)),
-                              Text("(${value})"),
-                            ],
-                          ),
-                          trailing: Checkbox(
-                            value: _selectedPercentileRange.contains(key), 
-                            onChanged: (newValue) {
-                              newValue == true? _selectedPercentileRange.add(key):_selectedPercentileRange.remove(key);
-                              setState(()=>{});
-                            }
-                          ),
+    return showDialog(context: context, builder:(context) {
+      final percentiles = context.read<AppModel>().getPercentiles();
+      final max = percentiles.last;
+      final percentileString = percentiles.map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false)).toList();
+      final Map<String,String> percentileMap = {
+        "<25%": "<${percentileString[1]}",
+        "25% - 50%": "${percentileString[1]} - ${percentileString[2]}",
+        "50% - 75%": "${percentileString[2]} - ${percentileString[3]}",
+        ">75%": ">${percentileString[3]}",
+      };
+      RangeValues _rangeValue = RangeValues(0, max);
+      Set<String> _selectedPercentileRange = {};
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text("Filter Amount"),
+            contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+            content: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.4,
+                width: MediaQuery.of(context).size.width * 0.7,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  // mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Filter by range", textAlign: TextAlign.left,),
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        sliderTheme: SliderThemeData(
+                          valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall, 
+                          valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50)
                         )
-                      )).values
-                    ]
-                  ),
+                      ),
+                      child: RangeSlider(
+                        values: _rangeValue,   
+                        onChanged: (newValue) {
+                          setState(() =>  _rangeValue = newValue);
+                        },
+                        divisions: max.round(),
+                        labels: RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
+                        min: 0,
+                        max: max,
+                      ),
+                    ),
+                    const Divider(),
+                    
+                    Text("Filter by quartile", textAlign: TextAlign.left,),
+                    ...percentileMap.map((key, value) => MapEntry(
+                      key,
+                      ListTile(
+                        title: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Expanded(child: Text(key)),
+                            Text("(${value})"),
+                          ],
+                        ),
+                        trailing: Checkbox(
+                          value: _selectedPercentileRange.contains(key), 
+                          onChanged: (newValue) {
+                            newValue == true? _selectedPercentileRange.add(key):_selectedPercentileRange.remove(key);
+                            setState(()=>{});
+                          }
+                        ),
+                      )
+                    )).values
+                  ]
                 ),
               ),
-              actions: [
-                TextButton(onPressed: (){}, child: Text("Save"))
-              ],
-            );
-          }
-        );
-      },
-    );
+            ),
+            actions: [
+              TextButton(onPressed: (){}, child: Text("Save"))
+            ],
+          );
+        }
+      );
+    });
   }
 
   Future<void> showFilterDateDialog() {
-    return showDialog(
-      context: context, 
-      builder:(context) {
-        DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
-        dateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
-        final now = DateTime.now();
-        final today = DateTime(now.year,now.month,now.day);
-        final Map<String, DateTimeRange> dateRanges = {
-          "Today": DateTimeRange(
-            start: today, 
-            end: today
-          ),
-          "Yesterday": DateTimeRange(
-            start: today.subtract(const Duration(days: 1)), 
-            end: today.subtract(const Duration(days: 1))
-          ),
-          "Last 3 Days": DateTimeRange(
-            start: today.subtract(const Duration(days: 2)), 
-            end: today
-          ),
-          "Last 5 Days": DateTimeRange(
-            start: today.subtract(const Duration(days: 4)), 
-            end: today
-          ),
-          "Last 7 Days": DateTimeRange(
-            start: today.subtract(const Duration(days: 6)), 
-            end: today
-          ),
-          "This week": DateTimeRange(
-            start: today.subtract(Duration(days: today.weekday - 1)), 
-            end: today
-          ),
-          "Last week": DateTimeRange(
-            start: today.subtract(Duration(days: today.weekday - 1 + 7)), 
-            end: today.subtract(Duration(days: today.weekday % 7))
-          ),
-          "Last 2 weeks": DateTimeRange(
-            start: today.subtract(Duration(days: today.weekday - 1 + 7)), 
-            end: today
-          ),
-          "Last 3 weeks": DateTimeRange(
-            start: today.subtract(Duration(days: today.weekday - 1 + 14)), 
-            end: today
-          )
-        };
-        String subtitleText = "";
-        bool showReset = dateFilter != dateRangeFilterType.none? true: false;
-        return StatefulBuilder(
-          builder: (context, setState) {
-            if (_selectedDateRange != null) {
-              if (_selectedDateRange!.start == _selectedDateRange!.end) {
-                subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
-              } else {
-                subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}"; 
-              }
+    return showDialog(context: context, builder:(context) {
+      DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
+      DateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
+      final now = DateTime.now();
+      final today = DateTime(now.year,now.month,now.day);
+      final Map<String, DateTimeRange> dateRanges = {
+        "Today": DateTimeRange(
+          start: today, 
+          end: today
+        ),
+        "Yesterday": DateTimeRange(
+          start: today.subtract(const Duration(days: 1)), 
+          end: today.subtract(const Duration(days: 1))
+        ),
+        "Last 3 Days": DateTimeRange(
+          start: today.subtract(const Duration(days: 2)), 
+          end: today
+        ),
+        "Last 5 Days": DateTimeRange(
+          start: today.subtract(const Duration(days: 4)), 
+          end: today
+        ),
+        "Last 7 Days": DateTimeRange(
+          start: today.subtract(const Duration(days: 6)), 
+          end: today
+        ),
+        "This week": DateTimeRange(
+          start: today.subtract(Duration(days: today.weekday - 1)), 
+          end: today
+        ),
+        "Last week": DateTimeRange(
+          start: today.subtract(Duration(days: today.weekday - 1 + 7)), 
+          end: today.subtract(Duration(days: today.weekday % 7))
+        ),
+        "Last 2 weeks": DateTimeRange(
+          start: today.subtract(Duration(days: today.weekday - 1 + 7)), 
+          end: today
+        ),
+        "Last 3 weeks": DateTimeRange(
+          start: today.subtract(Duration(days: today.weekday - 1 + 14)), 
+          end: today
+        )
+      };
+      String subtitleText = "";
+      bool showReset = dateFilter != DateRangeFilterType.none? true: false;
+      return StatefulBuilder(
+        builder: (context, setState) {
+          if (_selectedDateRange != null) {
+            if (_selectedDateRange!.start == _selectedDateRange!.end) {
+              subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
             } else {
-              subtitleText = "No range selected";
+              subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}"; 
             }
-            return AlertDialog(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Filter Date"),
-                  Text(
-                    subtitleText,
-                    overflow: TextOverflow.fade,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-              content: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 12,
-                    children: [
-                      Row(
-                        spacing: 16,
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: 40,
-                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: dateFilter ==  dateRangeFilterType.relative, onChanged: (value) {
-                              dateFilter = value? dateRangeFilterType.relative: dateRangeFilterType.none;
-                              _selectedDateRange = null;
-                              setState((){});
-                            }))
-                          ),
-                          Expanded(
-                            child: Text(
-                              "Relative range", 
-                              textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            )
-                          ),
-                        ],
-                      ),
-                      DropdownMenu(
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        menuHeight: 300,
-                        initialSelection: dateRanges.values.first,
-                        inputDecorationTheme: InputDecorationTheme(
-                          border: const UnderlineInputBorder(),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                          constraints: BoxConstraints.tight(const 
-                            Size.fromHeight(40)
-                          ),
+          } else {
+            subtitleText = "No range selected";
+          }
+          return AlertDialog(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Filter Date"),
+                Text(
+                  subtitleText,
+                  overflow: TextOverflow.fade,
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+            content: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.6,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 12,
+                  children: [
+                    Row(
+                      spacing: 16,
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 40,
+                          child: FittedBox(fit: BoxFit.fill, child: Switch(value: dateFilter ==  DateRangeFilterType.relative, onChanged: (value) {
+                            dateFilter = value? DateRangeFilterType.relative: DateRangeFilterType.none;
+                            _selectedDateRange = null;
+                            setState((){});
+                          }))
                         ),
-                        textStyle: Theme.of(context).textTheme.bodyMedium,
-                        dropdownMenuEntries: dateRanges.map((key, value) => MapEntry(key, 
-                          DropdownMenuEntry(
-                            value: value, 
-                            label: key,
-                            enabled: dateFilter == dateRangeFilterType.relative,
+                        Expanded(
+                          child: Text(
+                            "Relative range", 
+                            textAlign: TextAlign.left,
+                            style: Theme.of(context).textTheme.bodyMedium,
                           )
-                        ),).values.toList(),
-                        onSelected: (value) {
-                          if (dateFilter != dateRangeFilterType.relative) return;
-                          _selectedDateRange = value as DateTimeRange;
-                          setState((){});
-                        },
-                        selectedTrailingIcon: Icon(Icons.check),
+                        ),
+                      ],
+                    ),
+                    DropdownMenu(
+                      width: MediaQuery.of(context).size.width * 0.5,
+                      menuHeight: 300,
+                      initialSelection: dateRanges.values.first,
+                      inputDecorationTheme: InputDecorationTheme(
+                        border: const UnderlineInputBorder(),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                        constraints: BoxConstraints.tight(const 
+                          Size.fromHeight(40)
+                        ),
                       ),
-                      const Divider(),
-                      Row(
-                        spacing: 16,
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: 40,
-                            child: FittedBox(fit: BoxFit.fill, child: Switch(value: dateFilter == dateRangeFilterType.absolute, onChanged: (value) async {
-                              dateFilter = value ? dateRangeFilterType.absolute: dateRangeFilterType.none;
-                              _selectedDateRange = null;
-                              if (value) {
-                                final dateRange = await showCalendarDatePicker2Dialog(
-                                  context: context, 
-                                  config: CalendarDatePicker2WithActionButtonsConfig(
-                                    calendarType: CalendarDatePicker2Type.range
-                                  ),
-                                  dialogSize: Size(MediaQuery.of(context).size.width * 0.6, MediaQuery.of(context).size.height * 0.6),
-                                  value: [DateTime(now.year,now.month,1), DateTime(now.year,now.month + 1, 0)],
-                                );
-                                if (dateRange!= null) {
-                                  _selectedDateRange = DateTimeRange(start: dateRange.first!, end: dateRange.last!);
-                                } else {
-                                  dateFilter = dateRangeFilterType.none;
-                                }
-                              }
-                              setState((){});
-                            }))
-                          ),
-                          Expanded(
-                            child: Text(
-                              "Custom range", 
-                              textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            )
-                          ),
-                        ],
-                      ),
-                      dateFilter == dateRangeFilterType.absolute && _selectedDateRange != null? 
-                        GestureDetector(
-                          child: Text('${subtitleText.split(":").last} (Change date)')
+                      textStyle: Theme.of(context).textTheme.bodyMedium,
+                      dropdownMenuEntries: dateRanges.map((key, value) => MapEntry(key, 
+                        DropdownMenuEntry(
+                          value: value, 
+                          label: key,
+                          enabled: dateFilter == DateRangeFilterType.relative,
                         )
-                        : SizedBox.shrink()
-                    ]
-                  ),
+                      ),).values.toList(),
+                      onSelected: (value) {
+                        if (dateFilter != DateRangeFilterType.relative) return;
+                        _selectedDateRange = value as DateTimeRange;
+                        setState((){});
+                      },
+                      selectedTrailingIcon: Icon(Icons.check),
+                    ),
+                    const Divider(),
+                    Row(
+                      spacing: 16,
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 40,
+                          child: FittedBox(fit: BoxFit.fill, child: Switch(value: dateFilter == DateRangeFilterType.absolute, onChanged: (value) async {
+                            dateFilter = value ? DateRangeFilterType.absolute: DateRangeFilterType.none;
+                            _selectedDateRange = null;
+                            if (value) {
+                              final dateRange = await showCalendarDatePicker2Dialog(
+                                context: context, 
+                                config: CalendarDatePicker2WithActionButtonsConfig(
+                                  calendarType: CalendarDatePicker2Type.range
+                                ),
+                                dialogSize: Size(MediaQuery.of(context).size.width * 0.6, MediaQuery.of(context).size.height * 0.6),
+                                value: [DateTime(now.year,now.month,1), DateTime(now.year,now.month + 1, 0)],
+                              );
+                              if (dateRange!= null) {
+                                _selectedDateRange = DateTimeRange(start: dateRange.first!, end: dateRange.last!);
+                              } else {
+                                dateFilter = DateRangeFilterType.none;
+                              }
+                            }
+                            setState((){});
+                          }))
+                        ),
+                        Expanded(
+                          child: Text(
+                            "Custom range", 
+                            textAlign: TextAlign.left,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          )
+                        ),
+                      ],
+                    ),
+                    dateFilter == DateRangeFilterType.absolute && _selectedDateRange != null? 
+                      GestureDetector(
+                        child: Text('${subtitleText.split(":").last} (Change date)')
+                      )
+                      : SizedBox.shrink()
+                  ]
                 ),
               ),
-              actions: [
-                showReset? TextButton(
-                  onPressed: (){
-                    context.read<AppModel>().updateFilteredDateRange(null, dateRangeFilterType.none);
-                    Navigator.of(context).pop();
-                  }, 
-                  child: Text(
-                    "Reset to default",
-                    style: TextStyle(color: Colors.lightBlue),
-                  )
-                ) : SizedBox.shrink(),
-                TextButton(
-                  onPressed: (){
-                    context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
-                    Navigator.of(context).pop();
-                  }, 
-                  child: Text("Save")
+            ),
+            actions: [
+              showReset? TextButton(
+                onPressed: (){
+                  context.read<AppModel>().updateFilteredDateRange(null, DateRangeFilterType.none);
+                  Navigator.of(context).pop();
+                }, 
+                child: Text(
+                  "Reset to default",
+                  style: TextStyle(color: Colors.lightBlue),
                 )
-              ],
-            );
-          }
-        );
-      },
-    );
+              ) : SizedBox.shrink(),
+              TextButton(
+                onPressed: (){
+                  context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
+                  Navigator.of(context).pop();
+                }, 
+                child: Text("Save")
+              )
+            ],
+          );
+        }
+      );
+    });
   }
 
   Widget titleAppBar() {
     if (!_isSearchOpened) {
-      return Text("App title");
+      return Text("Overview");
     } else {
       var theme = Theme.of(context);
       var hintColor = theme.colorScheme.primary.withAlpha(100);
@@ -593,15 +587,15 @@ class _CostListScreenState extends State<CostListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("list screen is build");
-    final isBlur = context.select((ThemeModel state) => state.isBlurApplied);
+    // debugPrint("list screen is build");
+    final isBlur = context.select((ThemeModel state) => state.isListBlurred);
     return Scaffold(
       body: SafeArea(
         child: Flex(
           direction: Axis.vertical,
           children: [
-            const DateSelector(),
-            const BudgetSummaryBar(),
+            const DateBreadcrumb(),
+            const SummaryTab(),
             Expanded(child: const CostEntryList()),
           ],
         ),
@@ -644,8 +638,8 @@ class _CostListScreenState extends State<CostListScreen> {
   }
 }
 
-class DateSelector extends StatelessWidget {
-  const DateSelector({super.key});
+class DateBreadcrumb extends StatelessWidget {
+  const DateBreadcrumb({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -669,7 +663,7 @@ class DateSelector extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
         ),
         child: Row(
           children: [
@@ -726,7 +720,7 @@ class _CostEntryListState extends State<CostEntryList> {
     // final groupedCostItems = context.select((AppModel model) => model.currentMonthDailyCostItems);
     final groupedCostItems = context.watch<AppModel>().currentMonthDailyCostItems;
     final appModelFunction = context.read<AppModel>();
-    
+    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
     if (groupedCostItems.isEmpty) {
       return Center(
         child: const Text("Empty list"),
@@ -764,19 +758,26 @@ class _CostEntryListState extends State<CostEntryList> {
                       color: Theme.of(context).colorScheme.primary
                     ),
                   ),
-                  trailing: Text(
+                  trailing: HideableText(
                     dailyBudget, 
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    isCurrency: true,
+                    textStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       fontSize: 16,
                       color: dailyBudget[0] == "-" ? Colors.redAccent : Colors.greenAccent
                     ),
                   ),
+                    // isBlur? "***": dailyBudget, 
+                    // style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    //   fontSize: 16,
+                    //   color: dailyBudget[0] == "-" ? Colors.redAccent : Colors.greenAccent
+                    // ),
+                  // ),
                   children: costItems.map((costItem) {
                     final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category)!;
-                    final ColorScheme categoryColorScheme = category.colorScheme;
-
+                    final ColorScheme categoryColorScheme = category.colorScheme(selectedThemeMode);
+                    final spacing = context.read<ThemeModel>().spacingValue; 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Theme(
                         data: Theme.of(context).copyWith(
                         ),
@@ -790,8 +791,8 @@ class _CostEntryListState extends State<CostEntryList> {
                             child: ListTile(
                               dense: true,
                               tileColor: Colors.transparent,
-                              visualDensity: VisualDensity(vertical: 0),
-                              contentPadding: EdgeInsets.only(left: 16, right: 16),
+                              visualDensity: VisualDensity(vertical: spacing - 5), 
+                              contentPadding: EdgeInsets.only(left: 10, right: 16, top: spacing - 1, bottom: spacing - 1),
                               shape: RoundedRectangleBorder(side: BorderSide(color: Colors.transparent), borderRadius: BorderRadius.circular(8)),
                               title: Text(
                                 costItem.name, 
@@ -799,13 +800,14 @@ class _CostEntryListState extends State<CostEntryList> {
                                 softWrap: false,
                                 overflow: TextOverflow.fade,
                                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                                  fontSize: 14
+                                  fontSize: 14,
                                 ),
                               ),
-                              leading: category.generateRoundedIcon(36, categoryColorScheme.primaryContainer, categoryColorScheme.onPrimaryContainer),
-                              trailing: Text(
+                              leading: category.generateRoundedIcon(30, selectedThemeMode, categoryColorScheme.primaryContainer, categoryColorScheme.onPrimaryContainer),
+                              trailing: HideableText(
                                 appModelFunction.getFormattedCostItemValue(costItem),
-                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                                isCurrency: true,
+                                textStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
                                   fontSize: 14
                                 ),
                               ),
@@ -828,28 +830,10 @@ class _CostEntryListState extends State<CostEntryList> {
   }
 }
 
-class BudgetSummaryBar extends StatelessWidget {
-  const BudgetSummaryBar({
+class SummaryTab extends StatelessWidget {
+  const SummaryTab({
     super.key,
   });
-
-  bool hasTextOverflow(
-    String text, 
-    TextStyle style,
-    double textScaleFactor,
-    {
-      double minWidth = 0, 
-      double maxWidth = double.infinity, 
-      int maxLines = 1
-    }) {
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: maxLines,
-      textDirection: ui.TextDirection.ltr,
-      textScaler: TextScaler.linear(textScaleFactor),
-    )..layout(minWidth: minWidth, maxWidth: maxWidth);
-    return textPainter.didExceedMaxLines;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -874,77 +858,120 @@ class BudgetSummaryBar extends StatelessWidget {
     final screenSize = MediaQuery.of(context).size; 
     
     return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container( // main box
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(12)
-        ),
-        height: screenSize.height * 0.14, // 12 as spacing between the rightmost container
-        width: screenSize.width,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              spacing: 8,
+      padding: const EdgeInsets.all(12.0),
+      child: Container(
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainer, borderRadius: BorderRadius.circular(12)),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: constraints.maxWidth * 3/5,
-                  child: Column( // vertical
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 20,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20,10,10,10),
+                  child: costCard(
+                    context,
+                    "Balance", 
+                    totalCost['balance']!,
+                    isBig: true
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20,0,0,10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       costCard(
                         context,
-                        // AppLocalizations.of(context)!.balance, 
-                        "Balance", 
-                        totalCost['balance']!,
-                        isBig: true
+                        "Income", 
+                        totalCost['income']!,
                       ),
-                      Expanded(
-                        flex: 1,
-                        child: Row(
-                          spacing: 10,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            SizedBox(
-                              width: constraints.maxWidth * 1.3/5,
-                              child: costCard(
-                                context,
-                                "Expense", 
-                                // AppLocalizations.of(context)!.expense, 
-                                totalCost['expense']!,
-                              )
-                            ),
-                            SizedBox(
-                              width: constraints.maxWidth * 1.3/5,
-                              child: costCard(
-                                context,
-                                "Income", 
-                                // AppLocalizations.of(context)!.income, 
-                                totalCost['income']!,
-                              )
-                            ),
-                          ]
-                        ),
-                      )
+                      const SizedBox(width: 30,),
+                      costCard(
+                        context,
+                        "Expense", 
+                        totalCost['expense']!,
+                      ),
                     ],
                   ),
                 ),
-                // VerticalDivider(),
-                SizedBox(
-                  width: constraints.maxWidth * 2/5 - 32,
-                  child: SummaryChart(summaryData: totalCost,)
-                ),
               ],
-            );
-          }
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SizedBox(
+                height: 120,
+                width: 100,
+                child: SummaryChart(summaryData: totalCost,),
+              ),
+            )
+            
+          ],
         ),
       ),
     );
+    // return Padding(
+    //   padding: const EdgeInsets.all(12.0),
+    //   child: Container( // main box
+    //     padding: const EdgeInsets.all(16),
+    //     decoration: BoxDecoration(
+    //       color: Theme.of(context).colorScheme.secondaryContainer,
+    //       borderRadius: BorderRadius.circular(12)
+    //     ),
+    //     height: screenSize.height * 0.2, // 12 as spacing between the rightmost container
+    //     // width: screenSize.width,
+    //     child: Row(
+    //       mainAxisSize: MainAxisSize.min,
+    //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //       spacing: 8,
+    //       children: [
+    //         SizedBox(
+    //           width: screenSize.width * 0.5,
+    //           child: Column( // vertical
+    //             crossAxisAlignment: CrossAxisAlignment.start,
+    //             mainAxisAlignment: MainAxisAlignment.start,
+    //             mainAxisSize: MainAxisSize.min,
+    //             spacing: 20,
+    //             children: [
+    //               costCard(
+    //                 context,
+    //                 "Balance", 
+    //                 totalCost['balance']!,
+    //                 isBig: true
+    //               ),
+    //               Row(
+    //                 spacing: 10,
+    //                 mainAxisSize: MainAxisSize.max,
+    //                 children: [
+    //                   Flexible(
+    //                     child: costCard(
+    //                       context,
+    //                       "Expense", 
+    //                       totalCost['expense']!,
+    //                     )
+    //                   ),
+    //                   Flexible(
+    //                     child: costCard(
+    //                       context,
+    //                       "Income", 
+    //                       totalCost['income']!,
+    //                     )
+    //                   ),
+    //                 ]
+    //               )
+    //             ],
+    //           ),
+    //         ),
+    //         SizedBox(
+    //           width: screenSize.width * 0.3,
+    //           child: SummaryChart(summaryData: totalCost,)
+    //         ),
+    //       ],
+    //     )
+    //   ),
+    // );
   }
 
   Widget costCard(
@@ -956,7 +983,6 @@ class BudgetSummaryBar extends StatelessWidget {
     final appTheme = Theme.of(context);
     final appTextTheme = appTheme.textTheme;
     final appColorTheme = appTheme.colorScheme;
-    final isBlur = context.select((ThemeModel state) => state.isBlurApplied);
     final TextStyle mainTextStyle;
     if (isBig) {
       mainTextStyle =  appTextTheme.displayMedium!.copyWith(
@@ -981,21 +1007,14 @@ class BudgetSummaryBar extends StatelessWidget {
                 color: appColorTheme.primary,
                 fontSize: 12
               ),
-            ),
-            if(isBlur) Icon(
-              Icons.visibility_off, 
-              size: 12, 
-              color: appColorTheme.secondary
             )
           ],
         ),
-        BlurrableText(
+        HideableText(
           value['string'], 
-          blurAmount: isBig ? 8: 4, 
-          isVisible: !isBlur, 
-          textStyle: mainTextStyle,
-          overflowText: value['stringSuffix'],
-        )
+          isCurrency: true,
+          textStyle: mainTextStyle
+        ),
       ],
     );
   }
@@ -1055,9 +1074,9 @@ class _SummaryChartState extends State<SummaryChart> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Expanded(
-          child: Container(
-            // decoration: BoxDecoration(border: Border.all()),
+        Container(
+          // decoration: BoxDecoration(border: Border.all()),
+          child: Expanded(
             child: PageView(
               onPageChanged: (value) => setState(() {
                 _currentPage = value;
@@ -1134,11 +1153,8 @@ class _SummaryChartState extends State<SummaryChart> {
                 fontSize: 12,
               ),
             ),
-            BlurrableText(
-              // percentage >= 0? NumberFormat("#0%").format(percentage) : "0%",
+            HideableText(
               NumberFormat("#0%").format(percentage),
-              blurAmount: 4, 
-              isVisible: !context.select((ThemeModel state) => state.isBlurApplied), 
               textStyle: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: 24)
             )
           ]

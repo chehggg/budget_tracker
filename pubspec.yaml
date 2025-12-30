@@ -18,15 +18,19 @@ dependencies:
   fl_chart: ^0.70.2
   flutter:
     sdk: flutter
+  flutter_colorpicker: ^1.1.0
   flutter_form_builder: ^7.0.0-alpha.3
+  flutter_image_compress: ^2.4.0
   flutter_localization: ^0.3.1
   flutter_svg: ^2.0.17
   google_fonts: ^6.2.1
+  http: ^1.4.0
   intl: ^0.20.2
   math_expressions: ^2.6.0
   path_provider: ^2.1.5
   provider: ^6.1.2
   shared_preferences: ^2.4.0
+  url_launcher: ^6.3.2
   uuid: ^4.5.1
 
 dev_dependencies:

@@ -1,4 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:math';
+
+import 'package:budget_tracker/models/theme_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -83,13 +86,13 @@ class _ChartScreenState extends State<ChartScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Visualize"),
+        title: Text("Visualize", style: Theme.of(context).textTheme.headlineLarge,),
       ),
       body: SafeArea(
         child: Column(
           spacing: 20,
           children: [
-            const DateSelector(),
+            const DateBreadcrumb(),
             // Padding(
             //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
             //   child: SegmentedButton(
@@ -112,11 +115,19 @@ class _ChartScreenState extends State<ChartScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   spacing: 20,
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      // child: OverviewBudgetBar(),
+                      // child: const BudgetWidget(),
+                      child: const CustomChartSection(
+                        title: "Budget breakdown", 
+                        sectionHeight: 270,
+                        pageChildren: [
+                          BudgetWidget()
+                        ],
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -204,6 +215,131 @@ class DailyTotalBarChart extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class BudgetWidget extends StatelessWidget {
+  const BudgetWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final contextRead = context.read<AppModel>();
+    final contextWatch = context.watch<AppModel>();
+    return Column(
+      children: (contextRead.budgetMetrics[contextWatch.formatedSelectedYearMonth] ?? []).map((e) {
+        final double curAmount = e['amount'] ?? 0;
+        final double budgetAmount = e['budget'] ?? 0;
+
+        final String curAmountString = contextRead.customCurrencyFormat(curAmount, true); 
+        final String budgetAmountString = contextRead.customCurrencyFormat(budgetAmount, true); 
+
+        final double spendPercentage = curAmount/budgetAmount;
+        final String budgetMessage = spendPercentage > 1 ? "${((spendPercentage - 1) * 100).round()}% over" : "${(spendPercentage * 100).round()}%" ;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // SizedBox(height: 12,),
+            Text(
+              '${e['name']}', 
+              textAlign: TextAlign.left,
+              style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
+            ),
+            Text('$budgetMessage ($curAmountString/$budgetAmountString)', textAlign: TextAlign.left,),
+            Padding(
+              padding: const EdgeInsets.only(left: 2.0,right: 2.0, bottom: 2, top: 8),
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  // border: BoxBorder.all(color: Colors.white)
+                ),
+                child: Row(
+                  spacing: 30,
+                  children: [
+                    Expanded(
+                      child: BarChart(
+                        BarChartData(
+                          borderData: FlBorderData(show: false),
+                          maxY: max(curAmount,budgetAmount) + 1,
+                          gridData: FlGridData(
+                            horizontalInterval: budgetAmount,
+                            getDrawingHorizontalLine: (value) {
+                              if (value == budgetAmount.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
+                              // if (value == curAmount.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
+                              return FlLine(strokeWidth: 0);
+                            },
+                            // show: false
+                          ),
+                          titlesData: FlTitlesData(
+                            bottomTitles: AxisTitles(drawBelowEverything: false),
+                            topTitles: AxisTitles(drawBelowEverything: false),
+                            leftTitles: AxisTitles(drawBelowEverything: false),
+                            rightTitles: AxisTitles(sideTitles: SideTitles(
+                              interval: budgetAmount,
+                              reservedSize: 30,
+                              showTitles: true, 
+                              getTitlesWidget: (value, meta) {
+                                // if (value == curAmount.roundToDouble()) {
+                                //   return SideTitleWidget(
+                                //     meta: meta,
+                                //      fitInside: SideTitleFitInsideData(
+                                //       enabled: budgetAmount < curAmount, 
+                                //       axisPosition: 0, 
+                                //       parentAxisSize: budgetAmount < curAmount ? 100 : 0, 
+                                //       distanceFromEdge: 0
+                                //     ),
+                                //     child: Text('Current'), 
+                                //   );
+                                // }
+                                if (value == budgetAmount.roundToDouble()) {
+                                  return SideTitleWidget(
+                                    meta: meta,
+                                    fitInside: SideTitleFitInsideData(
+                                      enabled: budgetAmount > curAmount, 
+                                      axisPosition: 0, 
+                                      parentAxisSize: budgetAmount > curAmount ? 50 : 0, 
+                                      distanceFromEdge: 0
+                                    ),
+                                    child: Text('Limit'), 
+                                  );
+                                }
+                                return SizedBox.shrink();
+                              },
+                            ),
+                          ),
+                          ),
+                          barGroups: [
+                            BarChartGroupData(
+                              x: 1,
+                              barsSpace: 0,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: curAmount,
+                                  color: curAmount > budgetAmount ? Colors.red : context.read<ThemeModel>().color,
+                                  width: 12,
+                                  backDrawRodData: BackgroundBarChartRodData(
+                                    show: true,
+                                    color: Colors.grey.withAlpha(100),
+                                    fromY: 0,
+                                    toY: budgetAmount
+                                  )
+                                ),
+                                // BarChartRodData(toY: 40),
+                              ]
+                            )
+                          ],
+                          rotationQuarterTurns: 1
+                        )
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }).toList()
     );
   }
 }
@@ -394,6 +530,7 @@ class BreakdownPieChart extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
     final summarizedCategoryData = context.select((AppModel state) {
       final categoryData = state.getcurrentMonthCategoryView(true, CostType.expense);
       final Map<String,CostMetric> summarizedData = {};
@@ -451,8 +588,8 @@ class BreakdownPieChart extends StatelessWidget {
                         Color primaryColor;
                         Color secColor;
                         if (currentCategory != null) {
-                          primaryColor = currentCategory.colorScheme.primary;
-                          secColor = currentCategory.colorScheme.primaryContainer;
+                          primaryColor = currentCategory.colorScheme(selectedThemeMode).primary;
+                          secColor = currentCategory.colorScheme(selectedThemeMode).primaryContainer;
                           // categoryColorScheme = currentCategory.colorScheme;
                         } else {
                           primaryColor = Colors.amber;
@@ -490,7 +627,7 @@ class BreakdownPieChart extends StatelessWidget {
                       // final category = data['category'] as CostItemCategory?;
                       Color primaryColor;
                       if (category != null) {
-                        primaryColor = category.colorScheme.primary;
+                        primaryColor = category.colorScheme(selectedThemeMode).primary;
                       } else {
                         primaryColor = Colors.amber;
                       }
@@ -910,10 +1047,11 @@ class _CategoryListState extends State<CategoryList> {
   bool _isSortDescending = true;
 
   List<Widget> categoryListTile(Map<String,CostMetric> data, BuildContext context) => data.entries.map((categoryData) {
+    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
     final categoryName = categoryData.key;
     final CostItemCategory categoryEntry = context.read<AppModel>().getCategoryEntry(categoryName)!;
     final double categoryAmount = categoryData.value.expense!;
-    final ColorScheme categoryColorScheme = categoryEntry.colorScheme;
+    final ColorScheme categoryColorScheme = categoryEntry.colorScheme(selectedThemeMode);
     // final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);    
     final amountString = context.read<AppModel>().customCurrencyFormat(categoryAmount, false);    
     final currencySymbol = context.select((AppModel state) => state.currencySymbol);
@@ -952,7 +1090,7 @@ class _CategoryListState extends State<CategoryList> {
             )
           ],
         ),
-        leading: categoryEntry.generateRoundedIcon(56,),
+        leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
         subtitle: PercentageBar(
           height: 8, 
           color: categoryColorScheme.primaryFixed, 
@@ -965,7 +1103,7 @@ class _CategoryListState extends State<CategoryList> {
             dense: true,
             leading: Container(
               width: MediaQuery.of(context).size.width* 0.1,  
-              child: Text((costItem.getDateTime()).displayFormat())
+              child: Text((costItem.dateTime).displayFormat())
             ),
             title: Row(
               crossAxisAlignment: CrossAxisAlignment.center,

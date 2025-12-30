@@ -1,6 +1,7 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
+import 'package:budget_tracker/models/theme_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -128,9 +129,9 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
             color: Colors.transparent,
             child: Container(
               decoration: BoxDecoration(
-                // color: Theme.of(context).colorScheme.surface
+                color: Theme.of(context).colorScheme.surface
               ),
-              height: MediaQuery.sizeOf(context).height * 0.3,
+              height: 230,
               width: MediaQuery.sizeOf(context).width,
               child: GridView(
                 physics: NeverScrollableScrollPhysics(),
@@ -138,7 +139,8 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
                   crossAxisCount: 4,
                   mainAxisSpacing: 8,
                   crossAxisSpacing: 8,
-                  childAspectRatio: 2 
+                  mainAxisExtent: 50,
+                  // childAspectRatio: 1.5 
                 ),
                 children: buttons(context).map((keyboardButton button) {
                   final Widget child;
@@ -241,14 +243,13 @@ class keyboardButton {
 
 
 
-class BlurrableText extends StatelessWidget {
-  const BlurrableText(
+class HideableText extends StatelessWidget {
+  const HideableText(
     this.data,  
     {
       super.key,
       this.overflowText ,
-      required this.blurAmount,
-      required this.isVisible,
+      this.isCurrency ,
       required this.textStyle,
       this.maxLine = 1
     }
@@ -256,8 +257,7 @@ class BlurrableText extends StatelessWidget {
 
   final String data;
   final String? overflowText;
-  final double blurAmount;
-  final bool isVisible;
+  final bool? isCurrency;
   final TextStyle textStyle;
   final int maxLine;
 
@@ -281,30 +281,24 @@ class BlurrableText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ui.ImageFilter.blur(
-        sigmaX: blurAmount,
-        sigmaY: blurAmount,
-        tileMode: TileMode.clamp,
-      ),
-      enabled: !isVisible,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (!hasTextOverflow(
-            data, 
-            textStyle, 
-            MediaQuery.textScalerOf(context), 
-            maxWidth: constraints.maxWidth,
-            maxLines: maxLine
-          )) {
-            return Text(data,style: textStyle,);
-          } else if (overflowText == null) {
-            return Text(data, style: textStyle,);
-          } else {
-            return Text(overflowText!, style: textStyle,);
-          }
+    final hide = context.read<ThemeModel>().isListBlurred;
+    final currency = context.read<AppModel>().currencySymbol;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!hasTextOverflow(
+          data, 
+          textStyle, 
+          MediaQuery.textScalerOf(context), 
+          maxWidth: constraints.maxWidth,
+          maxLines: maxLine
+        )) {
+          return Text(hide? '${isCurrency == true? '$currency ': ''}***' : data, style: textStyle,);
+        } else if (overflowText == null) {
+          return Text(hide? '${isCurrency == true? '$currency ': ''}***' : data, style: textStyle,);
+        } else {
+          return Text(hide? "***" : overflowText!, style: textStyle,);
         }
-      ),
+      }
     );
   }
 }
@@ -500,3 +494,4 @@ class ExpenseCalendarView extends StatelessWidget {
     );
   }
 }
+

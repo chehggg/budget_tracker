@@ -1,15 +1,24 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/extensions.dart';
+import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
+import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:budget_tracker/widgets.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // screen for user to input a new cost item
@@ -33,7 +42,12 @@ class CostItemFormScreen extends StatelessWidget {
           "Edit item"
         ) ,
         leading: BackButton(
-          onPressed: () => context.read<NavigationModel>().popFormToMain(),
+          onPressed: () {
+            context.read<NavigationModel>().popFormToMain();
+            if (arg.oriRoute != null) {
+              Navigator.of(context).pushNamed("/recurring");
+            }
+          },
         ),
 
       ),
@@ -43,7 +57,10 @@ class CostItemFormScreen extends StatelessWidget {
         child: Padding(
           // padding: const EdgeInsets.all(20.0),
           padding: const EdgeInsets.all(0.0),
-          child: CostItemForm(costItem: arg.selectedCostItem),
+          child: CostItemForm(
+            costItem: arg.selectedCostItem, 
+            recurring: arg.oriRoute != null
+          ),
         )
       ),
       // bottomNavigationBar: bottom,
@@ -56,10 +73,12 @@ class CostItemFormScreen extends StatelessWidget {
 class CostItemForm extends StatefulWidget {
   const CostItemForm({
     super.key,
+    this.recurring = false,
     this.costItem
   });
 
   final CostItem? costItem;
+  final bool recurring;
   @override
   State<CostItemForm> createState() => _CostItemFormState();
 }
@@ -89,6 +108,7 @@ class _CostItemFormState extends State<CostItemForm> {
 
   late FocusNode textFocusNode;
 
+  String? _imageString;
   final double _messageOpacity = 0;
 
   Widget titleLabel(String labelText, IconData icon, ColorScheme colorScheme) {
@@ -175,12 +195,18 @@ class _CostItemFormState extends State<CostItemForm> {
   void saveResultAndPop(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final result = saveResult();
-      if (widget.costItem != null) {
-        context.read<AppModel>().updateCostItem(result,widget.costItem!.uuid!);
+      if (widget.recurring) {
+        context.read<AppModel>().saveTempRecCostFromForm(result);        
+        context.read<NavigationModel>().popFormToMain();
+        Navigator.of(context).pushNamed("/recurring");
       } else {
-        context.read<AppModel>().createNewItem(result);
-      }
-      context.read<NavigationModel>().popFormToMain();
+        if (widget.costItem != null) {
+          context.read<AppModel>().updateCostItem(result,widget.costItem!.uuid!);
+        } else {
+          context.read<AppModel>().createNewCostItem(result);
+        }
+        context.read<NavigationModel>().popFormToMain();
+      } 
     }
   }
 
@@ -243,17 +269,17 @@ class _CostItemFormState extends State<CostItemForm> {
     if (_selectedCategory == null) {
       _bottomSheetHeight = 0;
     } else if (_isFormExpanded && _isKeyboardOpen) {
-      _bottomSheetHeight = 660;
+      _bottomSheetHeight = 580;
       if (context.select((AppModel state) => state.notes(_selectedCategory?.name).isEmpty)) {
         _bottomSheetHeight -= 40;
       }
     } else if (_isFormExpanded) {
-      _bottomSheetHeight = 550;
+      _bottomSheetHeight = 520;
       if (context.select((AppModel state) => state.notes(_selectedCategory?.name).isEmpty)) {
         _bottomSheetHeight -= 40;
       }
     } else {
-      _bottomSheetHeight = 180;
+      _bottomSheetHeight = 120;
     }
     // debugPrint("height: ${(screenSize.height * _bottomSheetHeight)}");
     return Form(
@@ -269,8 +295,6 @@ class _CostItemFormState extends State<CostItemForm> {
           ),
           AnimatedPositioned(
             height: _bottomSheetHeight,
-            // height: screenSize.height * _bottomSheetHeight,
-            // height: screenSize.height * 0.7,
             width: screenSize.width,
             duration: Durations.medium3,
             curve: Curves.fastOutSlowIn,
@@ -283,6 +307,7 @@ class _CostItemFormState extends State<CostItemForm> {
 
   Widget detailsBottomSheet() {
     final appState = context.watch<AppModel>();
+    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
     final currentTextTheme = Theme.of(context).textTheme;
     final CostItemCategory localCategory;
 
@@ -316,9 +341,9 @@ class _CostItemFormState extends State<CostItemForm> {
 
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme: categoryColorScheme,
+        colorScheme: categoryColorScheme(selectedThemeMode),
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: categoryColorScheme.onPrimaryContainer
+          cursorColor: categoryColorScheme(selectedThemeMode).onPrimaryContainer
         ),
         inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
           fillColor: Colors.amber,
@@ -326,7 +351,7 @@ class _CostItemFormState extends State<CostItemForm> {
         )
       ),
       child: Container(
-        color: Theme.of(context).colorScheme.surface,
+        color: categoryColorScheme(selectedThemeMode).surface,
         child: GestureDetector(
           onPanUpdate: (details) {
             if (details.delta.dy > 10) {
@@ -352,9 +377,9 @@ class _CostItemFormState extends State<CostItemForm> {
                   child: AnimatedContainer(
                     duration: Durations.medium1,
                     curve: Curves.fastOutSlowIn,
-                    height: _bottomSheetHeight == 180 ? 180 : 60 ,
+                    height: _bottomSheetHeight == 120 ? 120 : 60 ,
                     decoration: BoxDecoration(
-                      color: categoryColorScheme.primaryContainer.withAlpha(200),
+                      color: categoryColorScheme(selectedThemeMode).primaryContainer.withAlpha(200),
                       borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(12), 
                           topRight: Radius.circular(12)
@@ -362,7 +387,6 @@ class _CostItemFormState extends State<CostItemForm> {
                     ),
                     alignment: Alignment.center,
                     child: ListTile(
-                      // minTileHeight: screenSize.height * 0.08,
                       shape: RoundedRectangleBorder(
                         side: BorderSide(width: 0),
                         borderRadius: BorderRadius.only(
@@ -370,23 +394,21 @@ class _CostItemFormState extends State<CostItemForm> {
                           topRight: Radius.circular(12)
                         )
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      contentPadding: EdgeInsets.only(left: 16, top: 4, bottom: 4),
                       title: Text(
-                        // localCategory.getLocalizedName(context),
                         localCategory.name,
                         style: Theme.of(context).textTheme.headlineMedium!.copyWith(fontSize: 24),
                       ),
-                      leading: localCategory.createIcon(24),
-                        // placeholderBuilder: (BuildContext context) => CircularProgressIndicator(), 
+                      leading: localCategory.createIcon(_isFormExpanded? 24: 34,selectedThemeMode),
                       subtitle: subtitle,
-                      trailing: actionIcons(appState, categoryColorScheme),
-                      // trailing: _amountController.text != '' ? Text(_amountController.text) : null,
+                      trailing: actionIcons(appState, categoryColorScheme(selectedThemeMode)),
                     ),
                   ),
                 ),
               ),
               Column(
                 spacing: 0,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextFormField(
                     readOnly: true,
@@ -404,7 +426,7 @@ class _CostItemFormState extends State<CostItemForm> {
                       // prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
                       hintText: "0",
                       isDense: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
+                      fillColor: categoryColorScheme(selectedThemeMode).surface,
                       filled: true
                       // hintStyle: currentTextTheme.headlineLarge!.copyWith(
                       //   color: categoryColorScheme.onPrimaryContainer.withAlpha(150) 
@@ -429,7 +451,7 @@ class _CostItemFormState extends State<CostItemForm> {
                     controller: _nameController,
                     textInputAction: TextInputAction.done,
                     decoration: customInputDecoration().copyWith(
-                      fillColor: Theme.of(context).colorScheme.surface,
+                      fillColor: categoryColorScheme(selectedThemeMode).surface,
                       filled: true,
                       hintText: "Add a note/description for the item..",
                       hintStyle: currentTextTheme.titleLarge!.copyWith(
@@ -442,7 +464,7 @@ class _CostItemFormState extends State<CostItemForm> {
                     style: currentTextTheme.titleLarge!.copyWith(
                       fontSize: 14,
                       height: 1.7,
-                      color: categoryColorScheme.onSurface
+                      color: categoryColorScheme(selectedThemeMode).onSurface
                     ),
                   ),
                 ],
@@ -474,13 +496,13 @@ class _CostItemFormState extends State<CostItemForm> {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12.0),
                   child: CustomKeyboard(
                     controller: _amountController, 
                     onDone:() => saveResultAndPop(context),
                     selectedDate: _selectedDate,
                     onDateTapped: () async {
-                      final response = await pickDate(context,categoryColorScheme);
+                      final response = await pickDate(context,categoryColorScheme(selectedThemeMode));
                       if (response == null) return;
                       setState(() {
                         _selectedDate = response;
@@ -517,26 +539,80 @@ class _CostItemFormState extends State<CostItemForm> {
               }
             }
           },
-          icon: Icon(Icons.delete, color: categoryColorScheme.error)
+          icon: Icon(Icons.delete, color: Colors.red)
         ),
-        if (widget.costItem == null)  // show camera if form is new
+        // if (widget.costItem == null)  // show camera if form is new
         IconButton(
           iconSize: 24,
-          onPressed: (){
-            debugPrint("add camera feature!");
+          onPressed: () async {
+            // pick file if no file selected currently
+            if (_imageString == null) {
+              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowMultiple: false,
+                allowedExtensions: ['jpg','jpeg','gif','png',]
+              );
+              if (result == null) return;
+              
+              Uint8List? compressResult = await FlutterImageCompress.compressWithFile(
+                result.files.single.path!,
+                quality: 50,
+              );
+              if (compressResult == null) return;
+
+              setState(() => _imageString = base64Encode(compressResult));
+              debugPrint('file selected and saved, image: $_imageString');
+            } else { // show pic when image string is present
+              Uint8List imageBytes = base64Decode(_imageString!); 
+              final imageProvider = MemoryImage(imageBytes);
+              await precacheImage(imageProvider, context);
+
+              await showDialog(
+                context: context, 
+                builder: (context) => AlertDialog(
+                  // content: Image.memory(
+                  //   imageBytes,
+                  // ),
+                  content: Image(image: imageProvider),
+                  actions: [
+                    CustomCancelButton(onPressed: () {Navigator.pop(context);}),
+                    CustomDeleteButton(onPressed: () {
+                      Navigator.pop(context);
+                      setState(() => _imageString = null);
+                    }),
+                    TextButton(
+                      onPressed: () async {
+                        String? outputFile = await FilePicker.platform.saveFile();
+                        if (outputFile != null) {
+                          Flushbar(
+                            message: "Image exported!",
+                            animationDuration: Duration(milliseconds: 500),
+                          );
+                        }
+                      },
+                      child: const Text("Export"),
+                    )
+                  ],
+                ),
+              );
+            }
           },
-          icon: Icon(Icons.camera_alt, size: 24,)
+          icon: Icon(
+            Icons.photo, 
+            size: 24,
+            color: _imageString != null ? _selectedCategory!.colorScheme(context.read<ThemeModel>().theme).onPrimary : Colors.grey,
+          )
         ),
-        if (widget.costItem == null) // show currency exchange if form is new
+        // if (widget.costItem == null) // show currency exchange if form is new
         IconButton(
           iconSize: 24,
-          onPressed: (){
-            debugPrint("add exchange feature!");
+          onPressed: () {
+            // debugPrint("add exchange feature!");
+            currencyExchangeDialog();
           },
-          icon: Icon(Icons.price_change, size: 24,)
+          icon: Icon(Icons.currency_exchange, size: 24,)
         ),
         if (widget.costItem != null) // show settings if editing existing form
-        // ),
         MenuAnchor(
           builder:(context, controller, child) {
             return IconButton(
@@ -545,16 +621,16 @@ class _CostItemFormState extends State<CostItemForm> {
               icon: Icon(Icons.more_vert)
             );
           },
-          alignmentOffset: Offset(-150, 0),
+          alignmentOffset: Offset(-130, 0),
           style: MenuStyle(
-            padding: WidgetStateProperty.all(EdgeInsets.all(10)),
+            // visualDensity: VisualDensity.compact,
             backgroundColor: WidgetStateProperty.all(categoryColorScheme.primaryContainer) 
           ),
           menuChildren: [
             MenuItemButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
-                  appState.createNewItem(saveResult());
+                  appState.createNewCostItem(saveResult());
                   Navigator.of(context).pop();
                 }
               },
@@ -563,11 +639,20 @@ class _CostItemFormState extends State<CostItemForm> {
             MenuItemButton(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
-                  appState.createNewItem(saveResult());
+                  appState.createNewCostItem(saveResult());
                   Navigator.of(context).pop();
                 }
               },
               child: Text("Create copy for today", textAlign: TextAlign.right)
+            ),
+            MenuItemButton(
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  Navigator.of(context).pushNamed('/recurring');
+                  appState.saveTempRecCostFromForm(saveResult());
+                }
+              },
+              child: Text("Create recurring copy", textAlign: TextAlign.right)
             ),
           ],
         )
@@ -580,9 +665,13 @@ class _CostItemFormState extends State<CostItemForm> {
       context: context, 
       builder: (context) {
         return AlertDialog(
-          title: Text("Delete this entry?"),
-          content: Text("Warning: You cannot undo this action"),
+          title: Text("Delete this item?"),
+          content: Text("Warning: You cannot undo this action."),
           actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), 
+              child: Text("Cancel")
+            ),
             TextButton(
               style: ElevatedButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
@@ -590,10 +679,6 @@ class _CostItemFormState extends State<CostItemForm> {
               ),
               onPressed: () => Navigator.pop(context, true), 
               child: Text("Delete", style: Theme.of(context).textTheme.labelLarge!.copyWith(color: Colors.redAccent),)
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, false), 
-              child: Text("Cancel")
             ),
           ],
         );
@@ -624,6 +709,199 @@ class _CostItemFormState extends State<CostItemForm> {
       },
     );
   }
+
+  Future currencyExchangeDialog() async {
+    final dropdownMenuWidth = MediaQuery.of(context).size.width * 0.64;
+    final textFieldBg = Colors.black.withAlpha(100);
+    final textFieldDisabledBg = Colors.white.withAlpha(20);
+
+    List<Widget> labelTitle(String title, {bool useSpacing = true}) => [
+      useSpacing? SizedBox(height: 20,) : SizedBox.shrink(),
+      Text(title, style: Theme.of(context).textTheme.labelSmall,),
+      SizedBox(height: 8,)
+    ];
+
+    List<Widget> customDivider = [
+      Divider(),
+      SizedBox(height: 8,),
+    ];
+
+    TextEditingController _amountController = TextEditingController(text: "0");
+    TextEditingController _rateController = TextEditingController(text: "0");
+    TextEditingController _convertedAmountController = TextEditingController(text: "");
+    String _currentCurrency = "MYR";
+    String _exchangedCurrency = "";
+    ExchangeRateType _currentExchangeType = ExchangeRateType.current;
+    double _currentExchangeRate = 1;
+    
+    Future<String> sendRequest(BuildContext context) async {
+      await context.read<CurrencyModel>().getCurrencyList();
+      await context.read<CurrencyModel>().getExchangeRate();
+      return "data loaded";
+    }
+    final Future<String> initRequest = sendRequest(context);
+
+    return showDialog(
+      context: context, 
+      builder: (context) {
+        return FutureBuilder(
+          future: initRequest,
+          builder: (context, asyncSnapshot) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                final Map<String,dynamic> currencies = context.select((CurrencyModel state) => state.currencies);
+                final Map<String,dynamic> exchange = context.select((CurrencyModel state) => state.rates);
+                _convertedAmountController.text = (double.parse(_amountController.text) / double.parse(_rateController.text)).toStringAsFixed(2);
+                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: CircularProgressIndicator(
+                        // constraints: BoxConstraints(maxWidth: dropdownMenuWidth, maxHeight:  dropdownMenuWidth),
+                      ),
+                    ),
+                  );
+                } else {
+                  return AlertDialog(
+                    title: const Text("Convert currencies"),
+                    content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ...labelTitle('Exchange Rate', useSpacing: false),
+                        Row(
+                          children: [
+                            Radio(
+                              visualDensity: VisualDensity(horizontal: -2),
+                              value: ExchangeRateType.current, 
+                              groupValue: _currentExchangeType, 
+                              onChanged: (value) {
+                                setState(() => _currentExchangeType = value!);
+                              }
+                            ),
+                            Text(ExchangeRateType.current.name),
+                            SizedBox(width: 10,),
+                            Radio(
+                              visualDensity: VisualDensity(horizontal: -2),
+                              value: ExchangeRateType.custom, 
+                              groupValue: _currentExchangeType, 
+                              onChanged: (value) {
+                                setState(() => _currentExchangeType = value!);
+                              }
+                            ),
+                            Text(ExchangeRateType.custom.name)
+                          ],
+                        ),
+                        ...customDivider,
+                        ...labelTitle('Convert from', useSpacing: false),
+                        Row(
+                          spacing: 8,
+                          children: [
+                            SizedBox(
+                              width: dropdownMenuWidth,
+                              child: DropdownMenu(
+                                enableSearch: true,
+                                enableFilter: true,
+                                inputDecorationTheme: InputDecorationTheme(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(100),
+                                    borderSide: BorderSide.none
+                                  ),
+                                  fillColor: textFieldBg,
+                                  filled: true,
+                                ),
+                                textStyle: Theme.of(context).textTheme.titleMedium,
+                                width: dropdownMenuWidth,
+                                menuHeight: MediaQuery.of(context).size.height * 0.4,
+                                dropdownMenuEntries: currencies.map((key,value) => MapEntry(key, 
+                                  DropdownMenuEntry(
+                                    value: key, 
+                                    label: value,
+                                    trailingIcon: Text(key)
+                                  )
+                                )).values.toList(),
+                                onSelected: (value) {
+                                  debugPrint("Selected value: $value");
+                                  setState(() {
+                                    _exchangedCurrency = value?? "";
+                                    _currentExchangeRate = (exchange[_exchangedCurrency] as double)/(exchange[_currentCurrency] as double);
+                                    _rateController.text = _currentExchangeRate.toStringAsFixed(2);
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        ...labelTitle('Amount'),
+                        TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.right,
+                          decoration: InputDecoration(
+                            prefix: Text(_exchangedCurrency),
+                            hintText: "0",
+                            fillColor: textFieldBg,
+                            filled: true,
+                            border: OutlineInputBorder(
+                              borderSide: BorderSide.none,
+                              borderRadius: BorderRadius.circular(100),
+                              // borderSide: BorderSide.none
+                            ),
+                          ),
+                        ),
+                        ...customDivider,
+                        ...labelTitle('Rate', useSpacing: false),
+                        TextField(
+                          controller: _rateController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.right,
+                          readOnly: _currentExchangeType == ExchangeRateType.custom? false: true,
+                          enabled: _currentExchangeType == ExchangeRateType.custom? true: false,
+                          decoration: InputDecoration(
+                            fillColor: _currentExchangeType == ExchangeRateType.custom? textFieldBg: textFieldDisabledBg,
+                            filled: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(100),
+                              borderSide: BorderSide.none
+                            ),
+                          ),
+                        ),
+                        ...labelTitle('Converted Amount'),
+                        TextField(
+                          controller: _convertedAmountController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.right,
+                          enabled: false,
+                          decoration: InputDecoration(
+                            hintText: "0",
+                            prefix: Text(_currentCurrency),
+                            fillColor: textFieldDisabledBg,
+                            filled: true,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(100),
+                              borderSide: BorderSide.none
+                            ),
+                          ),
+                          readOnly: true,
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: (){}, 
+                        child: Text("Confirm")
+                      )
+                    ],
+                  );
+                }
+              }
+            );
+          }
+        );
+      },
+    );
+  }
 }
 
 class CostItemCategoryGrid extends StatefulWidget {
@@ -643,6 +921,24 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
   int? _selectedItem;
   CostType _selectedCostType = CostType.expense;
   List<CostItemCategory> _filteredCostItemCategories = [];
+
+  final gridSettings = {
+    3: {
+      "mainSpacing": 8.0,
+      "crossSpacing": 12.0,
+      "iconPadding": 20.0,
+    },
+    4: {
+      "mainSpacing": 12.0,
+      "crossSpacing": 12.0,
+      "iconPadding": 20.0,
+    },
+    5: {
+      "mainSpacing": 4.0,
+      "crossSpacing": 4.0,
+      "iconPadding": 16.0,
+    },
+  };
 
   @override
   void initState() {
@@ -666,6 +962,8 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
+    final gridSize = context.select((ThemeModel state) => state.gridSize);
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
@@ -703,16 +1001,17 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
             padding: const EdgeInsets.symmetric(horizontal: 0.0),
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.8
+                crossAxisCount: gridSize,
+                crossAxisSpacing: gridSettings[gridSize]?['crossSpacing'] ?? 4,
+                mainAxisSpacing: gridSettings[gridSize]?['mainSpacing'] ?? 4,
+                mainAxisExtent: 100
+                // childAspectRatio:0.9
               ),
               itemCount: _filteredCostItemCategories.length , 
               padding: EdgeInsets.all(20),
               itemBuilder:(context, index) {
                 final CostItemCategory category = _filteredCostItemCategories.elementAt(index);
-                final ColorScheme colorScheme = category.colorScheme;
+                final ColorScheme colorScheme = category.colorScheme(selectedThemeMode);
                 final bgColor = index == _selectedItem ? colorScheme.primary : colorScheme.primaryContainer.withAlpha(200);
                 // final bgColor = index == _selectedItem ? colorScheme.primary : null;
                 final fgColor = index == _selectedItem ? colorScheme.onPrimary : colorScheme.onPrimaryContainer;
@@ -725,7 +1024,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                     });
                   },
                   child: AnimatedScale(
-                    scale: _selectedItem == index ? 1.1: 0.9,
+                    scale: _selectedItem == index ? 1: 0.9,
                     duration: Durations.short3,
                     curve: Curves.easeInOut,
                     // decoration: BoxDecoration(border: Border.all()),
@@ -734,7 +1033,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
                           child: AnimatedContainer(
                             duration: Durations.medium1,
                             decoration: BoxDecoration(
@@ -756,16 +1055,18 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                               ),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(20.0),
+                              padding: EdgeInsets.all(gridSettings[gridSize]?['iconPadding'] ?? 20),
                               // child: Image.asset(category.imagePath, color: fgColor,),
-                              child: category.createIcon(40, fgColor)
+                              child: category.createIcon(40, selectedThemeMode, fgColor)
                             ),
                           ),
                         ),
                         Text(
                           // category.getLocalizedName(context), 
                           category.name, 
-                          style: Theme.of(context).textTheme.labelMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
                         )
                       ],
                     ),

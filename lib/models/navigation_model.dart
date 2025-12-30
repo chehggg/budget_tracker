@@ -20,7 +20,7 @@ class NavigationModel extends ChangeNotifier {
   // String currentRoute = "/";
   String get currentMainScreenRoute => _routeName.elementAt(_currentRouteIndex);
   
-
+  
 
   void navigateMainScreen(int index) {
     _currentRouteIndex = index;
@@ -54,7 +54,7 @@ class NavigationModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void popFormToMain() {
+  void popFormToMain({String? oriRoute}) {
     _isFormOpened = false;
     notifyListeners();
 
@@ -62,6 +62,8 @@ class NavigationModel extends ChangeNotifier {
       _routeName[_currentRouteIndex], 
       ModalRoute.withName(_routeName[_currentRouteIndex])
     );
+
+    // Navigator.of(context).push
   }
   
 }

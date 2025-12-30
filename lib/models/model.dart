@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:csv/csv.dart';
@@ -25,6 +26,11 @@ class AppModel extends ChangeNotifier {
     setInitSettings();
   }
 
+  final sharedPref = SharedPreferencesAsync();
+
+  List<Budget> _budgets = [];
+  UnmodifiableListView<Budget> get budgets => UnmodifiableListView(_budgets);
+
   String _localeName = "en";
   String? _filteredString;
 
@@ -34,8 +40,8 @@ class AppModel extends ChangeNotifier {
   DateTimeRange? _filterDateRange;
   DateTimeRange? get filterDateRange => _filterDateRange;
 
-  dateRangeFilterType _dateRangeFilter = dateRangeFilterType.none;
-  dateRangeFilterType get dateRangeFilter => _dateRangeFilter;
+  DateRangeFilterType _dateRangeFilter = DateRangeFilterType.none;
+  DateRangeFilterType get dateRangeFilter => _dateRangeFilter;
 
   bool get isFilteredActive => _filteredString != null || _filteredCategories.length < _categories.length || _filterDateRange != null;  
 
@@ -59,8 +65,8 @@ class AppModel extends ChangeNotifier {
         bool isCategoryIncluded(CostItem costItem) => _filteredCategories.contains(costItem.category); 
         bool isFilterStringMatch(CostItem costItem) => _filteredString != null? costItem.name.contains(_filteredString!) : true; 
         bool isDateWithinFilter(CostItem costItem) => _filterDateRange != null? 
-          costItem.getDateTime().isBefore(_filterDateRange!.end.add(Duration(days: 1))) && 
-          costItem.getDateTime().isAfter(_filterDateRange!.start.subtract(Duration(days: 1))) : 
+          costItem.dateTime.isBefore(_filterDateRange!.end.add(Duration(days: 1))) && 
+          costItem.dateTime.isAfter(_filterDateRange!.start.subtract(Duration(days: 1))) : 
           true; 
         bool isMatch(CostItem costItem) => isCategoryIncluded(costItem) && isFilterStringMatch(costItem) && isDateWithinFilter(costItem);
 
@@ -99,16 +105,19 @@ class AppModel extends ChangeNotifier {
   // date format: yyyy-MM-dd
   UnmodifiableListView<CostItem> get _filteredCostItems {
     return UnmodifiableListView(_costItems.where((costItem) {
-      final costItemDate = costItem.getDateTime();
+      final costItemDate = costItem.dateTime;
       final year = costItemDate.year;
       final month = costItemDate.month;
       return year == _selectedYearMonth.year && month == _selectedYearMonth.month;
     }
     ));
   }
-
-
   UnmodifiableListView<CostItem> get filteredCostItems => _filteredCostItems;
+
+  SplayTreeMap<String,List<Map<String,dynamic>>> _budgetMetrics = SplayTreeMap();
+  UnmodifiableMapView<String,List<Map<String,dynamic>>> get budgetMetrics => UnmodifiableMapView(_budgetMetrics);
+
+
 
   UnmodifiableMapView<String,List<CostItem>> get currentCategoryList {
     return UnmodifiableMapView(_yearMonthCategoryGroupedList[formatedSelectedYearMonth]!);
@@ -220,6 +229,36 @@ class AppModel extends ChangeNotifier {
   DateTime get selectedYearMonth => _selectedYearMonth;
   String get formatedSelectedYearMonth => DateFormat('yyyy-MM').format(_selectedYearMonth);
 
+  CostItem? _tempRecCostItem;
+  CostItem? get tempRecCostItem => _tempRecCostItem;
+
+  void saveTempRecCostFromForm(CostItemFormResult result ) {
+    _tempRecCostItem = CostItem.fromForm(result);
+    notifyListeners();
+  }
+
+  void saveTempRecCostFromExistingCost(CostItem item ) {
+    _tempRecCostItem = item;
+    notifyListeners();
+  }
+
+  void removeTempCostItem() {
+    _tempRecCostItem = null;
+    notifyListeners();
+  }
+
+  void saveCostItemFromTemp(List<DateTime> dates) {
+    dates.forEach((date) => createNewCostItem(
+      CostItemFormResult(
+        name: _tempRecCostItem?.name ?? "", 
+        category: _tempRecCostItem?.category ?? "", 
+        date: date.standardFormat(), 
+        costType: _tempRecCostItem?.costType ?? CostType.expense, 
+        amount: _tempRecCostItem?.amount ?? 0
+      )
+    ));
+  }
+
   double calculateDailyTotal(String date, [CostType? costType]) {
     final dailyFilteredCostItems = _costItems.where((costItem) => costItem.date == date).toList();
     
@@ -235,7 +274,7 @@ class AppModel extends ChangeNotifier {
   void clearFilter() {
     updateFilterString(null);
     updateFilteredCategories(Set.from(categories.map((category)=> category.name)));
-    updateFilteredDateRange(null, dateRangeFilterType.none);
+    updateFilteredDateRange(null, DateRangeFilterType.none);
     resetMetric();
     notifyListeners();
   }
@@ -378,11 +417,11 @@ class AppModel extends ChangeNotifier {
     }
 
     String formatDecimal(double value, double div, String suffix) {
-      if (value % div == 0) {
-        return NumberFormat.compact(locale: _localeName).format(value / div);
-      } else {
-        return NumberFormat.compact(locale: _localeName).format(value);
-      }
+      return NumberFormat.compact(locale: _localeName).format(value);
+      // if (value % div == 0) {
+      //   return NumberFormat.compact(locale: _localeName).format(value / div);
+      // } else {
+      // }
     }
 
     final absValue = value.abs();
@@ -418,7 +457,7 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateFilteredDateRange(DateTimeRange? newDateRange, dateRangeFilterType dateFilter) {
+  void updateFilteredDateRange(DateTimeRange? newDateRange, DateRangeFilterType dateFilter) {
     _filterDateRange = newDateRange;
     _dateRangeFilter = dateFilter;
     notifyListeners();
@@ -435,7 +474,7 @@ class AppModel extends ChangeNotifier {
     _categories = [...defaultCostItemCategories];
     _filteredCategories.addAll(_categories.map((category) => category.name));
     
-    final sharedPref = SharedPreferencesAsync();
+    
     final sharedPrefCurrency = await sharedPref.getString('currency');
 
     if (sharedPrefCurrency != null) {
@@ -448,8 +487,11 @@ class AppModel extends ChangeNotifier {
     // get file for cost items
     await loadCostItemOnLoad();
 
+    // get budgets
+    await readBudget();
+
     // get note history
-    await readNoteFromFile();
+    // await readNoteFromFile();
     
     resetMetric();
     debugPrint("refresh");
@@ -488,7 +530,7 @@ class AppModel extends ChangeNotifier {
   }
 
   // create a new item after form is submitted
-  void createNewItem(CostItemFormResult result) {
+  void createNewCostItem(CostItemFormResult result) {
     final newCostItem = CostItem.fromForm(result);
     
     // if (result.name.trim() != "") {
@@ -504,7 +546,7 @@ class AppModel extends ChangeNotifier {
       int insertIndex = size; // default to the end of array if the date is the earliest
 
       for (i; i < size; i++) {
-        if (newCostItem.getDateTime().isAfter(_costItems[i].getDateTime())) {
+        if (newCostItem.dateTime.isAfter(_costItems[i].dateTime)) {
           insertIndex = i;
           break;
         }
@@ -513,7 +555,7 @@ class AppModel extends ChangeNotifier {
     }
     addDailyCostItems(newCostItem);
     updateMetric(newCostItem);
-    updateCategoryList(newCostItem.getYearMonthString());
+    updateCategoryList(newCostItem.yearMonthString);
 
     notifyListeners();
     writeCostItemsToFile();
@@ -530,6 +572,9 @@ class AppModel extends ChangeNotifier {
 
   void deleteDailyCostItems(CostItem oldCostItem) {
     _dailyCostItems[oldCostItem.date]!.removeWhere((costItem) => costItem.uuid == oldCostItem.uuid);
+    if (_dailyCostItems[oldCostItem.date]!.isEmpty) {
+      _dailyCostItems.remove(oldCostItem.date);
+    }
     notifyListeners();
   }
 
@@ -538,7 +583,7 @@ class AppModel extends ChangeNotifier {
     _dayMetrics.putIfAbsent(costItem.date, () => CostMetric()).add(costItem);
 
     // update yearmonth metrics
-    var yearMonthString = costItem.getYearMonthString();
+    var yearMonthString = costItem.yearMonthString;
     _yearMonthMetrics.putIfAbsent(yearMonthString, () => CostMetric()).add(costItem);
 
     // update yearmonth metric metrics
@@ -547,13 +592,15 @@ class AppModel extends ChangeNotifier {
       .putIfAbsent(costItem.category, () => CostMetric())
       .add(costItem);
 
+
+    // update against budgets
     notifyListeners();
   }
 
   void removeMetric(CostItem initCostItem) {
     _dayMetrics[initCostItem.date]!.minus(initCostItem);
     
-    final yearMonthString = initCostItem.getYearMonthString();
+    final yearMonthString = initCostItem.yearMonthString;
     _yearMonthMetrics[yearMonthString]!.minus(initCostItem);
 
     _yearMonthCategoryMetrics[yearMonthString]![initCostItem.category]!.minus(initCostItem);
@@ -561,7 +608,7 @@ class AppModel extends ChangeNotifier {
 
   void updateCategoryList(String yearMonth) {
     final dateItem = _costItems.where((item) => 
-      item.getYearMonthString() == yearMonth
+      item.yearMonthString == yearMonth
     );
     _yearMonthCategoryGroupedList[yearMonth] = groupBy(dateItem, (item) => item.category);
   }
@@ -578,6 +625,10 @@ class AppModel extends ChangeNotifier {
       updateCategoryList(yearMonth);
     }
 
+    if (_budgets.isNotEmpty) {
+      calculateMonthlyBudget();
+    }
+
     notifyListeners();
   }
 
@@ -589,6 +640,99 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> cacheBudget() async {
+    final String budgetJson = jsonEncode(_budgets.map((e) => e.toJson()).toList());
+    await sharedPref.setString("budgets",budgetJson);
+    notifyListeners();
+  }
+
+  Future<void>? readBudget() async {
+    final budgetString = await sharedPref.getString("budgets");
+    if (budgetString != null) {
+      _budgets = (jsonDecode(budgetString) as List<dynamic>).map((e) => Budget.fromJson(e as Map<String,dynamic>)).toList();
+      notifyListeners();
+    } 
+  }
+
+  Future<void> createBudget(Budget newBudget) async {
+    newBudget.id = Uuid().v1();
+    _budgets.add(newBudget);
+    _budgets = _budgets;
+    debugPrint("Updated!");
+
+    // update in shared pref
+    calculateMonthlyBudget();
+    await cacheBudget();
+  }
+
+  void calculateMonthlyBudget() {
+    Map<String,List<Map<String,dynamic>>> budgetMap = SplayTreeMap();
+    /*
+    year month
+    - list of budgets
+    - budget amount
+     */
+    for (MapEntry<String, CostMetric> yearMonthEntry in _yearMonthMetrics.entries) {
+      String yearMonth = yearMonthEntry.key;
+      for (Budget curBudget in _budgets) {
+        // if budget applies to all month or to this specific month
+        if (curBudget.appliedType == BudgetApplyMonth.all || (curBudget.appliedType == BudgetApplyMonth.specific && curBudget.months!.contains(yearMonth))) {
+          if (budgetMap[yearMonth] == null) budgetMap[yearMonth] = []; 
+
+          double sum = 0;
+          if (curBudget.categories!.isEmpty) { // budget for all categories
+            sum = yearMonthEntry.value.expense!;
+          } else { // specific budget
+            for (String category in curBudget.categories!) {
+              sum += _yearMonthCategoryMetrics[yearMonth]![category]?.expense ?? 0;
+            }
+          }
+          int i = budgetMap[yearMonth]!.indexWhere((e) => e['id'] == curBudget.id);
+          if (i != -1) {
+            budgetMap[yearMonth]![i] = {
+              "id": curBudget.id,
+              "name": curBudget.name,
+              "categories": curBudget.categories,
+              "budget": curBudget.amount,
+              "amount": sum,
+            };
+          } else {
+            budgetMap[yearMonth]!.add({
+              "id": curBudget.id,
+              "name": curBudget.name,
+              "categories": curBudget.categories,
+              "budget": curBudget.amount,
+              "amount": sum,
+            });
+          }
+        }
+      }
+    }
+    _budgetMetrics = SplayTreeMap.from(budgetMap);
+    notifyListeners();
+  }
+
+  void deleteBudget(String budgetId) async {
+    _budgets.removeWhere((e) => e.id == budgetId);
+    debugPrint('budget deleted!');
+    notifyListeners();
+
+    await cacheBudget();
+  }
+
+  void updateBudget(String budgetId, Budget updatedBudget) async {
+    final budgetIndex = _budgets.indexWhere((e) => e.id == budgetId); 
+    _budgets[budgetIndex] = Budget.update(updatedBudget, budgetId);
+    _budgets.sort((a, b) => a.priority!.compareTo(b.priority!),);
+    notifyListeners();
+
+    calculateMonthlyBudget();
+    await cacheBudget();
+  }
+  // void enableBudget(Budget budget, bool value) {
+  //   _budgets.where
+  // }
+  
   void updateCostItem(CostItemFormResult result, String itemUuid) {
     final int initIndex = _costItems.indexWhere((costItem) => costItem.uuid == itemUuid);
     final CostItem initCostItem = _costItems.firstWhere((costItem) => costItem.uuid == itemUuid);
@@ -606,19 +750,19 @@ class AppModel extends ChangeNotifier {
 
       int insertIndex = _costItems.length;
       int i = initIndex - 1;
-      final DateTime updatedDate = updatedCostItem.getDateTime();
+      final DateTime updatedDate = updatedCostItem.dateTime;
       
       while (i >= 0 && i < _costItems.length) {
         // debugPrint("current i: $i");
 
-        final afterDate = _costItems[i].getDateTime();
+        final afterDate = _costItems[i].dateTime;
         
         if (updatedDate.isAfter(afterDate) || updatedDate.isAtSameMomentAs(afterDate)) {
           if (i == 0) { // first item, latest cost item
             insertIndex = i;
             break;
-          } else if (updatedDate.isBefore(_costItems[i - 1].getDateTime()) 
-            || updatedDate.isAtSameMomentAs(_costItems[i - 1].getDateTime())
+          } else if (updatedDate.isBefore(_costItems[i - 1].dateTime) 
+            || updatedDate.isAtSameMomentAs(_costItems[i - 1].dateTime)
           ) {
             insertIndex = i;
             break;
@@ -637,8 +781,8 @@ class AppModel extends ChangeNotifier {
 
     deleteDailyCostItems(initCostItem);
     addDailyCostItems(updatedCostItem);
-    updateCategoryList(initCostItem.getYearMonthString());
-    updateCategoryList(updatedCostItem.getYearMonthString());
+    updateCategoryList(initCostItem.yearMonthString);
+    updateCategoryList(updatedCostItem.yearMonthString);
 
     notifyListeners();
     writeCostItemsToFile();
@@ -650,7 +794,7 @@ class AppModel extends ChangeNotifier {
     
     deleteDailyCostItems(deletedCostItem);
     removeMetric(deletedCostItem);
-    updateCategoryList(deletedCostItem.getYearMonthString());
+    updateCategoryList(deletedCostItem.yearMonthString);
     notifyListeners();
     writeCostItemsToFile();
   }
@@ -838,6 +982,7 @@ class CostItem {
       this.category,
     {
       this.uuid,
+      this.image,
       required this.date,
       required this.costType,
     }
@@ -845,6 +990,7 @@ class CostItem {
 
   String? uuid;
   String category;
+  String? image;
   String name;
   double amount;
   String date;
@@ -899,8 +1045,8 @@ class CostItem {
     amount = list[4] as double,
     name = list[5] as String;
 
-  DateTime getDateTime() => date.standardDateParse(); 
-  String getYearMonthString() => date.substring(0,7); //DateFormat: yyyy-MM-dd
+  DateTime get dateTime => date.standardDateParse(); 
+  String get yearMonthString => date.substring(0,7); //DateFormat: yyyy-MM-dd
 
   String getCurrencyValue(String currencySymbol, [bool? includeSign]) {
     final String value = amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);
@@ -946,10 +1092,12 @@ class CostItemFormResult {
 class FormArgument {
   const FormArgument({
     required this.isNew,
+    this.oriRoute,
     this.selectedCostItem
   });
 
   final bool isNew;
+  final String? oriRoute;
   final CostItem? selectedCostItem;
 }
 
@@ -966,10 +1114,10 @@ class CostItemCategory {
   final String imagePath;
   final CostType costType;
 
-  ColorScheme get colorScheme {
+  ColorScheme colorScheme(ThemeMode mode) {
     Brightness brightness;
-    final themeMode = ThemeMode.dark;
-    switch (themeMode) {
+    // final themeMode = ThemeMode.light;
+    switch (mode) {
       case ThemeMode.dark:
         brightness = Brightness.dark;
       case ThemeMode.light:
@@ -981,14 +1129,15 @@ class CostItemCategory {
     // debugPrint("getColorScheme, brightness: ${brightness.name}, theme: ${themeMode}");
     return ColorScheme.fromSeed(
       seedColor: color,
-      dynamicSchemeVariant: DynamicSchemeVariant.rainbow,
-      contrastLevel: 0,
+      dynamicSchemeVariant: DynamicSchemeVariant.tonalSpot,
+      // contrastLevel: -0.1,
+      contrastLevel: -0.5,
       brightness: brightness 
     );
   }
 
-  Widget createIcon(double size, [Color? foregroundColor]) {
-    final fg = foregroundColor ?? colorScheme.onPrimaryContainer; 
+  Widget createIcon(double size, ThemeMode mode, [Color? foregroundColor]) {
+    final fg = foregroundColor ?? colorScheme(mode).onPrimaryContainer; 
     return Image.asset(
       imagePath,
       color: fg,
@@ -996,10 +1145,10 @@ class CostItemCategory {
       width: size,
     );
   }
-  Widget generateRoundedIcon(double size, [Color? backgroundColor, Color? foregroundColor]) {
-    final bg = backgroundColor ?? colorScheme.primaryContainer; 
+  Widget generateRoundedIcon(double size, ThemeMode mode, [Color? backgroundColor, Color? foregroundColor]) {
+    final bg = backgroundColor ?? colorScheme(mode).primaryContainer; 
     // final bg = backgroundColor ?? colorScheme.primary; 
-    final fg = foregroundColor ?? colorScheme.onPrimaryContainer; 
+    final fg = foregroundColor ?? colorScheme(mode).onPrimaryContainer; 
     return Container(
       height: size + 12,
       width: size + 12,
@@ -1022,8 +1171,8 @@ class CostItemCategory {
         // color: bg
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: createIcon(size, fg)
+        padding: const EdgeInsets.all(8.0),
+        child: createIcon(size, mode, fg)
       ),
     );
   }
@@ -1066,10 +1215,12 @@ class CostMetric {
   CostMetric({
     this.expense = 0,
     this.income = 0,
+    // this.budgets,
   });
 
   double? expense;
   double? income;
+  // List<Budget>? budgets;
   
   get balance => (income ?? 0) - (expense ?? 0);
 
@@ -1114,8 +1265,74 @@ class RelativeDateRange {
     endDate = DateTime.now();
 }
 
-enum dateRangeFilterType {
+enum DateRangeFilterType {
   relative,
   absolute,
   none
+}
+
+enum ExchangeRateType {
+  current,
+  custom
+}
+
+class Budget {
+  String? id;
+  String? name;
+  bool? enabled = true;
+  double? amount = 0;
+  int? priority;
+  BudgetAmount? amountCalType;
+  BudgetApplyMonth? appliedType;
+  List<DateTime>? months;
+  List<String>? categories;
+
+  Budget({
+    this.id, 
+    this.name, 
+    this.enabled, 
+    this.priority, 
+    this.amount, 
+    this.amountCalType, 
+    this.appliedType, 
+    this.months,
+    this.categories
+  });
+
+  Budget.update(Budget result, String this.id) :
+    name = result.name,
+    enabled = result.enabled,
+    amount = result.amount,
+    priority = result.priority,
+    amountCalType = result.amountCalType,
+    appliedType = result.appliedType,
+    months = result.months,
+    categories = result.categories
+  ;
+
+  Budget.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    name = json['name'];
+    enabled = json['enabled'];
+    amount = json['amount'];
+    priority = json['priority'];
+    appliedType = BudgetApplyMonth.values[json['appliedType']?? 0];
+    amountCalType = BudgetAmount.values[json['amountCalType']?? 0];
+    months =  List.from((jsonDecode(json['months']) as List).map((e) => DateFormat('yyyy-MM').parse(e as String)));
+    categories = List.from(jsonDecode(json['categories']));
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['id'] = id;
+    data['name'] = name;
+    data['enabled'] = enabled;
+    data['amount'] = amount;
+    data['priority'] = priority;
+    data['appliedType'] = appliedType?.index;
+    data['amountCalType'] = amountCalType?.index;
+    data['months'] = jsonEncode(months?.map((e)=> DateFormat('yyyy-MM').format(e)));
+    data['categories'] = jsonEncode(categories);
+    return data;
+  }
 }

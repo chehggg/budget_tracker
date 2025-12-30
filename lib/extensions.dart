@@ -12,7 +12,8 @@ extension DayExtension on DateTime {
 
   String standardFormat() =>  DateFormat("yyyy-MM-dd").format(this);
   String displayFormat() =>  DateFormat("d MMM").format(this);
-
+  String get fullDateFormat => DateFormat('MMMM dd, yyyy').format(this);
+  
   List<int> getFullMonthWeekdayList() {
     final int days = getTotalDayInMonth();
     final int startDateWeekday = DateTime(year,month,1).weekday;
