@@ -19,7 +19,7 @@ import 'package:budget_tracker/screens/chart_screen.dart';
 import 'package:budget_tracker/screens/cost_form_screen.dart';
 import 'package:budget_tracker/screens/cost_list_screen.dart';
 import 'package:budget_tracker/screens/report_screen.dart';
-import 'package:budget_tracker/screens/settings/settings_screen.dart';
+import 'package:budget_tracker/screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,100 +130,110 @@ class _MainAppState extends State<MainApp> {
     final spacing = context.select((ThemeModel state) => state.spacingValue);
 
     return baseTheme.copyWith(
-      extensions: [
-        MyColors(
-          flipCardColor: Color(0xffF0EBE0),
-          onFlipCard: Color(0xff0A0A0C),
-        ),
-        MyTexts(
-          numberFontLarge: customTextTheme.bodyLarge!
-              .copyWith(fontSize: 50, fontWeight: FontWeight(300)),
-          numberFontMedium: customTextTheme.bodyMedium!
-              .copyWith(fontSize: 25, fontWeight: FontWeight(600)),
-          numberFontSmall: customTextTheme.bodyMedium!
-              .copyWith(fontSize: 16, fontWeight: FontWeight(600)),
-          numberLabel: customTextTheme.labelSmall!.copyWith(
-              fontSize: 18, letterSpacing: 0, color: customColorScheme.primary),
-          dateLabel: customTextTheme.labelSmall!.copyWith(
-              fontSize: 25, letterSpacing: 0, color: customColorScheme.primary),
-        )
-      ],
-      textTheme: customTextTheme,
-      // primaryTextTheme: customTextTheme,
-      colorScheme: customColorScheme,
-      // brightness: brightness,
-      // listTileTheme: ListTileThemeData(
-      //   contentPadding: EdgeInsets.symmetric(horizontal: 8),
-      //   titleTextStyle: customTextTheme.titleMedium,
-      //   visualDensity: VisualDensity(vertical: spacing - 3, horizontal: -2),
-      //   dense: true,
-      //   leadingAndTrailingTextStyle: customTextTheme.headlineLarge
-      // ),
-      // appBarTheme: AppBarTheme(
-      //   color: seedColorScheme.surfaceContainer,
-      //   titleTextStyle: customTextTheme.titleLarge!.copyWith(fontSize: 24),
-      //   scrolledUnderElevation: 0
-      // ),
-      // floatingActionButtonTheme: FloatingActionButtonThemeData(
-      //   backgroundColor: seedColorScheme.primary
-      // ),
-      // // expansionTileTheme: ExpansionTileThemeData(
+        extensions: [
+          MyColors(
+            flipCardColor: Color(0xffF0EBE0),
+            onFlipCard: Color(0xff0A0A0C),
+          ),
+          MyTexts(
+            numberFontLarge: customTextTheme.bodyLarge!
+                .copyWith(fontSize: 50, fontWeight: FontWeight(300)),
+            numberFontMedium: customTextTheme.bodyMedium!
+                .copyWith(fontSize: 25, fontWeight: FontWeight(600)),
+            numberFontSmall: customTextTheme.bodyMedium!
+                .copyWith(fontSize: 16, fontWeight: FontWeight(600)),
+            numberLabel: customTextTheme.labelSmall!.copyWith(
+                fontSize: 18,
+                letterSpacing: 0,
+                color: customColorScheme.primary),
+            dateLabel: customTextTheme.labelSmall!.copyWith(
+                fontSize: 25,
+                letterSpacing: 0,
+                color: customColorScheme.primary),
+          )
+        ],
+        textTheme: customTextTheme,
+        // primaryTextTheme: customTextTheme,
+        colorScheme: customColorScheme,
+        dialogTheme: DialogThemeData(
+            backgroundColor: customColorScheme.primary,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadiusGeometry.circular(40),
+                side: BorderSide(
+                    color: customColorScheme.primary.withAlpha(100))))
+        // brightness: brightness,
+        // listTileTheme: ListTileThemeData(
+        //   contentPadding: EdgeInsets.symmetric(horizontal: 8),
+        //   titleTextStyle: customTextTheme.titleMedium,
+        //   visualDensity: VisualDensity(vertical: spacing - 3, horizontal: -2),
+        //   dense: true,
+        //   leadingAndTrailingTextStyle: customTextTheme.headlineLarge
+        // ),
+        // appBarTheme: AppBarTheme(
+        //   color: seedColorScheme.surfaceContainer,
+        //   titleTextStyle: customTextTheme.titleLarge!.copyWith(fontSize: 24),
+        //   scrolledUnderElevation: 0
+        // ),
+        // floatingActionButtonTheme: FloatingActionButtonThemeData(
+        //   backgroundColor: seedColorScheme.primary
+        // ),
+        // // expansionTileTheme: ExpansionTileThemeData(
 
-      // // ),
-      // useMaterial3: true,
-      // pageTransitionsTheme: const PageTransitionsTheme(
-      //   builders: <TargetPlatform, PageTransitionsBuilder>{
-      //     // TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-      //     // TargetPlatform.android: OpenUpwardsPageTransitionsBuilder()
-      //     TargetPlatform.android: PredictiveBackPageTransitionsBuilder()
-      //     //   allowEnterRouteSnapshotting: false,
-      //     // TargetPlatform.iOS: TransitionBuil
-      //   },
-      // ),
-      // dialogTheme: DialogThemeData(
-      //   titleTextStyle: customTextTheme.displayLarge!.copyWith(fontSize: 24),
-      //   backgroundColor: seedColorScheme.surfaceContainer,
-      //   insetPadding: EdgeInsets.symmetric(horizontal: 20)
-      // ),
-      // datePickerTheme: DatePickerThemeData(
-      //   backgroundColor: seedColorScheme.surfaceContainer,
-      //   dividerColor: Colors.transparent,
-      //   // headerHeadlineStyle: TextStyle(color: Colors.amber)
-      // ),
-      // inputDecorationTheme: InputDecorationTheme(
-      //   hintStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100)),
-      //   prefixStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100))
-      // ),
-      // segmentedButtonTheme: SegmentedButtonThemeData(
-      //   style: SegmentedButton.styleFrom(
-      //     splashFactory: NoSplash.splashFactory,
-      //     padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      //     selectedBackgroundColor: seedColorScheme.surfaceContainer,
-      //     selectedForegroundColor: seedColorScheme.onSurface,
-      //     visualDensity: VisualDensity(horizontal: 0),
-      //     // textStyle: customTextTheme.titleMedium!.copyWith(fontSize: 24),
-      //     side: BorderSide.none,
-      //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0))
-      //   )
-      // ),
-      // menuButtonTheme: MenuButtonThemeData(
-      //   style: ElevatedButton.styleFrom(
-      //     textStyle: customTextTheme.headlineLarge,
-      //     visualDensity: VisualDensity(horizontal: -2, vertical: -2)
-      //   )
-      // ),
-      // radioTheme: RadioThemeData(
-      //   visualDensity: VisualDensity(horizontal: -2)
-      // ),
-      // menuTheme: MenuThemeData(
-      //   style: MenuStyle(
-      //     backgroundColor: WidgetStatePropertyAll(seedColorScheme.surfaceBright),
-      //     // visualDensity: VisualDensity(horizontal: -2, vertical: -4)
-      //   )
-      // ),
-      // switchTheme: SwitchThemeData()
-      // // dividerColor: Colors.transparent,
-    );
+        // // ),
+        // useMaterial3: true,
+        // pageTransitionsTheme: const PageTransitionsTheme(
+        //   builders: <TargetPlatform, PageTransitionsBuilder>{
+        //     // TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+        //     // TargetPlatform.android: OpenUpwardsPageTransitionsBuilder()
+        //     TargetPlatform.android: PredictiveBackPageTransitionsBuilder()
+        //     //   allowEnterRouteSnapshotting: false,
+        //     // TargetPlatform.iOS: TransitionBuil
+        //   },
+        // ),
+        // dialogTheme: DialogThemeData(
+        //   titleTextStyle: customTextTheme.displayLarge!.copyWith(fontSize: 24),
+        //   backgroundColor: seedColorScheme.surfaceContainer,
+        //   insetPadding: EdgeInsets.symmetric(horizontal: 20)
+        // ),
+        // datePickerTheme: DatePickerThemeData(
+        //   backgroundColor: seedColorScheme.surfaceContainer,
+        //   dividerColor: Colors.transparent,
+        //   // headerHeadlineStyle: TextStyle(color: Colors.amber)
+        // ),
+        // inputDecorationTheme: InputDecorationTheme(
+        //   hintStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100)),
+        //   prefixStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100))
+        // ),
+        // segmentedButtonTheme: SegmentedButtonThemeData(
+        //   style: SegmentedButton.styleFrom(
+        //     splashFactory: NoSplash.splashFactory,
+        //     padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        //     selectedBackgroundColor: seedColorScheme.surfaceContainer,
+        //     selectedForegroundColor: seedColorScheme.onSurface,
+        //     visualDensity: VisualDensity(horizontal: 0),
+        //     // textStyle: customTextTheme.titleMedium!.copyWith(fontSize: 24),
+        //     side: BorderSide.none,
+        //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0))
+        //   )
+        // ),
+        // menuButtonTheme: MenuButtonThemeData(
+        //   style: ElevatedButton.styleFrom(
+        //     textStyle: customTextTheme.headlineLarge,
+        //     visualDensity: VisualDensity(horizontal: -2, vertical: -2)
+        //   )
+        // ),
+        // radioTheme: RadioThemeData(
+        //   visualDensity: VisualDensity(horizontal: -2)
+        // ),
+        // menuTheme: MenuThemeData(
+        //   style: MenuStyle(
+        //     backgroundColor: WidgetStatePropertyAll(seedColorScheme.surfaceBright),
+        //     // visualDensity: VisualDensity(horizontal: -2, vertical: -4)
+        //   )
+        // ),
+        // switchTheme: SwitchThemeData()
+        // // dividerColor: Colors.transparent,
+        );
   }
 
   @override

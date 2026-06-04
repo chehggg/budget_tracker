@@ -654,7 +654,6 @@ class AppModel extends ChangeNotifier {
         .putIfAbsent(yearMonthDate, () => {})
         .putIfAbsent(costItem.category, () => CostMetric())
         .addToMetric(costItem);
-    
 
     debugPrint(_yearMonthMetrics[yearMonthDate]!.expense.toString());
 
@@ -888,29 +887,29 @@ class AppModel extends ChangeNotifier {
   // convert cost item list into csv and
   // update file
   Future<void> writeCostItemsToFile() async {
-    // final List<List<dynamic>> result =
-    //     List.generate(_costItems.length, (i) => _costItems[i].toList());
+    final List<List<dynamic>> result =
+        List.generate(_costItems.length, (i) => _costItems[i].toList());
 
-    // const List<String> headers = [
-    //   'uuid',
-    //   'date',
-    //   'costType',
-    //   'category',
-    //   'amount',
-    //   'name',
-    // ];
+    const List<String> headers = [
+      'uuid',
+      'date',
+      'costType',
+      'category',
+      'amount',
+      'name',
+    ];
 
-    // final String csv =
-    //     '${headers.join(',')},\r\n${ListToCsvConverter().convert(result)}';
+    final List<List<dynamic>> data = [headers, ...result];
 
-    // try {
-    //   final directory = await getApplicationDocumentsDirectory();
-    //   final file = File('${directory.path}/budget.csv');
+    try {
+      final csvString = csv.encode(data);
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/budget.csv');
 
-    //   file.writeAsStringSync(csv);
-    // } catch (e) {
-    //   debugPrint("error finding file");
-    // }
+      file.writeAsStringSync(csvString);
+    } catch (e) {
+      debugPrint("error writing data to file, $e");
+    }
 
     // try {
     //   await writeDataToFirebase();
@@ -919,15 +918,13 @@ class AppModel extends ChangeNotifier {
     // }
   }
 
-  Future<void> loadCostItemOnLoad() async {
+  Future<void> readCostItemOnLoad() async {
     try {
-      debugPrint("the file is red!");
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/budget.csv');
       parseCostItemData(file);
     } catch (e) {
-      debugPrint("error reading file");
-      return;
+      debugPrint("error reading file on load, $e");
     }
   }
 
@@ -939,7 +936,8 @@ class AppModel extends ChangeNotifier {
       final List<int> list = csvString.codeUnits;
       String? outputFile = await FilePicker.saveFile(
           dialogTitle: 'Please select an output file:',
-          fileName: 'budget_output.csv',
+          fileName: 'budget_output',
+          allowedExtensions: ['csv'],
           bytes: Uint8List.fromList(list));
       return outputFile;
     } catch (e) {
@@ -957,31 +955,31 @@ class AppModel extends ChangeNotifier {
       if (result != null) {
         final file = File(result.files.single.path!);
         final parsedResult = await parseCostItemData(file);
-        if (parsedResult == 0) return 0;
+        if (parsedResult) return 0;
         await writeCostItemsToFile();
         return 1;
       }
       return 2;
     } catch (e) {
-      debugPrint("error in loading data from file: $e");
+      debugPrint("error reading data from file: $e");
       return 0;
     }
   }
 
-  Future<int> parseCostItemData(File file) async {
+  Future<bool> parseCostItemData(File file) async {
     try {
-      // final csvString = file.readAsStringSync();
-      // final List<List<dynamic>> costItemLists =
-      //     CsvToListConverter().convert(csvString);
-      // costItemLists.removeAt(0);
-      // _costItems = costItemLists
-      //     .map((List<dynamic> item) => CostItem.fromList(item))
-      //     .toList();
-      // notifyListeners();
-      return 1;
+      final csvString = file.readAsStringSync();
+      final List<List<dynamic>> decodedData = csv.decode(csvString);
+      decodedData.removeAt(0);
+      _costItems = decodedData
+          .map((List<dynamic> item) => CostItem.fromList(item))
+          .toList();
+
+      notifyListeners();
+      return true;
     } catch (e) {
       debugPrint('error in parsing data: $e');
-      return 0;
+      return false;
     }
   }
 
