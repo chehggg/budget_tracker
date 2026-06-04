@@ -1064,7 +1064,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                   label: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
-                      costType.name.capitalize(),
+                      costType.name.toUpperCase(),
                       style: context.customTt.dateLabel!.copyWith(
                           color: _selectedCostType == costType
                               ? context.customCs.onFlipCard

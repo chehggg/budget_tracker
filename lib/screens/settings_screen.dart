@@ -59,32 +59,34 @@ class SettingsList extends StatelessWidget {
       }
     });
     return Material(
-      child: ListView(
-        padding: EdgeInsets.all(0),
-        children: [
-          // SettingsSectionTitle(titleName: "General", icon: Icons.display_settings),
-          // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Theme Mode"),
-          // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Currency"),
-          CurrencySettingsTile(selectedCurrencySymbol: selectedCurrencySymbol),
-          const BudgetSettingsTile(),
-          const RecurringCostSettingsTile(),
-          const HideCostSettingsTile(),
-          Divider(),
-          ThemeModeSettingsTile(selectedThemeMode: selectedThemeMode),
-          const ColorSettingsTile(),
-          const VisualDensitySettingsTile(),
-          const FormGridColumnItemSettingsTile(),
-          const FontSizeSettingsTile(),
-          Divider(),
-          const ExportDataSettingsTile(),
-          const LoadDataSettingsTile(),
-          const ClearDataSettingsTile(),
-          Divider(),
-          const AboutSettingsTile(),
-          const ReportBugSettingsTile(),
-          const SupportMeSettingsTile(),
-        ],
-      ),
+      child: CustomScrollView(
+        slivers: [SliverList(
+          padding: EdgeInsets.all(0),
+          children: [
+            // SettingsSectionTitle(titleName: "General", icon: Icons.display_settings),
+            // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Theme Mode"),
+            // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Currency"),
+            CurrencySettingsTile(selectedCurrencySymbol: selectedCurrencySymbol),
+            const BudgetSettingsTile(),
+            const RecurringCostSettingsTile(),
+            const HideCostSettingsTile(),
+            Divider(),
+            ThemeModeSettingsTile(selectedThemeMode: selectedThemeMode),
+            const ColorSettingsTile(),
+            const VisualDensitySettingsTile(),
+            const FormGridColumnItemSettingsTile(),
+            const FontSizeSettingsTile(),
+            Divider(),
+            const ExportDataSettingsTile(),
+            const LoadDataSettingsTile(),
+            const ClearDataSettingsTile(),
+            Divider(),
+            const AboutSettingsTile(),
+            const ReportBugSettingsTile(),
+            const SupportMeSettingsTile(),
+          ],
+        )],
+      )
     );
   }
 }

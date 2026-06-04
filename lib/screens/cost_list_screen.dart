@@ -574,8 +574,7 @@ class _CostListScreenState extends State<CostListScreen> {
     final isDateFiltered =
         context.select((AppModel state) => state.filterDateRange != null);
     final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
-    final contextTheme = Theme.of(context);
-    final borderRadius = BorderRadius.circular(20);
+    final borderRadius = BorderRadius.circular(12);
 
     Widget createCustomFilterChip(
         {IconData? icon,
@@ -593,12 +592,11 @@ class _CostListScreenState extends State<CostListScreen> {
               // padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
-                  border: BoxBorder.all(
-                      color: contextTheme.colorScheme.primary, width: 0.5),
+                  border: BoxBorder.all(color: context.cs.primary, width: 0.5),
                   borderRadius: borderRadius,
                   color: isActive
-                      ? contextTheme.colorScheme.primary.withAlpha(50)
-                      : contextTheme.colorScheme.primary.withAlpha(10)),
+                      ? context.cs.primary.withAlpha(50)
+                      : context.cs.primary.withAlpha(10)),
               child: Row(
                 spacing: 10,
                 mainAxisSize: MainAxisSize.min,
@@ -606,10 +604,10 @@ class _CostListScreenState extends State<CostListScreen> {
                 children: [
                   Icon(
                     isActive ? Icons.check : icon,
-                    color: contextTheme.colorScheme.primary,
+                    color: context.cs.primary,
                     size: toolbarHeight / 2 - 10,
                   ),
-                  Text(text, style: contextTheme.textTheme.labelSmall)
+                  Text(text, style: context.tt.bodyMedium)
                 ],
               ),
             ),
@@ -660,11 +658,11 @@ class _CostListScreenState extends State<CostListScreen> {
                         setState(() => _isSearchOpened = !_isSearchOpened),
                     icon: Icon(Icons.search)),
                 IconButton(
-                    onPressed: () => context.read<ThemeModel>().toggleBlur(),
+                    onPressed: context.themeMod.toggleBlur,
                     icon: Icon(
                         !isBlur ? Icons.visibility : Icons.visibility_off)),
                 IconButton(
-                    onPressed: () => context.read<AppModel>().resetMetric(),
+                    onPressed: context.appMod.resetMetric,
                     icon: Icon(Icons.refresh))
               ]
             : [],
@@ -750,10 +748,11 @@ class DateBreadcrumb extends StatelessWidget {
             Expanded(
                 child: Center(
               child: Text(
-                DateFormat("yMMMM").format(context
-                    .select((AppModel state) => state.selectedYearMonth)).toUpperCase(),
-                style: context.customTt.dateLabel!.copyWith(fontSize: 30)
-              ),
+                  DateFormat("yMMMM")
+                      .format(context
+                          .select((AppModel state) => state.selectedYearMonth))
+                      .toUpperCase(),
+                  style: context.customTt.dateLabel!.copyWith(fontSize: 30)),
             )),
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.25,
@@ -853,8 +852,7 @@ class _CostEntryListState extends State<CostEntryList> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: GestureDetector(
                           onTap: () => context.read<NavigationModel>().openForm(
-                              FormArgument(
-                                  selectedCostItem: costItem)),
+                              FormArgument(selectedCostItem: costItem)),
                           child: Row(
                             spacing: 12,
                             children: [
@@ -1048,8 +1046,10 @@ class SummaryTab extends StatelessWidget {
         HideableText(value,
             isCurrency: true,
             textStyle: isBig
-                ? context.customTt.numberFontLarge!.copyWith(height: 1, color: context.customCs.onFlipCard)
-                : context.customTt.numberFontMedium!.copyWith(color: context.customCs.onFlipCard))
+                ? context.customTt.numberFontLarge!
+                    .copyWith(height: 1, color: context.customCs.onFlipCard)
+                : context.customTt.numberFontMedium!
+                    .copyWith(color: context.customCs.onFlipCard))
       ],
     );
   }
@@ -1217,5 +1217,199 @@ class PageIndicator extends StatelessWidget {
             duration: Durations.medium1,
           ),
         ));
+  }
+}
+
+class ItemListAppBar extends StatefulWidget implements PreferredSizeWidget {
+  const ItemListAppBar({super.key});
+
+  @override
+  State<ItemListAppBar> createState() => _ItemListAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _ItemListAppBarState extends State<ItemListAppBar> {
+  bool _isSearchOpened = false;
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _searchController = TextEditingController();
+  }
+
+  Widget get titleAppBar {
+    if (!_isSearchOpened) {
+      return Text("Overview", style: context.customTt.dateLabel);
+    } else {
+      var hintColor = context.cs.primary.withAlpha(100);
+      return PopScope(
+        onPopInvokedWithResult: (didPop, result) {
+          debugPrint("this triggered");
+          setState(() => _isSearchOpened = false);
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 10.0),
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              focusedBorder: InputBorder.none,
+              border: InputBorder.none,
+              isDense: true,
+              prefixIcon: IconButton(
+                  iconSize: 24,
+                  onPressed: () {
+                    setState(() => _isSearchOpened = false);
+                    context.appMod.clearFilter();
+                  },
+                  icon: Icon(Icons.arrow_back)),
+              suffixIcon: IconButton(
+                  iconSize: 24,
+                  onPressed: () {
+                    _searchController.clear();
+                    context.read<AppModel>().updateFilterString("");
+                    setState(() {});
+                  },
+                  icon: Icon(Icons.clear)),
+              hint: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.search, color: hintColor),
+                  Text(
+                    "Search for a cost item...",
+                    style: context.tt.bodyMedium!.copyWith(color: hintColor),
+                  ),
+                ],
+              ),
+            ),
+            onChanged: (value) {
+              debugPrint("controller value updated");
+              context.appMod.updateFilterString(value);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  AppBar get bottomFilterAppBar {
+    final isCategoryFiltered = context.select((AppModel state) =>
+        state.filteredCategories.length < state.categories.length);
+    final isDateFiltered =
+        context.select((AppModel state) => state.filterDateRange != null);
+    // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
+    final borderRadius = BorderRadius.circular(12);
+
+    Widget createCustomFilterChip(
+        {IconData? icon,
+        String text = "",
+        Function()? onTap,
+        bool isActive = false}) {
+      return Flexible(
+        child: Material(
+          borderRadius: borderRadius,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: onTap,
+            child: Container(
+              // height: toolbarHeight - 16,
+              // padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  border: BoxBorder.all(color: context.cs.primary, width: 0.5),
+                  borderRadius: borderRadius,
+                  color: isActive
+                      ? context.cs.primary.withAlpha(50)
+                      : context.cs.primary.withAlpha(10)),
+              child: Row(
+                spacing: 10,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isActive ? Icons.check : icon,
+                    color: context.cs.primary,
+                    // size: toolbarHeight / 2 - 10,
+                  ),
+                  Text(text, style: context.tt.bodyMedium)
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AppBar(
+        // toolbarHeight: toolbarHeight,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Flex(
+            direction: Axis.horizontal,
+            spacing: 8,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              createCustomFilterChip(
+                  icon: Icons.category,
+                  text: "Category",
+                  onTap: () async {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Column(
+                            children: [
+                              Text("Filter Category", style: context.customTt.dateLabel),
+                              Text("selected category", style: context.customTt.numberFontMedium),
+                            ],
+                          ),
+                          content:ListView.builder(itemCount: 2, itemBuilder:(context, index) {
+                            
+                          },)
+                        );
+                      },
+                    );
+                  },
+                  isActive: isCategoryFiltered),
+              createCustomFilterChip(
+                  icon: Icons.date_range,
+                  text: "Date",
+                  // onTap: () async => showFilterDateDialog(),
+                  isActive: isDateFiltered),
+              createCustomFilterChip(
+                  icon: Icons.money,
+                  text: "Amount",
+                  // onTap: () async => showFilterAmountDialog(),
+                  isActive: isDateFiltered),
+            ],
+          ),
+        ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      title: titleAppBar,
+      bottom: _isSearchOpened ? bottomFilterAppBar : null,
+      actions: !_isSearchOpened
+          ? [
+              IconButton(
+                  onPressed: () =>
+                      setState(() => _isSearchOpened = !_isSearchOpened),
+                  icon: Icon(Icons.search)),
+              // IconButton(
+              //     onPressed: context.themeMod.toggleBlur,
+              //     icon: Icon(
+              //         !isBlur ? Icons.visibility : Icons.visibility_off)),
+              IconButton(
+                  onPressed: context.appMod.resetMetric,
+                  icon: Icon(Icons.refresh))
+            ]
+          : [],
+    );
   }
 }
