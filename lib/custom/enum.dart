@@ -1,0 +1,4 @@
+enum CostType {
+  expense,
+  income,
+}

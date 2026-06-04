@@ -1,8 +1,11 @@
+import 'package:another_flushbar/flushbar.dart';
+import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:budget_tracker/screens/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class SetBudgetScreen extends StatefulWidget {
@@ -18,6 +21,7 @@ enum BudgetAmount {percentage, fixed}
 class _SetBudgetScreenState extends State<SetBudgetScreen> {
   @override
   Widget build(BuildContext context) {
+    final contextRead = context.read<AppModel>();
     final budgets = context.watch<AppModel>().budgets;
     // final budgets = context.select((AppModel state) => state.budgets);
     debugPrint("list view rebuilt");
@@ -32,7 +36,7 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CustomSettingsTile(title:"Set Overall Budget"),
+                // CustomSettingsTile(title:"Set Overall Budget"),
                 ReorderableListView(
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
@@ -40,17 +44,21 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
                     debugPrint("reordered!");
                   },
                   children: budgets.map((e) {
+                    final String budgetAmountString = contextRead.customCurrencyFormat(e.amount ?? 0, true);
+                    final String categoryString = e.categories!.isEmpty ? 
+                      "All categories" : 
+                      e.categories!.length == 1?
+                        e.categories!.first :
+                        "${e.categories!.length} categories";
                     return CustomSettingsTile(
                       // final String title = 
                       key: ValueKey(e.id!),
                       title:e.name?.toString(),
-                      subtitle: Text('${e.amount ?? ""} | ${e.appliedType == BudgetApplyMonth.all ? "Every month": "Specific month"} | ${e.categories!.isEmpty ? "All categories" : "${e.categories!.length} categories"}'),
+                      subtitle: Text('$budgetAmountString | ${e.appliedType == BudgetApplyMonth.all ? "Every month": "Specific month"} | $categoryString'),
                       trailingWidget: Switch(
                         value: e.enabled ?? false, 
                         onChanged: (value) {
-                          // context.read<AppModel>().updateBudget(e.id ?? "", (budget) => 
-                          //   budget.enabled = value
-                          // );
+                          // context.read<AppModel>().deleteBudget(e.id!);
                         }
                       ),
                       onTap: () {
@@ -86,7 +94,7 @@ class CategoryBudgetSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final categories = context.read<AppModel>().categories;
     return CustomSettingsTile(
-      title: "Add new category budget", 
+      title: "Add new budget", 
       leading: Icon(Icons.add), 
       onTap: () {
         Navigator.push(context, MaterialPageRoute(builder:(context) => const BudgetEditScreen(),));
@@ -218,9 +226,18 @@ class _TotalBudgetDialogState extends State<TotalBudgetDialog> {
             Navigator.pop(context);
           }, 
           child: Text('Save')),
-        deleteButton(onPressed: () {
-          context.read<AppModel>().deleteBudget(selectedBudget!.id!);
-          Navigator.pop(context);
+        deleteButton(onPressed: () async {
+          await showDialog(
+            context: context, 
+            builder:(context) => ConfirmDeleteDialog(
+              title: "Delete budget",
+              content: Text('Do you want to delete the budget. Warning: You cannot undo this action.'),
+              onDeletePressed: () {
+                context.read<AppModel>().deleteBudget(selectedBudget!.id!);
+                Navigator.pop(context);
+              },
+            ),
+          );
         })
       ],
     );
@@ -299,28 +316,42 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
   void initState() {
     super.initState();
 
+    final contextRead = context.read<AppModel>();
+    final expenseCategories = contextRead.categories.where((e) => e.costType == CostType.expense).toList();
     if (widget.curBudget != null) {
       _nameController = TextEditingController(text: widget.curBudget!.name?? "");
       _fixedAmountController = TextEditingController(text: widget.curBudget!.amount.toString());
       _percentageAmountController = TextEditingController(text: widget.curBudget!.amount.toString());
       _budgetEnabled = widget.curBudget!.enabled ?? true;
       _selectedPriority = widget.curBudget!.priority ?? 1;
-      _selectedCategory = context.read<AppModel>().categories.asMap().map((index, category) => MapEntry(
-        category.name,
-        false
-      ));
-      for (String category in widget.curBudget!.categories!) {
-        _selectedCategory[category] = true;
+      if (widget.curBudget!.categories!.isEmpty) {
+        _selectedCategory = expenseCategories.asMap().map((index, category) => MapEntry(
+          category.name!,
+          true
+        ));
+      } else {
+        _selectedCategory = expenseCategories.asMap().map((index, category) => MapEntry(
+          category.name!,
+          false
+        ));
+        for (String category in widget.curBudget!.categories!) {
+          _selectedCategory[category] = true;
+        }
       }
       if (widget.curBudget!.appliedType == BudgetApplyMonth.specific) {
         _selectedYear = widget.curBudget!.months!.first.year;
+        _selectedMonths = widget.curBudget!.months!.map((e)=> e.month).toList();
+      } else {
+        _selectedMonths.add(DateTime.now().month);
+        _selectedYear = DateTime.now().year;
       }
     } else {
-      _selectedCategory = context.read<AppModel>().categories.asMap().map((index, category) => MapEntry(
-        category.name,
+      _selectedCategory = expenseCategories.asMap().map((index, category) => MapEntry(
+        category.name!,
         true
       ));
-      _nameController = TextEditingController(text: "New Budget 1");
+      _selectedPriority = contextRead.budgets.length + 1;
+      _nameController = TextEditingController(text: "Budget ${contextRead.budgets.length + 1}");
       _fixedAmountController = TextEditingController(text: "0");
       _percentageAmountController = TextEditingController(text: "0");
       _selectedMonths.add(DateTime.now().month);
@@ -344,8 +375,40 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
       appliedType: _budgetMonth,
       amount: _calType == BudgetAmount.fixed ? double.parse(_fixedAmountController.text): double.parse(_percentageAmountController.text),
       priority: _selectedPriority,
+      months: _budgetMonth == BudgetApplyMonth.specific ? _selectedMonths.map((month) => DateFormat('yyyy-M').parse('$_selectedYear-$month')).toList() : [],
       categories: selectedCatList
     );
+  }
+
+  Future<bool> validateBudget(bool isUpdate) async {
+    List<String> msg = [];
+    bool isValid = true;
+    if (!_selectedCategory.containsValue(true)) {
+      msg.add('CATEGORY: Please select at least one category.');
+      isValid = false;
+    }
+    if (_budgetMonth == BudgetApplyMonth.specific && _selectedMonths.isEmpty) {
+      msg.add('SPECIFIC MONTH: Please select at least one month.');
+      isValid = false;
+    }
+    if (_calType == BudgetAmount.fixed && (double.tryParse(_fixedAmountController.text) == 0 || double.tryParse(_fixedAmountController.text) == null || _fixedAmountController.text == "")) {
+      msg.add('FIXED: Please select a number larger than 0.');
+      isValid = false;
+    } else if (_calType == BudgetAmount.percentage && (double.tryParse(_percentageAmountController.text) == 0 || double.tryParse(_percentageAmountController.text) == null || _percentageAmountController.text == "")) {
+      msg.add('PERCENTAGE: Please select a number larger than 0.');
+      isValid = false;
+    }
+    if (!isValid) {
+      await Flushbar(
+        animationDuration: Duration(milliseconds: 300),
+        flushbarPosition: FlushbarPosition.TOP,
+        flushbarStyle: FlushbarStyle.GROUNDED,
+        duration: Duration(seconds: 4),
+        title: "Error ${isUpdate? "updating": "creating"} budget!",
+        message: msg.join("\n"),
+      ).show(context);
+    }
+    return isValid;
   }
 
   @override
@@ -358,25 +421,34 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
       appBar: AppBar(
         title: Text("Add Budgets"),
         actions: [
-          if (widget.curBudget == null) TextButton(
-            onPressed: () {
-              appModelRead.createBudget(generateBudget());
-              Navigator.pop(context);
-            }, 
-            child: const Text("Create")
-          ),
           if (widget.curBudget != null) CustomDeleteButton(
-            onPressed: () {
-              appModelRead.deleteBudget(widget.curBudget!.id!);
-              Navigator.pop(context);
+            onPressed: () async {
+              await showDialog(
+                context: context, 
+                builder:(context) => ConfirmDeleteDialog(
+                  title: "Delete budget",
+                  content: Text('Do you want to delete the budget?\nWarning: You cannot undo this action.'),
+                  onDeletePressed: () {
+                    context.read<AppModel>().deleteBudget(widget.curBudget!.id!);
+                    Navigator.pop(context);
+                  },
+                ),
+              );
             }, 
           ),
-          if (widget.curBudget != null) TextButton(
-            onPressed: () {
-              appModelRead.updateBudget(widget.curBudget!.id!,generateBudget());
-              Navigator.pop(context);
+          TextButton(
+            onPressed: () async {
+              final bool isValid = await validateBudget(widget.curBudget != null);
+              if (isValid) {
+                if (widget.curBudget == null) {
+                  appModelRead.createBudget(generateBudget());
+                } else {
+                  appModelRead.updateBudget(widget.curBudget!.id!, generateBudget());
+                }
+                Navigator.pop(context);
+              }  
             }, 
-            child: const Text("Save")
+            child: Text(widget.curBudget == null ? "Create" : "Save")
           ),
         ],
       ),
@@ -451,8 +523,10 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
                     Flexible(
                       fit: FlexFit.tight,
                       child: CustomDropDownMenu(
-                        dropdownMenuEntries: budgets.isEmpty ? [1] : List.generate(budgets.length + 1, (e) => e),
-                        initialSelection: 1,
+                        dropdownMenuEntries: budgets.isEmpty ? 
+                          [1] : 
+                          List.generate(budgets.length + (widget.curBudget == null? 1 : 0), (e) => e + 1),
+                        initialSelection: _selectedPriority,
                         onSelected: (value) {
                           setState(() {
                             _selectedPriority = value;
@@ -586,6 +660,7 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
                           Flexible(
                             child: CustomDropDownMenu(
                               dropdownMenuEntries: [2022,2023,2024, 2025],
+                              initialSelection: _selectedYear,
                             )),
                         ],
                       ),
@@ -642,7 +717,7 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
                   value:  _selectedCategory[e.name] ?? false, 
                   onChanged: (value) {
                     if (value != null) {
-                      setState(() => _selectedCategory[e.name] = value);
+                      setState(() => _selectedCategory[e.name!] = value);
                     }
                   }
                 ),
@@ -679,7 +754,7 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
                   setState(() {
                     selected ? _selectedMonths.remove(index + 1) : _selectedMonths.add(index + 1);
                   });
-                  // debugPrint('selected Month count: ${_selectedMonths.length}');
+                  debugPrint('selected months count: ${_selectedMonths.length}');
                 },
               )
             );
@@ -730,6 +805,35 @@ class CustomDeleteButton extends StatelessWidget {
         foregroundColor: Colors.red
       ),
       child: Text(buttonText),
+    );
+  }
+}
+
+class ConfirmDeleteDialog extends StatelessWidget {
+  const ConfirmDeleteDialog({
+    super.key,
+    this.content,
+    this.title,
+    this.onDeletePressed,
+  });
+
+  final String? title;
+  final Widget? content;
+  final void Function()? onDeletePressed;
+  
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title ?? ""),
+      content: content,
+      actions: [
+        CustomCancelButton(
+          onPressed: () => Navigator.pop(context),
+        ),
+        CustomDeleteButton(
+          onPressed: onDeletePressed,
+        )
+      ],
     );
   }
 }

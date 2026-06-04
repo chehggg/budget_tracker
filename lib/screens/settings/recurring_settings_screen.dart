@@ -1,7 +1,8 @@
 import 'dart:collection';
 
 import 'package:another_flushbar/flushbar.dart';
-import 'package:budget_tracker/extensions.dart';
+import 'package:budget_tracker/custom/class.dart';
+import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/screens/settings/settings_screen.dart';
@@ -235,8 +236,8 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
     selectedStartDateNum = DateTime.now().day;
     selectedStartWeekNum = startMonthWeekNum[DateTime.now().numberOfWeek - 1];
 
-    _startController = TextEditingController(text:selectedStartDate.fullDateFormat);
-    _endController = TextEditingController(text:selectedEndDate.fullDateFormat);
+    _startController = TextEditingController(text:selectedStartDate.formatFull());
+    _endController = TextEditingController(text:selectedEndDate.formatFull());
     _selectedCostItem = context.read<AppModel>().tempRecCostItem;
     // debugPrint('weekNum value: ${selectedStartWeekNum.toString()}');
   }
@@ -308,7 +309,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [TextButton(onPressed: () {
-                  context.read<NavigationModel>().openForm(FormArgument(isNew: true, oriRoute: "/recurring"));
+                  context.read<NavigationModel>().openForm(FormArgument(oriRoute: "/recurring"));
                 }, child: Text("Select"),)],
               ),
               Divider(),
@@ -456,7 +457,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
                           );
                           if (newDate != null) {
                             setState(() => selectedStartDate = newDate); 
-                            _startController.value = _startController.value.copyWith(text: selectedStartDate.fullDateFormat);
+                            _startController.value = _startController.value.copyWith(text: selectedStartDate.formatFull());
                           }
                         },
                       )
@@ -497,7 +498,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
                                 );
                                 if (newDate != null) {
                                   setState(() => selectedEndDate = newDate); 
-                                  _endController.value = _endController.value.copyWith(text: selectedEndDate.fullDateFormat);
+                                  _endController.value = _endController.value.copyWith(text: selectedEndDate.formatFull());
                                 }
                               },
                             )
@@ -589,7 +590,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text('This action will create ${_recurringDates.length} copies of the cost item on the follwoing date:\n'),
-                                    ..._recurringDates.map((e) => Text(e.fullDateFormat)),
+                                    ..._recurringDates.map((e) => Text(e.formatFull())),
                                     Text('\nNote that once the copies are created, you can only delete them one by one. Batch delete is not possible.'),
                                   ],
                                 ),

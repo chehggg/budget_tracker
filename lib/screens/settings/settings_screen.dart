@@ -1,7 +1,7 @@
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
-import 'package:budget_tracker/utility/currency.dart';
+import 'package:budget_tracker/constants/currency.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:flutter/material.dart';

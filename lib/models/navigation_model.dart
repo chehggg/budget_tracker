@@ -1,4 +1,4 @@
-import 'package:budget_tracker/models/model.dart';
+import 'package:budget_tracker/custom/class.dart';
 import 'package:flutter/material.dart';
 
 class NavigationModel extends ChangeNotifier {

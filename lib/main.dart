@@ -1,4 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:budget_tracker/custom/class.dart';
+import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/firebase_options.dart';
 import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
@@ -8,7 +10,6 @@ import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -23,42 +24,62 @@ import 'package:budget_tracker/screens/settings/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterLocalization.instance.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform
-  );
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<ThemeModel>(
-          create: (context) => ThemeModel(),
-        ),
-        ChangeNotifierProvider<CurrencyModel>(
-          create: (context) => CurrencyModel(),
-        ),
-        ChangeNotifierProvider<NavigationModel>(
-          create: (context) => NavigationModel(),
-        ),
-        ChangeNotifierProxyProvider<ThemeModel,AppModel>(
-          create: (context) => AppModel(),
-          update: (context, themeModel, appModel) => appModel!..updateAppModel(themeModel),
-        ),
-      ],
-      child: MainApp()
-    )
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(MultiProvider(providers: [
+    ChangeNotifierProvider<ThemeModel>(
+      create: (context) => ThemeModel(),
+    ),
+    ChangeNotifierProvider<CurrencyModel>(
+      create: (context) => CurrencyModel(),
+    ),
+    ChangeNotifierProvider<NavigationModel>(
+      create: (context) => NavigationModel(),
+    ),
+    ChangeNotifierProxyProvider<ThemeModel, AppModel>(
+      create: (context) => AppModel(),
+      update: (context, themeModel, appModel) =>
+          appModel!..updateAppModel(themeModel),
+    ),
+  ], child: const MainApp()));
 }
 
-class MainApp extends StatelessWidget {
-  MainApp({super.key});
+class MainApp extends StatefulWidget {
+  const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  bool _isFontLoaded = false;
+
+  Future<void> loadFont() async {
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.dmSerifDisplay,
+      GoogleFonts.inter,
+      GoogleFonts.oranienbaum,
+    ]);
+    setState(() {
+      _isFontLoaded = true;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState;
+    loadFont();
+  }
 
   final FlutterLocalization localization = FlutterLocalization.instance;
-  
+
   ThemeData _baseTheme(BuildContext context, Brightness brightness) {
+    final baseTheme = ThemeData(brightness: brightness);
+
     final ColorScheme seedColorScheme;
     if (brightness == Brightness.light) {
       seedColorScheme = ColorScheme.fromSeed(
-        // seedColor: const Color.fromARGB(255, 20, 175, 85), 
-        seedColor: context.select((ThemeModel state) => state.color), 
+        // seedColor: const Color.fromARGB(255, 20, 175, 85),
+        seedColor: context.select((ThemeModel state) => state.color),
         brightness: brightness,
         dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         contrastLevel: 0,
@@ -69,8 +90,8 @@ class MainApp extends StatelessWidget {
       );
     } else {
       seedColorScheme = ColorScheme.fromSeed(
-        // seedColor: const Color.fromARGB(255, 20, 175, 85), 
-        seedColor: context.select((ThemeModel state) => state.color), 
+        // seedColor: const Color.fromARGB(255, 20, 175, 85),
+        seedColor: context.select((ThemeModel state) => state.color),
         brightness: brightness,
         dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
         contrastLevel: 0,
@@ -81,141 +102,157 @@ class MainApp extends StatelessWidget {
       );
     }
 
-    // use san serif for number
-    // use serif for display/text
-    final TextStyle customNumberThin = GoogleFonts.poppins(fontWeight: FontWeight.w200);
-    final TextStyle customNumberRegular = GoogleFonts.poppins(fontWeight: FontWeight.w400);
-    final TextStyle customNumberMedium = GoogleFonts.poppins(fontWeight: FontWeight.w600);
-    final TextStyle customNumberBold = GoogleFonts.poppins(fontWeight: FontWeight.w700);
-    final TextStyle customNumberBlack = GoogleFonts.poppins(fontWeight: FontWeight.w800);
-    final TextStyle customDisplayMedium = GoogleFonts.inter(fontWeight: FontWeight.w300);
-    final TextStyle customDisplayBold = GoogleFonts.inter(fontWeight: FontWeight.w500);
-    final TextStyle customDisplayBlack = GoogleFonts.inter(fontWeight: FontWeight.w700);
+    final customColorScheme = seedColorScheme.copyWith(
+        surface: Color(0xff0A0A0C),
+        surfaceContainer: Color(0xff0A0A0C),
+        primary: Color(0xffF0EBE0),
+        secondary: Color(0xffFFAB00));
 
-    final TextTheme customTextTheme = TextTheme(
-      displayLarge: customDisplayBold.copyWith(fontSize: 50), // Custom bold and size (Regular is default)
-      displayMedium: customNumberBlack, // For number
-      displaySmall: customNumberMedium, // Regular is default
-      // headlineLarge: customNumberRegular, // Regular is default
-      headlineLarge: customDisplayBold, // Regular is default
-      headlineMedium: customDisplayBold, // Regular is default
-      headlineSmall: customDisplayBold, // Regular is default
-      titleLarge: customDisplayBold, // Custom bold (Regular is default)
-      titleMedium: customDisplayBold, // Custom bold (Medium is default)
-      titleSmall: customNumberBold, // Custom bold (Medium is default)
-      bodyLarge: customNumberMedium, // Normal use in number (use this for more emphasis than label medium)
-      bodyMedium: customDisplayMedium, // Regular use in display text
-      bodySmall: customNumberRegular, // Regular is default
-      labelLarge: customDisplayBlack , // Custom bold (Medium is default)
-      labelMedium: customNumberRegular, // For showing number in small font (suitable for graph label etc)
-      labelSmall: customDisplayBlack.copyWith(
-        fontSize: 12,
-        color: seedColorScheme.primary
-      ), // Medium is default
+    final customTextTheme = baseTheme.textTheme.copyWith(
+      // bodyMedium: GoogleFonts.inter(fontWeight: FontWeight(200)),
+      // bodyLarge: GoogleFonts.inter(fontSize: 26),
+      // bodyMedium: GoogleFonts.archivoBlack(fontWeight: FontWeight(200)),
+      // bodyLarge: GoogleFonts.archivoBlack(fontSize: 26),
+      bodyMedium: GoogleFonts.inter(),
+      bodyLarge: GoogleFonts.dmSerifDisplay(fontSize: 26),
+      // labelSmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight(600)),
+      // titleMedium: GoogleFonts.playfairDisplay(),
+      // titleLarge: GoogleFonts.playfairDisplay(),
+      // titleSmall: GoogleFonts.playfairDisplay(color: seedColorScheme.onSurface),
+      labelSmall: GoogleFonts.oranienbaum(fontWeight: FontWeight(600)),
+      titleMedium: GoogleFonts.oranienbaum(
+          color: customColorScheme.onSurface.withAlpha(200), fontSize: 18),
+      titleLarge: GoogleFonts.oranienbaum(),
+      headlineMedium: GoogleFonts.oranienbaum(),
+      titleSmall: GoogleFonts.oranienbaum(color: customColorScheme.onSurface),
     );
 
     final spacing = context.select((ThemeModel state) => state.spacingValue);
-    return ThemeData(
+
+    return baseTheme.copyWith(
+      extensions: [
+        MyColors(
+          flipCardColor: Color(0xffF0EBE0),
+          onFlipCard: Color(0xff0A0A0C),
+        ),
+        MyTexts(
+          numberFontLarge: customTextTheme.bodyLarge!
+              .copyWith(fontSize: 50, fontWeight: FontWeight(300)),
+          numberFontMedium: customTextTheme.bodyMedium!
+              .copyWith(fontSize: 25, fontWeight: FontWeight(600)),
+          numberFontSmall: customTextTheme.bodyMedium!
+              .copyWith(fontSize: 16, fontWeight: FontWeight(600)),
+          numberLabel: customTextTheme.labelSmall!.copyWith(
+              fontSize: 18, letterSpacing: 0, color: customColorScheme.primary),
+          dateLabel: customTextTheme.labelSmall!.copyWith(
+              fontSize: 25, letterSpacing: 0, color: customColorScheme.primary),
+        )
+      ],
       textTheme: customTextTheme,
-      primaryTextTheme: customTextTheme,
-      colorScheme: seedColorScheme, 
-      brightness: brightness,
-      listTileTheme: ListTileThemeData(
-        contentPadding: EdgeInsets.symmetric(horizontal: 8),
-        titleTextStyle: customTextTheme.titleMedium,
-        visualDensity: VisualDensity(vertical: spacing - 3, horizontal: -2),
-        dense: true,
-        leadingAndTrailingTextStyle: customTextTheme.headlineLarge
-      ),
-      appBarTheme: AppBarTheme(
-        color: seedColorScheme.surfaceContainer,
-        titleTextStyle: customTextTheme.titleLarge!.copyWith(fontSize: 24),
-        scrolledUnderElevation: 0
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: seedColorScheme.primary
-      ),
-      useMaterial3: true,
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: <TargetPlatform, PageTransitionsBuilder>{
-          // TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-          // TargetPlatform.android: OpenUpwardsPageTransitionsBuilder()
-          TargetPlatform.android: PredictiveBackPageTransitionsBuilder()
-          //   allowEnterRouteSnapshotting: false,
-          // TargetPlatform.iOS: TransitionBuil
-        },
-      ),
-      dialogTheme: DialogThemeData(
-        titleTextStyle: customTextTheme.displayLarge!.copyWith(fontSize: 24),
-        backgroundColor: seedColorScheme.surfaceContainer,
-        insetPadding: EdgeInsets.symmetric(horizontal: 20)
-      ),
-      datePickerTheme: DatePickerThemeData(
-        backgroundColor: seedColorScheme.surfaceContainer,
-        dividerColor: Colors.transparent,
-        // headerHeadlineStyle: TextStyle(color: Colors.amber)
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        hintStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100)),
-        prefixStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100))
-      ),
-      segmentedButtonTheme: SegmentedButtonThemeData(
-        style: SegmentedButton.styleFrom(
-          splashFactory: NoSplash.splashFactory,
-          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          selectedBackgroundColor: seedColorScheme.surfaceContainer,
-          selectedForegroundColor: seedColorScheme.onSurface,
-          visualDensity: VisualDensity(horizontal: 0),
-          // textStyle: customTextTheme.titleMedium!.copyWith(fontSize: 24),
-          side: BorderSide.none,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0))
-        )
-      ),
-      menuButtonTheme: MenuButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          textStyle: customTextTheme.headlineLarge,
-          visualDensity: VisualDensity(horizontal: -2, vertical: -2)
-        )
-      ),
-      radioTheme: RadioThemeData(
-        visualDensity: VisualDensity(horizontal: -2)
-      ),
-      menuTheme: MenuThemeData(
-        style: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(seedColorScheme.surfaceBright),
-          // visualDensity: VisualDensity(horizontal: -2, vertical: -4)
-        )
-      ),
-      switchTheme: SwitchThemeData()
-      // dividerColor: Colors.transparent,
+      // primaryTextTheme: customTextTheme,
+      colorScheme: customColorScheme,
+      // brightness: brightness,
+      // listTileTheme: ListTileThemeData(
+      //   contentPadding: EdgeInsets.symmetric(horizontal: 8),
+      //   titleTextStyle: customTextTheme.titleMedium,
+      //   visualDensity: VisualDensity(vertical: spacing - 3, horizontal: -2),
+      //   dense: true,
+      //   leadingAndTrailingTextStyle: customTextTheme.headlineLarge
+      // ),
+      // appBarTheme: AppBarTheme(
+      //   color: seedColorScheme.surfaceContainer,
+      //   titleTextStyle: customTextTheme.titleLarge!.copyWith(fontSize: 24),
+      //   scrolledUnderElevation: 0
+      // ),
+      // floatingActionButtonTheme: FloatingActionButtonThemeData(
+      //   backgroundColor: seedColorScheme.primary
+      // ),
+      // // expansionTileTheme: ExpansionTileThemeData(
+
+      // // ),
+      // useMaterial3: true,
+      // pageTransitionsTheme: const PageTransitionsTheme(
+      //   builders: <TargetPlatform, PageTransitionsBuilder>{
+      //     // TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+      //     // TargetPlatform.android: OpenUpwardsPageTransitionsBuilder()
+      //     TargetPlatform.android: PredictiveBackPageTransitionsBuilder()
+      //     //   allowEnterRouteSnapshotting: false,
+      //     // TargetPlatform.iOS: TransitionBuil
+      //   },
+      // ),
+      // dialogTheme: DialogThemeData(
+      //   titleTextStyle: customTextTheme.displayLarge!.copyWith(fontSize: 24),
+      //   backgroundColor: seedColorScheme.surfaceContainer,
+      //   insetPadding: EdgeInsets.symmetric(horizontal: 20)
+      // ),
+      // datePickerTheme: DatePickerThemeData(
+      //   backgroundColor: seedColorScheme.surfaceContainer,
+      //   dividerColor: Colors.transparent,
+      //   // headerHeadlineStyle: TextStyle(color: Colors.amber)
+      // ),
+      // inputDecorationTheme: InputDecorationTheme(
+      //   hintStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100)),
+      //   prefixStyle: customTextTheme.displayMedium!.copyWith(color: seedColorScheme.onSurface.withAlpha(100))
+      // ),
+      // segmentedButtonTheme: SegmentedButtonThemeData(
+      //   style: SegmentedButton.styleFrom(
+      //     splashFactory: NoSplash.splashFactory,
+      //     padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      //     selectedBackgroundColor: seedColorScheme.surfaceContainer,
+      //     selectedForegroundColor: seedColorScheme.onSurface,
+      //     visualDensity: VisualDensity(horizontal: 0),
+      //     // textStyle: customTextTheme.titleMedium!.copyWith(fontSize: 24),
+      //     side: BorderSide.none,
+      //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0))
+      //   )
+      // ),
+      // menuButtonTheme: MenuButtonThemeData(
+      //   style: ElevatedButton.styleFrom(
+      //     textStyle: customTextTheme.headlineLarge,
+      //     visualDensity: VisualDensity(horizontal: -2, vertical: -2)
+      //   )
+      // ),
+      // radioTheme: RadioThemeData(
+      //   visualDensity: VisualDensity(horizontal: -2)
+      // ),
+      // menuTheme: MenuThemeData(
+      //   style: MenuStyle(
+      //     backgroundColor: WidgetStatePropertyAll(seedColorScheme.surfaceBright),
+      //     // visualDensity: VisualDensity(horizontal: -2, vertical: -4)
+      //   )
+      // ),
+      // switchTheme: SwitchThemeData()
+      // // dividerColor: Colors.transparent,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp
-    ]);
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(context.select((ThemeModel state) => state.fontSizeFactor.toDouble()/10 + 0.7))
-      ),
-      child: MaterialApp(
-        locale: context.select((ThemeModel state) => state.appLocale),
-        // supportedLocales: AppLocalizations.supportedLocales,
-        // localizationsDelegates: AppLocalizations.localizationsDelegates,
-        theme: _baseTheme(context, Brightness.light),
-        themeMode: context.select((ThemeModel state) => state.theme),
-        darkTheme: _baseTheme(context, Brightness.dark),
-        home: const HomeScreen(),
-      ),
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    return MaterialApp(
+      locale: context.select((ThemeModel state) => state.appLocale),
+      theme: _baseTheme(context, Brightness.light),
+      themeMode: context.select((ThemeModel state) => state.theme),
+      darkTheme: _baseTheme(context, Brightness.dark),
+      home: _isFontLoaded ? const HomeScreen() : const SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: CircularProgressIndicator(),
     );
   }
 }
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     final navigationModel = context.watch<NavigationModel>();
@@ -248,43 +285,42 @@ class HomeScreen extends StatelessWidget {
               switch (settings.name) {
                 case '/':
                   return MaterialPageRoute(
-                    builder:(context) => CostListScreen(),
-                    settings: RouteSettings(name: settings.name)
-                  );
+                      builder: (context) => CostListScreen(),
+                      settings: RouteSettings(name: settings.name));
                 case '/form':
-                  return MaterialPageRoute(builder:(context) {
-                    return CostItemFormScreen(arg: settings.arguments as FormArgument);
-                  },
-                    settings: RouteSettings(name: settings.name)
-                  );
+                  return MaterialPageRoute(
+                      builder: (context) {
+                        return CostItemFormScreen(
+                            arg: settings.arguments as FormArgument);
+                      },
+                      settings: RouteSettings(name: settings.name));
                 case '/data':
-                  return MaterialPageRoute(builder:(context) => 
-                    const ChartScreen(),
-                    settings: RouteSettings(name: settings.name)
-                  );
+                  return MaterialPageRoute(
+                      builder: (context) => const ChartScreen(),
+                      settings: RouteSettings(name: settings.name));
                 case '/report':
-                  return MaterialPageRoute(builder:(context) => 
-                    const CostReportScreen(),
-                    settings: RouteSettings(name: settings.name)
-                  );
+                  return MaterialPageRoute(
+                      builder: (context) => const CostReportScreen(),
+                      settings: RouteSettings(name: settings.name));
                 case '/settings':
-                  return MaterialPageRoute(builder:(context) => 
-                    const SettingsScreen(),
-                    settings: RouteSettings(name: settings.name)
-                  );
+                  return MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                      settings: RouteSettings(name: settings.name));
                 case '/budgets':
-                  return MaterialPageRoute(builder:(context) => 
-                    const SetBudgetScreen(),
+                  return MaterialPageRoute(
+                    builder: (context) => const SetBudgetScreen(),
                     // settings: RouteSettings(name: settings.name)
                   );
                 case '/recurring':
-                  return MaterialPageRoute(builder:(context) => 
-                    const RecurringCostScreen(),
+                  return MaterialPageRoute(
+                    builder: (context) => const RecurringCostScreen(),
                     // settings: RouteSettings(name: settings.name)
                   );
                 default:
-                  throw UnimplementedError();
-              } 
+                  return MaterialPageRoute(
+                      builder: (context) => const Placeholder());
+                // throw UnimplementedError();
+              }
             },
           ),
         ),
@@ -296,18 +332,18 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future showPopDialog(BuildContext context) => showDialog(
-    context: context, 
-    builder:(context) {
-      return AlertDialog(
-      title: Text("Exit app?"),
-      content: Text("Exit app"), 
-      actions: [
-        TextButton(onPressed: null, child: Text("Exit")),
-        TextButton(onPressed: null, child: Text("Cancel"))
-      ],
-    );
-    },
-  );
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Exit app?"),
+            content: Text("Exit app"),
+            actions: [
+              TextButton(onPressed: null, child: Text("Exit")),
+              TextButton(onPressed: null, child: Text("Cancel"))
+            ],
+          );
+        },
+      );
 }
 
 class CustomFAB extends StatelessWidget {
@@ -318,18 +354,19 @@ class CustomFAB extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.large(
-      onPressed: ()=> context.read<NavigationModel>().openForm(FormArgument(isNew: true)),
-      shape: CircleBorder(),
+      onPressed: () => context.read<NavigationModel>().openForm(FormArgument()),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(30)),
       enableFeedback: true,
       elevation: 0,
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      foregroundColor: context.cs.surfaceContainer,
+      backgroundColor: context.cs.primary,
       child: Icon(Icons.add),
-      
     );
   }
 }
 
-class CustomNavigationBottomBar extends StatelessWidget{
+class CustomNavigationBottomBar extends StatelessWidget {
   CustomNavigationBottomBar({
     super.key,
   });
@@ -343,32 +380,45 @@ class CustomNavigationBottomBar extends StatelessWidget{
 
   @override
   Widget build(BuildContext context) {
-    final pageIndex = context.select((NavigationModel state) => state.currentRouteIndex);
+    final pageIndex =
+        context.select((NavigationModel state) => state.currentRouteIndex);
     return BottomAppBar(
       notchMargin: 10,
       shape: CircularNotchedRectangle(),
       child: Row(
         spacing: 5,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: buttons.asMap().map((index, buttonIcon) {
-          Widget iconButton; 
-          if (pageIndex == index) {
-            iconButton = IconButton.filled(
-              onPressed: () => {},
-              icon: Icon(buttonIcon),
-              iconSize: 32,
-            );
-          } else {
-            iconButton = IconButton(
-              onPressed: () => context.read<NavigationModel>().navigateMainScreen(index), 
-              icon: Icon(buttonIcon),
-              iconSize: 28,
-            );
-          }
-          return MapEntry(index, iconButton);
-        }).values.toList()..insert(2, SizedBox(width: 80,)), // add space for FAB
+        children: buttons
+            .asMap()
+            .map((index, buttonIcon) {
+              Widget iconButton;
+              if (pageIndex == index) {
+                iconButton = IconButton.filled(
+                  onPressed: () => {},
+                  icon: Icon(
+                    buttonIcon,
+                    color: context.cs.surface,
+                  ),
+                  iconSize: 32,
+                );
+              } else {
+                iconButton = IconButton(
+                  onPressed: () =>
+                      context.read<NavigationModel>().navigateMainScreen(index),
+                  icon: Icon(buttonIcon),
+                  iconSize: 28,
+                );
+              }
+              return MapEntry(index, iconButton);
+            })
+            .values
+            .toList()
+          ..insert(
+              2,
+              SizedBox(
+                width: 80,
+              )), // add space for FAB
       ),
     );
   }
 }
-

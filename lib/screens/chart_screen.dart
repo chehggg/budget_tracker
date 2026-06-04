@@ -1,13 +1,16 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
 
+import 'package:budget_tracker/custom/class.dart';
+import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/screens/settings/chart_details_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import 'package:budget_tracker/extensions.dart';
+import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/screens/cost_list_screen.dart';
 
@@ -229,7 +232,7 @@ class BudgetWidget extends StatelessWidget {
     return Column(
       children: (contextRead.budgetMetrics[contextWatch.formatedSelectedYearMonth] ?? []).map((e) {
         final double curAmount = e['amount'] ?? 0;
-        final double budgetAmount = e['budget'] ?? 0;
+        final double budgetAmount = e['budget'] ?? 1;
 
         final String curAmountString = contextRead.customCurrencyFormat(curAmount, true); 
         final String budgetAmountString = contextRead.customCurrencyFormat(budgetAmount, true); 
@@ -237,107 +240,46 @@ class BudgetWidget extends StatelessWidget {
         final double spendPercentage = curAmount/budgetAmount;
         final String budgetMessage = spendPercentage > 1 ? "${((spendPercentage - 1) * 100).round()}% over" : "${(spendPercentage * 100).round()}%" ;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // SizedBox(height: 12,),
-            Text(
-              '${e['name']}', 
-              textAlign: TextAlign.left,
-              style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
-            ),
-            Text('$budgetMessage ($curAmountString/$budgetAmountString)', textAlign: TextAlign.left,),
-            Padding(
-              padding: const EdgeInsets.only(left: 2.0,right: 2.0, bottom: 2, top: 8),
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  // border: BoxBorder.all(color: Colors.white)
-                ),
-                child: Row(
-                  spacing: 30,
-                  children: [
-                    Expanded(
-                      child: BarChart(
-                        BarChartData(
-                          borderData: FlBorderData(show: false),
-                          maxY: max(curAmount,budgetAmount) + 1,
-                          gridData: FlGridData(
-                            horizontalInterval: budgetAmount,
-                            getDrawingHorizontalLine: (value) {
-                              if (value == budgetAmount.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
-                              // if (value == curAmount.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
-                              return FlLine(strokeWidth: 0);
-                            },
-                            // show: false
-                          ),
-                          titlesData: FlTitlesData(
-                            bottomTitles: AxisTitles(drawBelowEverything: false),
-                            topTitles: AxisTitles(drawBelowEverything: false),
-                            leftTitles: AxisTitles(drawBelowEverything: false),
-                            rightTitles: AxisTitles(sideTitles: SideTitles(
-                              interval: budgetAmount,
-                              reservedSize: 30,
-                              showTitles: true, 
-                              getTitlesWidget: (value, meta) {
-                                // if (value == curAmount.roundToDouble()) {
-                                //   return SideTitleWidget(
-                                //     meta: meta,
-                                //      fitInside: SideTitleFitInsideData(
-                                //       enabled: budgetAmount < curAmount, 
-                                //       axisPosition: 0, 
-                                //       parentAxisSize: budgetAmount < curAmount ? 100 : 0, 
-                                //       distanceFromEdge: 0
-                                //     ),
-                                //     child: Text('Current'), 
-                                //   );
-                                // }
-                                if (value == budgetAmount.roundToDouble()) {
-                                  return SideTitleWidget(
-                                    meta: meta,
-                                    fitInside: SideTitleFitInsideData(
-                                      enabled: budgetAmount > curAmount, 
-                                      axisPosition: 0, 
-                                      parentAxisSize: budgetAmount > curAmount ? 50 : 0, 
-                                      distanceFromEdge: 0
-                                    ),
-                                    child: Text('Limit'), 
-                                  );
-                                }
-                                return SizedBox.shrink();
-                              },
-                            ),
-                          ),
-                          ),
-                          barGroups: [
-                            BarChartGroupData(
-                              x: 1,
-                              barsSpace: 0,
-                              barRods: [
-                                BarChartRodData(
-                                  toY: curAmount,
-                                  color: curAmount > budgetAmount ? Colors.red : context.read<ThemeModel>().color,
-                                  width: 12,
-                                  backDrawRodData: BackgroundBarChartRodData(
-                                    show: true,
-                                    color: Colors.grey.withAlpha(100),
-                                    fromY: 0,
-                                    toY: budgetAmount
-                                  )
-                                ),
-                                // BarChartRodData(toY: 40),
-                              ]
-                            )
-                          ],
-                          rotationQuarterTurns: 1
-                        )
-                      ),
-                    ),
-                  ],
+        return GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder:(context) => ChartBudgetDetailsScreen(curBudgetId: e['id']),));
+            debugPrint('updated!');
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // SizedBox(height: 12,),
+              Container(
+                width: double.maxFinite,
+                child: Text(
+                  '${e['name']}', 
+                  textAlign: TextAlign.left,
+                  style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
                 ),
               ),
-            ),
-          ],
+              Container(
+                width: double.maxFinite,
+                child: Text('$budgetMessage ($curAmountString/$budgetAmountString)', textAlign: TextAlign.left,)
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 2.0,right: 2.0, bottom: 2, top: 8),
+                child: Container(
+                  height: 50,
+                  decoration: BoxDecoration(
+                    // border: BoxBorder.all(color: Colors.white)
+                  ),
+                  child: Row(
+                    spacing: 30,
+                    children: [
+                      Expanded(
+                        child: BudgetBarChart(budget: budgetAmount, current: curAmount,)
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }).toList()
     );
@@ -1063,8 +1005,8 @@ class _CategoryListState extends State<CategoryList> {
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         key: ValueKey(categoryName),
-        tilePadding: EdgeInsets.fromLTRB(24,4,30,4),
-        childrenPadding: EdgeInsets.fromLTRB(24,0,30,8),
+        tilePadding: EdgeInsets.fromLTRB(4,4,4,4),
+        childrenPadding: EdgeInsets.fromLTRB(4,0,4,8),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1102,16 +1044,21 @@ class _CategoryListState extends State<CategoryList> {
             visualDensity: VisualDensity(vertical: -3),
             dense: true,
             leading: Container(
-              width: MediaQuery.of(context).size.width* 0.1,  
-              child: Text((costItem.dateTime).displayFormat())
+              width: MediaQuery.of(context).size.width* 0.12,  
+              child: Text((costItem.date).displayFormat(),
+                style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                  fontSize: 12
+                )
+              )
             ),
-            title: Row(
+            title: Flex(
+              direction: Axis.horizontal,
               crossAxisAlignment: CrossAxisAlignment.center,
               // mainAxisAlignment: MainAxisAlignment.end,
               spacing: 20,
               children: [
-                Text(costItem.name),
-                Expanded(child: Divider(color: Colors.white.withAlpha(80),))
+                Flexible(flex: 4, child: Text(costItem.name, maxLines:  1, overflow: TextOverflow.ellipsis,)),
+                Flexible(flex: 10, fit: FlexFit.tight, child: Divider(color: Colors.white.withAlpha(80),))
               ],
             ),
             trailing: Container(
@@ -1230,3 +1177,78 @@ class PercentageBar extends StatelessWidget {
   }
 }
 
+class BudgetBarChart extends StatelessWidget {
+  const BudgetBarChart({
+    super.key,
+    this.current = 0,
+    this.budget = 0,
+  });
+
+  final double current;
+  final double budget;
+
+  @override
+  Widget build(BuildContext context) {
+    return BarChart(
+      BarChartData(
+        borderData: FlBorderData(show: false),
+        maxY: max(current,budget) + 1,
+        gridData: FlGridData(
+          horizontalInterval: budget,
+          getDrawingHorizontalLine: (value) {
+            if (value == budget.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
+            return FlLine(strokeWidth: 0);
+          },
+          // show: false
+        ),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(drawBelowEverything: false),
+          topTitles: AxisTitles(drawBelowEverything: false),
+          leftTitles: AxisTitles(drawBelowEverything: false),
+          rightTitles: AxisTitles(sideTitles: SideTitles(
+            interval: budget,
+            reservedSize: 30,
+            showTitles: true, 
+            getTitlesWidget: (value, meta) {
+              if (value == budget.roundToDouble()) {
+                return SideTitleWidget(
+                  meta: meta,
+                  fitInside: SideTitleFitInsideData(
+                    enabled: budget > current, 
+                    axisPosition: 0, 
+                    parentAxisSize: budget > current ? 50 : 0, 
+                    distanceFromEdge: 0
+                  ),
+                  child: Text('Limit'), 
+                );
+              }
+              return SizedBox.shrink();
+            },
+          ),
+        ),
+        ),
+        barGroups: [
+          BarChartGroupData(
+            x: 1,
+            barsSpace: 0,
+            barRods: [
+              BarChartRodData(
+                toY: current,
+                color: current > budget ? Colors.red : context.read<ThemeModel>().color,
+                width: 12,
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  color: Colors.grey.withAlpha(100),
+                  fromY: 0,
+                  toY: budget
+                )
+              ),
+              // BarChartRodData(toY: 40),
+            ]
+          )
+        ],
+        rotationQuarterTurns: 1
+      )
+    );
+  }
+}
