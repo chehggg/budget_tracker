@@ -1,5 +1,6 @@
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/models/list_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -20,18 +21,13 @@ class CostListScreen extends StatefulWidget {
 }
 
 class _CostListScreenState extends State<CostListScreen> {
-  bool _isSearchOpened = false;
-  final TextEditingController _controller = TextEditingController();
-
   Future<void> showFilterCategoryDialog() {
     return showDialog(
       context: context,
       builder: (context) {
         final fullCategories = context.read<AppModel>().categories;
-        Set<String> selectedCategories =
-            context.read<AppModel>().filteredCategories;
-        final selectedThemeMode =
-            context.select((ThemeModel state) => state.theme);
+        Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
+        final selectedThemeMode = context.select((ThemeModel state) => state.theme);
         Set<CostItemCategory> displayCategories = {};
         final TextEditingController controller = TextEditingController();
         return StatefulBuilder(builder: (context, setState) {
@@ -39,8 +35,7 @@ class _CostListScreenState extends State<CostListScreen> {
           final hintColor = theme.colorScheme.primary.withAlpha(100);
           displayCategories = Set.from(controller.text == ""
               ? fullCategories
-              : fullCategories.where(
-                  (category) => category.name!.contains(controller.text)));
+              : fullCategories.where((category) => category.name!.contains(controller.text)));
           return AlertDialog(
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,18 +56,15 @@ class _CostListScreenState extends State<CostListScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(
-                        left: 24.0, right: 24.0, bottom: 16),
+                    padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
                     child: TextField(
                       controller: controller,
                       style: theme.textTheme.bodyMedium!,
                       decoration: InputDecoration(
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(200),
-                            borderSide: BorderSide.none),
+                        border:
+                            OutlineInputBorder(borderRadius: BorderRadius.circular(200), borderSide: BorderSide.none),
                         fillColor: theme.colorScheme.primary.withAlpha(30),
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         filled: true,
                         isDense: true,
                         hint: Row(
@@ -81,8 +73,7 @@ class _CostListScreenState extends State<CostListScreen> {
                             Icon(Icons.search, color: hintColor),
                             Text(
                               "Search for categories...",
-                              style: theme.textTheme.bodyMedium!
-                                  .copyWith(color: hintColor),
+                              style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
                             ),
                           ],
                         ),
@@ -97,11 +88,9 @@ class _CostListScreenState extends State<CostListScreen> {
                     child: SingleChildScrollView(
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         ...displayCategories.map((category) {
-                          final bool isCategorySelected =
-                              selectedCategories.contains(category.name);
+                          final bool isCategorySelected = selectedCategories.contains(category.name);
                           return ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 0),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
                             // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
                             title: Text(category.name ?? ""),
                             leading: Padding(
@@ -109,26 +98,21 @@ class _CostListScreenState extends State<CostListScreen> {
                               child: Container(
                                   decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: category
-                                          .colorScheme(selectedThemeMode)
-                                          .primaryContainer),
+                                      color: category.colorScheme(selectedThemeMode).primaryContainer),
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
                                     child: Image.asset(
                                       category.imagePath ?? "",
                                       width: 28,
                                       height: 28,
-                                      color: category
-                                          .colorScheme(selectedThemeMode)
-                                          .onPrimaryContainer,
+                                      color: category.colorScheme(selectedThemeMode).onPrimaryContainer,
                                     ),
                                   )),
                             ),
                             trailing: Checkbox(
                                 value: isCategorySelected,
                                 onChanged: (newValue) {
-                                  if (!selectedCategories
-                                      .remove(category.name)) {
+                                  if (!selectedCategories.remove(category.name)) {
                                     debugPrint('adding new item');
                                     selectedCategories.add(category.name ?? "");
                                   }
@@ -155,19 +139,14 @@ class _CostListScreenState extends State<CostListScreen> {
                     if (selectedCategories.length == fullCategories.length) {
                       selectedCategories.clear();
                     } else {
-                      selectedCategories = Set.from(
-                          fullCategories.map((category) => category.name));
+                      selectedCategories = Set.from(fullCategories.map((category) => category.name));
                     }
                     setState(() {});
                   },
-                  child: Text(selectedCategories.length == fullCategories.length
-                      ? "Unselect all"
-                      : "Select all")),
+                  child: Text(selectedCategories.length == fullCategories.length ? "Unselect all" : "Select all")),
               TextButton(
                   onPressed: () {
-                    context
-                        .read<AppModel>()
-                        .updateFilteredCategories(selectedCategories);
+                    context.read<AppModel>().updateFilteredCategories(selectedCategories);
                     Navigator.of(context).pop();
                   },
                   child: const Text("Save"))
@@ -185,9 +164,7 @@ class _CostListScreenState extends State<CostListScreen> {
           final percentiles = context.read<AppModel>().getPercentiles();
           final max = percentiles.last;
           final percentileString = percentiles
-              .map((percentile) => context
-                  .read<AppModel>()
-                  .customCurrencyFormat(percentile, false))
+              .map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false))
               .toList();
           final Map<String, String> percentileMap = {
             "<25%": "<${percentileString[1]}",
@@ -218,21 +195,16 @@ class _CostListScreenState extends State<CostListScreen> {
                         Theme(
                           data: Theme.of(context).copyWith(
                               sliderTheme: SliderThemeData(
-                                  valueIndicatorTextStyle:
-                                      Theme.of(context).textTheme.bodySmall,
-                                  valueIndicatorColor: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withAlpha(50))),
+                                  valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall,
+                                  valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50))),
                           child: RangeSlider(
                             values: _rangeValue,
                             onChanged: (newValue) {
                               setState(() => _rangeValue = newValue);
                             },
                             divisions: max.round(),
-                            labels: RangeLabels(
-                                _rangeValue.start.round().toString(),
-                                _rangeValue.end.round().toString()),
+                            labels:
+                                RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
                             min: 0,
                             max: max,
                           ),
@@ -254,13 +226,11 @@ class _CostListScreenState extends State<CostListScreen> {
                                     ],
                                   ),
                                   trailing: Checkbox(
-                                      value: _selectedPercentileRange
-                                          .contains(key),
+                                      value: _selectedPercentileRange.contains(key),
                                       onChanged: (newValue) {
                                         newValue == true
                                             ? _selectedPercentileRange.add(key)
-                                            : _selectedPercentileRange
-                                                .remove(key);
+                                            : _selectedPercentileRange.remove(key);
                                         setState(() => {});
                                       }),
                                 )))
@@ -278,44 +248,30 @@ class _CostListScreenState extends State<CostListScreen> {
     return showDialog(
         context: context,
         builder: (context) {
-          DateTimeRange? _selectedDateRange =
-              context.select((AppModel state) => state.filterDateRange);
-          DateRangeFilterType dateFilter =
-              context.select((AppModel state) => state.dateRangeFilter);
+          DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
+          DateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
           final now = DateTime.now();
           final today = DateTime(now.year, now.month, now.day);
           final Map<String, DateTimeRange> dateRanges = {
             "Today": DateTimeRange(start: today, end: today),
             "Yesterday": DateTimeRange(
-                start: today.subtract(const Duration(days: 1)),
-                end: today.subtract(const Duration(days: 1))),
-            "Last 3 Days": DateTimeRange(
-                start: today.subtract(const Duration(days: 2)), end: today),
-            "Last 5 Days": DateTimeRange(
-                start: today.subtract(const Duration(days: 4)), end: today),
-            "Last 7 Days": DateTimeRange(
-                start: today.subtract(const Duration(days: 6)), end: today),
-            "This week": DateTimeRange(
-                start: today.subtract(Duration(days: today.weekday - 1)),
-                end: today),
+                start: today.subtract(const Duration(days: 1)), end: today.subtract(const Duration(days: 1))),
+            "Last 3 Days": DateTimeRange(start: today.subtract(const Duration(days: 2)), end: today),
+            "Last 5 Days": DateTimeRange(start: today.subtract(const Duration(days: 4)), end: today),
+            "Last 7 Days": DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today),
+            "This week": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1)), end: today),
             "Last week": DateTimeRange(
                 start: today.subtract(Duration(days: today.weekday - 1 + 7)),
                 end: today.subtract(Duration(days: today.weekday % 7))),
-            "Last 2 weeks": DateTimeRange(
-                start: today.subtract(Duration(days: today.weekday - 1 + 7)),
-                end: today),
-            "Last 3 weeks": DateTimeRange(
-                start: today.subtract(Duration(days: today.weekday - 1 + 14)),
-                end: today)
+            "Last 2 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 7)), end: today),
+            "Last 3 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 14)), end: today)
           };
           String subtitleText = "";
-          bool showReset =
-              dateFilter != DateRangeFilterType.none ? true : false;
+          bool showReset = dateFilter != DateRangeFilterType.none ? true : false;
           return StatefulBuilder(builder: (context, setState) {
             if (_selectedDateRange != null) {
               if (_selectedDateRange!.start == _selectedDateRange!.end) {
-                subtitleText =
-                    "Selected range: ${_selectedDateRange!.start.displayFormat()}";
+                subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
               } else {
                 subtitleText =
                     "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}";
@@ -356,12 +312,9 @@ class _CostListScreenState extends State<CostListScreen> {
                                 child: FittedBox(
                                     fit: BoxFit.fill,
                                     child: Switch(
-                                        value: dateFilter ==
-                                            DateRangeFilterType.relative,
+                                        value: dateFilter == DateRangeFilterType.relative,
                                         onChanged: (value) {
-                                          dateFilter = value
-                                              ? DateRangeFilterType.relative
-                                              : DateRangeFilterType.none;
+                                          dateFilter = value ? DateRangeFilterType.relative : DateRangeFilterType.none;
                                           _selectedDateRange = null;
                                           setState(() {});
                                         }))),
@@ -380,10 +333,8 @@ class _CostListScreenState extends State<CostListScreen> {
                           inputDecorationTheme: InputDecorationTheme(
                             border: const UnderlineInputBorder(),
                             isDense: true,
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 12),
-                            constraints:
-                                BoxConstraints.tight(const Size.fromHeight(40)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                            constraints: BoxConstraints.tight(const Size.fromHeight(40)),
                           ),
                           textStyle: Theme.of(context).textTheme.bodyMedium,
                           dropdownMenuEntries: dateRanges
@@ -393,15 +344,13 @@ class _CostListScreenState extends State<CostListScreen> {
                                     DropdownMenuEntry(
                                       value: value,
                                       label: key,
-                                      enabled: dateFilter ==
-                                          DateRangeFilterType.relative,
+                                      enabled: dateFilter == DateRangeFilterType.relative,
                                     )),
                               )
                               .values
                               .toList(),
                           onSelected: (value) {
-                            if (dateFilter != DateRangeFilterType.relative)
-                              return;
+                            if (dateFilter != DateRangeFilterType.relative) return;
                             _selectedDateRange = value as DateTimeRange;
                             setState(() {});
                           },
@@ -418,46 +367,27 @@ class _CostListScreenState extends State<CostListScreen> {
                                 child: FittedBox(
                                     fit: BoxFit.fill,
                                     child: Switch(
-                                        value: dateFilter ==
-                                            DateRangeFilterType.absolute,
+                                        value: dateFilter == DateRangeFilterType.absolute,
                                         onChanged: (value) async {
-                                          dateFilter = value
-                                              ? DateRangeFilterType.absolute
-                                              : DateRangeFilterType.none;
+                                          dateFilter = value ? DateRangeFilterType.absolute : DateRangeFilterType.none;
                                           _selectedDateRange = null;
                                           if (value) {
-                                            final dateRange =
-                                                await showCalendarDatePicker2Dialog(
+                                            final dateRange = await showCalendarDatePicker2Dialog(
                                               context: context,
-                                              config:
-                                                  CalendarDatePicker2WithActionButtonsConfig(
-                                                      calendarType:
-                                                          CalendarDatePicker2Type
-                                                              .range),
-                                              dialogSize: Size(
-                                                  MediaQuery.of(context)
-                                                          .size
-                                                          .width *
-                                                      0.6,
-                                                  MediaQuery.of(context)
-                                                          .size
-                                                          .height *
-                                                      0.6),
+                                              config: CalendarDatePicker2WithActionButtonsConfig(
+                                                  calendarType: CalendarDatePicker2Type.range),
+                                              dialogSize: Size(MediaQuery.of(context).size.width * 0.6,
+                                                  MediaQuery.of(context).size.height * 0.6),
                                               value: [
-                                                DateTime(
-                                                    now.year, now.month, 1),
-                                                DateTime(
-                                                    now.year, now.month + 1, 0)
+                                                DateTime(now.year, now.month, 1),
+                                                DateTime(now.year, now.month + 1, 0)
                                               ],
                                             );
                                             if (dateRange != null) {
                                               _selectedDateRange =
-                                                  DateTimeRange(
-                                                      start: dateRange.first!,
-                                                      end: dateRange.last!);
+                                                  DateTimeRange(start: dateRange.first!, end: dateRange.last!);
                                             } else {
-                                              dateFilter =
-                                                  DateRangeFilterType.none;
+                                              dateFilter = DateRangeFilterType.none;
                                             }
                                           }
                                           setState(() {});
@@ -470,11 +400,8 @@ class _CostListScreenState extends State<CostListScreen> {
                             )),
                           ],
                         ),
-                        dateFilter == DateRangeFilterType.absolute &&
-                                _selectedDateRange != null
-                            ? GestureDetector(
-                                child: Text(
-                                    '${subtitleText.split(":").last} (Change date)'))
+                        dateFilter == DateRangeFilterType.absolute && _selectedDateRange != null
+                            ? GestureDetector(child: Text('${subtitleText.split(":").last} (Change date)'))
                             : SizedBox.shrink()
                       ]),
                 ),
@@ -483,8 +410,7 @@ class _CostListScreenState extends State<CostListScreen> {
                 showReset
                     ? TextButton(
                         onPressed: () {
-                          context.read<AppModel>().updateFilteredDateRange(
-                              null, DateRangeFilterType.none);
+                          context.read<AppModel>().updateFilteredDateRange(null, DateRangeFilterType.none);
                           Navigator.of(context).pop();
                         },
                         child: Text(
@@ -494,8 +420,7 @@ class _CostListScreenState extends State<CostListScreen> {
                     : SizedBox.shrink(),
                 TextButton(
                     onPressed: () {
-                      context.read<AppModel>().updateFilteredDateRange(
-                          _selectedDateRange, dateFilter);
+                      context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
                       Navigator.of(context).pop();
                     },
                     child: Text("Save"))
@@ -505,172 +430,180 @@ class _CostListScreenState extends State<CostListScreen> {
         });
   }
 
-  Widget titleAppBar() {
-    if (!_isSearchOpened) {
-      return Text("Overview");
-    } else {
-      var theme = Theme.of(context);
-      var hintColor = theme.colorScheme.primary.withAlpha(100);
-      return PopScope(
-        onPopInvokedWithResult: (didPop, result) {
-          debugPrint("this triggered");
-          setState(() => _isSearchOpened = false);
-        },
-        child: TextField(
-          controller: _controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(200),
-                borderSide:
-                    BorderSide(width: 0, color: theme.colorScheme.primary)),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(200),
-                borderSide:
-                    BorderSide(width: 0, color: theme.colorScheme.primary)),
-            fillColor: theme.colorScheme.primary.withAlpha(10),
-            filled: true,
-            isDense: true,
-            // contentPadding: EdgeInsets.symmetric(vertical: 15),
-            prefixIcon: IconButton(
-                iconSize: 24,
-                onPressed: () {
-                  setState(() => _isSearchOpened = false);
-                  context.read<AppModel>().clearFilter();
-                },
-                icon: Icon(Icons.arrow_back)),
-            suffixIcon: IconButton(
-                iconSize: 24,
-                onPressed: () {
-                  _controller.clear();
-                  context.read<AppModel>().updateFilterString("");
-                  setState(() {});
-                },
-                icon: Icon(Icons.clear)),
-            hint: Row(
-              spacing: 8,
-              children: [
-                Icon(Icons.search, color: hintColor),
-                Text(
-                  "Search for a cost item...",
-                  style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
-                ),
-              ],
-            ),
-            hintStyle: Theme.of(context).textTheme.bodyMedium,
-          ),
-          onChanged: (value) {
-            debugPrint("controller value updated");
-            context.read<AppModel>().updateFilterString(value);
-          },
-        ),
-      );
-    }
-  }
+  // Widget titleAppBar() {
+  //   if (!_isSearchOpened) {
+  //     return Text("Overview");
+  //   } else {
+  //     var theme = Theme.of(context);
+  //     var hintColor = theme.colorScheme.primary.withAlpha(100);
+  //     return PopScope(
+  //       onPopInvokedWithResult: (didPop, result) {
+  //         debugPrint("this triggered");
+  //         setState(() => _isSearchOpened = false);
+  //       },
+  //       child: TextField(
+  //         controller: _controller,
+  //         autofocus: true,
+  //         decoration: InputDecoration(
+  //           focusedBorder: OutlineInputBorder(
+  //               borderRadius: BorderRadius.circular(200),
+  //               borderSide:
+  //                   BorderSide(width: 0, color: theme.colorScheme.primary)),
+  //           border: OutlineInputBorder(
+  //               borderRadius: BorderRadius.circular(200),
+  //               borderSide:
+  //                   BorderSide(width: 0, color: theme.colorScheme.primary)),
+  //           fillColor: theme.colorScheme.primary.withAlpha(10),
+  //           filled: true,
+  //           isDense: true,
+  //           // contentPadding: EdgeInsets.symmetric(vertical: 15),
+  //           prefixIcon: IconButton(
+  //               iconSize: 24,
+  //               onPressed: () {
+  //                 setState(() => _isSearchOpened = false);
+  //                 context.read<AppModel>().clearFilter();
+  //               },
+  //               icon: Icon(Icons.arrow_back)),
+  //           suffixIcon: IconButton(
+  //               iconSize: 24,
+  //               onPressed: () {
+  //                 _controller.clear();
+  //                 context.read<AppModel>().updateFilterString("");
+  //                 setState(() {});
+  //               },
+  //               icon: Icon(Icons.clear)),
+  //           hint: Row(
+  //             spacing: 8,
+  //             children: [
+  //               Icon(Icons.search, color: hintColor),
+  //               Text(
+  //                 "Search for a cost item...",
+  //                 style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
+  //               ),
+  //             ],
+  //           ),
+  //           hintStyle: Theme.of(context).textTheme.bodyMedium,
+  //         ),
+  //         onChanged: (value) {
+  //           debugPrint("controller value updated");
+  //           context.read<AppModel>().updateFilterString(value);
+  //         },
+  //       ),
+  //     );
+  //   }
+  // }
 
-  AppBar bottomFilterAppBar() {
-    final isCategoryFiltered = context.select((AppModel state) =>
-        state.filteredCategories.length < state.categories.length);
-    final isDateFiltered =
-        context.select((AppModel state) => state.filterDateRange != null);
-    final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
-    final borderRadius = BorderRadius.circular(12);
+  // AppBar bottomFilterAppBar() {
+  //   final isCategoryFiltered = context.select((AppModel state) =>
+  //       state.filteredCategories.length < state.categories.length);
+  //   final isDateFiltered =
+  //       context.select((AppModel state) => state.filterDateRange != null);
+  //   final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
+  //   final borderRadius = BorderRadius.circular(12);
 
-    Widget createCustomFilterChip(
-        {IconData? icon,
-        String text = "",
-        Function()? onTap,
-        bool isActive = false}) {
-      return Expanded(
-        child: Material(
-          borderRadius: borderRadius,
-          child: InkWell(
-            borderRadius: borderRadius,
-            onTap: onTap,
-            child: Container(
-              height: toolbarHeight - 16,
-              // padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                  shape: BoxShape.rectangle,
-                  border: BoxBorder.all(color: context.cs.primary, width: 0.5),
-                  borderRadius: borderRadius,
-                  color: isActive
-                      ? context.cs.primary.withAlpha(50)
-                      : context.cs.primary.withAlpha(10)),
-              child: Row(
-                spacing: 10,
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isActive ? Icons.check : icon,
-                    color: context.cs.primary,
-                    size: toolbarHeight / 2 - 10,
-                  ),
-                  Text(text, style: context.tt.bodyMedium)
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+  //   Widget createCustomFilterChip(
+  //       {IconData? icon,
+  //       String text = "",
+  //       Function()? onTap,
+  //       bool isActive = false}) {
+  //     return Expanded(
+  //       child: Material(
+  //         borderRadius: borderRadius,
+  //         child: InkWell(
+  //           borderRadius: borderRadius,
+  //           onTap: onTap,
+  //           child: Container(
+  //             height: toolbarHeight - 16,
+  //             // padding: const EdgeInsets.all(10),
+  //             decoration: BoxDecoration(
+  //                 shape: BoxShape.rectangle,
+  //                 border: BoxBorder.all(color: context.cs.primary, width: 0.5),
+  //                 borderRadius: borderRadius,
+  //                 color: isActive
+  //                     ? context.cs.primary.withAlpha(50)
+  //                     : context.cs.primary.withAlpha(10)),
+  //             child: Row(
+  //               spacing: 10,
+  //               mainAxisSize: MainAxisSize.min,
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: [
+  //                 Icon(
+  //                   isActive ? Icons.check : icon,
+  //                   color: context.cs.primary,
+  //                   size: toolbarHeight / 2 - 10,
+  //                 ),
+  //                 Text(text, style: context.tt.bodyMedium)
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     );
+  //   }
 
-    return AppBar(
-        toolbarHeight: toolbarHeight,
-        title: Row(
-          spacing: 8,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            createCustomFilterChip(
-                icon: Icons.category,
-                text: "Category",
-                onTap: () async => showFilterCategoryDialog(),
-                isActive: isCategoryFiltered),
-            createCustomFilterChip(
-                icon: Icons.date_range,
-                text: "Date",
-                onTap: () async => showFilterDateDialog(),
-                isActive: isDateFiltered),
-            createCustomFilterChip(
-                icon: Icons.money,
-                text: "Amount",
-                onTap: () async => showFilterAmountDialog(),
-                isActive: isDateFiltered),
-          ],
-        ));
-  }
+  //   return AppBar(
+  //       toolbarHeight: toolbarHeight,
+  //       title: Row(
+  //         spacing: 8,
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           createCustomFilterChip(
+  //               icon: Icons.category,
+  //               text: "Category",
+  //               onTap: () async => showFilterCategoryDialog(),
+  //               isActive: isCategoryFiltered),
+  //           createCustomFilterChip(
+  //               icon: Icons.date_range,
+  //               text: "Date",
+  //               onTap: () async => showFilterDateDialog(),
+  //               isActive: isDateFiltered),
+  //           createCustomFilterChip(
+  //               icon: Icons.money,
+  //               text: "Amount",
+  //               onTap: () async => showFilterAmountDialog(),
+  //               isActive: isDateFiltered),
+  //         ],
+  //       ));
+  // }
 
   @override
   Widget build(BuildContext context) {
     // debugPrint("list screen is build");
-    final isBlur = context.select((ThemeModel state) => state.isListBlurred);
+
+    // final isBlur = context.select((ThemeModel state) => state.isListBlurred);
+    return ChangeNotifierProvider(
+      create: (context) => ListModel(),
+      child: const CostListMainBody(),
+    );
+  }
+}
+
+class CostListMainBody extends StatelessWidget {
+  const CostListMainBody({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        // title: Text(AppLocalizations.of(context)!.title),
-        title: titleAppBar(),
-        bottom: _isSearchOpened ? bottomFilterAppBar() : null,
-        actions: !_isSearchOpened
-            ? [
-                IconButton(
-                    onPressed: () =>
-                        setState(() => _isSearchOpened = !_isSearchOpened),
-                    icon: Icon(Icons.search)),
-                IconButton(
-                    onPressed: context.themeMod.toggleBlur,
-                    icon: Icon(
-                        !isBlur ? Icons.visibility : Icons.visibility_off)),
-                IconButton(
-                    onPressed: context.appMod.resetMetric,
-                    icon: Icon(Icons.refresh))
-              ]
-            : [],
+        title: Text("OVERVIEW", style: context.customTt.dateLabel),
+        actions: [
+          IconButton(onPressed: context.listMod.toggleSearch, icon: Icon(Icons.search)),
+          // IconButton(
+          //     onPressed: context.themeMod.toggleBlur,
+          //     icon: Icon(
+          //         !isBlur ? Icons.visibility : Icons.visibility_off)),
+          IconButton(onPressed: context.appMod.resetMetric, icon: Icon(Icons.refresh))
+        ],
       ),
       body: SafeArea(
         child: Flex(
           direction: Axis.vertical,
           children: [
+            ...isSearchOpened ? [SearchTab()] : [],
             const DateBreadcrumb(),
             Expanded(
               child: CustomScrollView(
@@ -682,23 +615,9 @@ class _CostListScreenState extends State<CostListScreen> {
                 ],
               ),
             )
-            // Expanded(child: const CostEntryList()),
           ],
         ),
       ),
-      // bottomNavigationBar: CustomNavigationBottomBar(),
-      // floatingActionButton: FloatingActionButton.large(
-      //   onPressed: (){
-      //     Navigator.of(context).pushNamed('/form',
-      //       arguments:  FormArgument(isNew: true));
-      //   },
-      //   shape: CircleBorder(),
-      //   enableFeedback: true,
-      //   elevation: 0,
-      //   child: Icon(Icons.add),
-
-      // ),
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
@@ -747,11 +666,7 @@ class DateBreadcrumb extends StatelessWidget {
             ),
             Expanded(
                 child: Center(
-              child: Text(
-                  DateFormat("yMMMM")
-                      .format(context
-                          .select((AppModel state) => state.selectedYearMonth))
-                      .toUpperCase(),
+              child: Text(DateFormat("yMMMM").format(context.select((AppModel state) => state.selectedYearMonth)),
                   style: context.customTt.dateLabel!.copyWith(fontSize: 30)),
             )),
             SizedBox(
@@ -782,8 +697,7 @@ class CostEntryList extends StatefulWidget {
 class _CostEntryListState extends State<CostEntryList> {
   @override
   Widget build(BuildContext context) {
-    final groupedCostItems =
-        context.select((AppModel state) => state.currentMonthDailyCostItems);
+    final groupedCostItems = context.select((AppModel state) => state.currentMonthDailyCostItems);
     // context.watch<AppModel>();
     final appModelFunction = context.read<AppModel>();
     final selectedThemeMode = context.select((ThemeModel state) => state.theme);
@@ -805,16 +719,15 @@ class _CostEntryListState extends State<CostEntryList> {
             final spacing = context.read<ThemeModel>().spacingValue;
             final DateTime date = groupedCostItems.keys.elementAt(index);
             final String dateString = date.formatPretty();
-            final List<CostItem> costItems =
-                groupedCostItems.values.elementAt(index);
-            final String dailyBudget = appModelFunction.customCurrencyFormat(
-                context.watch<AppModel>().getDailyTotal(date), false, true);
+            final List<CostItem> costItems = groupedCostItems.values.elementAt(index)
+              ..sort((a, b) => b.lastModified!.compareTo(a.lastModified!));
+            final String dailyBudget =
+                appModelFunction.customCurrencyFormat(context.watch<AppModel>().getDailyTotal(date), false, true);
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 4.0),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: context.cs.surfaceContainer.withAlpha(0),
@@ -826,56 +739,51 @@ class _CostEntryListState extends State<CostEntryList> {
                         textBaseline: TextBaseline.ideographic,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(dateString,
-                              style: context.customTt.dateLabel!.copyWith()),
+                          Text(dateString, style: context.customTt.dateLabel!.copyWith()),
                           // style: context.tt.bodyLarge),
                           HideableText(
                             dailyBudget,
                             isCurrency: true,
                             textStyle: context.customTt.numberFontMedium!
-                                .copyWith(
-                                    color: dailyBudget[0] == "-"
-                                        ? Colors.redAccent
-                                        : Colors.greenAccent),
+                                .copyWith(color: dailyBudget[0] == "-" ? Colors.redAccent : Colors.greenAccent),
                           ),
                         ]),
                     SizedBox(
                       height: 10,
                     ),
                     ...costItems.map((costItem) {
-                      final CostItemCategory category =
-                          appModelFunction.getCategoryEntry(costItem.category)!;
-                      final ColorScheme categoryColorScheme =
-                          category.colorScheme(selectedThemeMode);
+                      final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category)!;
+                      final ColorScheme categoryColorScheme = category.colorScheme(selectedThemeMode);
 
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: GestureDetector(
-                          onTap: () => context.read<NavigationModel>().openForm(
-                              FormArgument(selectedCostItem: costItem)),
+                          onTap: () =>
+                              context.read<NavigationModel>().openForm(FormArgument(selectedCostItem: costItem)),
                           child: Row(
                             spacing: 12,
                             children: [
-                              category.generateRoundedIcon(
-                                  24,
-                                  selectedThemeMode,
-                                  categoryColorScheme.primaryContainer,
-                                  categoryColorScheme.onPrimaryContainer),
+                              Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: BoxBorder.all(color: context.cs.primary.withAlpha(100))),
+                                child: category.createIcon(22, selectedThemeMode, context.cs.primary
+                                    // categoryColorScheme.primaryContainer,
+                                    // categoryColorScheme.onPrimaryContainer
+                                    ),
+                              ),
                               Expanded(
                                 child: Text(costItem.name,
                                     // maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
-                                    style: context.tt.titleMedium),
+                                    style: context.tt.bodyMedium),
                               ),
-                              HideableText(
-                                  appModelFunction
-                                      .getFormattedCostItemValue(costItem),
+                              HideableText(appModelFunction.getFormattedCostItemValue(costItem),
                                   isCurrency: true,
-                                  textStyle: context.customTt.numberFontSmall!
-                                      .copyWith(
-                                          color: costItem.isExpense
-                                              ? Colors.red.withAlpha(200)
-                                              : Colors.green.withAlpha(200)))
+                                  textStyle: context.customTt.numberFontSmall!.copyWith(
+                                      color:
+                                          costItem.isExpense ? Colors.red.withAlpha(200) : Colors.green.withAlpha(200)))
                             ],
                           ),
                         ),
@@ -899,19 +807,14 @@ class SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final expense = context.select((AppModel state) =>
-        state.totalCurrentMonthExpense.customCurrencyFormat('RM'));
-    final income = context.select((AppModel state) =>
-        state.totalCurrentMonthIncome.customCurrencyFormat('RM'));
-    final balance = context.select((AppModel state) =>
-        state.totalCurrentMonthBalance.customCurrencyFormat('RM'));
+    final expense = context.select((AppModel state) => state.totalCurrentMonthExpense.customCurrencyFormat('RM'));
+    final income = context.select((AppModel state) => state.totalCurrentMonthIncome.customCurrencyFormat('RM'));
+    final balance = context.select((AppModel state) => state.totalCurrentMonthBalance.customCurrencyFormat('RM'));
 
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: Container(
-        decoration: BoxDecoration(
-            color: context.customCs.flipCardColor,
-            borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: context.customCs.flipCardColor, borderRadius: BorderRadius.circular(12)),
         child: Row(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -921,8 +824,7 @@ class SummaryTab extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 10, 10),
-                  child: expenseMetricCard(context, "Balance", balance,
-                      isBig: true),
+                  child: expenseMetricCard(context, "Balance", balance, isBig: true),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 0, 20),
@@ -1024,8 +926,7 @@ class SummaryTab extends StatelessWidget {
     // );
   }
 
-  Widget expenseMetricCard(BuildContext context, String labelText, String value,
-      {bool isBig = false}) {
+  Widget expenseMetricCard(BuildContext context, String labelText, String value, {bool isBig = false}) {
     final appColorTheme = context.cs;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -1038,18 +939,15 @@ class SummaryTab extends StatelessWidget {
           children: [
             Text(
               labelText,
-              style: context.customTt.numberLabel!
-                  .copyWith(color: appColorTheme.onSecondary.withAlpha(200)),
+              style: context.customTt.numberLabel!.copyWith(color: appColorTheme.onSecondary.withAlpha(200)),
             )
           ],
         ),
         HideableText(value,
             isCurrency: true,
             textStyle: isBig
-                ? context.customTt.numberFontLarge!
-                    .copyWith(height: 1, color: context.customCs.onFlipCard)
-                : context.customTt.numberFontMedium!
-                    .copyWith(color: context.customCs.onFlipCard))
+                ? context.customTt.numberFontLarge!.copyWith(height: 1, color: context.customCs.onFlipCard)
+                : context.customTt.numberFontMedium!.copyWith(color: context.customCs.onFlipCard))
       ],
     );
   }
@@ -1125,8 +1023,7 @@ class _SummaryChartState extends State<SummaryChart> {
     );
   }
 
-  Widget customPieChart(Map<String, Map<String, dynamic>> totalCost,
-      BuildContext context, String chartValue) {
+  Widget customPieChart(Map<String, Map<String, dynamic>> totalCost, BuildContext context, String chartValue) {
     double percentage;
     double dividend;
     double divisor;
@@ -1179,10 +1076,7 @@ class _SummaryChartState extends State<SummaryChart> {
               ),
         ),
         HideableText(NumberFormat("#0%").format(percentage),
-            textStyle: Theme.of(context)
-                .textTheme
-                .displayMedium!
-                .copyWith(fontSize: 24))
+            textStyle: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: 24))
       ])
     ]);
   }
@@ -1220,40 +1114,24 @@ class PageIndicator extends StatelessWidget {
   }
 }
 
-class ItemListAppBar extends StatefulWidget implements PreferredSizeWidget {
-  const ItemListAppBar({super.key});
+class SearchTab extends StatelessWidget {
+  SearchTab({super.key});
 
-  @override
-  State<ItemListAppBar> createState() => _ItemListAppBarState();
+  final TextEditingController _searchController = TextEditingController();
 
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-class _ItemListAppBarState extends State<ItemListAppBar> {
-  bool _isSearchOpened = false;
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _searchController = TextEditingController();
-  }
-
-  Widget get titleAppBar {
-    if (!_isSearchOpened) {
-      return Text("Overview", style: context.customTt.dateLabel);
-    } else {
-      var hintColor = context.cs.primary.withAlpha(100);
-      return PopScope(
-        onPopInvokedWithResult: (didPop, result) {
-          debugPrint("this triggered");
-          setState(() => _isSearchOpened = false);
-        },
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 10.0),
-          child: TextField(
+  Widget titleAppBar(BuildContext context) {
+    var hintColor = context.cs.primary.withAlpha(100);
+    return PopScope(
+      // onPopInvokedWithResult: (didPop, result) {
+      //   debugPrint("this triggered");
+      //   setState(() => _isSearchOpened = false);
+      // },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextFormField(
+            style: context.tt.bodyMedium!.copyWith(fontSize: 12),
             controller: _searchController,
             autofocus: true,
             decoration: InputDecoration(
@@ -1263,16 +1141,18 @@ class _ItemListAppBarState extends State<ItemListAppBar> {
               prefixIcon: IconButton(
                   iconSize: 24,
                   onPressed: () {
-                    setState(() => _isSearchOpened = false);
+                    // setState(() => _isSearchOpened = false);
                     context.appMod.clearFilter();
+                    debugPrint("call");
+                    context.listMod.toggleSearch();
                   },
                   icon: Icon(Icons.arrow_back)),
               suffixIcon: IconButton(
                   iconSize: 24,
                   onPressed: () {
                     _searchController.clear();
-                    context.read<AppModel>().updateFilterString("");
-                    setState(() {});
+                    context.appMod.updateFilterString("");
+                    // setState(() {});
                   },
                   icon: Icon(Icons.clear)),
               hint: Row(
@@ -1291,125 +1171,148 @@ class _ItemListAppBarState extends State<ItemListAppBar> {
               context.appMod.updateFilterString(value);
             },
           ),
-        ),
-      );
-    }
+          bottomFilterAppBar(context)
+        ],
+      ),
+    );
   }
 
-  AppBar get bottomFilterAppBar {
-    final isCategoryFiltered = context.select((AppModel state) =>
-        state.filteredCategories.length < state.categories.length);
-    final isDateFiltered =
-        context.select((AppModel state) => state.filterDateRange != null);
-    // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
+  Widget createCustomFilterChip(BuildContext context,
+      {IconData? icon, String text = "", Function()? onTap, bool isActive = false}) {
     final borderRadius = BorderRadius.circular(12);
-
-    Widget createCustomFilterChip(
-        {IconData? icon,
-        String text = "",
-        Function()? onTap,
-        bool isActive = false}) {
-      return Flexible(
-        child: Material(
+    return Flexible(
+      fit: FlexFit.tight,
+      child: Material(
+        borderRadius: borderRadius,
+        child: InkWell(
           borderRadius: borderRadius,
-          child: InkWell(
-            borderRadius: borderRadius,
-            onTap: onTap,
-            child: Container(
-              // height: toolbarHeight - 16,
-              // padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                  shape: BoxShape.rectangle,
-                  border: BoxBorder.all(color: context.cs.primary, width: 0.5),
-                  borderRadius: borderRadius,
-                  color: isActive
-                      ? context.cs.primary.withAlpha(50)
-                      : context.cs.primary.withAlpha(10)),
-              child: Row(
-                spacing: 10,
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isActive ? Icons.check : icon,
-                    color: context.cs.primary,
-                    // size: toolbarHeight / 2 - 10,
-                  ),
-                  Text(text, style: context.tt.bodyMedium)
-                ],
-              ),
+          onTap: onTap,
+          child: Container(
+            // height: toolbarHeight - 16,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+                shape: BoxShape.rectangle,
+                border: BoxBorder.all(color: context.cs.primary, width: 0.5),
+                borderRadius: borderRadius,
+                color: isActive ? context.cs.primary.withAlpha(50) : context.cs.primary.withAlpha(10)),
+            child: Row(
+              spacing: 10,
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isActive ? Icons.check : icon,
+                  color: context.cs.primary,
+                  // size: toolbarHeight / 2 - 10,
+                ),
+                Text(text, style: context.tt.bodyMedium)
+              ],
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    return AppBar(
-        // toolbarHeight: toolbarHeight,
-        title: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Flex(
-            direction: Axis.horizontal,
-            spacing: 8,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              createCustomFilterChip(
-                  icon: Icons.category,
-                  text: "Category",
-                  onTap: () async {
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: Column(
-                            children: [
-                              Text("Filter Category", style: context.customTt.dateLabel),
-                              Text("selected category", style: context.customTt.numberFontMedium),
-                            ],
-                          ),
-                          content:ListView.builder(itemCount: 2, itemBuilder:(context, index) {
-                            
-                          },)
-                        );
-                      },
-                    );
-                  },
-                  isActive: isCategoryFiltered),
-              createCustomFilterChip(
-                  icon: Icons.date_range,
-                  text: "Date",
-                  // onTap: () async => showFilterDateDialog(),
-                  isActive: isDateFiltered),
-              createCustomFilterChip(
-                  icon: Icons.money,
-                  text: "Amount",
-                  // onTap: () async => showFilterAmountDialog(),
-                  isActive: isDateFiltered),
-            ],
-          ),
+  Widget bottomFilterAppBar(BuildContext context) {
+    final isCategoryFiltered =
+        context.select((AppModel state) => state.filteredCategories.length < state.categories.length);
+    final isDateFiltered = context.select((AppModel state) => state.filterDateRange != null);
+    // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
+
+    return Padding(
+        padding: EdgeInsets.all(8),
+        child: Flex(
+          direction: Axis.horizontal,
+          spacing: 8,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            createCustomFilterChip(context, icon: Icons.category, text: "Category", onTap: () async {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                      title: Column(
+                        children: [
+                          Text("Filter Category", style: context.customTt.dateLabel),
+                          Text("selected category", style: context.customTt.numberFontMedium),
+                        ],
+                      ),
+                      content: ListView.builder(
+                        itemCount: 2,
+                        itemBuilder: (context, index) {},
+                      ));
+                },
+              );
+            }, isActive: isCategoryFiltered),
+            createCustomFilterChip(context,
+                icon: Icons.date_range,
+                text: "Date",
+                // onTap: () async => showFilterDateDialog(),
+                isActive: isDateFiltered),
+            createCustomFilterChip(context,
+                icon: Icons.money,
+                text: "Amount",
+                // onTap: () async => showFilterAmountDialog(),
+                isActive: isDateFiltered),
+          ],
         ));
   }
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      title: titleAppBar,
-      bottom: _isSearchOpened ? bottomFilterAppBar : null,
-      actions: !_isSearchOpened
-          ? [
-              IconButton(
-                  onPressed: () =>
-                      setState(() => _isSearchOpened = !_isSearchOpened),
-                  icon: Icon(Icons.search)),
-              // IconButton(
-              //     onPressed: context.themeMod.toggleBlur,
-              //     icon: Icon(
-              //         !isBlur ? Icons.visibility : Icons.visibility_off)),
-              IconButton(
-                  onPressed: context.appMod.resetMetric,
-                  icon: Icon(Icons.refresh))
-            ]
-          : [],
+    final hintColor = context.cs.primary.withAlpha(100);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+      child: PopScope(
+        onPopInvokedWithResult: (didPop, result) {},
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                focusedBorder: InputBorder.none,
+                border: InputBorder.none,
+                isDense: true,
+                prefixIcon: IconButton(
+                    iconSize: 24,
+                    onPressed: () {
+                      // setState(() => _isSearchOpened = false);
+                      context.appMod.clearFilter();
+                    },
+                    icon: Icon(Icons.arrow_back)),
+                suffixIcon: IconButton(
+                    iconSize: 24,
+                    onPressed: () {
+                      _searchController.clear();
+                      context.read<AppModel>().updateFilterString("");
+                      // setState(() {});
+                    },
+                    icon: Icon(Icons.clear)),
+                hint: Row(
+                  spacing: 8,
+                  children: [
+                    Icon(Icons.search, color: hintColor),
+                    Text(
+                      "Search for a cost item...",
+                      style: context.tt.bodyMedium!.copyWith(color: hintColor),
+                    ),
+                  ],
+                ),
+              ),
+              onChanged: (value) {
+                debugPrint("controller value updated");
+                context.appMod.updateFilterString(value);
+              },
+            ),
+            bottomFilterAppBar(context)
+          ],
+        ),
+      ),
     );
+    ;
   }
 }

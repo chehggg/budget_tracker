@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.7.0
 
 dependencies:
   another_flushbar: ^2.2.4
@@ -27,6 +27,7 @@ dependencies:
   http: ^1.4.0
   intl: ^0.20.2
   math_expressions: ^3.1.0
+  path: ^1.9.1
   path_provider: ^2.1.5
   provider: ^6.1.2
   shared_preferences: ^2.4.0

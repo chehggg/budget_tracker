@@ -37,8 +37,7 @@ void main() async {
     ),
     ChangeNotifierProxyProvider<ThemeModel, AppModel>(
       create: (context) => AppModel(),
-      update: (context, themeModel, appModel) =>
-          appModel!..updateAppModel(themeModel),
+      update: (context, themeModel, appModel) => appModel!..updateAppModel(themeModel),
     ),
   ], child: const MainApp()));
 }
@@ -109,10 +108,7 @@ class _MainAppState extends State<MainApp> {
         secondary: Color(0xffFFAB00));
 
     final customTextTheme = baseTheme.textTheme.copyWith(
-      // bodyMedium: GoogleFonts.inter(fontWeight: FontWeight(200)),
-      // bodyLarge: GoogleFonts.inter(fontSize: 26),
-      // bodyMedium: GoogleFonts.archivoBlack(fontWeight: FontWeight(200)),
-      // bodyLarge: GoogleFonts.archivoBlack(fontSize: 26),
+      bodySmall: GoogleFonts.inter(color: Color(0xffF0EBE0).withAlpha(150)),
       bodyMedium: GoogleFonts.inter(),
       bodyLarge: GoogleFonts.dmSerifDisplay(fontSize: 26),
       // labelSmall: GoogleFonts.playfairDisplay(fontWeight: FontWeight(600)),
@@ -120,8 +116,7 @@ class _MainAppState extends State<MainApp> {
       // titleLarge: GoogleFonts.playfairDisplay(),
       // titleSmall: GoogleFonts.playfairDisplay(color: seedColorScheme.onSurface),
       labelSmall: GoogleFonts.oranienbaum(fontWeight: FontWeight(600)),
-      titleMedium: GoogleFonts.oranienbaum(
-          color: customColorScheme.onSurface.withAlpha(200), fontSize: 18),
+      titleMedium: GoogleFonts.oranienbaum(color: customColorScheme.onSurface.withAlpha(200), fontSize: 18),
       titleLarge: GoogleFonts.oranienbaum(),
       headlineMedium: GoogleFonts.oranienbaum(),
       titleSmall: GoogleFonts.oranienbaum(color: customColorScheme.onSurface),
@@ -129,38 +124,41 @@ class _MainAppState extends State<MainApp> {
 
     final spacing = context.select((ThemeModel state) => state.spacingValue);
 
+    final MyTexts customTextExtension = MyTexts(
+      numberFontLarge: customTextTheme.bodyLarge!.copyWith(fontSize: 50, fontWeight: FontWeight(300)),
+      numberFontMedium: customTextTheme.bodyMedium!.copyWith(fontSize: 25, fontWeight: FontWeight(600)),
+      numberFontSmall: customTextTheme.bodyMedium!.copyWith(fontSize: 16, fontWeight: FontWeight(600)),
+      numberLabel:
+          customTextTheme.labelSmall!.copyWith(fontSize: 18, letterSpacing: 0, color: customColorScheme.primary),
+      elegantLabel:
+          customTextTheme.labelSmall!.copyWith(fontSize: 25, letterSpacing: 0, color: customColorScheme.primary),
+      elegantLabelLarge:
+          customTextTheme.labelSmall!.copyWith(fontSize: 35, letterSpacing: 0, color: customColorScheme.primary),
+      dateLabel: customTextTheme.labelSmall!.copyWith(fontSize: 25, letterSpacing: 0, color: customColorScheme.primary),
+    );
+
+    final MyColors customColorExtension = MyColors(
+      flipCardColor: Color(0xffF0EBE0),
+      onFlipCard: Color(0xff0A0A0C),
+      fadeColor1: Color(0xffF0EBE0).withAlpha(150),
+      fadeColor2: Color(0xffF0EBE0).withAlpha(60),
+      fadeColor3: Color(0xffF0EBE0).withAlpha(10),
+    );
+
     return baseTheme.copyWith(
-        extensions: [
-          MyColors(
-            flipCardColor: Color(0xffF0EBE0),
-            onFlipCard: Color(0xff0A0A0C),
-          ),
-          MyTexts(
-            numberFontLarge: customTextTheme.bodyLarge!
-                .copyWith(fontSize: 50, fontWeight: FontWeight(300)),
-            numberFontMedium: customTextTheme.bodyMedium!
-                .copyWith(fontSize: 25, fontWeight: FontWeight(600)),
-            numberFontSmall: customTextTheme.bodyMedium!
-                .copyWith(fontSize: 16, fontWeight: FontWeight(600)),
-            numberLabel: customTextTheme.labelSmall!.copyWith(
-                fontSize: 18,
-                letterSpacing: 0,
-                color: customColorScheme.primary),
-            dateLabel: customTextTheme.labelSmall!.copyWith(
-                fontSize: 25,
-                letterSpacing: 0,
-                color: customColorScheme.primary),
-          )
-        ],
+        extensions: [customColorExtension, customTextExtension],
         textTheme: customTextTheme,
         // primaryTextTheme: customTextTheme,
         colorScheme: customColorScheme,
         dialogTheme: DialogThemeData(
-            backgroundColor: customColorScheme.primary,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadiusGeometry.circular(40),
-                side: BorderSide(
-                    color: customColorScheme.primary.withAlpha(100))))
+          // insetPadding: EdgeInsets.all(8),
+          actionsPadding: EdgeInsets.only(bottom: 8, right: 4),
+          titleTextStyle: customTextExtension.elegantLabelLarge,
+          backgroundColor: customColorScheme.surface,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadiusGeometry.circular(20),
+              side: BorderSide(color: customColorExtension.fadeColor2!)),
+        )
         // brightness: brightness,
         // listTileTheme: ListTileThemeData(
         //   contentPadding: EdgeInsets.symmetric(horizontal: 8),
@@ -295,27 +293,22 @@ class HomeScreen extends StatelessWidget {
               switch (settings.name) {
                 case '/':
                   return MaterialPageRoute(
-                      builder: (context) => CostListScreen(),
-                      settings: RouteSettings(name: settings.name));
+                      builder: (context) => CostListScreen(), settings: RouteSettings(name: settings.name));
                 case '/form':
                   return MaterialPageRoute(
                       builder: (context) {
-                        return CostItemFormScreen(
-                            arg: settings.arguments as FormArgument);
+                        return CostItemFormScreen(arg: settings.arguments as FormArgument);
                       },
                       settings: RouteSettings(name: settings.name));
                 case '/data':
                   return MaterialPageRoute(
-                      builder: (context) => const ChartScreen(),
-                      settings: RouteSettings(name: settings.name));
+                      builder: (context) => const ChartScreen(), settings: RouteSettings(name: settings.name));
                 case '/report':
                   return MaterialPageRoute(
-                      builder: (context) => const CostReportScreen(),
-                      settings: RouteSettings(name: settings.name));
+                      builder: (context) => const CostReportScreen(), settings: RouteSettings(name: settings.name));
                 case '/settings':
                   return MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
-                      settings: RouteSettings(name: settings.name));
+                      builder: (context) => const SettingsScreen(), settings: RouteSettings(name: settings.name));
                 case '/budgets':
                   return MaterialPageRoute(
                     builder: (context) => const SetBudgetScreen(),
@@ -327,8 +320,7 @@ class HomeScreen extends StatelessWidget {
                     // settings: RouteSettings(name: settings.name)
                   );
                 default:
-                  return MaterialPageRoute(
-                      builder: (context) => const Placeholder());
+                  return MaterialPageRoute(builder: (context) => const Placeholder());
                 // throw UnimplementedError();
               }
             },
@@ -365,8 +357,7 @@ class CustomFAB extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton.large(
       onPressed: () => context.read<NavigationModel>().openForm(FormArgument()),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadiusGeometry.circular(30)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(30)),
       enableFeedback: true,
       elevation: 0,
       foregroundColor: context.cs.surfaceContainer,
@@ -390,8 +381,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageIndex =
-        context.select((NavigationModel state) => state.currentRouteIndex);
+    final pageIndex = context.select((NavigationModel state) => state.currentRouteIndex);
     return BottomAppBar(
       notchMargin: 10,
       shape: CircularNotchedRectangle(),
@@ -413,8 +403,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
                 );
               } else {
                 iconButton = IconButton(
-                  onPressed: () =>
-                      context.read<NavigationModel>().navigateMainScreen(index),
+                  onPressed: () => context.read<NavigationModel>().navigateMainScreen(index),
                   icon: Icon(buttonIcon),
                   iconSize: 28,
                 );

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:budget_tracker/models/form_model.dart';
+import 'package:budget_tracker/models/list_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -16,7 +17,7 @@ extension DayExtension on DateTime {
     return (month == anotherDate.month && year == anotherDate.year);
   }
 
-  String standardFormat() => DateFormat("yyyy-MM-dd").format(this);
+  String formatStd() => DateFormat("yyyy-MM-dd").format(this);
   String displayFormat() => DateFormat("d MMM").format(this);
   String formatFull() => DateFormat('MMMM dd, yyyy').format(this);
   String formatShort() => DateFormat('dd-MM-yyyy').format(this);
@@ -67,9 +68,9 @@ extension DoubleExtension on double {
 }
 
 extension StringExtension on String {
-  DateTime standardDateParse() => DateFormat("yyyy-MM-dd").parse(this);
-  DateTime parseFull() => DateFormat('MMMM dd, yyyy').parse(this);
-  DateTime parseShort() => DateFormat('dd-MM-yyyy').parse(this);
+  DateTime dateParseStd() => DateFormat("yyyy-MM-dd").parse(this);
+  DateTime dateParseFull() => DateFormat('MMMM dd, yyyy').parse(this);
+  DateTime dateParseShort() => DateFormat('dd-MM-yyyy').parse(this);
 
   String capitalize() {
     final first = substring(0,1).toUpperCase();
@@ -105,6 +106,7 @@ extension IterableExtension on Iterable<double> {
 
 extension BuildContextExtension on BuildContext {
   ThemeData get _theme => Theme.of(this);
+  NavigatorState get nv => Navigator.of(this);
   TextTheme get tt => _theme.textTheme;
   ColorScheme get cs => _theme.colorScheme;
   MyTexts get customTt => _theme.extension<MyTexts>()!;
@@ -116,6 +118,7 @@ extension BuildContextExtension on BuildContext {
   NavigationModel get navMod => read<NavigationModel>();
   FormModel get formMod => read<FormModel>();
   ThemeModel get themeMod => read<ThemeModel>();
+  ListModel get listMod => read<ListModel>();
 }
 
 
@@ -126,12 +129,16 @@ class MyTexts extends ThemeExtension<MyTexts> {
       this.numberFontLarge,
       this.numberFontMedium,
       this.numberFontSmall,
+      this.elegantLabel,
+      this.elegantLabelLarge,
       this.dateLabel});
 
   final TextStyle? numberFontLarge;
   final TextStyle? numberFontMedium;
   final TextStyle? numberFontSmall;
   final TextStyle? numberLabel;
+  final TextStyle? elegantLabel;
+  final TextStyle? elegantLabelLarge;
   final TextStyle? dateLabel;
   // final TextStyle? numberLabel;
   // final TextStyle? numberLabel;
@@ -170,6 +177,9 @@ class MyColors extends ThemeExtension<MyColors> {
   const MyColors({
     this.flipCardColor,
     this.onFlipCard,
+    this.fadeColor1,
+    this.fadeColor2,
+    this.fadeColor3,
     // this.numberFontLarge,
     // this.numberFontMedium,
     // this.numberFontSmall,
@@ -181,6 +191,9 @@ class MyColors extends ThemeExtension<MyColors> {
   // final TextStyle? numberFontSmall;
   final Color? flipCardColor;
   final Color? onFlipCard;
+  final Color? fadeColor1;
+  final Color? fadeColor2;
+  final Color? fadeColor3;
   // final TextStyle? dateLabel;
   // final TextStyle? flipCardColor;
   // final TextStyle? flipCardColor;

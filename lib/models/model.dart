@@ -51,20 +51,22 @@ class AppModel extends ChangeNotifier {
       _filterDateRange != null;
 
   final Map<DateTime, CostMetric> _yearMonthMetrics = {};
-  final SplayTreeMap<DateTime, CostMetric> _dayMetrics =
-      SplayTreeMap<DateTime, CostMetric>((a, b) => b.compareTo(a));
+  final SplayTreeMap<DateTime, CostMetric> _dayMetrics = SplayTreeMap<DateTime, CostMetric>(
+    (a, b) => b.compareTo(a),
+  );
   final Map<DateTime, Map<String, CostMetric>> _yearMonthCategoryMetrics = {};
   // final Map<String, Map<String, CostMetric>> _summarizedYearMonthCategoryMetrics = {};
-  final Map<DateTime, Map<String, List<CostItem>>>
-      _yearMonthCategoryGroupedList = {};
+  final Map<DateTime, Map<String, List<CostItem>>> _yearMonthCategoryGroupedList = {};
 
   final SplayTreeMap<DateTime, List<CostItem>> _dailyCostItems =
       SplayTreeMap<DateTime, List<CostItem>>((a, b) => b.compareTo(a));
 
   UnmodifiableMapView<DateTime, List<CostItem>> get currentMonthDailyCostItems {
     final Map<DateTime, List<CostItem>> currentMonthCostItem = Map.fromEntries(
-        _dailyCostItems.entries.where(
-            (entry) => entry.key.isInSameYearMonthAs(selectedYearMonth)));
+      _dailyCostItems.entries.where(
+        (entry) => entry.key.isInSameYearMonthAs(selectedYearMonth),
+      ),
+    );
 
     if (isFilteredActive) {
       final Map<DateTime, List<CostItem>> temp = {};
@@ -72,15 +74,17 @@ class AppModel extends ChangeNotifier {
       currentMonthCostItem.forEach((key, value) {
         bool isCategoryIncluded(CostItem costItem) =>
             _filteredCategories.contains(costItem.category);
-        bool isFilterStringMatch(CostItem costItem) => _filteredString != null
-            ? costItem.name.contains(_filteredString!)
-            : true;
-        bool isDateWithinFilter(CostItem costItem) => _filterDateRange != null
-            ? costItem.date
-                    .isBefore(_filterDateRange!.end.add(Duration(days: 1))) &&
-                costItem.date.isAfter(
-                    _filterDateRange!.start.subtract(Duration(days: 1)))
-            : true;
+        bool isFilterStringMatch(CostItem costItem) =>
+            _filteredString != null ? costItem.name.contains(_filteredString!) : true;
+        bool isDateWithinFilter(CostItem costItem) =>
+            _filterDateRange != null
+                ? costItem.date.isBefore(
+                      _filterDateRange!.end.add(Duration(days: 1)),
+                    ) &&
+                    costItem.date.isAfter(
+                      _filterDateRange!.start.subtract(Duration(days: 1)),
+                    )
+                : true;
         bool isMatch(CostItem costItem) =>
             isCategoryIncluded(costItem) &&
             isFilterStringMatch(costItem) &&
@@ -97,51 +101,52 @@ class AppModel extends ChangeNotifier {
   }
 
   List<CostItem> _costItems = [];
-  UnmodifiableListView<CostItem> get costItems =>
-      UnmodifiableListView(_costItems);
+  UnmodifiableListView<CostItem> get costItems => UnmodifiableListView(_costItems);
 
   List<CostItemCategory> _categories = [];
-  UnmodifiableListView<CostItemCategory> get categories =>
-      UnmodifiableListView(_categories);
+  UnmodifiableListView<CostItemCategory> get categories => UnmodifiableListView(_categories);
 
   List<NoteHistory> _notes = [];
   UnmodifiableListView<NoteHistory> notes(String? category) {
     if (category == null) return UnmodifiableListView([]);
     return UnmodifiableListView(
-        _notes.where((note) => note.categoryName == category).toList());
+      _notes.where((note) => note.categoryName == category).toList(),
+    );
   }
 
   List<double> getPercentiles() {
-    final sortedAmountList = _filteredCostItems
-        .map((costItem) => costItem.amount)
-        .toList()
-      ..sort((a, b) => a.compareTo(b));
+    final sortedAmountList =
+        _filteredCostItems.map((costItem) => costItem.amount).toList()
+          ..sort((a, b) => a.compareTo(b));
     return [
       sortedAmountList[(0 * sortedAmountList.length).round()],
       sortedAmountList[(1 / 4 * sortedAmountList.length - 1 / 2).round()],
       sortedAmountList[(1 / 2 * sortedAmountList.length - 1 / 2).round()],
       sortedAmountList[(3 / 4 * sortedAmountList.length - 1 / 2).round()],
-      sortedAmountList[(1 * sortedAmountList.length - 1).round()]
+      sortedAmountList[(1 * sortedAmountList.length - 1).round()],
     ];
   }
 
   // filter items by month
   // date format: yyyy-MM-dd
   UnmodifiableListView<CostItem> get _filteredCostItems {
-    return UnmodifiableListView(_costItems.where(
-        (costItem) => costItem.date.isInSameYearMonthAs(selectedYearMonth)));
+    return UnmodifiableListView(
+      _costItems.where(
+        (costItem) => costItem.date.isInSameYearMonthAs(selectedYearMonth),
+      ),
+    );
   }
 
   UnmodifiableListView<CostItem> get filteredCostItems => _filteredCostItems;
 
-  SplayTreeMap<String, List<Map<String, dynamic>>> _budgetMetrics =
-      SplayTreeMap();
+  SplayTreeMap<String, List<Map<String, dynamic>>> _budgetMetrics = SplayTreeMap();
   UnmodifiableMapView<String, List<Map<String, dynamic>>> get budgetMetrics =>
       UnmodifiableMapView(_budgetMetrics);
 
   UnmodifiableMapView<String, List<CostItem>> get currentCategoryList {
     return UnmodifiableMapView(
-        _yearMonthCategoryGroupedList[formatedSelectedYearMonth]!);
+      _yearMonthCategoryGroupedList[_selectedYearMonth]!,
+    );
   }
 
   UnmodifiableMapView<DateTime, CostMetric> get yearMonthOverview =>
@@ -154,47 +159,63 @@ class AppModel extends ChangeNotifier {
   }
 
   // get daily total for bar chart
-  UnmodifiableMapView<int, CostMetric> getDailyMetric(CostType costType,
-      {int monthDifference = 0}) {
-    int totalDays =
-        selectedYearMonth.getTotalDayInMonth(pastMonth: monthDifference);
+  UnmodifiableMapView<int, CostMetric> getDailyMetric(
+    CostType costType, {
+    int monthDifference = 0,
+  }) {
+    int totalDays = selectedYearMonth.getTotalDayInMonth(
+      pastMonth: monthDifference,
+    );
     return UnmodifiableMapView(
-        Map.fromIterable(List.generate(totalDays, (day) => day),
-            key: (i) => (i + 1),
-            value: (i) {
-              final formattedDate = DateTime(selectedYearMonth.year,
-                  selectedYearMonth.month - monthDifference, i + 1);
-              return _dayMetrics[formattedDate.standardFormat()] ??
-                  CostMetric();
-            }));
+      Map.fromIterable(
+        List.generate(totalDays, (day) => day),
+        key: (i) => (i + 1),
+        value: (i) {
+          final date = DateTime(
+            selectedYearMonth.year,
+            selectedYearMonth.month - monthDifference,
+            i + 1,
+          );
+          return _dayMetrics[date] ?? CostMetric();
+        },
+      ),
+    );
   }
 
   // get cumulative total for line chart
-  UnmodifiableMapView<int, double> getDailyCumulative(CostType costType,
-      {int monthDifference = 0}) {
+  UnmodifiableMapView<int, double> getDailyCumulative(
+    CostType costType, {
+    int monthDifference = 0,
+  }) {
     double cumulative = 0;
     return UnmodifiableMapView(
-        getDailyMetric(costType, monthDifference: monthDifference)
-            .map((int key, CostMetric value) {
-      cumulative += value.expense ?? 0;
-      return MapEntry(key, cumulative);
-    }));
+      getDailyMetric(costType, monthDifference: monthDifference).map((
+        int key,
+        CostMetric value,
+      ) {
+        cumulative += value.expense ?? 0;
+        return MapEntry(key, cumulative);
+      }),
+    );
   }
 
   // get cumulative average for line chart
-  UnmodifiableMapView<int, double> getCumulativeAverage(CostType costType,
-      {int monthDifference = 0}) {
+  UnmodifiableMapView<int, double> getCumulativeAverage(
+    CostType costType, {
+    int monthDifference = 0,
+  }) {
     return UnmodifiableMapView(
-        getDailyCumulative(costType, monthDifference: monthDifference)
-            .map((int dayInt, double cumulativeTotal) {
-      return MapEntry(dayInt, cumulativeTotal / dayInt);
-    }));
+      getDailyCumulative(costType, monthDifference: monthDifference).map((
+        int dayInt,
+        double cumulativeTotal,
+      ) {
+        return MapEntry(dayInt, cumulativeTotal / dayInt);
+      }),
+    );
   }
 
-  UnmodifiableMapView<int, CostMetric> get currentDailyMetric =>
-      getDailyMetric(CostType.expense);
-  UnmodifiableMapView<int, double> get currentCumulative =>
-      getDailyCumulative(CostType.expense);
+  UnmodifiableMapView<int, CostMetric> get currentDailyMetric => getDailyMetric(CostType.expense);
+  UnmodifiableMapView<int, double> get currentCumulative => getDailyCumulative(CostType.expense);
   UnmodifiableMapView<int, double> get currentCumulativeAverage =>
       getCumulativeAverage(CostType.expense);
   UnmodifiableMapView<int, double> get previousCumulative =>
@@ -202,24 +223,30 @@ class AppModel extends ChangeNotifier {
   UnmodifiableMapView<int, double> get previousCumulativeAverage =>
       getCumulativeAverage(CostType.expense, monthDifference: 1);
 
-  UnmodifiableListView<Map<String, dynamic>>
-      summarizedDateGroupDataForCustomCostType(CostType costType) {
+  UnmodifiableListView<Map<String, dynamic>> summarizedDateGroupDataForCustomCostType(
+    CostType costType,
+  ) {
     //create sorted list
-    final tempList = getDailyMetric(costType)
-        .map((dateInt, metric) {
-          return MapEntry<int, Map<String, dynamic>>(dateInt, {
-            "date": DateTime(
-                    _selectedYearMonth.year, _selectedYearMonth.month, dateInt)
-                .displayFormat(),
-            "amount": metric.expense,
-            "percentage": metric.expense! / totalCurrentMonthExpense
-          });
-        })
-        .values
-        .toList()
-      ..removeWhere((a) => a["amount"] == 0) // remove empty days
-      ..sort((a, b) => (b["amount"] as double)
-          .compareTo((a["amount"] as double))); // sort days
+    final tempList =
+        getDailyMetric(costType)
+            .map((dateInt, metric) {
+              return MapEntry<int, Map<String, dynamic>>(dateInt, {
+                "date":
+                    DateTime(
+                      _selectedYearMonth.year,
+                      _selectedYearMonth.month,
+                      dateInt,
+                    ).displayFormat(),
+                "amount": metric.expense,
+                "percentage": metric.expense! / totalCurrentMonthExpense,
+              });
+            })
+            .values
+            .toList()
+          ..removeWhere((a) => a["amount"] == 0) // remove empty days
+          ..sort(
+            (a, b) => (b["amount"] as double).compareTo((a["amount"] as double)),
+          ); // sort days
 
     if (tempList.length <= 5) return UnmodifiableListView(tempList);
 
@@ -234,31 +261,29 @@ class AppModel extends ChangeNotifier {
 
     final resultList = [
       ...tempList.getRange(0, 4),
-      {"date": "Other", "amount": otherAmount, "percentage": otherPercentage}
+      {"date": "Other", "amount": otherAmount, "percentage": otherPercentage},
     ];
 
     return UnmodifiableListView(resultList);
   }
 
-  String get currencySymbol => currencies
-      .where((currency) => currency['name'] == _currencyName)
-      .first['symbol'];
+  String get currencySymbol =>
+      currencies.where((currency) => currency['name'] == _currencyName).first['symbol'];
 
-  String get thousandSeparator => currencies
-      .where((currency) => currency['name'] == _currencyName)
-      .first['thousands_separator'];
+  String get thousandSeparator =>
+      currencies
+          .where((currency) => currency['name'] == _currencyName)
+          .first['thousands_separator'];
 
-  String get decimalSeparator => currencies
-      .where((currency) => currency['name'] == _currencyName)
-      .first['decimal_separator'];
+  String get decimalSeparator =>
+      currencies.where((currency) => currency['name'] == _currencyName).first['decimal_separator'];
 
   String _currencyName = currencies.first['name'];
   String get currencyName => _currencyName;
 
   DateTime _selectedYearMonth = DateTime.now();
   DateTime get selectedYearMonth => _selectedYearMonth;
-  String get formatedSelectedYearMonth =>
-      DateFormat('yyyy-MM').format(_selectedYearMonth);
+  String get formatedSelectedYearMonth => DateFormat('yyyy-MM').format(_selectedYearMonth);
 
   CostItem? _tempRecCostItem;
   CostItem? get tempRecCostItem => _tempRecCostItem;
@@ -280,18 +305,20 @@ class AppModel extends ChangeNotifier {
 
   void saveCostItemFromTemp(List<DateTime> dates) {
     for (var date in dates) {
-      createCostItem(CostItemFormResult(
+      createCostItem(
+        CostItemFormResult(
           name: _tempRecCostItem?.name ?? "",
           category: _tempRecCostItem?.category ?? "",
           date: date,
           costType: _tempRecCostItem?.costType ?? CostType.expense,
-          amount: _tempRecCostItem?.amount ?? 0));
+          amount: _tempRecCostItem?.amount ?? 0,
+        ),
+      );
     }
   }
 
   double calculateDailyTotal(String date, [CostType? costType]) {
-    final dailyFilteredCostItems =
-        _costItems.where((costItem) => costItem.date == date).toList();
+    final dailyFilteredCostItems = _costItems.where((costItem) => costItem.date == date).toList();
 
     if (costType == null) {
       // not specify particular cost type, get balance
@@ -306,7 +333,8 @@ class AppModel extends ChangeNotifier {
   void clearFilter() {
     updateFilterString(null);
     updateFilteredCategories(
-        Set.from(categories.map((category) => category.name)));
+      Set.from(categories.map((category) => category.name)),
+    );
     updateFilteredDateRange(null, DateRangeFilterType.none);
     resetMetric();
     notifyListeners();
@@ -315,9 +343,9 @@ class AppModel extends ChangeNotifier {
   double getDailyTotal(DateTime date) {
     if (isFilteredActive) {
       return currentMonthDailyCostItems[date]?.fold<double>(
-              0,
-              (double value, CostItem costItem) =>
-                  value + costItem.getAbsoluteAmount()) ??
+            0,
+            (double value, CostItem costItem) => value + costItem.getAbsoluteAmount(),
+          ) ??
           0;
     } else {
       return _dayMetrics[date]?.balance ?? 0;
@@ -356,46 +384,45 @@ class AppModel extends ChangeNotifier {
   Map<String, List<CostItem>> get currentMonthCategoryList =>
       _yearMonthCategoryGroupedList[_selectedYearMonth] ?? {};
 
-  double get totalCurrentMonthBalance =>
-      totalCurrentMonthIncome - totalCurrentMonthExpense;
+  double get totalCurrentMonthBalance => totalCurrentMonthIncome - totalCurrentMonthExpense;
 
   double get totalBudget => 2000;
 
   double get budgetPercentage => totalCurrentMonthExpense / totalBudget;
 
   double get remainingDayAverageSpend {
-    final remainingDay =
-        _selectedYearMonth.getTotalDayInMonth() - DateTime.now().day;
+    final remainingDay = _selectedYearMonth.getTotalDayInMonth() - DateTime.now().day;
     return (totalBudget - totalCurrentMonthExpense) / remainingDay;
   }
 
   Map<String, CostMetric> getcurrentMonthCategoryView(
-      bool isDescending, CostType costType) {
-    final initCategoryView =
-        _yearMonthCategoryMetrics[formatedSelectedYearMonth] ?? {};
+    bool isDescending,
+    CostType costType,
+  ) {
+    final initCategoryView = _yearMonthCategoryMetrics[_selectedYearMonth] ?? {};
 
-    final sorted = initCategoryView.entries.toList()
-      ..sort((a, b) {
-        if (isDescending) {
-          return b.value.expense!.compareTo(a.value.expense!);
-        } else {
-          return a.value.expense!.compareTo(b.value.expense!);
-        }
-      })
-      ..removeWhere((item) => costType == CostType.expense
-          ? item.value.expense == 0
-          : item.value.income == 0);
+    final sorted =
+        initCategoryView.entries.toList()
+          ..sort((a, b) {
+            if (isDescending) {
+              return b.value.expense!.compareTo(a.value.expense!);
+            } else {
+              return a.value.expense!.compareTo(b.value.expense!);
+            }
+          })
+          ..removeWhere(
+            (item) =>
+                costType == CostType.expense ? item.value.expense == 0 : item.value.income == 0,
+          );
 
     return {for (var entry in sorted) entry.key: entry.value};
   }
 
   double getMaxCurrentMonthCategoryAmount(CostType costType) {
-    return getcurrentMonthCategoryView(true, costType)
-        .entries
-        .toList()
-        .first
-        .value
-        .expense!;
+    return getcurrentMonthCategoryView(
+      true,
+      costType,
+    ).entries.toList().first.value.expense!;
   }
 
   String getTotalAsString(String type, {bool useSuffix = false}) {
@@ -425,8 +452,9 @@ class AppModel extends ChangeNotifier {
     final List<double> dailyBudgetList = [];
 
     for (var day in List.generate(daysInMonth, (day) => day)) {
-      final dayString =
-          DateFormat("yyyy-MM-dd").format(DateTime(now.year, now.month, day));
+      final dayString = DateFormat(
+        "yyyy-MM-dd",
+      ).format(DateTime(now.year, now.month, day));
       dailyBudgetList.add(calculateDailyTotal(dayString, costType));
     }
     return dailyBudgetList;
@@ -442,9 +470,7 @@ class AppModel extends ChangeNotifier {
 
   CostItemCategory? getCategoryEntry(String categoryname) {
     if (categories.any((categoryItem) => categoryItem.name == categoryname)) {
-      return categories
-          .where((categoryItem) => categoryItem.name == categoryname)
-          .first;
+      return categories.where((categoryItem) => categoryItem.name == categoryname).first;
     } else {
       return null;
     }
@@ -459,8 +485,12 @@ class AppModel extends ChangeNotifier {
     }
   }
 
-  String customCurrencyFormat(double value, bool useSuffix,
-      [bool? usePositiveSign, String? overrideSign]) {
+  String customCurrencyFormat(
+    double value,
+    bool useSuffix, [
+    bool? usePositiveSign,
+    String? overrideSign,
+  ]) {
     final String sign;
     if (overrideSign != null) {
       sign = overrideSign;
@@ -497,13 +527,16 @@ class AppModel extends ChangeNotifier {
       if (absValue % 1 == 0) {
         rawString = NumberFormat("$sign$currencySymbol#,##0").format(absValue);
       } else {
-        rawString =
-            NumberFormat("$sign$currencySymbol#,##0.00").format(absValue);
+        rawString = NumberFormat(
+          "$sign$currencySymbol#,##0.00",
+        ).format(absValue);
       }
     }
     return rawString
-        .replaceAll(RegExp(r','),
-            '!') // convert thousand & decimal separator to temp symbol first
+        .replaceAll(
+          RegExp(r','),
+          '!',
+        ) // convert thousand & decimal separator to temp symbol first
         .replaceAll(RegExp(r'\.'), '?')
         .replaceAll(RegExp(r'!'), thousandSeparator)
         .replaceAll(RegExp(r'\?'), decimalSeparator);
@@ -512,12 +545,15 @@ class AppModel extends ChangeNotifier {
   void updateFilteredCategories(Set<String> newFilteredCategories) {
     _filteredCategories = newFilteredCategories;
     debugPrint(
-        "new filtered categories: length: ${_filteredCategories.length}");
+      "new filtered categories: length: ${_filteredCategories.length}",
+    );
     notifyListeners();
   }
 
   void updateFilteredDateRange(
-      DateTimeRange? newDateRange, DateRangeFilterType dateFilter) {
+    DateTimeRange? newDateRange,
+    DateRangeFilterType dateFilter,
+  ) {
     _filterDateRange = newDateRange;
     _dateRangeFilter = dateFilter;
     notifyListeners();
@@ -544,7 +580,7 @@ class AppModel extends ChangeNotifier {
     }
 
     // get file for cost items
-    // await loadCostItemOnLoad();
+    await loadCostItemOnStart();
 
     // get budgets
     // await readBudget();
@@ -569,11 +605,17 @@ class AppModel extends ChangeNotifier {
       _selectedYearMonth = specificYearMonth;
     } else {
       if (isIncrease) {
-        _selectedYearMonth =
-            DateTime(_selectedYearMonth.year, _selectedYearMonth.month + 1, 1);
+        _selectedYearMonth = DateTime(
+          _selectedYearMonth.year,
+          _selectedYearMonth.month + 1,
+          1,
+        );
       } else {
-        _selectedYearMonth =
-            DateTime(_selectedYearMonth.year, _selectedYearMonth.month - 1, 1);
+        _selectedYearMonth = DateTime(
+          _selectedYearMonth.year,
+          _selectedYearMonth.month - 1,
+          1,
+        );
       }
     }
     notifyListeners();
@@ -593,14 +635,13 @@ class AppModel extends ChangeNotifier {
     final newCostItem = CostItem.fromForm(result, id: Uuid().v4());
 
     if (_costItems.isEmpty) {
-      _costItems.add(newCostItem);
+      _costItems.insert(0, newCostItem);
     } else {
       // insert in descending order based on date
       final size = _costItems.length;
 
       int i = 0;
-      int insertIndex =
-          size; // default to the end of array if the date is the earliest
+      int insertIndex = size; // default to the end of array if the date is the earliest
 
       for (i; i < size; i++) {
         if (newCostItem.date.isAfter(_costItems[i].date)) {
@@ -629,8 +670,9 @@ class AppModel extends ChangeNotifier {
   }
 
   void deleteDailyCostItems(CostItem oldCostItem) {
-    _dailyCostItems[oldCostItem.date]!
-        .removeWhere((costItem) => costItem.uuid == oldCostItem.uuid);
+    _dailyCostItems[oldCostItem.date]!.removeWhere(
+      (costItem) => costItem.uuid == oldCostItem.uuid,
+    );
     if (_dailyCostItems[oldCostItem.date]!.isEmpty) {
       _dailyCostItems.remove(oldCostItem.date);
     }
@@ -639,15 +681,11 @@ class AppModel extends ChangeNotifier {
 
   void updateMetric(CostItem costItem) {
     // update day metrics
-    _dayMetrics
-        .putIfAbsent(costItem.date, () => CostMetric())
-        .addToMetric(costItem);
+    _dayMetrics.putIfAbsent(costItem.date, () => CostMetric()).addToMetric(costItem);
 
     // update yearmonth metrics
     final yearMonthDate = costItem.date.startOfMonth;
-    _yearMonthMetrics
-        .putIfAbsent(yearMonthDate, () => CostMetric())
-        .addToMetric(costItem);
+    _yearMonthMetrics.putIfAbsent(yearMonthDate, () => CostMetric()).addToMetric(costItem);
 
     // update yearmonth metric metrics
     _yearMonthCategoryMetrics
@@ -655,7 +693,7 @@ class AppModel extends ChangeNotifier {
         .putIfAbsent(costItem.category, () => CostMetric())
         .addToMetric(costItem);
 
-    debugPrint(_yearMonthMetrics[yearMonthDate]!.expense.toString());
+    // debugPrint(_yearMonthMetrics[yearMonthDate]!.expense.toString());
 
     // update against budgets
     notifyListeners();
@@ -667,15 +705,17 @@ class AppModel extends ChangeNotifier {
     final yearMonthDate = initCostItem.date.startOfMonth;
     _yearMonthMetrics[yearMonthDate]!.minusFromMetric(initCostItem);
 
-    _yearMonthCategoryMetrics[yearMonthDate]![initCostItem.category]!
-        .minusFromMetric(initCostItem);
+    _yearMonthCategoryMetrics[yearMonthDate]![initCostItem.category]!.minusFromMetric(initCostItem);
   }
 
   void updateCategoryList(DateTime yearMonth) {
-    final dateItem =
-        _costItems.where((item) => item.date.isInSameYearMonthAs(yearMonth));
-    _yearMonthCategoryGroupedList[yearMonth.startOfMonth] =
-        groupBy(dateItem, (item) => item.category);
+    final dateItem = _costItems.where(
+      (item) => item.date.isInSameYearMonthAs(yearMonth),
+    );
+    _yearMonthCategoryGroupedList[yearMonth.startOfMonth] = groupBy(
+      dateItem,
+      (item) => item.category,
+    );
   }
 
   void resetMetric() {
@@ -706,8 +746,9 @@ class AppModel extends ChangeNotifier {
   }
 
   Future<void> cacheBudget() async {
-    final String budgetJson =
-        jsonEncode(_budgets.map((e) => e.toJson()).toList());
+    final String budgetJson = jsonEncode(
+      _budgets.map((e) => e.toJson()).toList(),
+    );
     await sharedPref.setString("budgets", budgetJson);
     notifyListeners();
   }
@@ -715,9 +756,10 @@ class AppModel extends ChangeNotifier {
   Future<void>? readBudget() async {
     final budgetString = await sharedPref.getString("budgets");
     if (budgetString != null) {
-      _budgets = (jsonDecode(budgetString) as List<dynamic>)
-          .map((e) => Budget.fromJson(e as Map<String, dynamic>))
-          .toList();
+      _budgets =
+          (jsonDecode(budgetString) as List<dynamic>)
+              .map((e) => Budget.fromJson(e as Map<String, dynamic>))
+              .toList();
       notifyListeners();
     }
   }
@@ -743,8 +785,7 @@ class AppModel extends ChangeNotifier {
     - list of budgets
     - budget amount
      */
-    for (MapEntry<DateTime, CostMetric> yearMonthEntry
-        in _yearMonthMetrics.entries) {
+    for (MapEntry<DateTime, CostMetric> yearMonthEntry in _yearMonthMetrics.entries) {
       final DateTime yearMonth = yearMonthEntry.key;
       for (Budget curBudget in _budgets) {
         // if budget applies to all month or to this specific month
@@ -760,12 +801,12 @@ class AppModel extends ChangeNotifier {
           } else {
             // specific budget
             for (String category in curBudget.categories!) {
-              sum +=
-                  _yearMonthCategoryMetrics[yearMonth]![category]?.expense ?? 0;
+              sum += _yearMonthCategoryMetrics[yearMonth]![category]?.expense ?? 0;
             }
           }
-          int i =
-              budgetMap[yearMonth]!.indexWhere((e) => e['id'] == curBudget.id);
+          int i = budgetMap[yearMonth]!.indexWhere(
+            (e) => e['id'] == curBudget.id,
+          );
           if (i != -1) {
             budgetMap[yearMonth]![i] = {
               "id": curBudget.id,
@@ -810,16 +851,23 @@ class AppModel extends ChangeNotifier {
     calculateMonthlyBudget();
     await cacheBudget();
   }
+
   // void enableBudget(Budget budget, bool value) {
   //   _budgets.where
   // }
 
   void updateCostItem(CostItemFormResult result, String itemUuid) {
-    final int initIndex =
-        _costItems.indexWhere((costItem) => costItem.uuid == itemUuid);
-    final CostItem initCostItem =
-        _costItems.firstWhere((costItem) => costItem.uuid == itemUuid);
-    final CostItem updatedCostItem = CostItem.update(result, itemUuid);
+    final int initIndex = _costItems.indexWhere(
+      (costItem) => costItem.uuid == itemUuid,
+    );
+    final CostItem initCostItem = _costItems.firstWhere(
+      (costItem) => costItem.uuid == itemUuid,
+    );
+    final CostItem updatedCostItem = CostItem.update(
+      initCostItem,
+      result,
+      itemUuid,
+    );
     // if (result.name.trim() != "") {
     //   createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
     // }
@@ -839,8 +887,7 @@ class AppModel extends ChangeNotifier {
 
         final afterDate = _costItems[i].date;
 
-        if (updatedDate.isAfter(afterDate) ||
-            updatedDate.isAtSameMomentAs(afterDate)) {
+        if (updatedDate.isAfter(afterDate) || updatedDate.isAtSameMomentAs(afterDate)) {
           if (i == 0) {
             // first item, latest cost item
             insertIndex = i;
@@ -887,8 +934,10 @@ class AppModel extends ChangeNotifier {
   // convert cost item list into csv and
   // update file
   Future<void> writeCostItemsToFile() async {
-    final List<List<dynamic>> result =
-        List.generate(_costItems.length, (i) => _costItems[i].toList());
+    final List<List<dynamic>> result = List.generate(
+      _costItems.length,
+      (i) => _costItems[i].toCsv(),
+    );
 
     const List<String> headers = [
       'uuid',
@@ -918,11 +967,11 @@ class AppModel extends ChangeNotifier {
     // }
   }
 
-  Future<void> readCostItemOnLoad() async {
+  Future<void> loadCostItemOnStart() async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final file = File('${directory.path}/budget.csv');
-      parseCostItemData(file);
+      _costItems = await parseCostItemData(file);
     } catch (e) {
       debugPrint("error reading file on load, $e");
     }
@@ -934,11 +983,12 @@ class AppModel extends ChangeNotifier {
       final file = File('${directory.path}/budget.csv');
       final csvString = file.readAsStringSync();
       final List<int> list = csvString.codeUnits;
-      String? outputFile = await FilePicker.saveFile(
-          dialogTitle: 'Please select an output file:',
-          fileName: 'budget_output',
-          allowedExtensions: ['csv'],
-          bytes: Uint8List.fromList(list));
+      final String? outputFile = await FilePicker.saveFile(
+        dialogTitle: 'Please select an output file:',
+        fileName: 'nomi-output-${Uuid().v4().split('-').first}.csv',
+        allowedExtensions: ['csv'],
+        bytes: Uint8List.fromList(list),
+      );
       return outputFile;
     } catch (e) {
       debugPrint("error: $e");
@@ -946,40 +996,41 @@ class AppModel extends ChangeNotifier {
     }
   }
 
-  Future<int> loadCostItemFromFile() async {
+  Future<bool?> loadCostItemFromFile({bool overwrite = true}) async {
     try {
-      final result = await FilePicker.pickFiles(
-          // allowedExtensions: ['csv'],
-          // type: FileType.custom
-          );
-      if (result != null) {
-        final file = File(result.files.single.path!);
-        final parsedResult = await parseCostItemData(file);
-        if (parsedResult) return 0;
-        await writeCostItemsToFile();
-        return 1;
+      final FilePickerResult? result = await FilePicker.pickFiles(
+        allowMultiple: false,
+        allowedExtensions: ['csv'],
+        type: FileType.custom,
+      );
+      if (result == null) return null;
+
+      final file = File(result.files.single.path!);
+      final parsedResult = await parseCostItemData(file);
+      if (overwrite) {
+        _costItems = parsedResult;
+      } else {
+        _costItems.addAll(parsedResult);
       }
-      return 2;
+      resetMetric();
+      // notifyListeners();
+      await writeCostItemsToFile();
+      return true;
     } catch (e) {
       debugPrint("error reading data from file: $e");
-      return 0;
+      return false;
     }
   }
 
-  Future<bool> parseCostItemData(File file) async {
+  Future<List<CostItem>> parseCostItemData(File file) async {
     try {
       final csvString = file.readAsStringSync();
       final List<List<dynamic>> decodedData = csv.decode(csvString);
       decodedData.removeAt(0);
-      _costItems = decodedData
-          .map((List<dynamic> item) => CostItem.fromList(item))
-          .toList();
-
-      notifyListeners();
-      return true;
+      return decodedData.map((List<dynamic> item) => CostItem.fromCsv(item, newId: true)).toList();
     } catch (e) {
       debugPrint('error in parsing data: $e');
-      return false;
+      return [];
     }
   }
 
@@ -1026,10 +1077,12 @@ class AppModel extends ChangeNotifier {
       final noteFileString = file.readAsStringSync();
 
       // debugPrint("Read file: $noteFileString");
-      _notes = (jsonDecode(noteFileString) as List)
-          .map((jsonObj) =>
-              NoteHistory.fromJson(jsonObj as Map<String, dynamic>))
-          .toList();
+      _notes =
+          (jsonDecode(noteFileString) as List)
+              .map(
+                (jsonObj) => NoteHistory.fromJson(jsonObj as Map<String, dynamic>),
+              )
+              .toList();
     } catch (e) {
       debugPrint("error in reading note history file, error: $e");
     }
@@ -1044,8 +1097,9 @@ class AppModel extends ChangeNotifier {
           .doc('entry')
           // .update({'value':'new'})
           .update({
-        'entry': _costItems.map((costItem) => costItem.toJson()).toList()
-      }).then((_) => debugPrint("Written data to firebase! Result"));
+            'entry': _costItems.map((costItem) => costItem.toJson()).toList(),
+          })
+          .then((_) => debugPrint("Written data to firebase! Result"));
       // await ref.set({
       //   'value': {
       //     'c': [
@@ -1062,12 +1116,13 @@ class AppModel extends ChangeNotifier {
 }
 
 class CostItemFormResult {
-  CostItemFormResult(
-      {required this.name,
-      required this.category,
-      required this.date,
-      required this.costType,
-      required this.amount});
+  CostItemFormResult({
+    required this.name,
+    required this.category,
+    required this.date,
+    required this.costType,
+    required this.amount,
+  });
 
   String name;
   String category;
@@ -1093,8 +1148,8 @@ class NoteHistory {
   int get hashCode => categoryName.hashCode ^ note.hashCode;
 
   NoteHistory.fromJson(Map<String, dynamic> json)
-      : categoryName = json['categoryName'] as String,
-        note = json['note'] as String;
+    : categoryName = json['categoryName'] as String,
+      note = json['note'] as String;
 
   Map<String, String> toJson() => {'categoryName': categoryName, 'note': note};
 }
@@ -1110,15 +1165,18 @@ class CategoryGroupMetric {
 }
 
 class RelativeDateRange {
-  RelativeDateRange(
-      {required this.name, required this.startDate, required this.endDate});
+  RelativeDateRange({
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+  });
 
   final String name;
   final DateTime startDate;
   final DateTime endDate;
 
   RelativeDateRange.toCurrent({required this.name, required this.startDate})
-      : endDate = DateTime.now();
+    : endDate = DateTime.now();
 }
 
 enum DateRangeFilterType { relative, absolute, none }
@@ -1136,26 +1194,27 @@ class Budget {
   List<DateTime>? months;
   List<String>? categories;
 
-  Budget(
-      {this.id,
-      this.name,
-      this.enabled,
-      this.priority,
-      this.amount,
-      this.amountCalType,
-      this.appliedType,
-      this.months,
-      this.categories});
+  Budget({
+    this.id,
+    this.name,
+    this.enabled,
+    this.priority,
+    this.amount,
+    this.amountCalType,
+    this.appliedType,
+    this.months,
+    this.categories,
+  });
 
   Budget.update(Budget result, String this.id)
-      : name = result.name,
-        enabled = result.enabled,
-        amount = result.amount,
-        priority = result.priority,
-        amountCalType = result.amountCalType,
-        appliedType = result.appliedType,
-        months = result.months,
-        categories = result.categories;
+    : name = result.name,
+      enabled = result.enabled,
+      amount = result.amount,
+      priority = result.priority,
+      amountCalType = result.amountCalType,
+      appliedType = result.appliedType,
+      months = result.months,
+      categories = result.categories;
 
   Budget.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -1180,8 +1239,9 @@ class Budget {
     data['appliedType'] = appliedType?.index;
     data['amountCalType'] = amountCalType?.index;
     if (months != null && months!.isNotEmpty) {
-      data['months'] =
-          jsonEncode(months!.map((e) => DateFormat('yyyy-MM').format(e)));
+      data['months'] = jsonEncode(
+        months!.map((e) => DateFormat('yyyy-MM').format(e)),
+      );
     }
     data['categories'] = jsonEncode(categories);
     return data;

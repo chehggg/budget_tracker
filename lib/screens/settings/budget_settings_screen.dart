@@ -3,7 +3,7 @@ import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
-import 'package:budget_tracker/screens/settings/settings_screen.dart';
+import 'package:budget_tracker/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';

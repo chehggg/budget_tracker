@@ -37,7 +37,7 @@ class FormModel extends ChangeNotifier {
   CostType _type = CostType.expense;
   CostType get type => _type;
 
-  DateTime _date = DateTime.now();
+  DateTime _date = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
   DateTime get date => _date;
 
   void selectNewCategory(CostItemCategory category) {
@@ -45,8 +45,9 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateDate(DateTime date) {
-    _date = date;
+  void updateDate(DateTime newDate) {
+    debugPrint("date updated");
+    _date = newDate;
     notifyListeners();
   }
 

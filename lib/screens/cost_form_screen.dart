@@ -53,9 +53,7 @@ class CostItemFormScreen extends StatelessWidget {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: CostItemForm(
-                  costItem: arg.selectedCostItem,
-                  recurring: arg.oriRoute != null),
+              child: CostItemForm(costItem: arg.selectedCostItem, recurring: arg.oriRoute != null),
             )),
         // bottomNavigationBar: bottom,
       ),
@@ -101,16 +99,12 @@ class _FormSheetState extends State<FormSheet> {
 
     if (context.formMod.selectedCategory != null) {
       _selectedDate = context.formMod.date;
-      _amountController.value = _amountController.value
-          .copyWith(text: context.formMod.amount.toString());
-      _descController.value =
-          _descController.value.copyWith(text: context.formMod.itemDesc);
+      _amountController.value = _amountController.value.copyWith(text: context.formMod.amount.toString());
+      _descController.value = _descController.value.copyWith(text: context.formMod.itemDesc);
     }
 
-    _amountController.addListener(() => context.formMod
-        .updateAmount(double.tryParse(_amountController.text) ?? 0));
-    _descController
-        .addListener(() => context.formMod.updateDesc(_descController.text));
+    _amountController.addListener(() => context.formMod.updateAmount(double.tryParse(_amountController.text) ?? 0));
+    _descController.addListener(() => context.formMod.updateDesc(_descController.text));
   }
 
   @override
@@ -142,16 +136,15 @@ class _FormSheetState extends State<FormSheet> {
                   weekdayStyle: context.customTt.numberFontSmall,
                   yearStyle: context.customTt.numberFontSmall,
                   toggleButtonTextStyle: context.customTt.numberFontSmall,
-                  headerHeadlineStyle:
-                      context.customTt.dateLabel!.copyWith(fontSize: 40))),
+                  headerHeadlineStyle: context.customTt.dateLabel!.copyWith(fontSize: 40))),
           child: child!,
         );
       },
     );
     if (response == null) return;
-    setState(() {
-      _selectedDate = response;
-    });
+
+    setState(() => _selectedDate = response);
+    context.formMod.updateDate(_selectedDate);
   }
 
   @override
@@ -181,8 +174,7 @@ class _FormSheetState extends State<FormSheet> {
           if (details.delta.dy > 10) {
             // swipe down
             if (_isKeyboardOpen) {
-              FocusManager.instance.primaryFocus
-                  ?.unfocus(); //unfocus on screen keyboard
+              FocusManager.instance.primaryFocus?.unfocus(); //unfocus on screen keyboard
             } else {
               setState(() => _isFormExpanded = false);
             }
@@ -205,8 +197,7 @@ class _FormSheetState extends State<FormSheet> {
           decoration: BoxDecoration(
               color: context.cs.primary,
               // border: BoxBorder.all(color: context.cs.primary.withAlpha(10)),
-              borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12), topRight: Radius.circular(12))),
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -214,8 +205,7 @@ class _FormSheetState extends State<FormSheet> {
                 duration: Durations.medium1,
                 curve: Curves.easeInOutExpo,
                 height: _isFormExpanded ? 70 : 120,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   spacing: 12,
@@ -223,8 +213,7 @@ class _FormSheetState extends State<FormSheet> {
                     AnimatedScale(
                       scale: _isFormExpanded ? 0.7 : 1,
                       duration: Durations.medium1,
-                      child: selectedCategory.createIcon(
-                          40, ThemeMode.dark, context.cs.onPrimary),
+                      child: selectedCategory.createIcon(40, ThemeMode.dark, context.cs.onPrimary),
                     ),
                     Expanded(
                       child: Column(
@@ -241,31 +230,25 @@ class _FormSheetState extends State<FormSheet> {
                                     ),
                                 ]
                               ].join(' • '),
-                              style: context.customTt.dateLabel!.copyWith(
-                                  color: context.cs.onPrimary,
-                                  fontSize: 30,
-                                  height: 1.2)),
+                              style: context.customTt.dateLabel!
+                                  .copyWith(color: context.cs.onPrimary, fontSize: 30, height: 1.2)),
                           if (!_isFormExpanded)
-                            Text(
-                                [
-                                  _selectedDate.formatPretty(),
-                                  itemDesc.isEmpty ? "No Desc" : itemDesc
-                                ].join(' • '),
+                            Text([_selectedDate.formatPretty(), itemDesc.isEmpty ? "No Desc" : itemDesc].join(' • '),
                                 style: context.customTt.numberFontSmall!
-                                    .copyWith(
-                                        color: context.cs.onPrimary,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight(200))),
+                                    .copyWith(color: context.cs.onPrimary, fontSize: 12, fontWeight: FontWeight(200))),
                         ],
                       ),
                     ),
                     if (context.formMod.costItem != null)
-                    IconButton(
-                        onPressed: () { context.appMod.deleteCostItem(context.formMod.costItem!.uuid!);},
-                        icon: Icon(
-                          Icons.delete,
-                          color: context.cs.error,
-                        ))
+                      IconButton(
+                          onPressed: () {
+                            context.appMod.deleteCostItem(context.formMod.costItem!.uuid!);
+                            context.navMod.popFormToMain();
+                          },
+                          icon: Icon(
+                            Icons.delete,
+                            color: context.cs.error,
+                          ))
                   ],
                 ),
               ),
@@ -285,24 +268,17 @@ class _FormSheetState extends State<FormSheet> {
                           children: [
                             Text("RM",
                                 style: context.customTt.numberFontLarge!
-                                    .copyWith(
-                                        fontSize: 60,
-                                        color: context.cs.primary)),
+                                    .copyWith(fontSize: 60, color: context.cs.primary)),
                             Expanded(
                               child: _amountController.text.isEmpty
                                   ? Text("0.00",
                                       textAlign: TextAlign.end,
                                       style: context.customTt.numberFontLarge!
-                                          .copyWith(
-                                              fontSize: 60,
-                                              color: context.cs.primary
-                                                  .withAlpha(100)))
+                                          .copyWith(fontSize: 60, color: context.cs.primary.withAlpha(100)))
                                   : Text(_amountController.text,
                                       textAlign: TextAlign.end,
                                       style: context.customTt.numberFontLarge!
-                                          .copyWith(
-                                              fontSize: 60,
-                                              color: context.cs.primary)),
+                                          .copyWith(fontSize: 60, color: context.cs.primary)),
                             )
                           ],
                         ),
@@ -320,8 +296,7 @@ class _FormSheetState extends State<FormSheet> {
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(vertical: 20),
                             hintText: "Write your description here...",
-                            hintStyle: context.tt.bodyMedium!.copyWith(
-                                color: context.cs.primary.withAlpha(100)),
+                            hintStyle: context.tt.bodyMedium!.copyWith(color: context.cs.primary.withAlpha(100)),
                             focusedBorder: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             border: InputBorder.none),
@@ -334,8 +309,7 @@ class _FormSheetState extends State<FormSheet> {
                               debugPrint(result.toString());
                               if (result != null) {
                                 if (context.formMod.costItem != null) {
-                                  context.appMod.updateCostItem(
-                                      result, context.formMod.costItem!.uuid!);
+                                  context.appMod.updateCostItem(result, context.formMod.costItem!.uuid!);
                                 } else {
                                   context.appMod.createCostItem(result);
                                 }
@@ -747,9 +721,7 @@ class _CostItemFormState extends State<CostItemForm> {
           title: Text("Delete this item?"),
           content: Text("Warning: You cannot undo this action."),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text("Cancel")),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text("Cancel")),
             TextButton(
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
@@ -758,10 +730,7 @@ class _CostItemFormState extends State<CostItemForm> {
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
                   "Delete",
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelLarge!
-                      .copyWith(color: Colors.redAccent),
+                  style: Theme.of(context).textTheme.labelLarge!.copyWith(color: Colors.redAccent),
                 )),
           ],
         );
@@ -798,8 +767,7 @@ class _CostItemFormState extends State<CostItemForm> {
 
     TextEditingController _amountController = TextEditingController(text: "0");
     TextEditingController _rateController = TextEditingController(text: "0");
-    TextEditingController _convertedAmountController =
-        TextEditingController(text: "");
+    TextEditingController _convertedAmountController = TextEditingController(text: "");
     String _currentCurrency = "MYR";
     String _exchangedCurrency = "";
     ExchangeRateType _currentExchangeType = ExchangeRateType.current;
@@ -820,14 +788,10 @@ class _CostItemFormState extends State<CostItemForm> {
             future: initRequest,
             builder: (context, asyncSnapshot) {
               return StatefulBuilder(builder: (context, setState) {
-                final Map<String, dynamic> currencies =
-                    context.select((CurrencyModel state) => state.currencies);
-                final Map<String, dynamic> exchange =
-                    context.select((CurrencyModel state) => state.rates);
+                final Map<String, dynamic> currencies = context.select((CurrencyModel state) => state.currencies);
+                final Map<String, dynamic> exchange = context.select((CurrencyModel state) => state.rates);
                 _convertedAmountController.text =
-                    (double.parse(_amountController.text) /
-                            double.parse(_rateController.text))
-                        .toStringAsFixed(2);
+                    (double.parse(_amountController.text) / double.parse(_rateController.text)).toStringAsFixed(2);
                 if (asyncSnapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: SizedBox(
@@ -881,36 +845,25 @@ class _CostItemFormState extends State<CostItemForm> {
                                 enableFilter: true,
                                 inputDecorationTheme: InputDecorationTheme(
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(100),
-                                      borderSide: BorderSide.none),
+                                      borderRadius: BorderRadius.circular(100), borderSide: BorderSide.none),
                                   fillColor: textFieldBg,
                                   filled: true,
                                 ),
-                                textStyle:
-                                    Theme.of(context).textTheme.titleMedium,
+                                textStyle: Theme.of(context).textTheme.titleMedium,
                                 width: dropdownMenuWidth,
-                                menuHeight:
-                                    MediaQuery.of(context).size.height * 0.4,
+                                menuHeight: MediaQuery.of(context).size.height * 0.4,
                                 dropdownMenuEntries: currencies
                                     .map((key, value) => MapEntry(
-                                        key,
-                                        DropdownMenuEntry(
-                                            value: key,
-                                            label: value,
-                                            trailingIcon: Text(key))))
+                                        key, DropdownMenuEntry(value: key, label: value, trailingIcon: Text(key))))
                                     .values
                                     .toList(),
                                 onSelected: (value) {
                                   debugPrint("Selected value: $value");
                                   setState(() {
                                     _exchangedCurrency = value ?? "";
-                                    _currentExchangeRate =
-                                        (exchange[_exchangedCurrency]
-                                                as double) /
-                                            (exchange[_currentCurrency]
-                                                as double);
-                                    _rateController.text =
-                                        _currentExchangeRate.toStringAsFixed(2);
+                                    _currentExchangeRate = (exchange[_exchangedCurrency] as double) /
+                                        (exchange[_currentCurrency] as double);
+                                    _rateController.text = _currentExchangeRate.toStringAsFixed(2);
                                   });
                                 },
                               ),
@@ -940,23 +893,14 @@ class _CostItemFormState extends State<CostItemForm> {
                           controller: _rateController,
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.right,
-                          readOnly:
-                              _currentExchangeType == ExchangeRateType.custom
-                                  ? false
-                                  : true,
-                          enabled:
-                              _currentExchangeType == ExchangeRateType.custom
-                                  ? true
-                                  : false,
+                          readOnly: _currentExchangeType == ExchangeRateType.custom ? false : true,
+                          enabled: _currentExchangeType == ExchangeRateType.custom ? true : false,
                           decoration: InputDecoration(
                             fillColor:
-                                _currentExchangeType == ExchangeRateType.custom
-                                    ? textFieldBg
-                                    : textFieldDisabledBg,
+                                _currentExchangeType == ExchangeRateType.custom ? textFieldBg : textFieldDisabledBg,
                             filled: true,
                             border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(100),
-                                borderSide: BorderSide.none),
+                                borderRadius: BorderRadius.circular(100), borderSide: BorderSide.none),
                           ),
                         ),
                         ...labelTitle('Converted Amount'),
@@ -971,16 +915,13 @@ class _CostItemFormState extends State<CostItemForm> {
                             fillColor: textFieldDisabledBg,
                             filled: true,
                             border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(100),
-                                borderSide: BorderSide.none),
+                                borderRadius: BorderRadius.circular(100), borderSide: BorderSide.none),
                           ),
                           readOnly: true,
                         ),
                       ],
                     ),
-                    actions: [
-                      TextButton(onPressed: () {}, child: Text("Confirm"))
-                    ],
+                    actions: [TextButton(onPressed: () {}, child: Text("Confirm"))],
                   );
                 }
               });
@@ -1032,9 +973,8 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
       _selectedCatId = context.formMod.selectedCategory!.id!;
     }
 
-    _filteredCostItemCategories = defaultCostItemCategories
-        .where((category) => category.costType == _selectedCostType)
-        .toList();
+    _filteredCostItemCategories =
+        defaultCostItemCategories.where((category) => category.costType == _selectedCostType).toList();
   }
 
   @override
@@ -1053,22 +993,17 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                 selectedBackgroundColor: context.customCs.flipCardColor,
                 selectedForegroundColor: context.customCs.onFlipCard,
                 side: BorderSide(color: context.cs.primary.withAlpha(100)),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(12))),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12))),
             segments: CostType.values.map((costType) {
               return ButtonSegment(
                   value: costType,
-                  icon: Icon(costType == CostType.expense
-                      ? Icons.attach_money_rounded
-                      : Icons.input_sharp),
+                  icon: Icon(costType == CostType.expense ? Icons.attach_money_rounded : Icons.input_sharp),
                   label: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
                       costType.name.toUpperCase(),
                       style: context.customTt.dateLabel!.copyWith(
-                          color: _selectedCostType == costType
-                              ? context.customCs.onFlipCard
-                              : context.cs.primary),
+                          color: _selectedCostType == costType ? context.customCs.onFlipCard : context.cs.primary),
                     ),
                   ));
             }).toList(),
@@ -1076,9 +1011,8 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
             onSelectionChanged: (newSelection) {
               setState(() {
                 _selectedCostType = newSelection.first;
-                _filteredCostItemCategories = defaultCostItemCategories
-                    .where((category) => category.costType == _selectedCostType)
-                    .toList();
+                _filteredCostItemCategories =
+                    defaultCostItemCategories.where((category) => category.costType == _selectedCostType).toList();
               });
             },
           ),
@@ -1089,24 +1023,18 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
               padding: const EdgeInsets.only(top: 20.0, bottom: 120),
               sliver: SliverGrid.builder(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: gridSize,
-                    childAspectRatio: 0.9,
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 4),
+                    crossAxisCount: gridSize, childAspectRatio: 0.9, crossAxisSpacing: 4, mainAxisSpacing: 4),
                 itemCount: _filteredCostItemCategories.length,
                 itemBuilder: (context, index) {
-                  final CostItemCategory category =
-                      _filteredCostItemCategories.elementAt(index);
+                  final CostItemCategory category = _filteredCostItemCategories.elementAt(index);
                   final catId = category.id;
                   final isSelected = catId == _selectedCatId;
                   // final ColorScheme colorScheme =
                   //     category.colorScheme(ThemeMode.dark);
 
-                  final bgColor =
-                      context.cs.primary.withAlpha(isSelected ? 250 : 5);
+                  final bgColor = context.cs.primary.withAlpha(isSelected ? 250 : 5);
                   // final bgColor = index == _selectedItem ? colorScheme.primary : null;
-                  final fgColor =
-                      isSelected ? context.cs.onPrimary : context.cs.primary;
+                  final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
 
                   return GestureDetector(
                     onTap: () {
@@ -1126,23 +1054,18 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                             decoration: BoxDecoration(
                               shape: BoxShape.rectangle,
                               borderRadius: BorderRadius.circular(20),
-                              border: BoxBorder.all(
-                                  color: context.cs.primary.withAlpha(50)),
+                              border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
                               color: bgColor,
                             ),
                             child: Padding(
                                 padding: EdgeInsets.all(16),
-                                child: category.createIcon(
-                                    30, selectedThemeMode, fgColor)),
+                                child: category.createIcon(30, selectedThemeMode, fgColor)),
                           ),
                           Text(
                             category.name!.capitalize(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(fontSize: 12),
+                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 12),
                           )
                         ],
                       ),

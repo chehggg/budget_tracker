@@ -5,7 +5,7 @@ import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
-import 'package:budget_tracker/screens/settings/settings_screen.dart';
+import 'package:budget_tracker/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
