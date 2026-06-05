@@ -45,6 +45,7 @@ class AppModel extends ChangeNotifier {
   DateRangeFilterType _dateRangeFilter = DateRangeFilterType.none;
   DateRangeFilterType get dateRangeFilter => _dateRangeFilter;
 
+  
   bool get isFilteredActive =>
       _filteredString != null ||
       _filteredCategories.length < _categories.length ||
@@ -996,7 +997,7 @@ class AppModel extends ChangeNotifier {
     }
   }
 
-  Future<bool?> loadCostItemFromFile({bool overwrite = true}) async {
+  Future<String?> loadCostItemFromFile({bool overwrite = true}) async {
     try {
       final FilePickerResult? result = await FilePicker.pickFiles(
         allowMultiple: false,
@@ -1015,10 +1016,10 @@ class AppModel extends ChangeNotifier {
       resetMetric();
       // notifyListeners();
       await writeCostItemsToFile();
-      return true;
+      return "success";
     } catch (e) {
-      debugPrint("error reading data from file: $e");
-      return false;
+      // debugPrint("error reading data from file: $e");
+      return e.toString();
     }
   }
 
@@ -1113,55 +1114,8 @@ class AppModel extends ChangeNotifier {
       debugPrint('Error when writing data to firebase: $e');
     }
   }
-}
 
-class CostItemFormResult {
-  CostItemFormResult({
-    required this.name,
-    required this.category,
-    required this.date,
-    required this.costType,
-    required this.amount,
-  });
 
-  String name;
-  String category;
-  DateTime date;
-  CostType costType;
-  double amount;
-}
-
-class NoteHistory {
-  const NoteHistory({required this.categoryName, required this.note});
-
-  final String categoryName;
-  final String note;
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    if (other is! NoteHistory) return false;
-    return categoryName == other.categoryName && note == other.note;
-  }
-
-  @override
-  int get hashCode => categoryName.hashCode ^ note.hashCode;
-
-  NoteHistory.fromJson(Map<String, dynamic> json)
-    : categoryName = json['categoryName'] as String,
-      note = json['note'] as String;
-
-  Map<String, String> toJson() => {'categoryName': categoryName, 'note': note};
-}
-
-class CategoryGroupMetric {
-  const CategoryGroupMetric({
-    this.costItem,
-    this.metric,
-  });
-
-  final List<CostItem>? costItem;
-  final CostMetric? metric;
 }
 
 class RelativeDateRange {
@@ -1246,4 +1200,6 @@ class Budget {
     data['categories'] = jsonEncode(categories);
     return data;
   }
+
+
 }

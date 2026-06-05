@@ -236,7 +236,7 @@ List<CostItemCategory> defaultCostItemCategories = [
   ),
   CostItemCategory(
     id: "33",
-    name: "reward", 
+    name: "Award", 
     color: const Color.fromARGB(255, 33, 177, 182), 
     imagePath: "assets/images/reward.svg",
     costType: CostType.income
@@ -250,7 +250,7 @@ List<CostItemCategory> defaultCostItemCategories = [
   ),
   CostItemCategory(
     id: "35",
-    name: "back", 
+    name: "return", 
     color: const Color.fromARGB(255, 33, 177, 182), 
     imagePath: "assets/images/back.svg",
     costType: CostType.income
@@ -278,9 +278,9 @@ List<CostItemCategory> defaultCostItemCategories = [
   ),
   CostItemCategory(
     id: "39",
-    name: "internet", 
+    name: "compensation", 
     color: const Color.fromARGB(255, 33, 177, 182), 
     imagePath: "assets/images/internet.svg",
-    costType: CostType.expense
+    costType: CostType.income
   ),
 ];

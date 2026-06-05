@@ -1,9 +1,12 @@
 import 'dart:math';
+import 'package:budget_tracker/constants/categories.dart';
+import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/models/form_model.dart';
 import 'package:budget_tracker/models/list_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -43,16 +46,19 @@ extension DayExtension on DateTime {
 extension DoubleExtension on double {
   double ceilingToFirstDigit() {
     final maxValueDigit = (toInt()).toString().length;
-    return pow(10, maxValueDigit - 1) *
-        ((this / pow(10, maxValueDigit - 1)).toInt() + 1);
+    return pow(10, maxValueDigit - 1) * ((this / pow(10, maxValueDigit - 1)).toInt() + 1);
   }
 
-  String customCurrencyFormat(String currencySymbol,
-      {bool usePositiveSign = false, bool useSuffix = false}) {
+  String customCurrencyFormat(
+    String currencySymbol, {
+    bool usePositiveSign = false,
+    bool useSuffix = false,
+  }) {
     final absValue = abs();
-    final sign = this < 0
-        ? "-"
-        : usePositiveSign
+    final sign =
+        this < 0
+            ? "-"
+            : usePositiveSign
             ? "+"
             : "";
     if (useSuffix) {
@@ -73,8 +79,8 @@ extension StringExtension on String {
   DateTime dateParseShort() => DateFormat('dd-MM-yyyy').parse(this);
 
   String capitalize() {
-    final first = substring(0,1).toUpperCase();
-    final second = substring(1,length);
+    final first = substring(0, 1).toUpperCase();
+    final second = substring(1, length);
     return first + second;
   }
 
@@ -83,8 +89,11 @@ extension StringExtension on String {
     String capitalizeString = '';
     for (String substring in substrings) {
       final int firstLetterIndex = substring.indexOf(RegExp(r'[a-z]'));
-      final capitalizedSubString = substring.replaceRange(firstLetterIndex,
-          firstLetterIndex, substring[firstLetterIndex].toUpperCase());
+      final capitalizedSubString = substring.replaceRange(
+        firstLetterIndex,
+        firstLetterIndex,
+        substring[firstLetterIndex].toUpperCase(),
+      );
       capitalizeString += ("$capitalizedSubString ");
     }
     return capitalizeString.trim();
@@ -106,14 +115,14 @@ extension IterableExtension on Iterable<double> {
 
 extension BuildContextExtension on BuildContext {
   ThemeData get _theme => Theme.of(this);
-  NavigatorState get nv => Navigator.of(this);
+  NavigatorState get nav => Navigator.of(this);
   TextTheme get tt => _theme.textTheme;
   ColorScheme get cs => _theme.colorScheme;
   MyTexts get customTt => _theme.extension<MyTexts>()!;
   MyColors get customCs => _theme.extension<MyColors>()!;
 
   MediaQueryData get mq => MediaQuery.of(this);
-  
+
   AppModel get appMod => read<AppModel>();
   NavigationModel get navMod => read<NavigationModel>();
   FormModel get formMod => read<FormModel>();
@@ -121,17 +130,17 @@ extension BuildContextExtension on BuildContext {
   ListModel get listMod => read<ListModel>();
 }
 
-
 @immutable
 class MyTexts extends ThemeExtension<MyTexts> {
-  const MyTexts(
-      {this.numberLabel,
-      this.numberFontLarge,
-      this.numberFontMedium,
-      this.numberFontSmall,
-      this.elegantLabel,
-      this.elegantLabelLarge,
-      this.dateLabel});
+  const MyTexts({
+    this.numberLabel,
+    this.numberFontLarge,
+    this.numberFontMedium,
+    this.numberFontSmall,
+    this.elegantLabel,
+    this.elegantLabelLarge,
+    this.dateLabel,
+  });
 
   final TextStyle? numberFontLarge;
   final TextStyle? numberFontMedium;
@@ -160,12 +169,9 @@ class MyTexts extends ThemeExtension<MyTexts> {
       return this;
     }
     return MyTexts(
-      numberFontLarge:
-          TextStyle.lerp(numberFontLarge, other.numberFontLarge, t),
-      numberFontMedium:
-          TextStyle.lerp(numberFontMedium, other.numberFontLarge, t),
-      numberFontSmall:
-          TextStyle.lerp(numberFontSmall, other.numberFontSmall, t),
+      numberFontLarge: TextStyle.lerp(numberFontLarge, other.numberFontLarge, t),
+      numberFontMedium: TextStyle.lerp(numberFontMedium, other.numberFontLarge, t),
+      numberFontSmall: TextStyle.lerp(numberFontSmall, other.numberFontSmall, t),
       numberLabel: TextStyle.lerp(numberLabel, other.numberLabel, t),
       dateLabel: TextStyle.lerp(dateLabel, other.dateLabel, t),
     );
@@ -215,5 +221,23 @@ class MyColors extends ThemeExtension<MyColors> {
       flipCardColor: Color.lerp(flipCardColor, other.flipCardColor, t),
       onFlipCard: Color.lerp(onFlipCard, other.onFlipCard, t),
     );
+  }
+}
+
+class CustomUtils {
+  double mapToRange({
+    required double value,
+    required double min,
+    required double max,
+  }) {
+    // Prevent division by zero if min and max are identical
+    if (max - min == 0) return 0.0;
+
+    // Calculate percentage and clamp between 0.0 and 1.0
+    return ((value - min) / (max - min)).clamp(0.0, 1.0);
+  }
+
+  CostItemCategory? findInList(String name) {
+    return defaultCostItemCategories.firstWhereOrNull((cat) => cat.name == name);
   }
 }

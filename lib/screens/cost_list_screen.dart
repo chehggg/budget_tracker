@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/list_model.dart';
@@ -11,610 +13,469 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class CostListScreen extends StatefulWidget {
+class CostListScreen extends StatelessWidget {
   const CostListScreen({super.key});
 
-  @override
-  State<CostListScreen> createState() => _CostListScreenState();
-}
-
-class _CostListScreenState extends State<CostListScreen> {
-  Future<void> showFilterCategoryDialog() {
-    return showDialog(
-      context: context,
-      builder: (context) {
-        final fullCategories = context.read<AppModel>().categories;
-        Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
-        final selectedThemeMode = context.select((ThemeModel state) => state.theme);
-        Set<CostItemCategory> displayCategories = {};
-        final TextEditingController controller = TextEditingController();
-        return StatefulBuilder(builder: (context, setState) {
-          final theme = Theme.of(context);
-          final hintColor = theme.colorScheme.primary.withAlpha(100);
-          displayCategories = Set.from(controller.text == ""
-              ? fullCategories
-              : fullCategories.where((category) => category.name!.contains(controller.text)));
-          return AlertDialog(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Filter Category"),
-                Text(
-                  "${selectedCategories.length} selected ${selectedCategories.length <= 1 ? "category" : "categories"}",
-                  overflow: TextOverflow.fade,
-                  maxLines: 1,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-            content: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.5,
-              width: MediaQuery.of(context).size.width * 0.7,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
-                    child: TextField(
-                      controller: controller,
-                      style: theme.textTheme.bodyMedium!,
-                      decoration: InputDecoration(
-                        border:
-                            OutlineInputBorder(borderRadius: BorderRadius.circular(200), borderSide: BorderSide.none),
-                        fillColor: theme.colorScheme.primary.withAlpha(30),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        filled: true,
-                        isDense: true,
-                        hint: Row(
-                          spacing: 8,
-                          children: [
-                            Icon(Icons.search, color: hintColor),
-                            Text(
-                              "Search for categories...",
-                              style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
-                            ),
-                          ],
-                        ),
-                        hintStyle: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        ...displayCategories.map((category) {
-                          final bool isCategorySelected = selectedCategories.contains(category.name);
-                          return ListTile(
-                            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-                            // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
-                            title: Text(category.name ?? ""),
-                            leading: Padding(
-                              padding: const EdgeInsets.only(left: 12.0),
-                              child: Container(
-                                  decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: category.colorScheme(selectedThemeMode).primaryContainer),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Image.asset(
-                                      category.imagePath ?? "",
-                                      width: 28,
-                                      height: 28,
-                                      color: category.colorScheme(selectedThemeMode).onPrimaryContainer,
-                                    ),
-                                  )),
-                            ),
-                            trailing: Checkbox(
-                                value: isCategorySelected,
-                                onChanged: (newValue) {
-                                  if (!selectedCategories.remove(category.name)) {
-                                    debugPrint('adding new item');
-                                    selectedCategories.add(category.name ?? "");
-                                  }
-                                  setState(() => {});
-                                }),
-                            onTap: () {
-                              if (!selectedCategories.remove(category.name)) {
-                                debugPrint('adding new item');
-                                selectedCategories.add(category.name ?? "");
-                              }
-                              setState(() => {});
-                            },
-                          );
-                        }),
-                      ]),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    if (selectedCategories.length == fullCategories.length) {
-                      selectedCategories.clear();
-                    } else {
-                      selectedCategories = Set.from(fullCategories.map((category) => category.name));
-                    }
-                    setState(() {});
-                  },
-                  child: Text(selectedCategories.length == fullCategories.length ? "Unselect all" : "Select all")),
-              TextButton(
-                  onPressed: () {
-                    context.read<AppModel>().updateFilteredCategories(selectedCategories);
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text("Save"))
-            ],
-          );
-        });
-      },
-    );
-  }
-
-  Future<void> showFilterAmountDialog() {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          final percentiles = context.read<AppModel>().getPercentiles();
-          final max = percentiles.last;
-          final percentileString = percentiles
-              .map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false))
-              .toList();
-          final Map<String, String> percentileMap = {
-            "<25%": "<${percentileString[1]}",
-            "25% - 50%": "${percentileString[1]} - ${percentileString[2]}",
-            "50% - 75%": "${percentileString[2]} - ${percentileString[3]}",
-            ">75%": ">${percentileString[3]}",
-          };
-          RangeValues _rangeValue = RangeValues(0, max);
-          Set<String> _selectedPercentileRange = {};
-          return StatefulBuilder(builder: (context, setState) {
-            return AlertDialog(
-              title: Text("Filter Amount"),
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-              content: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.4,
-                  width: MediaQuery.of(context).size.width * 0.7,
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      // mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Filter by range",
-                          textAlign: TextAlign.left,
-                        ),
-                        Theme(
-                          data: Theme.of(context).copyWith(
-                              sliderTheme: SliderThemeData(
-                                  valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall,
-                                  valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50))),
-                          child: RangeSlider(
-                            values: _rangeValue,
-                            onChanged: (newValue) {
-                              setState(() => _rangeValue = newValue);
-                            },
-                            divisions: max.round(),
-                            labels:
-                                RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
-                            min: 0,
-                            max: max,
-                          ),
-                        ),
-                        const Divider(),
-                        Text(
-                          "Filter by quartile",
-                          textAlign: TextAlign.left,
-                        ),
-                        ...percentileMap
-                            .map((key, value) => MapEntry(
-                                key,
-                                ListTile(
-                                  title: Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    children: [
-                                      Expanded(child: Text(key)),
-                                      Text("(${value})"),
-                                    ],
-                                  ),
-                                  trailing: Checkbox(
-                                      value: _selectedPercentileRange.contains(key),
-                                      onChanged: (newValue) {
-                                        newValue == true
-                                            ? _selectedPercentileRange.add(key)
-                                            : _selectedPercentileRange.remove(key);
-                                        setState(() => {});
-                                      }),
-                                )))
-                            .values
-                      ]),
-                ),
-              ),
-              actions: [TextButton(onPressed: () {}, child: Text("Save"))],
-            );
-          });
-        });
-  }
-
-  Future<void> showFilterDateDialog() {
-    return showDialog(
-        context: context,
-        builder: (context) {
-          DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
-          DateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
-          final now = DateTime.now();
-          final today = DateTime(now.year, now.month, now.day);
-          final Map<String, DateTimeRange> dateRanges = {
-            "Today": DateTimeRange(start: today, end: today),
-            "Yesterday": DateTimeRange(
-                start: today.subtract(const Duration(days: 1)), end: today.subtract(const Duration(days: 1))),
-            "Last 3 Days": DateTimeRange(start: today.subtract(const Duration(days: 2)), end: today),
-            "Last 5 Days": DateTimeRange(start: today.subtract(const Duration(days: 4)), end: today),
-            "Last 7 Days": DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today),
-            "This week": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1)), end: today),
-            "Last week": DateTimeRange(
-                start: today.subtract(Duration(days: today.weekday - 1 + 7)),
-                end: today.subtract(Duration(days: today.weekday % 7))),
-            "Last 2 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 7)), end: today),
-            "Last 3 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 14)), end: today)
-          };
-          String subtitleText = "";
-          bool showReset = dateFilter != DateRangeFilterType.none ? true : false;
-          return StatefulBuilder(builder: (context, setState) {
-            if (_selectedDateRange != null) {
-              if (_selectedDateRange!.start == _selectedDateRange!.end) {
-                subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
-              } else {
-                subtitleText =
-                    "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}";
-              }
-            } else {
-              subtitleText = "No range selected";
-            }
-            return AlertDialog(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Filter Date"),
-                  Text(
-                    subtitleText,
-                    overflow: TextOverflow.fade,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-              contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-              content: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 12,
-                      children: [
-                        Row(
-                          spacing: 16,
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                                height: 40,
-                                child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: Switch(
-                                        value: dateFilter == DateRangeFilterType.relative,
-                                        onChanged: (value) {
-                                          dateFilter = value ? DateRangeFilterType.relative : DateRangeFilterType.none;
-                                          _selectedDateRange = null;
-                                          setState(() {});
-                                        }))),
-                            Expanded(
-                                child: Text(
-                              "Relative range",
-                              textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            )),
-                          ],
-                        ),
-                        DropdownMenu(
-                          width: MediaQuery.of(context).size.width * 0.5,
-                          menuHeight: 300,
-                          initialSelection: dateRanges.values.first,
-                          inputDecorationTheme: InputDecorationTheme(
-                            border: const UnderlineInputBorder(),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                            constraints: BoxConstraints.tight(const Size.fromHeight(40)),
-                          ),
-                          textStyle: Theme.of(context).textTheme.bodyMedium,
-                          dropdownMenuEntries: dateRanges
-                              .map(
-                                (key, value) => MapEntry(
-                                    key,
-                                    DropdownMenuEntry(
-                                      value: value,
-                                      label: key,
-                                      enabled: dateFilter == DateRangeFilterType.relative,
-                                    )),
-                              )
-                              .values
-                              .toList(),
-                          onSelected: (value) {
-                            if (dateFilter != DateRangeFilterType.relative) return;
-                            _selectedDateRange = value as DateTimeRange;
-                            setState(() {});
-                          },
-                          selectedTrailingIcon: Icon(Icons.check),
-                        ),
-                        const Divider(),
-                        Row(
-                          spacing: 16,
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                                height: 40,
-                                child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: Switch(
-                                        value: dateFilter == DateRangeFilterType.absolute,
-                                        onChanged: (value) async {
-                                          dateFilter = value ? DateRangeFilterType.absolute : DateRangeFilterType.none;
-                                          _selectedDateRange = null;
-                                          if (value) {
-                                            final dateRange = await showCalendarDatePicker2Dialog(
-                                              context: context,
-                                              config: CalendarDatePicker2WithActionButtonsConfig(
-                                                  calendarType: CalendarDatePicker2Type.range),
-                                              dialogSize: Size(MediaQuery.of(context).size.width * 0.6,
-                                                  MediaQuery.of(context).size.height * 0.6),
-                                              value: [
-                                                DateTime(now.year, now.month, 1),
-                                                DateTime(now.year, now.month + 1, 0)
-                                              ],
-                                            );
-                                            if (dateRange != null) {
-                                              _selectedDateRange =
-                                                  DateTimeRange(start: dateRange.first!, end: dateRange.last!);
-                                            } else {
-                                              dateFilter = DateRangeFilterType.none;
-                                            }
-                                          }
-                                          setState(() {});
-                                        }))),
-                            Expanded(
-                                child: Text(
-                              "Custom range",
-                              textAlign: TextAlign.left,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            )),
-                          ],
-                        ),
-                        dateFilter == DateRangeFilterType.absolute && _selectedDateRange != null
-                            ? GestureDetector(child: Text('${subtitleText.split(":").last} (Change date)'))
-                            : SizedBox.shrink()
-                      ]),
-                ),
-              ),
-              actions: [
-                showReset
-                    ? TextButton(
-                        onPressed: () {
-                          context.read<AppModel>().updateFilteredDateRange(null, DateRangeFilterType.none);
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(
-                          "Reset to default",
-                          style: TextStyle(color: Colors.lightBlue),
-                        ))
-                    : SizedBox.shrink(),
-                TextButton(
-                    onPressed: () {
-                      context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
-                      Navigator.of(context).pop();
-                    },
-                    child: Text("Save"))
-              ],
-            );
-          });
-        });
-  }
-
-  // Widget titleAppBar() {
-  //   if (!_isSearchOpened) {
-  //     return Text("Overview");
-  //   } else {
-  //     var theme = Theme.of(context);
-  //     var hintColor = theme.colorScheme.primary.withAlpha(100);
-  //     return PopScope(
-  //       onPopInvokedWithResult: (didPop, result) {
-  //         debugPrint("this triggered");
-  //         setState(() => _isSearchOpened = false);
-  //       },
-  //       child: TextField(
-  //         controller: _controller,
-  //         autofocus: true,
-  //         decoration: InputDecoration(
-  //           focusedBorder: OutlineInputBorder(
-  //               borderRadius: BorderRadius.circular(200),
-  //               borderSide:
-  //                   BorderSide(width: 0, color: theme.colorScheme.primary)),
-  //           border: OutlineInputBorder(
-  //               borderRadius: BorderRadius.circular(200),
-  //               borderSide:
-  //                   BorderSide(width: 0, color: theme.colorScheme.primary)),
-  //           fillColor: theme.colorScheme.primary.withAlpha(10),
-  //           filled: true,
-  //           isDense: true,
-  //           // contentPadding: EdgeInsets.symmetric(vertical: 15),
-  //           prefixIcon: IconButton(
-  //               iconSize: 24,
-  //               onPressed: () {
-  //                 setState(() => _isSearchOpened = false);
-  //                 context.read<AppModel>().clearFilter();
-  //               },
-  //               icon: Icon(Icons.arrow_back)),
-  //           suffixIcon: IconButton(
-  //               iconSize: 24,
-  //               onPressed: () {
-  //                 _controller.clear();
-  //                 context.read<AppModel>().updateFilterString("");
-  //                 setState(() {});
-  //               },
-  //               icon: Icon(Icons.clear)),
-  //           hint: Row(
-  //             spacing: 8,
+  // Future<void> showFilterCategoryDialog() {
+  //   return showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       final fullCategories = context.read<AppModel>().categories;
+  //       Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
+  //       final selectedThemeMode = context.select((ThemeModel state) => state.theme);
+  //       Set<CostItemCategory> displayCategories = {};
+  //       final TextEditingController controller = TextEditingController();
+  //       return StatefulBuilder(builder: (context, setState) {
+  //         final theme = Theme.of(context);
+  //         final hintColor = theme.colorScheme.primary.withAlpha(100);
+  //         displayCategories = Set.from(controller.text == ""
+  //             ? fullCategories
+  //             : fullCategories.where((category) => category.name!.contains(controller.text)));
+  //         return AlertDialog(
+  //           title: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
   //             children: [
-  //               Icon(Icons.search, color: hintColor),
+  //               Text("Filter Category"),
   //               Text(
-  //                 "Search for a cost item...",
-  //                 style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
+  //                 "${selectedCategories.length} selected ${selectedCategories.length <= 1 ? "category" : "categories"}",
+  //                 overflow: TextOverflow.fade,
+  //                 maxLines: 1,
+  //                 style: Theme.of(context).textTheme.bodyMedium,
   //               ),
   //             ],
   //           ),
-  //           hintStyle: Theme.of(context).textTheme.bodyMedium,
-  //         ),
-  //         onChanged: (value) {
-  //           debugPrint("controller value updated");
-  //           context.read<AppModel>().updateFilterString(value);
-  //         },
-  //       ),
-  //     );
-  //   }
-  // }
-
-  // AppBar bottomFilterAppBar() {
-  //   final isCategoryFiltered = context.select((AppModel state) =>
-  //       state.filteredCategories.length < state.categories.length);
-  //   final isDateFiltered =
-  //       context.select((AppModel state) => state.filterDateRange != null);
-  //   final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
-  //   final borderRadius = BorderRadius.circular(12);
-
-  //   Widget createCustomFilterChip(
-  //       {IconData? icon,
-  //       String text = "",
-  //       Function()? onTap,
-  //       bool isActive = false}) {
-  //     return Expanded(
-  //       child: Material(
-  //         borderRadius: borderRadius,
-  //         child: InkWell(
-  //           borderRadius: borderRadius,
-  //           onTap: onTap,
-  //           child: Container(
-  //             height: toolbarHeight - 16,
-  //             // padding: const EdgeInsets.all(10),
-  //             decoration: BoxDecoration(
-  //                 shape: BoxShape.rectangle,
-  //                 border: BoxBorder.all(color: context.cs.primary, width: 0.5),
-  //                 borderRadius: borderRadius,
-  //                 color: isActive
-  //                     ? context.cs.primary.withAlpha(50)
-  //                     : context.cs.primary.withAlpha(10)),
-  //             child: Row(
-  //               spacing: 10,
-  //               mainAxisSize: MainAxisSize.min,
-  //               mainAxisAlignment: MainAxisAlignment.center,
+  //           contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+  //           content: SizedBox(
+  //             height: MediaQuery.of(context).size.height * 0.5,
+  //             width: MediaQuery.of(context).size.width * 0.7,
+  //             child: Column(
   //               children: [
-  //                 Icon(
-  //                   isActive ? Icons.check : icon,
-  //                   color: context.cs.primary,
-  //                   size: toolbarHeight / 2 - 10,
+  //                 Padding(
+  //                   padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
+  //                   child: TextField(
+  //                     controller: controller,
+  //                     style: theme.textTheme.bodyMedium!,
+  //                     decoration: InputDecoration(
+  //                       border:
+  //                           OutlineInputBorder(borderRadius: BorderRadius.circular(200), borderSide: BorderSide.none),
+  //                       fillColor: theme.colorScheme.primary.withAlpha(30),
+  //                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+  //                       filled: true,
+  //                       isDense: true,
+  //                       hint: Row(
+  //                         spacing: 8,
+  //                         children: [
+  //                           Icon(Icons.search, color: hintColor),
+  //                           Text(
+  //                             "Search for categories...",
+  //                             style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       hintStyle: Theme.of(context).textTheme.bodyMedium,
+  //                     ),
+  //                     onChanged: (value) {
+  //                       setState(() {});
+  //                     },
+  //                   ),
   //                 ),
-  //                 Text(text, style: context.tt.bodyMedium)
+  //                 Expanded(
+  //                   child: SingleChildScrollView(
+  //                     child: Column(mainAxisSize: MainAxisSize.min, children: [
+  //                       ...displayCategories.map((category) {
+  //                         final bool isCategorySelected = selectedCategories.contains(category.name);
+  //                         return ListTile(
+  //                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+  //                           // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
+  //                           title: Text(category.name ?? ""),
+  //                           leading: Padding(
+  //                             padding: const EdgeInsets.only(left: 12.0),
+  //                             child: Container(
+  //                                 decoration: BoxDecoration(
+  //                                     shape: BoxShape.circle,
+  //                                     color: category.colorScheme(selectedThemeMode).primaryContainer),
+  //                                 child: Padding(
+  //                                   padding: const EdgeInsets.all(8.0),
+  //                                   child: Image.asset(
+  //                                     category.imagePath ?? "",
+  //                                     width: 28,
+  //                                     height: 28,
+  //                                     color: category.colorScheme(selectedThemeMode).onPrimaryContainer,
+  //                                   ),
+  //                                 )),
+  //                           ),
+  //                           trailing: Checkbox(
+  //                               value: isCategorySelected,
+  //                               onChanged: (newValue) {
+  //                                 if (!selectedCategories.remove(category.name)) {
+  //                                   debugPrint('adding new item');
+  //                                   selectedCategories.add(category.name ?? "");
+  //                                 }
+  //                                 setState(() => {});
+  //                               }),
+  //                           onTap: () {
+  //                             if (!selectedCategories.remove(category.name)) {
+  //                               debugPrint('adding new item');
+  //                               selectedCategories.add(category.name ?? "");
+  //                             }
+  //                             setState(() => {});
+  //                           },
+  //                         );
+  //                       }),
+  //                     ]),
+  //                   ),
+  //                 ),
   //               ],
   //             ),
   //           ),
-  //         ),
-  //       ),
-  //     );
-  //   }
+  //           actions: [
+  //             TextButton(
+  //                 onPressed: () {
+  //                   if (selectedCategories.length == fullCategories.length) {
+  //                     selectedCategories.clear();
+  //                   } else {
+  //                     selectedCategories = Set.from(fullCategories.map((category) => category.name));
+  //                   }
+  //                   setState(() {});
+  //                 },
+  //                 child: Text(selectedCategories.length == fullCategories.length ? "Unselect all" : "Select all")),
+  //             TextButton(
+  //                 onPressed: () {
+  //                   context.read<AppModel>().updateFilteredCategories(selectedCategories);
+  //                   Navigator.of(context).pop();
+  //                 },
+  //                 child: const Text("Save"))
+  //           ],
+  //         );
+  //       });
+  //     },
+  //   );
+  // }
 
-  //   return AppBar(
-  //       toolbarHeight: toolbarHeight,
-  //       title: Row(
-  //         spacing: 8,
-  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //         children: [
-  //           createCustomFilterChip(
-  //               icon: Icons.category,
-  //               text: "Category",
-  //               onTap: () async => showFilterCategoryDialog(),
-  //               isActive: isCategoryFiltered),
-  //           createCustomFilterChip(
-  //               icon: Icons.date_range,
-  //               text: "Date",
-  //               onTap: () async => showFilterDateDialog(),
-  //               isActive: isDateFiltered),
-  //           createCustomFilterChip(
-  //               icon: Icons.money,
-  //               text: "Amount",
-  //               onTap: () async => showFilterAmountDialog(),
-  //               isActive: isDateFiltered),
-  //         ],
-  //       ));
+  // Future<void> showFilterAmountDialog() {
+  //   return showDialog(
+  //       context: context,
+  //       builder: (context) {
+  //         final percentiles = context.read<AppModel>().getPercentiles();
+  //         final max = percentiles.last;
+  //         final percentileString = percentiles
+  //             .map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false))
+  //             .toList();
+  //         final Map<String, String> percentileMap = {
+  //           "<25%": "<${percentileString[1]}",
+  //           "25% - 50%": "${percentileString[1]} - ${percentileString[2]}",
+  //           "50% - 75%": "${percentileString[2]} - ${percentileString[3]}",
+  //           ">75%": ">${percentileString[3]}",
+  //         };
+  //         RangeValues _rangeValue = RangeValues(0, max);
+  //         Set<String> _selectedPercentileRange = {};
+  //         return StatefulBuilder(builder: (context, setState) {
+  //           return AlertDialog(
+  //             title: Text("Filter Amount"),
+  //             contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+  //             content: Padding(
+  //               padding: const EdgeInsets.symmetric(horizontal: 20.0),
+  //               child: SizedBox(
+  //                 height: MediaQuery.of(context).size.height * 0.4,
+  //                 width: MediaQuery.of(context).size.width * 0.7,
+  //                 child: Column(
+  //                     mainAxisSize: MainAxisSize.min,
+  //                     // mainAxisAlignment: MainAxisAlignment.start,
+  //                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                     children: [
+  //                       Text(
+  //                         "Filter by range",
+  //                         textAlign: TextAlign.left,
+  //                       ),
+  //                       Theme(
+  //                         data: Theme.of(context).copyWith(
+  //                             sliderTheme: SliderThemeData(
+  //                                 valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall,
+  //                                 valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50))),
+  //                         child: RangeSlider(
+  //                           values: _rangeValue,
+  //                           onChanged: (newValue) {
+  //                             setState(() => _rangeValue = newValue);
+  //                           },
+  //                           divisions: max.round(),
+  //                           labels:
+  //                               RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
+  //                           min: 0,
+  //                           max: max,
+  //                         ),
+  //                       ),
+  //                       const Divider(),
+  //                       Text(
+  //                         "Filter by quartile",
+  //                         textAlign: TextAlign.left,
+  //                       ),
+  //                       ...percentileMap
+  //                           .map((key, value) => MapEntry(
+  //                               key,
+  //                               ListTile(
+  //                                 title: Row(
+  //                                   mainAxisSize: MainAxisSize.max,
+  //                                   children: [
+  //                                     Expanded(child: Text(key)),
+  //                                     Text("(${value})"),
+  //                                   ],
+  //                                 ),
+  //                                 trailing: Checkbox(
+  //                                     value: _selectedPercentileRange.contains(key),
+  //                                     onChanged: (newValue) {
+  //                                       newValue == true
+  //                                           ? _selectedPercentileRange.add(key)
+  //                                           : _selectedPercentileRange.remove(key);
+  //                                       setState(() => {});
+  //                                     }),
+  //                               )))
+  //                           .values
+  //                     ]),
+  //               ),
+  //             ),
+  //             actions: [TextButton(onPressed: () {}, child: Text("Save"))],
+  //           );
+  //         });
+  //       });
+  // }
+
+  // Future<void> showFilterDateDialog() {
+  //   return showDialog(
+  //       context: context,
+  //       builder: (context) {
+  //         DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
+  //         DateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
+  //         final now = DateTime.now();
+  //         final today = DateTime(now.year, now.month, now.day);
+  //         final Map<String, DateTimeRange> dateRanges = {
+  //           "Today": DateTimeRange(start: today, end: today),
+  //           "Yesterday": DateTimeRange(
+  //               start: today.subtract(const Duration(days: 1)), end: today.subtract(const Duration(days: 1))),
+  //           "Last 3 Days": DateTimeRange(start: today.subtract(const Duration(days: 2)), end: today),
+  //           "Last 5 Days": DateTimeRange(start: today.subtract(const Duration(days: 4)), end: today),
+  //           "Last 7 Days": DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today),
+  //           "This week": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1)), end: today),
+  //           "Last week": DateTimeRange(
+  //               start: today.subtract(Duration(days: today.weekday - 1 + 7)),
+  //               end: today.subtract(Duration(days: today.weekday % 7))),
+  //           "Last 2 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 7)), end: today),
+  //           "Last 3 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 14)), end: today)
+  //         };
+  //         String subtitleText = "";
+  //         bool showReset = dateFilter != DateRangeFilterType.none ? true : false;
+  //         return StatefulBuilder(builder: (context, setState) {
+  //           if (_selectedDateRange != null) {
+  //             if (_selectedDateRange!.start == _selectedDateRange!.end) {
+  //               subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
+  //             } else {
+  //               subtitleText =
+  //                   "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}";
+  //             }
+  //           } else {
+  //             subtitleText = "No range selected";
+  //           }
+  //           return AlertDialog(
+  //             title: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text("Filter Date"),
+  //                 Text(
+  //                   subtitleText,
+  //                   overflow: TextOverflow.fade,
+  //                   maxLines: 1,
+  //                   style: Theme.of(context).textTheme.bodyMedium,
+  //                 ),
+  //               ],
+  //             ),
+  //             contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
+  //             content: Padding(
+  //               padding: const EdgeInsets.symmetric(horizontal: 20.0),
+  //               child: SizedBox(
+  //                 width: MediaQuery.of(context).size.width * 0.6,
+  //                 child: Column(
+  //                     mainAxisSize: MainAxisSize.min,
+  //                     crossAxisAlignment: CrossAxisAlignment.stretch,
+  //                     spacing: 12,
+  //                     children: [
+  //                       Row(
+  //                         spacing: 16,
+  //                         mainAxisSize: MainAxisSize.max,
+  //                         mainAxisAlignment: MainAxisAlignment.start,
+  //                         children: [
+  //                           SizedBox(
+  //                               height: 40,
+  //                               child: FittedBox(
+  //                                   fit: BoxFit.fill,
+  //                                   child: Switch(
+  //                                       value: dateFilter == DateRangeFilterType.relative,
+  //                                       onChanged: (value) {
+  //                                         dateFilter = value ? DateRangeFilterType.relative : DateRangeFilterType.none;
+  //                                         _selectedDateRange = null;
+  //                                         setState(() {});
+  //                                       }))),
+  //                           Expanded(
+  //                               child: Text(
+  //                             "Relative range",
+  //                             textAlign: TextAlign.left,
+  //                             style: Theme.of(context).textTheme.bodyMedium,
+  //                           )),
+  //                         ],
+  //                       ),
+  //                       DropdownMenu(
+  //                         width: MediaQuery.of(context).size.width * 0.5,
+  //                         menuHeight: 300,
+  //                         initialSelection: dateRanges.values.first,
+  //                         inputDecorationTheme: InputDecorationTheme(
+  //                           border: const UnderlineInputBorder(),
+  //                           isDense: true,
+  //                           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+  //                           constraints: BoxConstraints.tight(const Size.fromHeight(40)),
+  //                         ),
+  //                         textStyle: Theme.of(context).textTheme.bodyMedium,
+  //                         dropdownMenuEntries: dateRanges
+  //                             .map(
+  //                               (key, value) => MapEntry(
+  //                                   key,
+  //                                   DropdownMenuEntry(
+  //                                     value: value,
+  //                                     label: key,
+  //                                     enabled: dateFilter == DateRangeFilterType.relative,
+  //                                   )),
+  //                             )
+  //                             .values
+  //                             .toList(),
+  //                         onSelected: (value) {
+  //                           if (dateFilter != DateRangeFilterType.relative) return;
+  //                           _selectedDateRange = value as DateTimeRange;
+  //                           setState(() {});
+  //                         },
+  //                         selectedTrailingIcon: Icon(Icons.check),
+  //                       ),
+  //                       const Divider(),
+  //                       Row(
+  //                         spacing: 16,
+  //                         mainAxisSize: MainAxisSize.min,
+  //                         mainAxisAlignment: MainAxisAlignment.start,
+  //                         children: [
+  //                           SizedBox(
+  //                               height: 40,
+  //                               child: FittedBox(
+  //                                   fit: BoxFit.fill,
+  //                                   child: Switch(
+  //                                       value: dateFilter == DateRangeFilterType.absolute,
+  //                                       onChanged: (value) async {
+  //                                         dateFilter = value ? DateRangeFilterType.absolute : DateRangeFilterType.none;
+  //                                         _selectedDateRange = null;
+  //                                         if (value) {
+  //                                           final dateRange = await showCalendarDatePicker2Dialog(
+  //                                             context: context,
+  //                                             config: CalendarDatePicker2WithActionButtonsConfig(
+  //                                                 calendarType: CalendarDatePicker2Type.range),
+  //                                             dialogSize: Size(MediaQuery.of(context).size.width * 0.6,
+  //                                                 MediaQuery.of(context).size.height * 0.6),
+  //                                             value: [
+  //                                               DateTime(now.year, now.month, 1),
+  //                                               DateTime(now.year, now.month + 1, 0)
+  //                                             ],
+  //                                           );
+  //                                           if (dateRange != null) {
+  //                                             _selectedDateRange =
+  //                                                 DateTimeRange(start: dateRange.first!, end: dateRange.last!);
+  //                                           } else {
+  //                                             dateFilter = DateRangeFilterType.none;
+  //                                           }
+  //                                         }
+  //                                         setState(() {});
+  //                                       }))),
+  //                           Expanded(
+  //                               child: Text(
+  //                             "Custom range",
+  //                             textAlign: TextAlign.left,
+  //                             style: Theme.of(context).textTheme.bodyMedium,
+  //                           )),
+  //                         ],
+  //                       ),
+  //                       dateFilter == DateRangeFilterType.absolute && _selectedDateRange != null
+  //                           ? GestureDetector(child: Text('${subtitleText.split(":").last} (Change date)'))
+  //                           : SizedBox.shrink()
+  //                     ]),
+  //               ),
+  //             ),
+  //             actions: [
+  //               showReset
+  //                   ? TextButton(
+  //                       onPressed: () {
+  //                         context.read<AppModel>().updateFilteredDateRange(null, DateRangeFilterType.none);
+  //                         Navigator.of(context).pop();
+  //                       },
+  //                       child: Text(
+  //                         "Reset to default",
+  //                         style: TextStyle(color: Colors.lightBlue),
+  //                       ))
+  //                   : SizedBox.shrink(),
+  //               TextButton(
+  //                   onPressed: () {
+  //                     context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
+  //                     Navigator.of(context).pop();
+  //                   },
+  //                   child: Text("Save"))
+  //             ],
+  //           );
+  //         });
+  //       });
   // }
 
   @override
   Widget build(BuildContext context) {
-    // debugPrint("list screen is build");
-
-    // final isBlur = context.select((ThemeModel state) => state.isListBlurred);
     return ChangeNotifierProvider(
       create: (context) => ListModel(),
-      child: const CostListMainBody(),
+      child: const CostListBody(),
     );
   }
 }
 
-class CostListMainBody extends StatelessWidget {
-  const CostListMainBody({
+class CostListBody extends StatelessWidget {
+  const CostListBody({
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
     final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
+    final isBlurred = context.select((ListModel state) => state.isBlurred);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text("OVERVIEW", style: context.customTt.dateLabel),
         actions: [
           IconButton(onPressed: context.listMod.toggleSearch, icon: Icon(Icons.search)),
-          // IconButton(
-          //     onPressed: context.themeMod.toggleBlur,
-          //     icon: Icon(
-          //         !isBlur ? Icons.visibility : Icons.visibility_off)),
-          IconButton(onPressed: context.appMod.resetMetric, icon: Icon(Icons.refresh))
+          IconButton(
+            onPressed: context.listMod.toggleBlur,
+            icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
+          ),
+          IconButton(onPressed: context.appMod.resetMetric, icon: Icon(Icons.refresh)),
         ],
       ),
       body: SafeArea(
         child: Flex(
           direction: Axis.vertical,
           children: [
-            ...isSearchOpened ? [SearchTab()] : [],
+            ...isSearchOpened ? [const SearchTab()] : [],
             const DateBreadcrumb(),
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: const SummaryTab(),
-                  ),
+                  const SummaryTab(),
+                  // SliverToBoxAdapter(
+                  //   child: const SummaryTab(),
+                  // ),
                   const CostEntryList(),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -656,29 +517,36 @@ class DateBreadcrumb extends StatelessWidget {
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.25,
               child: IconButton(
-                  style: ElevatedButton.styleFrom(
-                    splashFactory: NoSplash.splashFactory,
-                  ),
-                  onPressed: () {
-                    context.read<AppModel>().changeYearMonth(false);
-                  },
-                  icon: Icon(Icons.arrow_back_ios)),
+                style: ElevatedButton.styleFrom(
+                  splashFactory: NoSplash.splashFactory,
+                ),
+                onPressed: () {
+                  context.read<AppModel>().changeYearMonth(false);
+                },
+                icon: Icon(Icons.arrow_back_ios),
+              ),
             ),
             Expanded(
-                child: Center(
-              child: Text(DateFormat("yMMMM").format(context.select((AppModel state) => state.selectedYearMonth)),
-                  style: context.customTt.dateLabel!.copyWith(fontSize: 30)),
-            )),
+              child: Center(
+                child: Text(
+                  DateFormat(
+                    "yMMMM",
+                  ).format(context.select((AppModel state) => state.selectedYearMonth)),
+                  style: context.customTt.dateLabel!.copyWith(fontSize: 30),
+                ),
+              ),
+            ),
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.25,
               child: IconButton(
-                  style: ElevatedButton.styleFrom(
-                    splashFactory: NoSplash.splashFactory,
-                  ),
-                  onPressed: () {
-                    context.read<AppModel>().changeYearMonth(true);
-                  },
-                  icon: Icon(Icons.arrow_forward_ios)),
+                style: ElevatedButton.styleFrom(
+                  splashFactory: NoSplash.splashFactory,
+                ),
+                onPressed: () {
+                  context.read<AppModel>().changeYearMonth(true);
+                },
+                icon: Icon(Icons.arrow_forward_ios),
+              ),
             ),
           ],
         ),
@@ -721,8 +589,11 @@ class _CostEntryListState extends State<CostEntryList> {
             final String dateString = date.formatPretty();
             final List<CostItem> costItems = groupedCostItems.values.elementAt(index)
               ..sort((a, b) => b.lastModified!.compareTo(a.lastModified!));
-            final String dailyBudget =
-                appModelFunction.customCurrencyFormat(context.watch<AppModel>().getDailyTotal(date), false, true);
+            final String dailyBudget = appModelFunction.customCurrencyFormat(
+              context.watch<AppModel>().getDailyTotal(date),
+              false,
+              true,
+            );
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 4.0),
@@ -735,55 +606,73 @@ class _CostEntryListState extends State<CostEntryList> {
                 child: Column(
                   children: [
                     Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        textBaseline: TextBaseline.ideographic,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(dateString, style: context.customTt.dateLabel!.copyWith()),
-                          // style: context.tt.bodyLarge),
-                          HideableText(
-                            dailyBudget,
-                            isCurrency: true,
-                            textStyle: context.customTt.numberFontMedium!
-                                .copyWith(color: dailyBudget[0] == "-" ? Colors.redAccent : Colors.greenAccent),
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      textBaseline: TextBaseline.ideographic,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(dateString, style: context.customTt.dateLabel!.copyWith()),
+                        // style: context.tt.bodyLarge),
+                        HideableText(
+                          dailyBudget,
+                          isCurrency: true,
+                          textStyle: context.customTt.numberFontMedium!.copyWith(
+                            color: dailyBudget[0] == "-" ? Colors.redAccent : Colors.greenAccent,
                           ),
-                        ]),
+                        ),
+                      ],
+                    ),
                     SizedBox(
                       height: 10,
                     ),
                     ...costItems.map((costItem) {
-                      final CostItemCategory category = appModelFunction.getCategoryEntry(costItem.category)!;
-                      final ColorScheme categoryColorScheme = category.colorScheme(selectedThemeMode);
+                      final CostItemCategory category =
+                          appModelFunction.getCategoryEntry(costItem.category)!;
+                      final ColorScheme categoryColorScheme = category.colorScheme(
+                        selectedThemeMode,
+                      );
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: GestureDetector(
-                          onTap: () =>
-                              context.read<NavigationModel>().openForm(FormArgument(selectedCostItem: costItem)),
+                          onTap:
+                              () => context.read<NavigationModel>().openForm(
+                                FormArgument(selectedCostItem: costItem),
+                              ),
                           child: Row(
                             spacing: 12,
                             children: [
                               Container(
                                 padding: EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: BoxBorder.all(color: context.cs.primary.withAlpha(100))),
-                                child: category.createIcon(22, selectedThemeMode, context.cs.primary
-                                    // categoryColorScheme.primaryContainer,
-                                    // categoryColorScheme.onPrimaryContainer
-                                    ),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: BoxBorder.all(color: context.cs.primary.withAlpha(100)),
+                                ),
+                                child: category.createIcon(
+                                  22,
+                                  selectedThemeMode,
+                                  context.cs.primary,
+                                  // categoryColorScheme.primaryContainer,
+                                  // categoryColorScheme.onPrimaryContainer
+                                ),
                               ),
                               Expanded(
-                                child: Text(costItem.name,
-                                    // maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: context.tt.bodyMedium),
+                                child: Text(
+                                  costItem.name,
+                                  // maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: context.tt.bodyMedium,
+                                ),
                               ),
-                              HideableText(appModelFunction.getFormattedCostItemValue(costItem),
-                                  isCurrency: true,
-                                  textStyle: context.customTt.numberFontSmall!.copyWith(
-                                      color:
-                                          costItem.isExpense ? Colors.red.withAlpha(200) : Colors.green.withAlpha(200)))
+                              HideableText(
+                                appModelFunction.getFormattedCostItemValue(costItem),
+                                isCurrency: true,
+                                textStyle: context.customTt.numberFontSmall!.copyWith(
+                                  color:
+                                      costItem.isExpense
+                                          ? Colors.red.withAlpha(200)
+                                          : Colors.green.withAlpha(200),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -807,126 +696,126 @@ class SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final expense = context.select((AppModel state) => state.totalCurrentMonthExpense.customCurrencyFormat('RM'));
-    final income = context.select((AppModel state) => state.totalCurrentMonthIncome.customCurrencyFormat('RM'));
-    final balance = context.select((AppModel state) => state.totalCurrentMonthBalance.customCurrencyFormat('RM'));
+    final expense = context.select(
+      (AppModel state) =>
+          state.totalCurrentMonthExpense.customCurrencyFormat('RM', useSuffix: true),
+    );
+    final income = context.select(
+      (AppModel state) => state.totalCurrentMonthIncome.customCurrencyFormat('RM', useSuffix: true),
+    );
+    final balance = context.select(
+      (AppModel state) =>
+          state.totalCurrentMonthBalance.customCurrencyFormat('RM', useSuffix: true),
+    );
 
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Container(
-        decoration: BoxDecoration(color: context.customCs.flipCardColor, borderRadius: BorderRadius.circular(12)),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 10, 10),
-                  child: expenseMetricCard(context, "Balance", balance, isBig: true),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 0, 20),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      expenseMetricCard(
-                        context,
-                        "Income",
-                        expense,
-                      ),
-                      const SizedBox(
-                        width: 30,
-                      ),
-                      expenseMetricCard(
-                        context,
-                        "Expense",
-                        income,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            // Padding(
-            //   padding: const EdgeInsets.all(20.0),
-            //   child: SizedBox(
-            //     height: 120,
-            //     width: 100,
-            //     child: SummaryChart(
-            //       summaryData: totalCost,
-            //     ),
-            //   ),
-            // )
-          ],
-        ),
-      ),
+    return SliverPersistentHeader(
+      delegate: SummaryHeaderDelegate(expense: expense, income: income, balance: balance),
+      pinned: true,
     );
     // return Padding(
     //   padding: const EdgeInsets.all(12.0),
-    //   child: Container( // main box
-    //     padding: const EdgeInsets.all(16),
+    //   child: Container(
     //     decoration: BoxDecoration(
-    //       color: Theme.of(context).colorScheme.secondaryContainer,
-    //       borderRadius: BorderRadius.circular(12)
+    //       color: context.customCs.flipCardColor,
+    //       borderRadius: BorderRadius.circular(12),
     //     ),
-    //     height: screenSize.height * 0.2, // 12 as spacing between the rightmost container
-    //     // width: screenSize.width,
     //     child: Row(
-    //       mainAxisSize: MainAxisSize.min,
+    //       mainAxisSize: MainAxisSize.max,
     //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //       spacing: 8,
     //       children: [
-    //         SizedBox(
-    //           width: screenSize.width * 0.5,
-    //           child: Column( // vertical
-    //             crossAxisAlignment: CrossAxisAlignment.start,
-    //             mainAxisAlignment: MainAxisAlignment.start,
-    //             mainAxisSize: MainAxisSize.min,
-    //             spacing: 20,
-    //             children: [
-    //               costCard(
-    //                 context,
-    //                 "Balance",
-    //                 totalCost['balance']!,
-    //                 isBig: true
-    //               ),
-    //               Row(
-    //                 spacing: 10,
+    //         Column(
+    //           crossAxisAlignment: CrossAxisAlignment.start,
+    //           children: [
+    //             Padding(
+    //               padding: const EdgeInsets.fromLTRB(20, 20, 10, 10),
+    //               child: expenseMetricCard(context, "Balance", balance, isBig: true),
+    //             ),
+    //             Padding(
+    //               padding: const EdgeInsets.fromLTRB(20, 0, 0, 20),
+    //               child: Row(
     //                 mainAxisSize: MainAxisSize.max,
+    //                 mainAxisAlignment: MainAxisAlignment.spaceAround,
     //                 children: [
-    //                   Flexible(
-    //                     child: costCard(
-    //                       context,
-    //                       "Expense",
-    //                       totalCost['expense']!,
-    //                     )
+    //                   expenseMetricCard(
+    //                     context,
+    //                     "Income",
+    //                     expense,
     //                   ),
-    //                   Flexible(
-    //                     child: costCard(
-    //                       context,
-    //                       "Income",
-    //                       totalCost['income']!,
-    //                     )
+    //                   const SizedBox(
+    //                     width: 30,
     //                   ),
-    //                 ]
-    //               )
-    //             ],
-    //           ),
-    //         ),
-    //         SizedBox(
-    //           width: screenSize.width * 0.3,
-    //           child: SummaryChart(summaryData: totalCost,)
+    //                   expenseMetricCard(
+    //                     context,
+    //                     "Expense",
+    //                     income,
+    //                   ),
+    //                 ],
+    //               ),
+    //             ),
+    //           ],
     //         ),
     //       ],
-    //     )
+    //     ),
     //   ),
     // );
   }
 
-  Widget expenseMetricCard(BuildContext context, String labelText, String value, {bool isBig = false}) {
+  // Widget expenseMetricCard(
+  //   BuildContext context,
+  //   String labelText,
+  //   String value, {
+  //   bool isBig = false,
+  // }) {
+  //   final appColorTheme = context.cs;
+  //   return Column(
+  //     mainAxisAlignment: MainAxisAlignment.start,
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         // label
+  //         mainAxisSize: MainAxisSize.min,
+  //         spacing: 12,
+  //         children: [
+  //           Text(
+  //             labelText,
+  //             style: context.customTt.numberLabel!.copyWith(
+  //               color: appColorTheme.onSecondary.withAlpha(200),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       HideableText(
+  //         value,
+  //         isCurrency: true,
+  //         textStyle:
+  //             isBig
+  //                 ? context.customTt.numberFontLarge!.copyWith(
+  //                   height: 1,
+  //                   color: context.customCs.onFlipCard,
+  //                 )
+  //                 : context.customTt.numberFontMedium!.copyWith(color: context.customCs.onFlipCard),
+  //       ),
+  //     ],
+  //   );
+  // }
+}
+
+class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const SummaryHeaderDelegate({
+    required this.expense,
+    required this.income,
+    required this.balance,
+  });
+
+  final String expense, income, balance;
+
+  Widget expenseMetricCard(
+    BuildContext context, {
+    String labelText = "",
+    double progress = 0,
+    String value = "",
+    bool isBig = false,
+  }) {
     final appColorTheme = context.cs;
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -937,26 +826,146 @@ class SummaryTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 12,
           children: [
-            Text(
-              labelText,
-              style: context.customTt.numberLabel!.copyWith(color: appColorTheme.onSecondary.withAlpha(200)),
-            )
+            Opacity(
+              opacity: lerpDouble(1, !isBig ? 0 : 1, Interval(0, 0.6).transform(progress))!,
+              child: Text(
+                labelText,
+                style: context.customTt.numberLabel!.copyWith(
+                  height: lerpDouble(
+                    1.5,
+                    !isBig ? 0.01 : 1.5,
+                    Interval(0.3, 0.7).transform(progress),
+                  ),
+                  color: appColorTheme.onSecondary.withAlpha(200),
+                ),
+              ),
+            ),
           ],
         ),
-        HideableText(value,
+        Opacity(
+          opacity: !isBig ? lerpDouble(1, 0, Interval(0, 0.8).transform(progress))! : 1,
+          child: HideableText(
+            value,
             isCurrency: true,
-            textStyle: isBig
-                ? context.customTt.numberFontLarge!.copyWith(height: 1, color: context.customCs.onFlipCard)
-                : context.customTt.numberFontMedium!.copyWith(color: context.customCs.onFlipCard))
+            textStyle:
+                isBig
+                    ? context.customTt.numberFontLarge!.copyWith(
+                      height: 1,
+                      fontSize: lerpDouble(50, 30, progress),
+                      color: context.customCs.onFlipCard,
+                    )
+                    : context.customTt.numberFontMedium!.copyWith(
+                      height: lerpDouble(1.2, 0.01, Interval(0.2, 0.8).transform(progress)),
+                      fontSize: lerpDouble(22, 12, progress),
+                      color: context.customCs.onFlipCard,
+                    ),
+          ),
+        ),
       ],
     );
   }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final double progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0, 1);
+    return Container(
+      width: context.mq.size.width,
+      color: context.cs.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          decoration: BoxDecoration(
+            color: context.customCs.flipCardColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  spacing: 12,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    expenseMetricCard(
+                      context,
+                      labelText: "Balance",
+                      progress: progress,
+                      value: balance,
+                      isBig: true,
+                    ),
+                    Row(
+                      spacing: 20,
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: expenseMetricCard(
+                            context,
+                            labelText: "Expense",
+                            progress: progress,
+                            value: expense,
+                            isBig: false,
+                          ),
+                        ),
+                        Expanded(
+                          child: expenseMetricCard(
+                            context,
+                            labelText: "Income",
+                            progress: progress,
+                            value: income,
+                            isBig: false,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Expanded(child: SizedBox()),
+              Container(
+                width: 135,
+                // height: 250,
+                alignment: Alignment.centerRight,
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  border: BoxBorder.all(color: Colors.transparent),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: AnimatedScale(
+                  scale: lerpDouble(1, 0.5, Interval(0.1, 1).transform(progress))!,
+                  duration: Durations.short1,
+                  child: Opacity(
+                    opacity: lerpDouble(1, 0, Interval(0, 0.7).transform(progress))!,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20.0),
+                      child: const SummaryChart(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  double get maxExtent => 190;
+
+  @override
+  double get minExtent => 115;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => true;
 }
 
 class SummaryChart extends StatefulWidget {
-  const SummaryChart({super.key, required this.summaryData});
+  const SummaryChart({super.key});
 
-  final Map<String, Map<String, dynamic>> summaryData;
+  // final Map<String, Map<String, dynamic>> summaryData;
 
   @override
   State<SummaryChart> createState() => _SummaryChartState();
@@ -991,39 +1000,101 @@ class _SummaryChartState extends State<SummaryChart> {
   Widget build(BuildContext context) {
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
+    final expense = context.select(
+      (AppModel state) => state.totalCurrentMonthExpense.customCurrencyFormat('RM'),
+    );
     // final month = context.select((AppModel state) => state.selectedYearMonth);
     final List<Widget> charts = [];
 
-    if (widget.summaryData['expense']!['value'] > 0) {
-      charts.add(customPieChart(widget.summaryData, context, "Budget"));
-    }
-    if (widget.summaryData['income']!['value'] > 0) {
-      charts.add(customPieChart(widget.summaryData, context, "Balance"));
-    }
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Container(
-          // decoration: BoxDecoration(border: Border.all()),
-          child: Expanded(
-            child: PageView(
-                onPageChanged: (value) => setState(() {
-                      _currentPage = value;
-                    }),
-                controller: _controller,
-                children: charts),
+    charts.add(
+      Stack(
+        alignment: Alignment.center,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Balance',
+                style: context.customTt.numberLabel!.copyWith(
+                  color: context.cs.onPrimary,
+                  height: 0.5,
+                ),
+              ),
+              Text(
+                '20',
+                style: context.customTt.numberFontLarge!.copyWith(
+                  color: context.cs.onPrimary,
+                  height: 1,
+                ),
+              ),
+            ],
           ),
-        ),
-        PageIndicator(
-          pageLength: charts.length,
-          currentPage: _currentPage,
-        )
-      ],
+          PieChart(
+            PieChartData(
+              // sectionsSpace: 5,
+              sectionsSpace: 0,
+              centerSpaceRadius: 52,
+              startDegreeOffset: -90,
+              sections: [
+                PieChartSectionData(
+                  showTitle: false,
+                  value: 3,
+                  radius: 10,
+                  color: context.customCs.onFlipCard,
+                  cornerRadius: 10,
+                ),
+                PieChartSectionData(
+                  showTitle: false,
+                  value: 2,
+                  radius: 10,
+                  color: context.cs.surface.withAlpha(50),
+                  // cornerRadius: 10,
+                ),
+                // PieChartSectionData(value: 1, radius: 10),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+    // charts.add(customPieChart(expense, context, "Budget"));
+    // if (widget.summaryData['expense']!['value'] > 0) {
+    // }
+    // if (widget.summaryData['income']!['value'] > 0) {
+    //   charts.add(customPieChart(widget.summaryData, context, "Balance"));
+    // }
+    return charts.first;
+    // return Column(
+    //   mainAxisAlignment: MainAxisAlignment.end,
+    //   crossAxisAlignment: CrossAxisAlignment.end,
+    //   children: [
+    //     Container(
+    //       // decoration: BoxDecoration(border: Border.all()),
+    //       child: Expanded(
+    //         child: PageView(
+    //           onPageChanged:
+    //               (value) => setState(() {
+    //                 _currentPage = value;
+    //               }),
+    //           controller: _controller,
+    //           children: charts,
+    //         ),
+    //       ),
+    //     ),
+    //     PageIndicator(
+    //       pageLength: charts.length,
+    //       currentPage: _currentPage,
+    //     ),
+    //   ],
+    // );
   }
 
-  Widget customPieChart(Map<String, Map<String, dynamic>> totalCost, BuildContext context, String chartValue) {
+  Widget customPieChart(
+    Map<String, Map<String, dynamic>> totalCost,
+    BuildContext context,
+    String chartValue,
+  ) {
     double percentage;
     double dividend;
     double divisor;
@@ -1046,39 +1117,50 @@ class _SummaryChartState extends State<SummaryChart> {
     }
 
     percentage = dividend / divisor;
-    return Stack(alignment: Alignment.center, children: [
-      PieChart(
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        PieChart(
           duration: Durations.extralong1,
           curve: Curves.fastOutSlowIn,
           PieChartData(
-              centerSpaceColor: Theme.of(context).colorScheme.surfaceContainer,
-              centerSpaceRadius: 40,
-              startDegreeOffset: 270,
-              sections: [
-                PieChartSectionData(
-                  value: dividend < 0 ? 0 : dividend,
-                  color: barColor,
-                  radius: 8,
-                  showTitle: false,
-                  // titlePositionPercentageOffset: 1
-                ),
-                PieChartSectionData(
-                    value: divisor - dividend <= 0 ? 0 : divisor - dividend,
-                    color: Theme.of(context).colorScheme.primary.withAlpha(20),
-                    radius: 8,
-                    showTitle: false),
-              ])),
-      Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(
-          chartValue,
-          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+            centerSpaceColor: Theme.of(context).colorScheme.surfaceContainer,
+            centerSpaceRadius: 40,
+            startDegreeOffset: 270,
+            sections: [
+              PieChartSectionData(
+                value: dividend < 0 ? 0 : dividend,
+                color: barColor,
+                radius: 8,
+                showTitle: false,
+                // titlePositionPercentageOffset: 1
+              ),
+              PieChartSectionData(
+                value: divisor - dividend <= 0 ? 0 : divisor - dividend,
+                color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                radius: 8,
+                showTitle: false,
+              ),
+            ],
+          ),
+        ),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              chartValue,
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(
                 fontSize: 12,
               ),
+            ),
+            HideableText(
+              NumberFormat("#0%").format(percentage),
+              textStyle: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: 24),
+            ),
+          ],
         ),
-        HideableText(NumberFormat("#0%").format(percentage),
-            textStyle: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: 24))
-      ])
-    ]);
+      ],
+    );
   }
 }
 
@@ -1096,89 +1178,37 @@ class PageIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     // final actualPage = controller.page
     return Row(
-        spacing: 8,
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-          pageLength,
-          (int value) => AnimatedContainer(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-                color: currentPage == value
+      spacing: 8,
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        pageLength,
+        (int value) => AnimatedContainer(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color:
+                currentPage == value
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).colorScheme.primary.withAlpha(80),
-                shape: BoxShape.circle),
-            duration: Durations.medium1,
+            shape: BoxShape.circle,
           ),
-        ));
+          duration: Durations.medium1,
+        ),
+      ),
+    );
   }
 }
 
 class SearchTab extends StatelessWidget {
-  SearchTab({super.key});
+  const SearchTab({super.key});
 
-  final TextEditingController _searchController = TextEditingController();
-
-  Widget titleAppBar(BuildContext context) {
-    var hintColor = context.cs.primary.withAlpha(100);
-    return PopScope(
-      // onPopInvokedWithResult: (didPop, result) {
-      //   debugPrint("this triggered");
-      //   setState(() => _isSearchOpened = false);
-      // },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            style: context.tt.bodyMedium!.copyWith(fontSize: 12),
-            controller: _searchController,
-            autofocus: true,
-            decoration: InputDecoration(
-              focusedBorder: InputBorder.none,
-              border: InputBorder.none,
-              isDense: true,
-              prefixIcon: IconButton(
-                  iconSize: 24,
-                  onPressed: () {
-                    // setState(() => _isSearchOpened = false);
-                    context.appMod.clearFilter();
-                    debugPrint("call");
-                    context.listMod.toggleSearch();
-                  },
-                  icon: Icon(Icons.arrow_back)),
-              suffixIcon: IconButton(
-                  iconSize: 24,
-                  onPressed: () {
-                    _searchController.clear();
-                    context.appMod.updateFilterString("");
-                    // setState(() {});
-                  },
-                  icon: Icon(Icons.clear)),
-              hint: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.search, color: hintColor),
-                  Text(
-                    "Search for a cost item...",
-                    style: context.tt.bodyMedium!.copyWith(color: hintColor),
-                  ),
-                ],
-              ),
-            ),
-            onChanged: (value) {
-              debugPrint("controller value updated");
-              context.appMod.updateFilterString(value);
-            },
-          ),
-          bottomFilterAppBar(context)
-        ],
-      ),
-    );
-  }
-
-  Widget createCustomFilterChip(BuildContext context,
-      {IconData? icon, String text = "", Function()? onTap, bool isActive = false}) {
+  Widget createCustomFilterChip(
+    BuildContext context, {
+    IconData? icon,
+    String text = "",
+    Function()? onTap,
+    bool isActive = false,
+  }) {
     final borderRadius = BorderRadius.circular(12);
     return Flexible(
       fit: FlexFit.tight,
@@ -1191,10 +1221,11 @@ class SearchTab extends StatelessWidget {
             // height: toolbarHeight - 16,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                shape: BoxShape.rectangle,
-                border: BoxBorder.all(color: context.cs.primary, width: 0.5),
-                borderRadius: borderRadius,
-                color: isActive ? context.cs.primary.withAlpha(50) : context.cs.primary.withAlpha(10)),
+              shape: BoxShape.rectangle,
+              border: BoxBorder.all(color: context.cs.primary, width: 0.5),
+              borderRadius: borderRadius,
+              color: isActive ? context.cs.primary.withAlpha(50) : context.cs.primary.withAlpha(10),
+            ),
             child: Row(
               spacing: 10,
               mainAxisSize: MainAxisSize.min,
@@ -1205,7 +1236,7 @@ class SearchTab extends StatelessWidget {
                   color: context.cs.primary,
                   // size: toolbarHeight / 2 - 10,
                 ),
-                Text(text, style: context.tt.bodyMedium)
+                Text(text, style: context.tt.bodyMedium),
               ],
             ),
           ),
@@ -1215,53 +1246,65 @@ class SearchTab extends StatelessWidget {
   }
 
   Widget bottomFilterAppBar(BuildContext context) {
-    final isCategoryFiltered =
-        context.select((AppModel state) => state.filteredCategories.length < state.categories.length);
+    final isCategoryFiltered = context.select(
+      (AppModel state) => state.filteredCategories.length < state.categories.length,
+    );
     final isDateFiltered = context.select((AppModel state) => state.filterDateRange != null);
     // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
 
     return Padding(
-        padding: EdgeInsets.all(8),
-        child: Flex(
-          direction: Axis.horizontal,
-          spacing: 8,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            createCustomFilterChip(context, icon: Icons.category, text: "Category", onTap: () async {
+      padding: EdgeInsets.all(8),
+      child: Flex(
+        direction: Axis.horizontal,
+        spacing: 8,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          createCustomFilterChip(
+            context,
+            icon: Icons.category,
+            text: "Category",
+            onTap: () async {
               showDialog(
                 context: context,
                 builder: (context) {
                   return AlertDialog(
-                      title: Column(
-                        children: [
-                          Text("Filter Category", style: context.customTt.dateLabel),
-                          Text("selected category", style: context.customTt.numberFontMedium),
-                        ],
-                      ),
-                      content: ListView.builder(
-                        itemCount: 2,
-                        itemBuilder: (context, index) {},
-                      ));
+                    title: Column(
+                      children: [
+                        Text("Filter Category", style: context.customTt.dateLabel),
+                        Text("selected category", style: context.customTt.numberFontMedium),
+                      ],
+                    ),
+                    content: ListView.builder(
+                      itemCount: 2,
+                      itemBuilder: (context, index) {},
+                    ),
+                  );
                 },
               );
-            }, isActive: isCategoryFiltered),
-            createCustomFilterChip(context,
-                icon: Icons.date_range,
-                text: "Date",
-                // onTap: () async => showFilterDateDialog(),
-                isActive: isDateFiltered),
-            createCustomFilterChip(context,
-                icon: Icons.money,
-                text: "Amount",
-                // onTap: () async => showFilterAmountDialog(),
-                isActive: isDateFiltered),
-          ],
-        ));
+            },
+            isActive: isCategoryFiltered,
+          ),
+          createCustomFilterChip(
+            context,
+            icon: Icons.date_range,
+            text: "Date",
+            // onTap: () async => showFilterDateDialog(),
+            isActive: isDateFiltered,
+          ),
+          createCustomFilterChip(
+            context,
+            icon: Icons.money,
+            text: "Amount",
+            // onTap: () async => showFilterAmountDialog(),
+            isActive: isDateFiltered,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final hintColor = context.cs.primary.withAlpha(100);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
       child: PopScope(
@@ -1270,49 +1313,72 @@ class SearchTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
-              controller: _searchController,
-              autofocus: true,
-              decoration: InputDecoration(
-                focusedBorder: InputBorder.none,
-                border: InputBorder.none,
-                isDense: true,
-                prefixIcon: IconButton(
-                    iconSize: 24,
-                    onPressed: () {
-                      // setState(() => _isSearchOpened = false);
-                      context.appMod.clearFilter();
-                    },
-                    icon: Icon(Icons.arrow_back)),
-                suffixIcon: IconButton(
-                    iconSize: 24,
-                    onPressed: () {
-                      _searchController.clear();
-                      context.read<AppModel>().updateFilterString("");
-                      // setState(() {});
-                    },
-                    icon: Icon(Icons.clear)),
-                hint: Row(
-                  spacing: 8,
-                  children: [
-                    Icon(Icons.search, color: hintColor),
-                    Text(
-                      "Search for a cost item...",
-                      style: context.tt.bodyMedium!.copyWith(color: hintColor),
-                    ),
-                  ],
-                ),
-              ),
-              onChanged: (value) {
-                debugPrint("controller value updated");
-                context.appMod.updateFilterString(value);
-              },
-            ),
-            bottomFilterAppBar(context)
+            const SearchTabTextField(),
+            bottomFilterAppBar(context),
           ],
         ),
       ),
     );
     ;
+  }
+}
+
+class SearchTabTextField extends StatefulWidget {
+  const SearchTabTextField({
+    super.key,
+  });
+
+  @override
+  State<SearchTabTextField> createState() => _SearchTabTextFieldState();
+}
+
+class _SearchTabTextFieldState extends State<SearchTabTextField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _controller.addListener(() => context.appMod.updateFilterString(_controller.text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      style: context.tt.bodyMedium!.copyWith(fontSize: 12),
+      controller: _controller,
+      autofocus: true,
+      decoration: InputDecoration(
+        focusedBorder: InputBorder.none,
+        border: InputBorder.none,
+        isDense: true,
+        prefixIcon: IconButton(
+          iconSize: 24,
+          onPressed: () {
+            context.appMod.clearFilter();
+            context.listMod.toggleSearch();
+          },
+          icon: Icon(Icons.arrow_back),
+        ),
+        suffixIcon: IconButton(
+          iconSize: 24,
+          onPressed: () {
+            _controller.clear();
+            context.appMod.updateFilterString("");
+          },
+          icon: Icon(Icons.clear),
+        ),
+        hint: Row(
+          spacing: 8,
+          children: [
+            Icon(Icons.search, color: context.customCs.fadeColor2),
+            Text(
+              "Search items via description...",
+              style: context.tt.bodyMedium!.copyWith(color: context.customCs.fadeColor2),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

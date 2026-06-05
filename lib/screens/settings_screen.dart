@@ -1015,17 +1015,18 @@ class LoadDataSettingsTile extends StatelessWidget {
                       final result = await context.appMod.loadCostItemFromFile(
                         overwrite: option['overwrite'] as bool? ?? false,
                       );
-                      if (result == true) {
-                        context.nv.pop();
+                      if (result == null) return;
+                      if (result == "success") {
+                        context.nav.pop();
                         Flushbar(
                           message: option['flushMsg'] as String? ?? "",
                           flushbarPosition: FlushbarPosition.TOP,
                           duration: Duration(seconds: 3),
                           flushbarStyle: FlushbarStyle.GROUNDED,
                         ).show(context);
-                      } else if (result == false) {
+                      } else {
                         Flushbar(
-                          message: "Operation failed, cannot load data to ",
+                          message: "Operation failed. Error: $result ",
                           flushbarPosition: FlushbarPosition.TOP,
                           duration: Duration(seconds: 3),
                           flushbarStyle: FlushbarStyle.GROUNDED,
@@ -1045,56 +1046,6 @@ class LoadDataSettingsTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                // ReusableContainer(
-                //   height: 100,
-                //   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                //   onTap: () async {
-                //     final result = await context.appMod.loadCostItemFromFile(overwrite: false);
-                //     if (result == true) {
-                //       context.nv.pop();
-                //       Flushbar(
-                //         message: "Data appended",
-                //         flushbarPosition: FlushbarPosition.TOP,
-                //         duration: Duration(seconds: 3),
-                //         flushbarStyle: FlushbarStyle.GROUNDED,
-                //       ).show(context);
-                //     } else if (result == false) {
-                //       Flushbar(
-                //         message: "Operation failed, cannot load data to ",
-                //         flushbarPosition: FlushbarPosition.TOP,
-                //         duration: Duration(seconds: 3),
-                //         flushbarStyle: FlushbarStyle.GROUNDED,
-                //       );
-                //     }
-                //   },
-                //   child: Column(
-                //     spacing: 4,
-                //     crossAxisAlignment: CrossAxisAlignment.stretch,
-                //     children: [
-                //       Text("Append"),
-                //       Text(
-                //         "Import selected file's data into existing list.",
-                //         style: context.tt.bodySmall,
-                //       ),
-                //     ],
-                //   ),
-                // ),
-                // ReusableContainer(
-                //   height: 100,
-                //   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                //   onTap: () => context.appMod.loadCostItemFromFile(overwrite: true),
-                //   child: Column(
-                //     spacing: 4,
-                //     crossAxisAlignment: CrossAxisAlignment.stretch,
-                //     children: [
-                //       Text("Overwrite"),
-                //       Text(
-                //         "Replace existing list with selected file's data. Previous data will be deleted. ",
-                //         style: context.tt.bodySmall,
-                //       ),
-                //     ],
-                //   ),
-                // ),
               ],
             ),
           ),
