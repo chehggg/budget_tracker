@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
-import 'package:budget_tracker/models/list_model.dart';
+import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -469,9 +469,6 @@ class CostListBody extends StatelessWidget {
               child: CustomScrollView(
                 slivers: [
                   const SummaryTab(),
-                  // SliverToBoxAdapter(
-                  //   child: const SummaryTab(),
-                  // ),
                   const CostEntryList(),
                 ],
               ),
@@ -574,7 +571,7 @@ class _CostEntryListState extends State<CostEntryList> {
 
     final groupedCostItems = context.select((ListModel state) => state.outputCostItems);
     final dailySummary = context.select((ListModel state) => state.outputDailySummary);
-    debugPrint('length of today item: ${groupedCostItems[DateTime(2026, 6, 7)]?.length}');
+    
     if (!ready) {
       return SliverToBoxAdapter(
         child: CircularProgressIndicator(),
@@ -597,9 +594,9 @@ class _CostEntryListState extends State<CostEntryList> {
           itemBuilder: (context, index) {
             final spacing = context.read<ThemeModel>().spacingValue;
             final DateTime date = groupedCostItems.keys.elementAt(index);
+            final List<CostItem> costItems = groupedCostItems.values.elementAt(index);
+            
             final String dateString = date.formatPretty();
-            final List<CostItem> costItems = groupedCostItems.values.elementAt(index)
-              ..sort((a, b) => b.lastModified!.compareTo(a.lastModified!));
             final String dailyBudget = dailySummary[date]!.balance.customCurrencyFormat("RM");
 
             return Padding(
@@ -639,13 +636,13 @@ class _CostEntryListState extends State<CostEntryList> {
                       //   selectedThemeMode,
                       // );
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: GestureDetector(
-                          onTap:
-                              () => context.read<NavigationModel>().openForm(
-                                FormArgument(selectedCostItem: costItem),
-                              ),
+                      return GestureDetector(
+                        onTap:
+                            () => context.read<NavigationModel>().openForm(
+                              FormArgument(selectedCostItem: costItem),
+                            ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Row(
                             spacing: 12,
                             children: [
@@ -655,7 +652,7 @@ class _CostEntryListState extends State<CostEntryList> {
                               ),
                               Expanded(
                                 child: Text(
-                                  costItem.name,
+                                  "${costItem.name} ${costItem.lastModified}",
                                   // maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                   style: context.tt.bodyMedium,

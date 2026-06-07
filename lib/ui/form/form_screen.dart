@@ -5,8 +5,9 @@ import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/models/currency_model.dart';
-import 'package:budget_tracker/models/form_model.dart';
+import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -25,7 +26,12 @@ class CostItemFormScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => FormModel(costItem: arg.selectedCostItem),
+      create:
+          (context) => FormModel(
+            initCostItem: arg.selectedCostItem,
+            costItemRepo: context.read(),
+            savedItemRepo: context.read(),
+          ),
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
@@ -232,11 +238,11 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ],
                     ),
                   ),
-                  ...(context.formMod.costItem != null)
+                  ...(context.formMod.selectedCategory != null)
                       ? [
                         IconButton(
                           onPressed: () async {
-                            await context.formMod.addToFavorite(context.formMod.costItem!);
+                            await context.formMod.saveItem();
                             Flushbar(
                               duration: Durations.extralong1,
                               title: "Item added to favourite.",
@@ -262,7 +268,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                                 message:
                                     "Lorem Ipsum is simply dummy text of the printing and typesetting industry",
                               ).show(context);
-                              context.appMod.deleteCostItem(context.formMod.costItem!.uuid!);
+
+                              // context.appMod.deleteCostItem(context.formMod.initCostItem!.uuid!);
+                              context.formMod.deleteItem();
                               context.navMod.popFormToMain();
                             }
                           },
@@ -346,16 +354,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                         controller: _amountController,
                         onDone: () {
                           final result = context.formMod.formResult;
-                          debugPrint(result.toString());
                           if (result != null) {
-                            if (context.formMod.costItem != null) {
-                              context.appMod.updateCostItem(
-                                result,
-                                context.formMod.costItem!.uuid!,
-                              );
-                            } else {
-                              context.appMod.createCostItem(result);
-                            }
+                            context.formMod.submitForm();
                             context.navMod.popFormToMain();
                           }
                         },
@@ -462,7 +462,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
     final gridSize = context.select((ThemeModel state) => state.gridSize);
 
     // ignore: unused_local_variable
-    int favoriteLength = context.select((FormModel state) => state.favorites.length);
+    int favoriteLength = context.select((FormModel state) => state.savedItem.length);
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -585,18 +585,19 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                 ),
               if (_selectedFormGroup == FormGroup.favorite)
                 context.formMod.isLoaded
-                    ? context.formMod.favorites.isNotEmpty
+                    ? context.formMod.savedItem.isNotEmpty
                         ? SliverPadding(
                           padding: const EdgeInsets.only(top: 16.0),
                           sliver: SliverList.builder(
-                            itemCount: context.formMod.favorites.length,
+                            itemCount: context.formMod.savedItem.length,
                             itemBuilder: (context, index) {
-                              final CostItem item = context.formMod.favorites.elementAt(index);
-                              final CostItemCategory cat = CustomUtils().findInList(item.category)!;
+                              final SavedItem item = context.formMod.savedItem.elementAt(index);
+                              final CostItemCategory cat =
+                                  CustomUtils().findInList(item.category!)!;
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 6.0),
                                 child: ReusableContainer(
-                                  onTap: () => context.formMod.selectFavorite(item),
+                                  onTap: () => context.formMod.selectSavedItem(item),
                                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                   child: Row(
                                     spacing: 12,
@@ -606,7 +607,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                                         category: cat,
                                         inContainer: false,
                                       ),
-                                      Expanded(child: Text(item.name)),
+                                      Expanded(child: Text(item.title!)),
                                       Icon(Icons.favorite),
                                     ],
                                   ),

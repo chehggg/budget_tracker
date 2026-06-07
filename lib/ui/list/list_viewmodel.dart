@@ -2,6 +2,7 @@ import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 // import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class ListModel extends ChangeNotifier {
@@ -45,9 +46,14 @@ class ListModel extends ChangeNotifier {
   CostMetric get monthSummary => _totalSummary;
 
   Map<DateTime, List<CostItem>> get outputCostItems {
-    if (_searchText == "") return _dayGroupedCostItems;
-    final filteredItems = _dayGroupedCostItems.map(
-      (key, value) => MapEntry(key, value.where((item) => item.name.contains(_searchText)).toList()),
+    final sorted = _dayGroupedCostItems.map(
+      (key, value) =>
+          MapEntry(key, value.sorted((a, b) => b.lastModified!.compareTo(a.lastModified!))),
+    );
+    if (_searchText == "") return sorted;
+    final filteredItems = sorted.map(
+      (key, value) =>
+          MapEntry(key, value.where((item) => item.name.contains(_searchText)).toList()),
     );
     return Map.fromEntries(filteredItems.entries.where((entry) => entry.value.isNotEmpty));
   }
@@ -58,9 +64,11 @@ class ListModel extends ChangeNotifier {
 
   void getCurMonthData() {
     _dayGroupedCostItems = Map.fromEntries(
-      _costItemRepository.gbDateCostItems.entries.where(
-        (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
-      ),
+      _costItemRepository.gbDateCostItems.entries
+          .where(
+            (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
+          )
+          .sorted((a, b) => b.key.compareTo(a.key)),
     );
 
     _dailySummary = Map.fromEntries(

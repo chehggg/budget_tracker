@@ -1,5 +1,7 @@
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
-import 'package:budget_tracker/data/services/local_data_service.dart';
+import 'package:budget_tracker/data/repos/saved_item_repository.dart';
+import 'package:budget_tracker/data/services/cost_item_service.dart';
+import 'package:budget_tracker/data/services/saved_item_service.dart';
 import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
@@ -9,10 +11,16 @@ import 'package:provider/single_child_widget.dart';
 
 List<SingleChildWidget> get providers => [
   Provider(
-    create: (context) => LocalDataServices(),
+    create: (context) => CostItemServices(),
   ),
   Provider(
-    create: (context) => CostItemRepository(localDataServices: context.read()),
+    create: (context) => SavedItemServices(),
+  ),
+  Provider(
+    create: (context) => CostItemRepository(costItemServices: context.read()),
+  ),
+  Provider(
+    create: (context) => SavedItemRepository(savedItemServices: context.read()),
   ),
   ChangeNotifierProvider<ThemeModel>(
     create: (context) => ThemeModel(),

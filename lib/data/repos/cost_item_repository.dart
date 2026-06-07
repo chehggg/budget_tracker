@@ -2,14 +2,14 @@ import 'dart:collection';
 
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
-import 'package:budget_tracker/data/services/local_data_service.dart';
+import 'package:budget_tracker/data/services/cost_item_service.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class CostItemRepository {
-  CostItemRepository({required LocalDataServices localDataServices})
-    : _localDataService = localDataServices {
+  CostItemRepository({required CostItemServices costItemServices})
+    : _costItemService = costItemServices {
     _initFuture = _init();
   }
 
@@ -18,7 +18,7 @@ class CostItemRepository {
     debugPrint("repo init done");
   }
 
-  final LocalDataServices _localDataService;
+  final CostItemServices _costItemService;
 
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
@@ -41,7 +41,7 @@ class CostItemRepository {
   Future<void> _getCostItems() async {
     _costItems.clear();
     debugPrint('repo call service load data');
-    final Result<List<CostItem>> result = await _localDataService.loadFileCostItems();
+    final Result<List<CostItem>> result = await _costItemService.loadFileCostItems();
     switch (result) {
       case Ok():
         _costItems.addAll(result.value);
@@ -71,26 +71,30 @@ class CostItemRepository {
     }
   }
 
-  Future deleteCostItem(CostItem deletedItem) async {
+  Future<Result<void>> deleteCostItem(CostItem deletedItem) async {
     _costItems.removeWhere((item) => item.uuid == deletedItem.uuid);
     _gbDateCostItems[deletedItem.date]!.removeWhere((item) => item.uuid == deletedItem.uuid);
 
-    _localDataService.writeCostItemsToFile(_costItems);
+    return await _costItemService.writeCostItemsToFile(_costItems);
   }
 
-  Future updateCostItem() async {
-    _localDataService.writeCostItemsToFile(_costItems);
+  Future<Result<void>> updateCostItem(CostItem newItem) async {
+    deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));
+    createCostItem(newItem);
+
+    return await _costItemService.writeCostItemsToFile(_costItems);
   }
 
-  Future createCostItem(CostItem item) async {
-    (_gbDateCostItems[item.date] ??= []).add(item);
+  Future<Result<void>> createCostItem(CostItem item) async {
     _costItems.add(item);
+    (_gbDateCostItems[item.date] ??= []).insert(0,item);
 
-    _localDataService.writeCostItemsToFile(_costItems);
+    return await _costItemService.writeCostItemsToFile(_costItems);
   }
+
 
   Future<void> clearCostItem() async {
     _costItems.clear();
-    _localDataService.writeCostItemsToFile(_costItems);
+    _costItemService.writeCostItemsToFile(_costItems);
   }
 }

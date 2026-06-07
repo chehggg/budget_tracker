@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/models/form_model.dart';
-import 'package:budget_tracker/models/list_model.dart';
+import 'package:budget_tracker/ui/form/form_viewmodel.dart';
+import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';

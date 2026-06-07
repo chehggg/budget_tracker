@@ -860,68 +860,68 @@ class AppModel extends ChangeNotifier {
   //   _budgets.where
   // }
 
-  void updateCostItem(CostItemFormResult result, String itemUuid) {
-    final int initIndex = _costItems.indexWhere(
-      (costItem) => costItem.uuid == itemUuid,
-    );
-    final CostItem initCostItem = _costItems.firstWhere(
-      (costItem) => costItem.uuid == itemUuid,
-    );
-    final CostItem updatedCostItem = CostItem.update(
-      initCostItem,
-      result,
-      itemUuid,
-    );
-    // if (result.name.trim() != "") {
-    //   createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
-    // }
+  // void updateCostItem(CostItemFormResult result, String itemUuid) {
+  //   final int initIndex = _costItems.indexWhere(
+  //     (costItem) => costItem.uuid == itemUuid,
+  //   );
+  //   final CostItem initCostItem = _costItems.firstWhere(
+  //     (costItem) => costItem.uuid == itemUuid,
+  //   );
+  //   final CostItem updatedCostItem = CostItem.update(
+  //     initCostItem,
+  //     result,
+  //     itemUuid,
+  //   );
+  //   // if (result.name.trim() != "") {
+  //   //   createNewNoteHistory(NoteHistory(categoryName: result.category, note: result.name));
+  //   // }
 
-    // if date the same, no need to perform sorting
-    if (_costItems[initIndex].date == result.date) {
-      _costItems[initIndex] = updatedCostItem;
-    } else {
-      _costItems.removeAt(initIndex);
+  //   // if date the same, no need to perform sorting
+  //   if (_costItems[initIndex].date == result.date) {
+  //     _costItems[initIndex] = updatedCostItem;
+  //   } else {
+  //     _costItems.removeAt(initIndex);
 
-      int insertIndex = _costItems.length;
-      int i = initIndex - 1;
-      final DateTime updatedDate = updatedCostItem.date;
+  //     int insertIndex = _costItems.length;
+  //     int i = initIndex - 1;
+  //     final DateTime updatedDate = updatedCostItem.date;
 
-      while (i >= 0 && i < _costItems.length) {
-        // debugPrint("current i: $i");
+  //     while (i >= 0 && i < _costItems.length) {
+  //       // debugPrint("current i: $i");
 
-        final afterDate = _costItems[i].date;
+  //       final afterDate = _costItems[i].date;
 
-        if (updatedDate.isAfter(afterDate) || updatedDate.isAtSameMomentAs(afterDate)) {
-          if (i == 0) {
-            // first item, latest cost item
-            insertIndex = i;
-            break;
-          } else if (updatedDate.isBefore(_costItems[i - 1].date) ||
-              updatedDate.isAtSameMomentAs(_costItems[i - 1].date)) {
-            insertIndex = i;
-            break;
-          } else {
-            // prior date is
-            i--;
-          }
-        } else {
-          i++;
-        }
-      }
-      _costItems.insert(insertIndex, updatedCostItem);
+  //       if (updatedDate.isAfter(afterDate) || updatedDate.isAtSameMomentAs(afterDate)) {
+  //         if (i == 0) {
+  //           // first item, latest cost item
+  //           insertIndex = i;
+  //           break;
+  //         } else if (updatedDate.isBefore(_costItems[i - 1].date) ||
+  //             updatedDate.isAtSameMomentAs(_costItems[i - 1].date)) {
+  //           insertIndex = i;
+  //           break;
+  //         } else {
+  //           // prior date is
+  //           i--;
+  //         }
+  //       } else {
+  //         i++;
+  //       }
+  //     }
+  //     _costItems.insert(insertIndex, updatedCostItem);
 
-      removeMetric(initCostItem);
-      updateMetric(updatedCostItem);
-    }
+  //     removeMetric(initCostItem);
+  //     updateMetric(updatedCostItem);
+  //   }
 
-    deleteDailyCostItems(initCostItem);
-    addDailyCostItems(updatedCostItem);
-    updateCategoryList(initCostItem.date);
-    updateCategoryList(updatedCostItem.date);
+  //   deleteDailyCostItems(initCostItem);
+  //   addDailyCostItems(updatedCostItem);
+  //   updateCategoryList(initCostItem.date);
+  //   updateCategoryList(updatedCostItem.date);
 
-    notifyListeners();
-    writeCostItemsToFile();
-  }
+  //   notifyListeners();
+  //   writeCostItemsToFile();
+  // }
 
   void deleteCostItem(String costItemId) {
     final CostItem deletedCostItem =

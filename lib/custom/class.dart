@@ -43,8 +43,8 @@ class CostItem {
       lastCreated = DateTime.now(),
       lastModified = DateTime.now();
 
-  CostItem.update(CostItem initItem, CostItemFormResult result, String id)
-    : uuid = id,
+  CostItem.update(CostItem initItem, CostItemFormResult result)
+    : uuid = initItem.uuid,
       date = result.date,
       costType = result.costType,
       category = result.category,
@@ -61,8 +61,8 @@ class CostItem {
     'category': category,
     'amount': amount,
     'name': name,
-    'lastCreated': lastCreated?.formatFull(),
-    'lastModified': lastModified?.formatFull(),
+    'lastCreated': lastCreated?.toString(),
+    'lastModified': lastModified?.toString(),
   };
 
   CostItem.fromJson(Map<String, dynamic> json) :
@@ -72,8 +72,8 @@ class CostItem {
     category = json['category'] as String,
     costType = CostType.values.where((costType) => costType.name == json['costType']).first,
     date = (json['date'] as String).dateParseStd(),
-    lastCreated = (json['lastCreated'] as String).dateParseFull(),
-    lastModified = (json['lastModified'] as String).dateParseFull();
+    lastCreated = DateTime.tryParse(json['lastCreated'] as String),
+    lastModified = DateTime.tryParse(json['lastModified'] as String);
 
   bool get isExpense => costType == CostType.expense;
 
@@ -90,9 +90,9 @@ class CostItem {
       amount = double.tryParse(list[4] as String) ?? 0,
       name = list[5] as String,
       lastCreated =
-          list.elementAtOrNull(6) == null ? DateTime.now() : (list[6] as String?)?.dateParseFull(),
+          DateTime.tryParse(list.elementAtOrNull(6)) ?? DateTime.now(),
       lastModified =
-          list.elementAtOrNull(7) == null ? DateTime.now() : (list[7] as String).dateParseFull();
+          DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now();
 
   String getCurrencyValue(String currencySymbol, [bool? includeSign]) {
     final String value = amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);

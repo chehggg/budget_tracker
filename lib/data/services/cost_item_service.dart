@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-class LocalDataServices {
+class CostItemServices {
   Future<Result<List<CostItem>>> parseCostItemData(File file) async {
     try {
       final csvString = file.readAsStringSync();

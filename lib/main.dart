@@ -14,8 +14,8 @@ import 'package:flutter_localization/flutter_localization.dart';
 import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/screens/chart_screen.dart';
-import 'package:budget_tracker/screens/cost_form_screen.dart';
-import 'package:budget_tracker/ui/list/cost_list_screen.dart';
+import 'package:budget_tracker/ui/form/form_screen.dart';
+import 'package:budget_tracker/ui/list/list_screen.dart';
 import 'package:budget_tracker/screens/report_screen.dart';
 import 'package:budget_tracker/screens/settings_screen.dart';
 
