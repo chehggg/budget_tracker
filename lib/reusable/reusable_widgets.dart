@@ -54,7 +54,7 @@ class CategoryIconContainer extends StatelessWidget {
       return ReusableContainer(
         filled: true,
         child: SvgPicture.asset(
-          category.imagePath!,
+          category.imagePath?? "assets/images/placeholder.svg",
           colorFilter: ColorFilter.mode(context.cs.primary, BlendMode.srcIn),
           // foregroundColor == null ? null : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
           height: size,
@@ -63,7 +63,7 @@ class CategoryIconContainer extends StatelessWidget {
       );
     } else {
       return SvgPicture.asset(
-        category.imagePath!,
+        category.imagePath?? "assets/images/placeholder.svg",
         colorFilter: ColorFilter.mode(context.cs.primary, BlendMode.srcIn),
         // foregroundColor == null ? null : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
         height: size,

@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
-import 'package:budget_tracker/screens/cost_list_screen.dart';
+import 'package:budget_tracker/ui/list/cost_list_screen.dart';
 
 class ChartScreen extends StatefulWidget {
   const ChartScreen({super.key});

@@ -273,4 +273,19 @@ class CostMetric {
     expense = expense! - (costItem.costType == CostType.expense ? costItem.amount : 0);
     income = income! - (costItem.costType == CostType.income ? costItem.amount : 0);
   }
+
+  factory CostMetric.fromCostItemList(List<CostItem> items) {
+    double expense = 0;
+    double income = 0;
+
+    for (CostItem item in items) {
+      if (item.isExpense) {
+        expense += item.amount;
+      } else {
+        income += item.amount;
+      }
+    }
+
+    return CostMetric(expense: expense, income: income);
+  }
 }

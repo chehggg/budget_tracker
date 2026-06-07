@@ -6,15 +6,12 @@ import 'package:budget_tracker/models/list_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
-import 'package:calendar_date_picker2/calendar_date_picker2.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class CostListScreen extends StatelessWidget {
   const CostListScreen({super.key});
@@ -431,7 +428,7 @@ class CostListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => ListModel(),
+      create: (context) => ListModel(costItemRepo: context.read()),
       child: const CostListBody(),
     );
   }
@@ -448,17 +445,20 @@ class CostListBody extends StatelessWidget {
     final isBlurred = context.select((ListModel state) => state.isBlurred);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Text("OVERVIEW", style: context.customTt.dateLabel),
-        actions: [
-          IconButton(onPressed: context.listMod.toggleSearch, icon: Icon(Icons.search)),
-          IconButton(
-            onPressed: context.listMod.toggleBlur,
-            icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
-          ),
-          IconButton(onPressed: context.appMod.resetMetric, icon: Icon(Icons.refresh)),
-        ],
-      ),
+      appBar:
+          context.listMod.isSearchOpened
+              ? null
+              : AppBar(
+                title: Text("OVERVIEW", style: context.customTt.dateLabel),
+                actions: [
+                  IconButton(onPressed: context.listMod.toggleSearch, icon: Icon(Icons.search)),
+                  IconButton(
+                    onPressed: context.listMod.toggleBlur,
+                    icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
+                  ),
+                  IconButton(onPressed: context.appMod.resetMetric, icon: Icon(Icons.refresh)),
+                ],
+              ),
       body: SafeArea(
         child: Flex(
           direction: Axis.vertical,
@@ -488,6 +488,7 @@ class DateBreadcrumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final curMonth = context.select((ListModel state) => state.currentMonth);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -501,10 +502,10 @@ class DateBreadcrumb extends StatelessWidget {
         if (details.primaryVelocity == null) return;
         if (details.primaryVelocity! > 500) {
           // swipe right
-          context.read<AppModel>().changeYearMonth(false);
+          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
         } else if (details.primaryVelocity! < -500) {
           // swipe left
-          context.read<AppModel>().changeYearMonth(true);
+          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
         }
       },
       child: Container(
@@ -521,7 +522,7 @@ class DateBreadcrumb extends StatelessWidget {
                   splashFactory: NoSplash.splashFactory,
                 ),
                 onPressed: () {
-                  context.read<AppModel>().changeYearMonth(false);
+                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
                 },
                 icon: Icon(Icons.arrow_back_ios),
               ),
@@ -531,7 +532,7 @@ class DateBreadcrumb extends StatelessWidget {
                 child: Text(
                   DateFormat(
                     "yMMMM",
-                  ).format(context.select((AppModel state) => state.selectedYearMonth)),
+                  ).format(curMonth),
                   style: context.customTt.dateLabel!.copyWith(fontSize: 30),
                 ),
               ),
@@ -543,7 +544,7 @@ class DateBreadcrumb extends StatelessWidget {
                   splashFactory: NoSplash.splashFactory,
                 ),
                 onPressed: () {
-                  context.read<AppModel>().changeYearMonth(true);
+                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
                 },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
@@ -565,10 +566,20 @@ class CostEntryList extends StatefulWidget {
 class _CostEntryListState extends State<CostEntryList> {
   @override
   Widget build(BuildContext context) {
-    final groupedCostItems = context.select((AppModel state) => state.currentMonthDailyCostItems);
+    // final groupedCostItems = context.select((AppModel state) => state.currentMonthDailyCostItems);
+    final ready = context.select((ListModel state) => state.ready);
     // context.watch<AppModel>();
+    debugPrint('ready: $ready');
     final appModelFunction = context.read<AppModel>();
-    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
+
+    final groupedCostItems = context.select((ListModel state) => state.outputCostItems);
+    final dailySummary = context.select((ListModel state) => state.outputDailySummary);
+    debugPrint('length of today item: ${groupedCostItems[DateTime(2026, 6, 7)]?.length}');
+    if (!ready) {
+      return SliverToBoxAdapter(
+        child: CircularProgressIndicator(),
+      );
+    }
     if (groupedCostItems.isEmpty) {
       return SliverToBoxAdapter(
         child: SizedBox(
@@ -589,16 +600,12 @@ class _CostEntryListState extends State<CostEntryList> {
             final String dateString = date.formatPretty();
             final List<CostItem> costItems = groupedCostItems.values.elementAt(index)
               ..sort((a, b) => b.lastModified!.compareTo(a.lastModified!));
-            final String dailyBudget = appModelFunction.customCurrencyFormat(
-              context.watch<AppModel>().getDailyTotal(date),
-              false,
-              true,
-            );
+            final String dailyBudget = dailySummary[date]!.balance.customCurrencyFormat("RM");
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 4.0),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: context.cs.surfaceContainer.withAlpha(0),
@@ -625,14 +632,15 @@ class _CostEntryListState extends State<CostEntryList> {
                       height: 10,
                     ),
                     ...costItems.map((costItem) {
-                      final CostItemCategory category =
-                          appModelFunction.getCategoryEntry(costItem.category)!;
-                      final ColorScheme categoryColorScheme = category.colorScheme(
-                        selectedThemeMode,
-                      );
+                      final cat = CustomUtils().findInList(costItem.category);
+                      // final CostItemCategory category =
+                      //     appModelFunction.getCategoryEntry(costItem.category)!;
+                      // final ColorScheme categoryColorScheme = category.colorScheme(
+                      //   selectedThemeMode,
+                      // );
 
                       return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         child: GestureDetector(
                           onTap:
                               () => context.read<NavigationModel>().openForm(
@@ -641,19 +649,9 @@ class _CostEntryListState extends State<CostEntryList> {
                           child: Row(
                             spacing: 12,
                             children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: BoxBorder.all(color: context.cs.primary.withAlpha(100)),
-                                ),
-                                child: category.createIcon(
-                                  22,
-                                  selectedThemeMode,
-                                  context.cs.primary,
-                                  // categoryColorScheme.primaryContainer,
-                                  // categoryColorScheme.onPrimaryContainer
-                                ),
+                              CategoryIconContainer(
+                                category: cat ?? CostItemCategory(name: "Placeholder"),
+                                size: 20,
                               ),
                               Expanded(
                                 child: Text(
@@ -696,108 +694,16 @@ class SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final expense = context.select(
-      (AppModel state) =>
-          state.totalCurrentMonthExpense.customCurrencyFormat('RM', useSuffix: true),
-    );
-    final income = context.select(
-      (AppModel state) => state.totalCurrentMonthIncome.customCurrencyFormat('RM', useSuffix: true),
-    );
-    final balance = context.select(
-      (AppModel state) =>
-          state.totalCurrentMonthBalance.customCurrencyFormat('RM', useSuffix: true),
-    );
+    final monthMetrics = context.select((ListModel state) => state.monthSummary);
+    final expense = monthMetrics.expense ?? 0;
+    final income = monthMetrics.income ?? 0;
+    final balance = monthMetrics.balance;
 
     return SliverPersistentHeader(
       delegate: SummaryHeaderDelegate(expense: expense, income: income, balance: balance),
       pinned: true,
     );
-    // return Padding(
-    //   padding: const EdgeInsets.all(12.0),
-    //   child: Container(
-    //     decoration: BoxDecoration(
-    //       color: context.customCs.flipCardColor,
-    //       borderRadius: BorderRadius.circular(12),
-    //     ),
-    //     child: Row(
-    //       mainAxisSize: MainAxisSize.max,
-    //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    //       children: [
-    //         Column(
-    //           crossAxisAlignment: CrossAxisAlignment.start,
-    //           children: [
-    //             Padding(
-    //               padding: const EdgeInsets.fromLTRB(20, 20, 10, 10),
-    //               child: expenseMetricCard(context, "Balance", balance, isBig: true),
-    //             ),
-    //             Padding(
-    //               padding: const EdgeInsets.fromLTRB(20, 0, 0, 20),
-    //               child: Row(
-    //                 mainAxisSize: MainAxisSize.max,
-    //                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-    //                 children: [
-    //                   expenseMetricCard(
-    //                     context,
-    //                     "Income",
-    //                     expense,
-    //                   ),
-    //                   const SizedBox(
-    //                     width: 30,
-    //                   ),
-    //                   expenseMetricCard(
-    //                     context,
-    //                     "Expense",
-    //                     income,
-    //                   ),
-    //                 ],
-    //               ),
-    //             ),
-    //           ],
-    //         ),
-    //       ],
-    //     ),
-    //   ),
-    // );
   }
-
-  // Widget expenseMetricCard(
-  //   BuildContext context,
-  //   String labelText,
-  //   String value, {
-  //   bool isBig = false,
-  // }) {
-  //   final appColorTheme = context.cs;
-  //   return Column(
-  //     mainAxisAlignment: MainAxisAlignment.start,
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Row(
-  //         // label
-  //         mainAxisSize: MainAxisSize.min,
-  //         spacing: 12,
-  //         children: [
-  //           Text(
-  //             labelText,
-  //             style: context.customTt.numberLabel!.copyWith(
-  //               color: appColorTheme.onSecondary.withAlpha(200),
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //       HideableText(
-  //         value,
-  //         isCurrency: true,
-  //         textStyle:
-  //             isBig
-  //                 ? context.customTt.numberFontLarge!.copyWith(
-  //                   height: 1,
-  //                   color: context.customCs.onFlipCard,
-  //                 )
-  //                 : context.customTt.numberFontMedium!.copyWith(color: context.customCs.onFlipCard),
-  //       ),
-  //     ],
-  //   );
-  // }
 }
 
 class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
@@ -807,7 +713,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.balance,
   });
 
-  final String expense, income, balance;
+  final double expense, income, balance;
 
   Widget expenseMetricCard(
     BuildContext context, {
@@ -845,6 +751,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
         Opacity(
           opacity: !isBig ? lerpDouble(1, 0, Interval(0, 0.8).transform(progress))! : 1,
           child: HideableText(
+            maxLine: 1,
             value,
             isCurrency: true,
             textStyle:
@@ -854,7 +761,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                       fontSize: lerpDouble(50, 30, progress),
                       color: context.customCs.onFlipCard,
                     )
-                    : context.customTt.numberFontMedium!.copyWith(
+                    : context.customTt.numberFontSmall!.copyWith(
                       height: lerpDouble(1.2, 0.01, Interval(0.2, 0.8).transform(progress)),
                       fontSize: lerpDouble(22, 12, progress),
                       color: context.customCs.onFlipCard,
@@ -892,7 +799,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                       context,
                       labelText: "Balance",
                       progress: progress,
-                      value: balance,
+                      value: NumberFormat.compactCurrency(symbol: "RM").format(balance),
                       isBig: true,
                     ),
                     Row(
@@ -905,7 +812,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                             context,
                             labelText: "Expense",
                             progress: progress,
-                            value: expense,
+                            value: NumberFormat.compactCurrency(symbol: "RM").format(expense),
                             isBig: false,
                           ),
                         ),
@@ -914,7 +821,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                             context,
                             labelText: "Income",
                             progress: progress,
-                            value: income,
+                            value: NumberFormat.compactCurrency(symbol: "RM").format(income),
                             isBig: false,
                           ),
                         ),
@@ -1305,17 +1212,20 @@ class SearchTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-      child: PopScope(
-        onPopInvokedWithResult: (didPop, result) {},
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SearchTabTextField(),
-            bottomFilterAppBar(context),
-          ],
+    return Container(
+      decoration: BoxDecoration(color: context.cs.surface),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+        child: PopScope(
+          onPopInvokedWithResult: (didPop, result) {},
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SearchTabTextField(),
+              bottomFilterAppBar(context),
+            ],
+          ),
         ),
       ),
     );
@@ -1339,7 +1249,7 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _controller.addListener(() => context.appMod.updateFilterString(_controller.text));
+    _controller.addListener(() => context.listMod.updateSearch(_controller.text));
   }
 
   @override
@@ -1355,7 +1265,7 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
         prefixIcon: IconButton(
           iconSize: 24,
           onPressed: () {
-            context.appMod.clearFilter();
+            // context.appMod.clearFilter();
             context.listMod.toggleSearch();
           },
           icon: Icon(Icons.arrow_back),
@@ -1364,7 +1274,7 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
           iconSize: 24,
           onPressed: () {
             _controller.clear();
-            context.appMod.updateFilterString("");
+            context.listMod.updateSearch("");
           },
           icon: Icon(Icons.clear),
         ),

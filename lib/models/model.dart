@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
+import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
@@ -24,10 +25,12 @@ import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 
 class AppModel extends ChangeNotifier {
-  AppModel() {
+  AppModel({required CostItemRepository costItemRepository})
+    : _costItemRepository = costItemRepository {
     initialize();
   }
 
+  final CostItemRepository _costItemRepository;
   final sharedPref = SharedPreferencesAsync();
 
   List<Budget> _budgets = [];
@@ -45,7 +48,6 @@ class AppModel extends ChangeNotifier {
   DateRangeFilterType _dateRangeFilter = DateRangeFilterType.none;
   DateRangeFilterType get dateRangeFilter => _dateRangeFilter;
 
-  
   bool get isFilteredActive =>
       _filteredString != null ||
       _filteredCategories.length < _categories.length ||
@@ -581,7 +583,8 @@ class AppModel extends ChangeNotifier {
     }
 
     // get file for cost items
-    await loadCostItemOnStart();
+    // await _costItemRepository.getCostItems();
+    // _costItems = _costItemRepository.costItems;
 
     // get budgets
     // await readBudget();
@@ -626,8 +629,8 @@ class AppModel extends ChangeNotifier {
 
   void updateAppModel(ThemeModel themeModel) {
     //change datetime and number locale
-    _localeName = themeModel.appLocale.toLanguageTag();
-    debugPrint("newLocale: $_localeName");
+    // _localeName = themeModel.appLocale.toLanguageTag();
+    // debugPrint("newLocale: $_localeName");
     notifyListeners();
   }
 
@@ -1114,8 +1117,6 @@ class AppModel extends ChangeNotifier {
       debugPrint('Error when writing data to firebase: $e');
     }
   }
-
-
 }
 
 class RelativeDateRange {
@@ -1200,6 +1201,4 @@ class Budget {
     data['categories'] = jsonEncode(categories);
     return data;
   }
-
-
 }
