@@ -14,6 +14,7 @@ class CostItem {
     this.name,
     this.amount,
     this.category, {
+    this.categoryId,
     this.uuid,
     this.image,
     this.lastCreated,
@@ -24,6 +25,7 @@ class CostItem {
 
   String? uuid;
   String category;
+  String? categoryId;
   String? image;
   String name;
   double amount;
@@ -37,7 +39,8 @@ class CostItem {
     : uuid = id,
       date = result.date,
       costType = result.costType,
-      category = result.category,
+      category = result.category.name!,
+      categoryId = result.category.id,
       amount = result.amount,
       name = result.name,
       lastCreated = DateTime.now(),
@@ -47,7 +50,8 @@ class CostItem {
     : uuid = initItem.uuid,
       date = result.date,
       costType = result.costType,
-      category = result.category,
+      categoryId = result.category.name!,
+      category = result.category.id,
       amount = result.amount,
       name = result.name,
       lastCreated = initItem.lastCreated,
@@ -59,6 +63,7 @@ class CostItem {
     'date': date.formatStd(),
     'costType': costType.name,
     'category': category,
+    'categoryId': categoryId,
     'amount': amount,
     'name': name,
     'lastCreated': lastCreated?.toString(),
@@ -70,12 +75,15 @@ class CostItem {
     name = json['name'] as String,
     amount = json['amount'] as double,
     category = json['category'] as String,
+    categoryId = json['categoryId'] as String,
     costType = CostType.values.where((costType) => costType.name == json['costType']).first,
     date = (json['date'] as String).dateParseStd(),
     lastCreated = DateTime.tryParse(json['lastCreated'] as String),
     lastModified = DateTime.tryParse(json['lastModified'] as String);
 
   bool get isExpense => costType == CostType.expense;
+
+  double get signedAmount => isExpense ? 0 - amount: amount;
 
   List<dynamic> toCsv() {
     final jsonObject = toJson();
@@ -87,12 +95,13 @@ class CostItem {
       date = (list[1] as String).dateParseStd(),
       costType = CostType.values.where((costType) => costType.name == list[2] as String).first,
       category = list[3] as String,
-      amount = double.tryParse(list[4] as String) ?? 0,
-      name = list[5] as String,
+      categoryId = list[4] as String,
+      amount = double.tryParse(list[5] as String) ?? 0,
+      name = list[6] as String,
       lastCreated =
-          DateTime.tryParse(list.elementAtOrNull(6)) ?? DateTime.now(),
+          DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now(),
       lastModified =
-          DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now();
+          DateTime.tryParse(list.elementAtOrNull(8)) ?? DateTime.now();
 
   String getCurrencyValue(String currencySymbol, [bool? includeSign]) {
     final String value = amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);
@@ -119,7 +128,7 @@ class CostItemFormResult {
   });
 
   String name;
-  String category;
+  CostItemCategory category;
   DateTime date;
   CostType costType;
   double amount;

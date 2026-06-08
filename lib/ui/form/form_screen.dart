@@ -10,6 +10,7 @@ import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/ui/form/saved_item_option_enum.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -242,13 +243,19 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ? [
                         IconButton(
                           onPressed: () async {
-                            await context.formMod.saveItem();
-                            Flushbar(
-                              duration: Durations.extralong1,
-                              title: "Item added to favourite.",
-                              message:
-                                  "Lorem Ipsum is simply dummy text of the printing and typesetting industry",
-                            ).show(context);
+                            final bool? response = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => SavedItemDialog(),
+                            );
+                            if (response == true) {
+                              context.formMod.saveItem();
+                              Flushbar(
+                                duration: Duration(seconds: 2),
+                                title: "Hooray!",
+                                message:
+                                    "Item added to saved successfully.",
+                              ).show(context);
+                            }
                           },
                           icon: Icon(
                             Icons.favorite,
@@ -257,20 +264,19 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                         ),
                         IconButton(
                           onPressed: () async {
-                            final bool? deleteResponse = await showDialog<bool?>(
+                            final bool? deleteResponse = await showDialog<bool>(
                               context: context,
                               builder: (context) => const DeleteItemDialog(),
                             );
                             if (deleteResponse == true) {
+                              context.formMod.deleteItem();
                               Flushbar(
-                                duration: Durations.extralong1,
-                                title: "Item deleted.",
+                                duration: Duration(seconds: 2),
+                                title: "Bye bye!",
                                 message:
-                                    "Lorem Ipsum is simply dummy text of the printing and typesetting industry",
+                                    "Item deleted successfully.",
                               ).show(context);
 
-                              // context.appMod.deleteCostItem(context.formMod.initCostItem!.uuid!);
-                              context.formMod.deleteItem();
                               context.navMod.popFormToMain();
                             }
                           },
@@ -374,6 +380,53 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   }
 }
 
+class SavedItemDialog extends StatefulWidget {
+  const SavedItemDialog({
+    super.key,
+  });
+
+  @override
+  State<SavedItemDialog> createState() => _SavedItemDialogState();
+}
+
+class _SavedItemDialogState extends State<SavedItemDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _controller.addListener(() => context.formMod.updateSavedItemTitle);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final options = context.select((FormModel state) => state.saveOptions);
+    return AlertDialog(
+      title: Text("Saved Item Name"),
+      content: Column(
+        children: [
+          TextFormField(
+            controller: _controller,
+          ),
+          Text("Preserve value for"),
+          ...SavedItemOption.values.map(
+            (option) => FilterChip(
+              label: Text(option.name),
+              selected: options.contains(option),
+              onSelected: (selected) => context.formMod.updateSaveOption(option, selected),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        const DismissTextButton(text: "Cancel"),
+        const AffirmativeTextButton(text: "Save"),
+      ],
+    );
+  }
+}
+
 class DeleteItemDialog extends StatelessWidget {
   const DeleteItemDialog({
     super.key,
@@ -385,22 +438,8 @@ class DeleteItemDialog extends StatelessWidget {
       title: Text("Delete this item?"),
       content: Text("Warning: You cannot undo this action."),
       actions: [
-        TextButton(
-          onPressed: () => context.nav.pop(false),
-          child: Text("Cancel"),
-        ),
-        TextButton(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.error,
-          ),
-          onPressed: () => context.nav.pop(true),
-          child: Text(
-            "Delete",
-            style: context.tt.bodyMedium!.copyWith(
-              color: context.cs.error,
-            ),
-          ),
-        ),
+        const DismissTextButton(text: "Cancel"),
+        const PrimaryNegativeTextButton(text: "Delete"),
       ],
     );
   }
