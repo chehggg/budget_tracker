@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
@@ -456,7 +457,7 @@ class CostListBody extends StatelessWidget {
                     onPressed: context.listMod.toggleBlur,
                     icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
                   ),
-                  IconButton(onPressed: context.appMod.resetMetric, icon: Icon(Icons.refresh)),
+                  IconButton(onPressed: context.listMod.getCurMonthData, icon: Icon(Icons.refresh)),
                 ],
               ),
       body: SafeArea(
@@ -563,15 +564,12 @@ class CostEntryList extends StatefulWidget {
 class _CostEntryListState extends State<CostEntryList> {
   @override
   Widget build(BuildContext context) {
-    // final groupedCostItems = context.select((AppModel state) => state.currentMonthDailyCostItems);
     final ready = context.select((ListModel state) => state.ready);
-    // context.watch<AppModel>();
     debugPrint('ready: $ready');
-    final appModelFunction = context.read<AppModel>();
 
     final groupedCostItems = context.select((ListModel state) => state.outputCostItems);
     final dailySummary = context.select((ListModel state) => state.outputDailySummary);
-    
+
     if (!ready) {
       return SliverToBoxAdapter(
         child: CircularProgressIndicator(),
@@ -595,9 +593,9 @@ class _CostEntryListState extends State<CostEntryList> {
             final spacing = context.read<ThemeModel>().spacingValue;
             final DateTime date = groupedCostItems.keys.elementAt(index);
             final List<CostItem> costItems = groupedCostItems.values.elementAt(index);
-            
+
             final String dateString = date.formatPretty();
-            final String dailyBudget = dailySummary[date]!.balance.customCurrencyFormat("RM");
+            final double daySummary = dailySummary[date]!.balance;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 4.0),
@@ -617,10 +615,10 @@ class _CostEntryListState extends State<CostEntryList> {
                         Text(dateString, style: context.customTt.dateLabel!.copyWith()),
                         // style: context.tt.bodyLarge),
                         HideableText(
-                          dailyBudget,
+                          NumberFormat.currency(symbol: "RM").format(daySummary),
                           isCurrency: true,
                           textStyle: context.customTt.numberFontMedium!.copyWith(
-                            color: dailyBudget[0] == "-" ? Colors.redAccent : Colors.greenAccent,
+                            color: daySummary < 0 ? Colors.redAccent : Colors.greenAccent,
                           ),
                         ),
                       ],
@@ -630,11 +628,6 @@ class _CostEntryListState extends State<CostEntryList> {
                     ),
                     ...costItems.map((costItem) {
                       final cat = CustomUtils().findInList(costItem.category);
-                      // final CostItemCategory category =
-                      //     appModelFunction.getCategoryEntry(costItem.category)!;
-                      // final ColorScheme categoryColorScheme = category.colorScheme(
-                      //   selectedThemeMode,
-                      // );
 
                       return GestureDetector(
                         onTap:
@@ -659,7 +652,7 @@ class _CostEntryListState extends State<CostEntryList> {
                                 ),
                               ),
                               HideableText(
-                                appModelFunction.getFormattedCostItemValue(costItem),
+                                NumberFormat.currency(symbol: "RM").format(costItem.signedAmount),
                                 isCurrency: true,
                                 textStyle: context.customTt.numberFontSmall!.copyWith(
                                   color:
@@ -904,9 +897,9 @@ class _SummaryChartState extends State<SummaryChart> {
   Widget build(BuildContext context) {
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
-    final expense = context.select(
-      (AppModel state) => state.totalCurrentMonthExpense.customCurrencyFormat('RM'),
-    );
+    // final expense = context.select(
+    //   (AppModel state) => state.totalCurrentMonthExpense.customCurrencyFormat('RM'),
+    // );
     // final month = context.select((AppModel state) => state.selectedYearMonth);
     final List<Widget> charts = [];
 
@@ -1226,7 +1219,6 @@ class SearchTab extends StatelessWidget {
         ),
       ),
     );
-    ;
   }
 }
 
@@ -1286,6 +1278,93 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class FilterAmountDialog extends StatefulWidget {
+  const FilterAmountDialog({super.key});
+
+  @override
+  State<FilterAmountDialog> createState() => FilterAmountDialogState();
+}
+
+class FilterAmountDialogState extends State<FilterAmountDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Amount Filter"),
+      content: RangeSlider(
+        values: RangeValues(context.listMod.minAmount, context.listMod.maxAmount),
+        onChanged: (values) {},
+      ),
+      actions: [
+        const DismissTextButton(text: "Cancel"),
+        const AffirmativeTextButton(text: "Save"),
+      ],
+    );
+  }
+}
+
+class CategoryFilterDialog extends StatefulWidget {
+  const CategoryFilterDialog({super.key});
+
+  @override
+  State<CategoryFilterDialog> createState() => _CategoryFilterDialogState();
+}
+
+class _CategoryFilterDialogState extends State<CategoryFilterDialog> {
+  @override
+  Widget build(BuildContext context) {
+    final categories = defaultCostItemCategories;
+    final filteredCategories = context.select((ListModel state) => state.filteredCategories);
+    final bool allItemSelected = categories.length == filteredCategories.length;
+    return AlertDialog(
+      title: Text("Category Filter"),
+      content: CustomScrollView(
+        slivers: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(allItemSelected ? "Unselect All" : "Select All"),
+              ),
+              Checkbox(
+                value: allItemSelected,
+                onChanged: (value) {
+                  if (value != null) {
+                    context.listMod.toggleAllCategoryFilter(value);
+                  }
+                },
+              ),
+            ],
+          ),
+          SliverList.builder(
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories.elementAt(index);
+              return Row(
+                spacing: 12,
+                children: [
+                  CategoryIconContainer(category: category),
+                  Expanded(child: Text(category.name!)),
+                  Checkbox(
+                    value: filteredCategories.contains(category.id!),
+                    onChanged: (value) {
+                      if (value != null) {
+                        context.listMod.toggleCategoryFilter(category.id!, value);
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+      actions: [
+        const DismissTextButton(text: "Cancel"),
+        const AffirmativeTextButton(text: "Save"),
+      ],
     );
   }
 }

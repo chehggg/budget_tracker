@@ -1,0 +1,5 @@
+- add a dialog when saving new item (to input title)
+- add a adding category option
+- create export option for whole config
+- update main pages (list & form so they use the updated framework)
+- things to export: category, costItems, saved items, theme settings

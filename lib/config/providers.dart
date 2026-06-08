@@ -6,6 +6,7 @@ import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -33,6 +34,9 @@ List<SingleChildWidget> get providers => [
   ),
   ChangeNotifierProvider<AppModel>(
     create: (context) => AppModel(costItemRepository: context.read()),
+  ),
+  ChangeNotifierProvider<ListModel>(
+    create: (context) => ListModel(costItemRepo: context.read()),
   ),
   //  ChangeNotifierProvider(
   //     create: (context) => ListModel(costItemRepo: context.read()),

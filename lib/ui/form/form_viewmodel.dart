@@ -6,6 +6,7 @@ import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
+import 'package:budget_tracker/ui/form/saved_item_option_enum.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -23,14 +24,14 @@ class FormModel extends ChangeNotifier {
   final CostItem? initCostItem;
   final CostItemRepository _costItemRepository;
   final SavedItemRepository _savedItemRepository;
-
+  
   CostItemFormResult? get formResult {
     if (selectedCategory == null) return null;
     return CostItemFormResult(
       name: _itemDesc,
       date: _date,
       costType: _type,
-      category: _selectedCategory!.name!,
+      category: _selectedCategory!,
       amount: _amount,
     );
   }
@@ -42,6 +43,9 @@ class FormModel extends ChangeNotifier {
 
   CostItemCategory? _selectedCategory;
   CostItemCategory? get selectedCategory => _selectedCategory;
+
+  List<SavedItemOption> _saveOptions = [SavedItemOption.amount, SavedItemOption.description];
+  UnmodifiableListView<SavedItemOption> get saveOptions => UnmodifiableListView(_saveOptions);
 
   double _amount = 0;
   double get amount => _amount;
@@ -101,6 +105,20 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateSavedItemTitle(String value) {
+    _savedTitle = value;
+    notifyListeners();
+  }
+
+  void updateSaveOption(SavedItemOption option, bool value) {
+    if (value) {
+      _saveOptions.add(option);
+    } else {
+      _saveOptions.remove(option);
+    }
+    notifyListeners();
+  }
+
   void populateInitValue() {
     debugPrint('initializing form model');
 
@@ -120,26 +138,6 @@ class FormModel extends ChangeNotifier {
     _costItemRepository.deleteCostItem(initCostItem!);
   }
 
-  // Future<void> loadFavorite() async {
-  //   final pref = SharedPreferencesAsync();
-  //   try {
-  //     final String? prefString = await pref.getString("savedItems");
-  //     if (prefString == null) return;
-
-  //     _savedItems.clear();
-  //     _savedItems.addAll(
-  //       (jsonDecode(prefString) as List<dynamic>).map((item) => CostItem.fromJson(item)).toList(),
-  //     );
-
-  //     notifyListeners();
-  //   } catch (e) {
-  //     debugPrint("Error loading saved items from shared pref, error: ${e.toString()}");
-  //   }
-
-  //   _isLoaded = true;
-  //   notifyListeners();
-  // }
-
   Future<Result<void>> submitForm() async {
     if (formResult != null) {
       if (initCostItem != null) {
@@ -154,8 +152,17 @@ class FormModel extends ChangeNotifier {
   }
 
   Future<void> saveItem() async {
-    _savedItemRepository.addToSaved(
-      SavedItem.fromFormResult(Uuid().v4(), _savedTitle, formResult!),
+    await _savedItemRepository.addToSaved(
+      // SavedItem.fromFormResult(Uuid().v4(), _savedTitle, formResult!),
+      SavedItem(
+        id: Uuid().v4(),
+        title: _savedTitle,
+        category: formResult!.category.id,
+        costType: formResult!.costType,
+        amount: _saveOptions.contains(SavedItemOption.amount) ? formResult!.amount : null,
+        description: _saveOptions.contains(SavedItemOption.description) ? formResult!.name : null,
+        date: _saveOptions.contains(SavedItemOption.date) ? formResult!.date : null,
+      ),
     );
   }
 }

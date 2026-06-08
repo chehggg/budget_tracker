@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 // import 'package:budget_tracker/custom/extensions.dart';
@@ -35,6 +38,9 @@ class ListModel extends ChangeNotifier {
   bool _isBlurred = false;
   bool get isBlurred => _isBlurred;
 
+  List<String> _filteredCategories = [];
+  UnmodifiableListView<String> get filteredCategories => UnmodifiableListView(_filteredCategories);
+
   String _searchText = "";
 
   Map<DateTime, List<CostItem>> _dayGroupedCostItems = {};
@@ -53,7 +59,11 @@ class ListModel extends ChangeNotifier {
     if (_searchText == "") return sorted;
     final filteredItems = sorted.map(
       (key, value) =>
-          MapEntry(key, value.where((item) => item.name.contains(_searchText)).toList()),
+          MapEntry(key, value.where((item) {
+            final bool searchQuery = _searchText.isNotEmpty ? item.name.contains(_searchText) : true;  
+            final bool categoryQuery = _filteredCategories.isNotEmpty ? _filteredCategories.contains(item.category) : true;  
+            return searchQuery && categoryQuery;
+          }).toList()),
     );
     return Map.fromEntries(filteredItems.entries.where((entry) => entry.value.isNotEmpty));
   }
@@ -115,4 +125,25 @@ class ListModel extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  void toggleCategoryFilter(String id, bool selected) {
+    if (selected) {
+      _filteredCategories.add(id);
+    } else {
+      _filteredCategories.remove(id);
+    }
+    notifyListeners();
+  }
+
+  void toggleAllCategoryFilter(bool selected) {
+    if (selected) {
+      _filteredCategories.addAll(defaultCostItemCategories.map((el) => el.id!));
+    } else {
+      _filteredCategories.clear();
+    }
+    notifyListeners();
+  }
+
+  double get maxAmount => _costItemRepository.costItems.fold(0, (init, item) => max(init,item.signedAmount));
+  double get minAmount => _costItemRepository.costItems.fold(0, (init, item) => min(init,item.signedAmount));
 }
