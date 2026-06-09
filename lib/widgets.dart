@@ -307,144 +307,122 @@ class MonthSelectorDialog extends StatefulWidget {
 }
 
 class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
-  int _selectedYear = 2000;
-  int _selectedMonth = 1;
+  late DateTime _selectedDateTime;
 
   @override
   void initState() {
     super.initState();
-    _selectedYear = context.read<AppModel>().selectedYearMonth.year;
-    _selectedMonth = context.read<AppModel>().selectedYearMonth.month;
+    _selectedDateTime = context.listMod.currentMonth;
   }
 
-  DateTime getDateTimeFromSelection() {
-    return DateTime(_selectedYear, _selectedMonth);
-  }
 
   @override
   Widget build(BuildContext context) {
-    const firstMonthRow = [1, 2, 3, 4];
-    const secondMonthRow = [5, 6, 7, 8];
-    const thirdMonthRow = [9, 10, 11, 12];
-    final List<int> availableYears = List.generate(100, (index) {
-      return (DateTime.now().year - 50 + index);
-    });
+    final monthlyOverview = context.listMod.monthlyOverview;
     return AlertDialog(
-      title: Text("Selected: ${DateFormat('MMM yyyy').format(getDateTimeFromSelection())}"),
       content: SizedBox(
         width: MediaQuery.sizeOf(context).width * 0.7,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            var textTheme2 = Theme.of(context).textTheme;
             return Column(
               spacing: 12,
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownMenu(
-                  menuHeight: 200,
-                  menuStyle: MenuStyle(visualDensity: VisualDensity(vertical: -2)),
-                  width: constraints.maxWidth,
-                  textStyle: textTheme2.displayMedium,
-                  inputDecorationTheme: InputDecorationTheme(border: UnderlineInputBorder()),
-                  dropdownMenuEntries:
-                      availableYears.map((year) {
-                        return DropdownMenuEntry(
-                          value: year,
-                          label: year.toString(),
-                          style: ElevatedButton.styleFrom(textStyle: textTheme2.bodyLarge),
-                        );
-                      }).toList(),
-                  initialSelection: _selectedYear,
-                  onSelected:
-                      (value) => setState(() {
-                        _selectedYear = value ?? _selectedYear;
-                      }),
+                GestureDetector(
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedDateTime = DateTime(
+                              _selectedDateTime.year - 1,
+                              _selectedDateTime.month,
+                            );
+                          });
+                        },
+                        icon: Icon(
+                          Icons.chevron_left_rounded,
+                          size: 30,
+                        ),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            _selectedDateTime.year.toString(),
+                            style: context.customTt.dateLabel!.copyWith(fontSize: 30),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedDateTime = DateTime(
+                              _selectedDateTime.year + 1,
+                              _selectedDateTime.month,
+                            );
+                          });
+                        },
+                        icon: Icon(Icons.chevron_right_rounded, size: 30),
+                      ),
+                    ],
+                  ),
                 ),
-                monthRow(firstMonthRow),
-                monthRow(secondMonthRow),
-                monthRow(thirdMonthRow),
+                GridView(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    childAspectRatio: 1.1,
+                  ),
+                  children: [
+                    ...List.generate(12, (i) => i + 1).map((value) {
+                      final date = DateTime(_selectedDateTime.year, value, 1);
+                      final balance = monthlyOverview[date]?.balance ?? 0;
+                      final displayText =
+                          monthlyOverview.containsKey(date)
+                              ? NumberFormat.compactCurrency(symbol: "RM").format(balance)
+                              : "N/A";
+                      return GestureDetector(
+                        onTap: () {
+                          context.listMod.changeYearMonth(date);
+                          context.nav.pop();
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: date == _selectedDateTime ? context.customCs.fadeColor2 : null,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                DateFormat('MMM').format(date),
+                                style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                              ),
+                              Text(
+                                displayText,
+                                style: context.tt.bodyMedium!.copyWith(
+                                  fontSize: 12,
+                                  color:
+                                      balance < 0
+                                          ? Colors.red
+                                          : balance > 0
+                                          ? Colors.green
+                                          : context.customCs.fadeColor1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ],
             );
           },
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            context.read<AppModel>().changeYearMonth(
-              false,
-              specificYearMonth: getDateTimeFromSelection(),
-            );
-            Navigator.pop(context);
-          },
-          child: Text("Save"),
-        ),
-      ],
-    );
-  }
-
-  Row monthRow(List<int> list) {
-    return Row(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: list.map((monthInt) => monthButton(monthInt)).toList(),
-    );
-  }
-
-  Widget monthButton(int monthInt) {
-    var appState = context.read<AppModel>();
-    final monthName = DateFormat('MMM').format(DateTime(2000, monthInt));
-    final yearMonthMapping = DateFormat('yyyy-MM').format(DateTime(_selectedYear, monthInt));
-    final appColor = Theme.of(context).colorScheme;
-    final appTextTheme = Theme.of(context).textTheme;
-    final yearMonthData = appState.yearMonthOverview;
-
-    Text subText(dynamic value) {
-      String text;
-      Color color = Theme.of(context).colorScheme.onSurface;
-      if (value is String) {
-        text = value;
-      } else {
-        text = (value as double).customCurrencyFormat(
-          appState.currencySymbol,
-          usePositiveSign: true,
-          useSuffix: true,
-        );
-        if (value >= 0) {
-          color = Colors.greenAccent;
-        } else {
-          color = Colors.red;
-        }
-      }
-      return Text(
-        text,
-        style: appTextTheme.bodyLarge!.copyWith(fontSize: 11, color: color),
-      );
-    }
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: 100),
-      child: TextButton(
-        onPressed: () {
-          setState(() => _selectedMonth = monthInt);
-        },
-        style: TextButton.styleFrom(
-          minimumSize: Size(80, 50),
-          backgroundColor:
-              _selectedMonth == monthInt
-                  ? appColor.primary.withAlpha(40)
-                  : appColor.surfaceContainer,
-          foregroundColor: _selectedMonth == monthInt ? appColor.onPrimary : appColor.onSurface,
-        ),
-        child: Column(
-          children: [
-            Text(
-              monthName,
-              style: appTextTheme.bodyMedium!.copyWith(fontSize: 20),
-            ),
-            subText((yearMonthData[yearMonthMapping]?.balance ?? "--")),
-          ],
         ),
       ),
     );
@@ -497,7 +475,7 @@ class AffirmativeTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.nav.pop(true),
+      onTap: onTap,
       child: Text(
         text,
         style: context.customTt.numberFontSmall!.copyWith(color: context.cs.onSurface),
@@ -515,7 +493,7 @@ class PrimaryNegativeTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.nav.pop(true),
+      onTap: onTap,
       child: Text(
         text,
         style: context.customTt.numberFontSmall!.copyWith(color: context.cs.error),

@@ -7,7 +7,6 @@ import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
-import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -16,28 +15,16 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class CostListScreen extends StatelessWidget {
-  const CostListScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ListModel(costItemRepo: context.read()),
-      child: const CostListBody(),
-    );
-  }
-}
-
-class CostListBody extends StatefulWidget {
-  const CostListBody({
+class CostListScreen extends StatefulWidget {
+  const CostListScreen({
     super.key,
   });
 
   @override
-  State<CostListBody> createState() => _CostListBodyState();
+  State<CostListScreen> createState() => _CostListScreenState();
 }
 
-class _CostListBodyState extends State<CostListBody> {
+class _CostListScreenState extends State<CostListScreen> {
   late final ScrollController _controller;
   bool expanded = true;
 
@@ -70,29 +57,37 @@ class _CostListBodyState extends State<CostListBody> {
 
   @override
   Widget build(BuildContext context) {
+    final ready = context.select((ListModel state) => state.ready);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: const ListViewAppBar(),
-      body: SafeArea(
-        child: Flex(
-          direction: Axis.vertical,
-          children: [
-            // ...isSearchOpened ? [const SearchTab()] : [],
-            const DateBreadcrumb(),
-            Expanded(
-              child: CustomScrollView(
-                controller: _controller,
-                slivers: [
-                  SummaryTab(
-                    onPressed: animateScroll,
-                  ),
-                  const CostEntryList(),
-                ],
+      body:
+          ready
+              ? SafeArea(
+                minimum: EdgeInsets.only(top: 8),
+                child: Flex(
+                  direction: Axis.vertical,
+                  children: [
+                    const DateBreadcrumb(),
+                    Expanded(
+                      child: CustomScrollView(
+                        controller: _controller,
+                        slivers: [
+                          SummaryTab(
+                            onPressed: animateScroll,
+                          ),
+                          const CostEntryList(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -124,7 +119,15 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         actions: [
           IconButton(
-            onPressed: context.listMod.deleteSelectedItems,
+            onPressed: () {
+              Flushbar(
+                flushbarPosition: FlushbarPosition.TOP,
+                duration: Duration(seconds: 1),
+                title: "$selectedItemLength items deleted",
+                message: "$selectedItemLength items deleted",
+              ).show(context);
+              context.listMod.deleteSelectedItems();
+            },
             icon: Icon(Icons.delete),
           ),
         ],
@@ -150,17 +153,14 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: Text("OVERVIEW", style: context.customTt.dateLabel),
         actions: [
           IconButton(
-            visualDensity: VisualDensityExtension.minimum,
             onPressed: context.listMod.toggleSearch,
             icon: Icon(Icons.search),
           ),
           IconButton(
-            visualDensity: VisualDensityExtension.minimum,
             onPressed: context.listMod.toggleBlur,
             icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
           ),
           IconButton(
-            visualDensity: VisualDensityExtension.minimum,
             onPressed: context.listMod.getCurMonthData,
             icon: Icon(Icons.refresh),
           ),
@@ -248,24 +248,17 @@ class CostEntryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ready = context.select((ListModel state) => state.ready);
-    debugPrint('ready: $ready');
-
     final groupedCostItems = context.select((ListModel state) => state.outputCostItems);
     final dailySummary = context.select((ListModel state) => state.outputDailySummary);
     final selectionMode = context.select((ListModel state) => state.selectionMode);
     final selectedItems = context.select((ListModel state) => state.selectedItems);
+    // ignore: unused_local_variable
     final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
 
     debugPrint(
       "rebuilt, item count: ${groupedCostItems.entries.isNotEmpty ? groupedCostItems.entries.first.value.length : 0}",
     );
     // debugPrint("rebuilt, item count: ${groupedCostItems.entries.length}");
-    if (!ready) {
-      return SliverToBoxAdapter(
-        child: CircularProgressIndicator(),
-      );
-    }
     if (groupedCostItems.isEmpty) {
       return SliverToBoxAdapter(
         child: SizedBox(
@@ -281,6 +274,7 @@ class CostEntryList extends StatelessWidget {
         sliver: SliverList.builder(
           itemCount: groupedCostItems.length,
           itemBuilder: (context, index) {
+            // ignore: unused_local_variable
             final spacing = context.read<ThemeModel>().spacingValue;
             final DateTime date = groupedCostItems.keys.elementAt(index);
             final List<CostItem> costItems = groupedCostItems.values.elementAt(index);
@@ -461,7 +455,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
             textStyle:
                 isBig
                     ? context.customTt.numberFontLarge!.copyWith(
-                      height: 1,
+                      height: 1.2,
                       fontSize: lerpDouble(50, 30, progress),
                       color: context.customCs.onFlipCard,
                     )
@@ -503,13 +497,13 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                       context,
                       labelText: "Summary",
                       progress: progress,
-                      value: NumberFormat.compactCurrency(symbol: "RM").format(balance),
+                      value: NumberFormat.currency(symbol: "RM", decimalDigits: 0).format(balance),
                       isBig: true,
                     ),
                     Opacity(
                       opacity: lerpDouble(1, 0, progress)!,
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
+                        padding: const EdgeInsets.only(top: 4.0),
                         child: Row(
                           spacing: 20,
                           mainAxisSize: MainAxisSize.max,
@@ -519,6 +513,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                               "-${NumberFormat.compactCurrency(symbol: "RM").format(expense)}",
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color: Colors.red,
+                                height: 1,
                                 fontSize: 18,
                               ),
                             ),
@@ -526,7 +521,8 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                               "+${NumberFormat.compactCurrency(symbol: "RM").format(income)}",
                               style: context.customTt.numberFontSmall!.copyWith(
                                 color: Colors.green,
-                                fontSize: 18
+                                height: 1,
+                                fontSize: 18,
                               ),
                             ),
                             // Expanded(

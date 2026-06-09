@@ -3,20 +3,24 @@ import 'dart:math';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/data/repos/category_repository.dart';
 // import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class ListModel extends ChangeNotifier {
-  ListModel({required CostItemRepository costItemRepo}) : _costItemRepository = costItemRepo {
+  ListModel({required CostItemRepository costItemRepo, required CategoryRepository categoryRepo})
+    : _costItemRepo = costItemRepo,
+      _categoryRepo = categoryRepo {
     init();
   }
 
   Future<void> init() async {
     _isInitialized = false;
 
-    await _costItemRepository.ready;
+    await _costItemRepo.ready;
+    await _categoryRepo.ready;
     getCurMonthData();
 
     _isInitialized = true;
@@ -24,14 +28,15 @@ class ListModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  final CostItemRepository _costItemRepository;
+  final CostItemRepository _costItemRepo;
+  final CategoryRepository _categoryRepo;
 
   bool _isInitialized = false;
   bool get ready => _isInitialized;
 
   bool _selectionMode = false;
   bool get selectionMode => _selectionMode;
-  
+
   List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
 
@@ -54,8 +59,8 @@ class ListModel extends ChangeNotifier {
   Map<DateTime, CostMetric> _dailySummary = {};
   Map<DateTime, CostMetric> get dailySummary => _dailySummary;
 
-  CostMetric _totalSummary = CostMetric();
-  CostMetric get monthSummary => _totalSummary;
+  // CostMetric _totalSummary = CostMetric();
+  // CostMetric get monthSummary => _totalSummary;
 
   Map<DateTime, List<CostItem>> get outputCostItems {
     final sorted = _dayGroupedCostItems.map(
@@ -64,12 +69,15 @@ class ListModel extends ChangeNotifier {
     );
     if (_searchText == "") return sorted;
     final filteredItems = sorted.map(
-      (key, value) =>
-          MapEntry(key, value.where((item) {
-            final bool searchQuery = _searchText.isNotEmpty ? item.name.contains(_searchText) : true;  
-            final bool categoryQuery = _filteredCategories.isNotEmpty ? _filteredCategories.contains(item.category) : true;  
-            return searchQuery && categoryQuery;
-          }).toList()),
+      (key, value) => MapEntry(
+        key,
+        value.where((item) {
+          final bool searchQuery = _searchText.isNotEmpty ? item.name.contains(_searchText) : true;
+          final bool categoryQuery =
+              _filteredCategories.isNotEmpty ? _filteredCategories.contains(item.category) : true;
+          return searchQuery && categoryQuery;
+        }).toList(),
+      ),
     );
     return Map.fromEntries(filteredItems.entries.where((entry) => entry.value.isNotEmpty));
   }
@@ -82,16 +90,17 @@ class ListModel extends ChangeNotifier {
     double income = 0;
     double expense = 0;
     for (final entry in outputDailySummary.entries) {
-        income += entry.value.income ?? 0;
-        expense += entry.value.expense ?? 0;
+      income += entry.value.income ?? 0;
+      expense += entry.value.expense ?? 0;
     }
     return CostMetric(income: income, expense: expense);
   }
 
+  Map<DateTime, CostMetric> get monthlyOverview => _costItemRepo.monthSummary;
+
   void getCurMonthData() {
-    
     _dayGroupedCostItems = Map.fromEntries(
-      _costItemRepository.gbDateCostItems.entries
+      _costItemRepo.gbDateCostItems.entries
           .where(
             (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
           )
@@ -99,14 +108,14 @@ class ListModel extends ChangeNotifier {
     );
 
     _dailySummary = Map.fromEntries(
-      _costItemRepository.daySummary.entries.where(
+      _costItemRepo.daySummary.entries.where(
         (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
       ),
     );
 
-    _totalSummary = _costItemRepository.monthSummary[_curYearMonth] ?? CostMetric();
-    
-    debugPrint('get curMonth data loaded, total: ${_totalSummary.balance}');
+    // _totalSummary = _costItemRepo.monthSummary[_curYearMonth] ?? CostMetric();
+
+    // debugPrint('get curMonth data loaded, total: ${_totalSummary.balance}');
 
     notifyListeners();
   }
@@ -156,7 +165,7 @@ class ListModel extends ChangeNotifier {
 
   void toggleAllCategoryFilter(bool selected) {
     if (selected) {
-      _filteredCategories.addAll(defaultCostItemCategories.map((el) => el.id!));
+      _filteredCategories.addAll(_categoryRepo.categories.map((el) => el.id!));
     } else {
       _filteredCategories.clear();
     }
@@ -182,14 +191,14 @@ class ListModel extends ChangeNotifier {
 
   Future<void> deleteSelectedItems() async {
     for (CostItem item in _selectedItems) {
-      await _costItemRepository.deleteCostItem(item);
+      await _costItemRepo.deleteCostItem(item);
     }
+    _selectionMode = false;
     notifyListeners();
   }
 
-  
-
-  double get maxAmount => _costItemRepository.costItems.fold(0, (init, item) => max(init,item.signedAmount));
-  double get minAmount => _costItemRepository.costItems.fold(0, (init, item) => min(init,item.signedAmount));
-
+  double get maxAmount =>
+      _costItemRepo.costItems.fold(0, (init, item) => max(init, item.signedAmount));
+  double get minAmount =>
+      _costItemRepo.costItems.fold(0, (init, item) => min(init, item.signedAmount));
 }

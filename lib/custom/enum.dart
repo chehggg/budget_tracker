@@ -4,9 +4,7 @@ enum CostType {
   expense,
   income;
 
-  factory CostType.from(String value) {
-    return CostType.values.firstWhere((type) => type.name == value, orElse: () => CostType.expense);
-  }
+  factory CostType.from(String value) => value == "expense" ? CostType.expense : CostType.income;
 }
 
 enum FormGroup {
@@ -15,6 +13,10 @@ enum FormGroup {
   favorite;
 
   CostType? get costType {
-    return CostType.values.firstWhereOrNull((costType) => costType.name == name);
+    return switch (this) {
+      FormGroup.expense => CostType.expense,
+      FormGroup.income => CostType.income,
+      FormGroup.favorite => null,
+    };
   }
 }

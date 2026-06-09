@@ -31,6 +31,7 @@ class SavedItemRepository {
 
   Future<void> addToSaved(SavedItem item) async {
     _savedItems.add(item);
+    debugPrint('saved item length: ${_savedItems.length}');
     await _savedItemServices.writeSavedItems(_savedItems);
   }
   

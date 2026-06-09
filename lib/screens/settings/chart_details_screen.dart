@@ -1,7 +1,7 @@
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
-import 'package:budget_tracker/screens/chart_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:collection/collection.dart';

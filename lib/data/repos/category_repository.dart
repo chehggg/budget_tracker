@@ -24,9 +24,13 @@ class CategoryRepository {
     await getCategory();
   }
 
-  Future<void> getCategory({bool customFile = false}) async {
+  Future<void> getCategory({bool customFile = false, bool revertToDefault = false}) async {
     Result<List<CostItemCategory>> result;
-    result = await _categoryServices.loadDefaultCategoryJson();
+    if (revertToDefault) {
+      result = await _categoryServices.loadInitCategory();
+    } else {
+      result = await _categoryServices.loadDefaultCategoryJson();
+    }
 
     switch (result) {
       case Ok():

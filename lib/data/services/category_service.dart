@@ -43,6 +43,12 @@ class CategoryServices {
     }
   }
 
+
+  Future<Result<List<CostItemCategory>>> loadInitCategory() async {
+    await writeCategoryJsonToFile(defaultCostItemCategories);
+    return Result.ok(defaultCostItemCategories);
+  }
+
   Future<Result<List<CostItemCategory>>> loadDefaultCategoryJson() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/categories.json');
@@ -51,8 +57,7 @@ class CategoryServices {
     if (fileExists) {
       return await parseCategoryJson(file);
     } else {
-      await writeCategoryJsonToFile(defaultCostItemCategories);
-      return Result.ok(defaultCostItemCategories);
+      return await loadInitCategory();
     }
   }
 

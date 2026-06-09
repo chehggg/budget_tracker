@@ -87,8 +87,7 @@ class _ChartScreenState extends State<ChartScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Visualize",
-          style: Theme.of(context).textTheme.headlineLarge,
+          "Visualize".toUpperCase(),
         ),
       ),
       body: SafeArea(

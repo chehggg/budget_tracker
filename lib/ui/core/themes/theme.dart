@@ -17,7 +17,7 @@ ThemeData get appTheme {
     bodyMedium: TextStyle(fontFamily: 'Inter'),
     // headline
     // titleSmall: TextStyle(fontFamily: 'Inter'),
-    bodyLarge: TextStyle(fontFamily: 'DMSerifDisplay', fontSize: 26),
+    bodyLarge: TextStyle(fontFamily: 'Oranienbaum', fontSize: 26),
     labelSmall: TextStyle(fontFamily: 'Oranienbaum', fontWeight: FontWeight(600)),
     titleMedium: TextStyle(
       fontFamily: 'Oranienbaum',
@@ -32,7 +32,7 @@ ThemeData get appTheme {
   final MyTexts customTextExtension = MyTexts(
     numberFontLarge: customTextTheme.bodyLarge!.copyWith(
       fontSize: 50,
-      fontWeight: FontWeight(300),
+      fontWeight: FontWeight(800),
     ),
     numberFontMedium: customTextTheme.bodyMedium!.copyWith(
       fontSize: 20,
@@ -70,12 +70,21 @@ ThemeData get appTheme {
     fadeColor1: Color(0xffF0EBE0).withAlpha(150),
     fadeColor2: Color(0xffF0EBE0).withAlpha(60),
     fadeColor3: Color(0xffF0EBE0).withAlpha(10),
+    fadeColor4: Color(0xffF0EBE0).withAlpha(20),
   );
 
   return baseTheme.copyWith(
     extensions: [customColorExtension, customTextExtension],
     textTheme: customTextTheme,
+    iconButtonTheme: IconButtonThemeData(
+      style: ButtonStyle(
+        visualDensity: VisualDensity(vertical: -4, horizontal: -4)
+      )
+    ),
+    
+    appBarTheme: AppBarTheme(titleTextStyle: customTextExtension.dateLabel,),
     colorScheme: customColorScheme,
+    visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(
       actionsPadding: EdgeInsets.only(bottom: 8, right: 4),
       titleTextStyle: customTextExtension.elegantLabelLarge,

@@ -3,6 +3,7 @@ import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
+import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
@@ -130,6 +131,7 @@ extension BuildContextExtension on BuildContext {
   FormModel get formMod => read<FormModel>();
   ThemeModel get themeMod => read<ThemeModel>();
   ListModel get listMod => read<ListModel>();
+  SavedItemModel get savedItemMod => read<SavedItemModel>();
 }
 
 @immutable
@@ -188,6 +190,7 @@ class MyColors extends ThemeExtension<MyColors> {
     this.fadeColor1,
     this.fadeColor2,
     this.fadeColor3,
+    this.fadeColor4,
     // this.numberFontLarge,
     // this.numberFontMedium,
     // this.numberFontSmall,
@@ -202,6 +205,7 @@ class MyColors extends ThemeExtension<MyColors> {
   final Color? fadeColor1;
   final Color? fadeColor2;
   final Color? fadeColor3;
+  final Color? fadeColor4;
   // final TextStyle? dateLabel;
   // final TextStyle? flipCardColor;
   // final TextStyle? flipCardColor;

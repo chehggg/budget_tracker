@@ -13,7 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:provider/provider.dart';
 
-import 'package:budget_tracker/screens/chart_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/list/list_screen.dart';
 import 'package:budget_tracker/screens/report_screen.dart';
@@ -212,6 +212,12 @@ class CustomNavigationBottomBar extends StatelessWidget {
                   Widget iconButton;
                   if (pageIndex == index) {
                     iconButton = IconButton.filled(
+                      style: IconButton.styleFrom(
+                        fixedSize: Size.square(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                      visualDensity: VisualDensity.comfortable,
+                      padding: EdgeInsets.all(8),
                       onPressed: () => {},
                       icon: Icon(
                         buttonIcon,
@@ -221,6 +227,12 @@ class CustomNavigationBottomBar extends StatelessWidget {
                     );
                   } else {
                     iconButton = IconButton(
+                      style: IconButton.styleFrom(
+                        fixedSize: Size.square(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                      ),
+                      visualDensity: VisualDensity.comfortable,
+                      padding: EdgeInsets.all(8),
                       onPressed: () => context.read<NavigationModel>().navigateMainScreen(index),
                       icon: Icon(buttonIcon),
                       iconSize: 28,
@@ -233,7 +245,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
               ..insert(
                 2,
                 SizedBox(
-                  width: 80,
+                  width: 120,
                 ),
               ), // add space for FAB
       ),

@@ -1,6 +1,5 @@
 import 'dart:collection';
 
-import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
@@ -8,8 +7,9 @@ import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
-import 'package:budget_tracker/ui/form/saved_item_option_enum.dart';
+import 'package:budget_tracker/custom/saved_item_option_enum.dart';
 import 'package:budget_tracker/utils/result.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,7 +29,7 @@ class FormModel extends ChangeNotifier {
   final CostItemRepository _costItemRepository;
   final SavedItemRepository _savedItemRepository;
   final CategoryRepository _categoryRepo;
-  
+
   CostItemFormResult? get formResult {
     if (selectedCategory == null) return null;
     return CostItemFormResult(
@@ -41,12 +41,22 @@ class FormModel extends ChangeNotifier {
     );
   }
 
-  List<CostItemCategory> get categories => _categoryRepo.categories;
+  FormGroup _formGroup = FormGroup.expense;
+  FormGroup get formGroup => _formGroup;
+
+  List<CostItemCategory> get categories =>
+      _categoryRepo.categories
+          .where((category) => category.costType == _formGroup.costType)
+          .toList();
 
   bool _isLoaded = false;
-  bool get isLoaded => _isLoaded;
+  bool get ready => _isLoaded;
 
-  UnmodifiableListView<SavedItem> get savedItem => _savedItemRepository.savedItems;
+  UnmodifiableListView<SavedItem> get savedItems => _savedItemRepository.savedItems;
+
+  CostItemCategory getCatById(SavedItem item) {
+    return _categoryRepo.categories.firstWhereOrNull((el) => el.id == item.category) ?? CostItemCategory.error();
+  }
 
   CostItemCategory? _selectedCategory;
   CostItemCategory? get selectedCategory => _selectedCategory;
@@ -69,7 +79,7 @@ class FormModel extends ChangeNotifier {
   String _savedTitle = "";
   String get savedTitle => _savedTitle;
 
-  void initialize() async {
+  Future<void> initialize() async {
     _isLoaded = false;
     populateInitValue();
     await _categoryRepo.ready;
@@ -78,9 +88,18 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reloadCategory() async {
+    await _categoryRepo.getCategory(revertToDefault: true);
+  }
+
   void selectNewCategory(CostItemCategory category) {
     _selectedCategory = category;
     _type = category.costType!;
+    notifyListeners();
+  }
+
+  void updateFormGroup(FormGroup group) {
+    _formGroup = group;
     notifyListeners();
   }
 
@@ -126,23 +145,31 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void getV() async {
-
-  }
+  void getV() async {}
 
   void populateInitValue() {
     debugPrint('initializing form model');
 
     if (initCostItem != null) {
       debugPrint('found cost item');
-      _selectedCategory = categories.firstWhere(
-        (cat) => cat.name == initCostItem!.category,
-      );
+      _selectedCategory =
+          categories.firstWhereOrNull(
+            (cat) => cat.id == initCostItem!.categoryId,
+          ) ??
+          CostItemCategory(
+            id: "0",
+            name: "Category 404",
+            costType: initCostItem!.costType,
+            imagePath: "assets/images/warning.svg",
+            color: Colors.white,
+          );
       _amount = initCostItem!.amount;
       _itemDesc = initCostItem!.name;
       _date = initCostItem!.date;
       _type = initCostItem!.costType;
+      _formGroup = _type == CostType.expense ? FormGroup.expense : FormGroup.income;
     }
+    notifyListeners();
   }
 
   void deleteItem() {
@@ -162,18 +189,4 @@ class FormModel extends ChangeNotifier {
     return Result.error(Exception("no form result, cannot create cost item"));
   }
 
-  Future<void> saveItem() async {
-    await _savedItemRepository.addToSaved(
-      // SavedItem.fromFormResult(Uuid().v4(), _savedTitle, formResult!),
-      SavedItem(
-        id: Uuid().v4(),
-        title: _savedTitle,
-        category: formResult!.category.id,
-        costType: formResult!.costType,
-        amount: _saveOptions.contains(SavedItemOption.amount) ? formResult!.amount : null,
-        description: _saveOptions.contains(SavedItemOption.description) ? formResult!.name : null,
-        date: _saveOptions.contains(SavedItemOption.date) ? formResult!.date : null,
-      ),
-    );
-  }
 }

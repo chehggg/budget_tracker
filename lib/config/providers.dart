@@ -45,7 +45,7 @@ List<SingleChildWidget> get providers => [
     create: (context) => AppModel(costItemRepository: context.read()),
   ),
   ChangeNotifierProvider<ListModel>(
-    create: (context) => ListModel(costItemRepo: context.read()),
+    create: (context) => ListModel(costItemRepo: context.read(),categoryRepo: context.read()),
   ),
   ChangeNotifierProvider<SettingsViewModel>(
     create:

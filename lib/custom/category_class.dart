@@ -12,6 +12,13 @@ class CostItemCategory {
   final String? imagePath;
   final CostType? costType;
 
+  CostItemCategory.error()
+    : id = '0',
+      name = "Not Found",
+      color = Colors.white,
+      imagePath = "",
+      costType = CostType.expense;
+
   ColorScheme colorScheme(ThemeMode mode) {
     Brightness brightness;
     // final themeMode = ThemeMode.light;
@@ -29,25 +36,20 @@ class CostItemCategory {
       dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
       brightness: brightness,
     );
-
   }
 
-  Map<String,dynamic> toJson() => {
+  Map<String, dynamic> toJson() => {
     "id": id,
     "name": name,
     "color": color?.toARGB32(),
     "imagePath": imagePath,
-    "costType": costType!.toString(),
+    "costType": costType!.name,
   };
 
-  CostItemCategory.fromJson(Map<String,dynamic> json) :
-    id = json['id'],
-    name = json['name'],
-    color =  Color(json['imagePath'] as int),
-    imagePath = json['imagePath'],
-    costType = CostType.from(json['costType'] as String);
-  
-
-  
-  
+  CostItemCategory.fromJson(Map<String, dynamic> json)
+    : id = json['id'],
+      name = json['name'],
+      color = Color(json['color'] as int),
+      imagePath = json['imagePath'],
+      costType = CostType.from(json['costType'] as String);
 }

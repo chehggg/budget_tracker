@@ -7,10 +7,12 @@ import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/models/currency_model.dart';
+import 'package:budget_tracker/ui/form/saved_item_screen.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/form/saved_item_option_enum.dart';
+import 'package:budget_tracker/custom/saved_item_option_enum.dart';
+import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,26 +35,55 @@ class CostItemFormScreen extends StatelessWidget {
             initCostItem: arg.selectedCostItem,
             costItemRepo: context.read(),
             savedItemRepo: context.read(),
-            categoryRepo: context.read()
+            categoryRepo: context.read(),
           ),
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          title: Text(arg.selectedCostItem == null ? "New item" : "Edit item"),
-          leading: BackButton(
-            onPressed: () => context.navMod.popFormToMain(),
-          ),
+      child: CostFormBody(arg: arg),
+    );
+  }
+}
+
+class CostFormBody extends StatelessWidget {
+  const CostFormBody({
+    super.key,
+    required this.arg,
+  });
+
+  final FormArgument arg;
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = context.select((FormModel state) => state.ready);
+
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: Text(arg.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
+        leading: BackButton(
+          onPressed: () => context.navMod.popFormToMain(),
         ),
-        bottomSheet: const FormBottomSheet(),
-        body: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-            child: const CostItemCategoryGrid(),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.formMod.reloadCategory();
+            },
+            icon: Icon(Icons.refresh),
           ),
-        ),
-        // bottomNavigationBar: bottom,
+        ],
       ),
+      bottomSheet: const FormBottomSheet(),
+      body: SafeArea(
+        minimum: EdgeInsets.only(top: 12, left: 12, right: 12),
+        bottom: false,
+        child:
+            ready
+                ? const CostItemCategoryGrid()
+                : Expanded(
+                  child: Center(
+                    child: const CircularProgressIndicator(),
+                  ),
+                ),
+      ),
+      // bottomNavigationBar: bottom,
     );
   }
 }
@@ -194,7 +225,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
             AnimatedContainer(
               duration: Durations.medium1,
               curve: Curves.easeInOutExpo,
-              height: _isFormExpanded ? 70 : 120,
+              height: _isFormExpanded ? 64 : 120,
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -203,7 +234,12 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                   AnimatedScale(
                     scale: _isFormExpanded ? 0.7 : 1,
                     duration: Durations.medium1,
-                    // child: selectedCategory.createIcon(40, ThemeMode.dark, context.cs.onPrimary),
+                    child: CategoryIconContainer(
+                      inContainer: false,
+                      inverse: true,
+                      size: 40,
+                      category: selectedCategory,
+                    ),
                   ),
                   Expanded(
                     child: Column(
@@ -221,7 +257,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             ],
                           ].join(' • '),
                           style: context.customTt.dateLabel!.copyWith(
-                            color: context.cs.onPrimary,
+                            color: context.cs.surface,
                             fontSize: 30,
                             height: 1.2,
                           ),
@@ -233,7 +269,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               itemDesc.isEmpty ? "No Desc" : itemDesc,
                             ].join(' • '),
                             style: context.customTt.numberFontSmall!.copyWith(
-                              color: context.cs.onPrimary,
+                              color: context.cs.surface,
                               fontSize: 12,
                               fontWeight: FontWeight(200),
                             ),
@@ -245,19 +281,26 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ? [
                         IconButton(
                           onPressed: () async {
-                            final bool? response = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => SavedItemDialog(),
+                            // final formMod = context.formMod;
+                            context.nav.push(
+                              MaterialPageRoute(
+                                builder:
+                                    (buildContext) => ChangeNotifierProvider(
+                                      create:
+                                          (_) => SavedItemModel(
+                                            formData:
+                                                context.formMod.initCostItem == null
+                                                    ? null
+                                                    : context.formMod.formResult,
+                                            category: selectedCategory,
+                                            savedItemRepository: context.read(),
+                                            categoryRepo: context.read(),
+                                          ),
+                                      // value: context.formMod,
+                                      child: const CreateSavedItemScreen(),
+                                    ),
+                              ),
                             );
-                            if (response == true) {
-                              context.formMod.saveItem();
-                              Flushbar(
-                                duration: Duration(seconds: 2),
-                                title: "Hooray!",
-                                message:
-                                    "Item added to saved successfully.",
-                              ).show(context);
-                            }
                           },
                           icon: Icon(
                             Icons.favorite,
@@ -275,8 +318,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               Flushbar(
                                 duration: Duration(seconds: 2),
                                 title: "Bye bye!",
-                                message:
-                                    "Item deleted successfully.",
+                                message: "Item deleted successfully.",
                               ).show(context);
 
                               context.navMod.popFormToMain();
@@ -393,17 +435,18 @@ class SavedItemDialog extends StatefulWidget {
 
 class _SavedItemDialogState extends State<SavedItemDialog> {
   late final TextEditingController _controller;
-
+  List _options = [];
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
     _controller.addListener(() => context.formMod.updateSavedItemTitle);
+    _options = context.formMod.saveOptions;
   }
 
   @override
   Widget build(BuildContext context) {
-    final options = context.select((FormModel state) => state.saveOptions);
+    // final options = context.select((FormModel state) => state.saveOptions);
     return AlertDialog(
       title: Text("Saved Item Name"),
       content: Column(
@@ -415,7 +458,7 @@ class _SavedItemDialogState extends State<SavedItemDialog> {
           ...SavedItemOption.values.map(
             (option) => FilterChip(
               label: Text(option.name),
-              selected: options.contains(option),
+              selected: _options.contains(option),
               onSelected: (selected) => context.formMod.updateSaveOption(option, selected),
             ),
           ),
@@ -500,10 +543,11 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
   Widget build(BuildContext context) {
     final screenSize = context.mq.size;
     final selectedThemeMode = context.themeMod.theme;
+    final selectedFormGroup = context.select((FormModel state) => state.formGroup);
     final gridSize = context.select((ThemeModel state) => state.gridSize);
 
     // ignore: unused_local_variable
-    int favoriteLength = context.select((FormModel state) => state.savedItem.length);
+    int favoriteLength = context.select((FormModel state) => state.savedItems.length);
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -532,7 +576,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                       formGroup.name.capitalize(),
                       style: context.customTt.numberLabel!.copyWith(
                         color:
-                            _selectedFormGroup == formGroup
+                            selectedFormGroup == formGroup
                                 ? context.customCs.onFlipCard
                                 : context.cs.primary,
                       ),
@@ -541,25 +585,16 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                 );
               }),
             ],
-            selected: {_selectedFormGroup},
+            selected: {selectedFormGroup},
             onSelectionChanged: (newSelection) {
-              setState(() {
-                _selectedFormGroup = newSelection.first;
-                if (_selectedFormGroup != FormGroup.favorite) {
-                  _selectedCostType = _selectedFormGroup.costType;
-                  _filteredCostItemCategories =
-                      defaultCostItemCategories
-                          .where((category) => category.costType == _selectedCostType)
-                          .toList();
-                }
-              });
+              context.formMod.updateFormGroup(newSelection.first);
             },
           ),
         ),
         Expanded(
           child: CustomScrollView(
             slivers: [
-              if (_selectedFormGroup != FormGroup.favorite)
+              if (selectedFormGroup != FormGroup.favorite)
                 SliverPadding(
                   padding: const EdgeInsets.only(top: 20.0, bottom: 120),
                   sliver: SliverGrid.list(
@@ -594,13 +629,16 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                                   duration: Durations.medium1,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.rectangle,
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
                                     color: bgColor,
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.all(16),
-                                    child: CategoryIconContainer(category: category, inContainer: false,)
+                                    child: CategoryIconContainer(
+                                      category: category,
+                                      inContainer: false,
+                                    ),
                                     // child: category.createIcon(30, selectedThemeMode, fgColor),
                                   ),
                                 ),
@@ -608,61 +646,67 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                                   category.name!.capitalize(),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium!.copyWith(fontSize: 12),
+                                  style: context.tt.bodyMedium!.copyWith(fontSize: 12),
                                 ),
                               ],
                             ),
                           ),
                         );
-                      })
+                      }),
+                      Column(
+                        spacing: 4,
+                        children: [
+                          ReusableContainer(
+                            padding: EdgeInsets.all(16),
+                            highlight: true,
+                            filled: true,
+                            onTap: () => debugPrint("create new category"),
+                            child: Icon(
+                              Icons.add,
+                              size: 30,
+                            ),
+                          ),
+                          Text("Add New", style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-              if (_selectedFormGroup == FormGroup.favorite)
-                context.formMod.isLoaded
-                    ? context.formMod.savedItem.isNotEmpty
-                        ? SliverPadding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          sliver: SliverList.builder(
-                            itemCount: context.formMod.savedItem.length,
-                            itemBuilder: (context, index) {
-                              final SavedItem item = context.formMod.savedItem.elementAt(index);
-                              final CostItemCategory cat =
-                                  CustomUtils().findInList(item.category!)!;
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                                child: ReusableContainer(
-                                  onTap: () => context.formMod.selectSavedItem(item),
-                                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  child: Row(
-                                    spacing: 12,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      CategoryIconContainer(
-                                        category: cat,
-                                        inContainer: false,
-                                      ),
-                                      Expanded(child: Text(item.title!)),
-                                      Icon(Icons.favorite),
-                                    ],
+              if (selectedFormGroup == FormGroup.favorite)
+                context.formMod.savedItems.isNotEmpty
+                    ? SliverPadding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      sliver: SliverList.builder(
+                        itemCount: context.formMod.savedItems.length,
+                        itemBuilder: (context, index) {
+                          final SavedItem item = context.formMod.savedItems.elementAt(index);
+                          final CostItemCategory cat = context.formMod.getCatById(item);
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: ReusableContainer(
+                              onTap: () => context.formMod.selectSavedItem(item),
+                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              child: Row(
+                                spacing: 12,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  CategoryIconContainer(
+                                    category: cat,
+                                    inContainer: false,
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                        : SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: context.mq.size.height * 0.8,
-                            child: Center(child: const Text("You have no saved item.")),
-                          ),
-                        )
+                                  Expanded(child: Text(item.title!)),
+                                  Icon(Icons.favorite),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    )
                     : SliverToBoxAdapter(
                       child: SizedBox(
                         height: context.mq.size.height * 0.8,
-                        child: Center(child: const CircularProgressIndicator()),
+                        child: Center(child: const Text("You have no saved item.")),
                       ),
                     ),
             ],
