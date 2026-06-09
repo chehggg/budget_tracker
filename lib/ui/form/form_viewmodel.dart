@@ -1,9 +1,11 @@
 import 'dart:collection';
 
 import 'package:budget_tracker/constants/categories.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/custom/saved_item_class.dart';
+import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:budget_tracker/ui/form/saved_item_option_enum.dart';
@@ -15,15 +17,18 @@ class FormModel extends ChangeNotifier {
   FormModel({
     required CostItemRepository costItemRepo,
     required SavedItemRepository savedItemRepo,
+    required CategoryRepository categoryRepo,
     this.initCostItem,
   }) : _costItemRepository = costItemRepo,
-       _savedItemRepository = savedItemRepo {
+       _savedItemRepository = savedItemRepo,
+       _categoryRepo = categoryRepo {
     initialize();
   }
 
   final CostItem? initCostItem;
   final CostItemRepository _costItemRepository;
   final SavedItemRepository _savedItemRepository;
+  final CategoryRepository _categoryRepo;
   
   CostItemFormResult? get formResult {
     if (selectedCategory == null) return null;
@@ -35,6 +40,8 @@ class FormModel extends ChangeNotifier {
       amount: _amount,
     );
   }
+
+  List<CostItemCategory> get categories => _categoryRepo.categories;
 
   bool _isLoaded = false;
   bool get isLoaded => _isLoaded;
@@ -65,7 +72,7 @@ class FormModel extends ChangeNotifier {
   void initialize() async {
     _isLoaded = false;
     populateInitValue();
-    // await loadFavorite();
+    await _categoryRepo.ready;
 
     _isLoaded = true;
     notifyListeners();
@@ -78,7 +85,7 @@ class FormModel extends ChangeNotifier {
   }
 
   void selectSavedItem(SavedItem item) {
-    _selectedCategory = defaultCostItemCategories.firstWhere(
+    _selectedCategory = categories.firstWhere(
       (cat) => cat.name == item.category,
     );
     _amount = item.amount!;
@@ -119,12 +126,16 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void getV() async {
+
+  }
+
   void populateInitValue() {
     debugPrint('initializing form model');
 
     if (initCostItem != null) {
       debugPrint('found cost item');
-      _selectedCategory = defaultCostItemCategories.firstWhere(
+      _selectedCategory = categories.firstWhere(
         (cat) => cat.name == initCostItem!.category,
       );
       _amount = initCostItem!.amount;

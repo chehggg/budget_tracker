@@ -3,10 +3,11 @@ import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
-import 'package:budget_tracker/screens/settings_screen.dart';
+import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 
 class SetBudgetScreen extends StatefulWidget {
   const SetBudgetScreen({super.key});
@@ -701,7 +702,7 @@ class _BudgetEditScreenState extends State<BudgetEditScreen> {
               ...appModelRead.categories.where((e) => e.costType == CostType.expense).map((e) => CustomSettingsTile(
                 verticalPadding: 2,
                 title: e.name,
-                leading: e.createIcon(24, context.read<ThemeModel>().theme),
+                // leading: e.createIcon(24, context.read<ThemeModel>().theme),
                 // trailingWidget: Transform.scale(
                 //   scale: 0.9,
                 //   child: Switch(

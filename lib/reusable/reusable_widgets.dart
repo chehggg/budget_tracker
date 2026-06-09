@@ -1,3 +1,4 @@
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:flutter/material.dart';

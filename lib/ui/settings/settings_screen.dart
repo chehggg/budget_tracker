@@ -5,6 +5,7 @@ import 'package:budget_tracker/constants/currency.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:collection/wrappers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -936,19 +937,19 @@ class ExportDataSettingsTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () async {
-                final outputPath = await context.read<AppModel>().exportCostItem();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  if (outputPath != null) {
-                    Flushbar(
-                      // title: "Saved!",
-                      message: "File successfully saved to $outputPath",
-                      flushbarPosition: FlushbarPosition.TOP,
-                      duration: Duration(seconds: 3),
-                      flushbarStyle: FlushbarStyle.GROUNDED,
-                    ).show(context);
-                  }
-                }
+                await context.read<SettingsViewModel>().exportCostItemData();
+                // if (context.mounted) {
+                //   Navigator.pop(context);
+                //   if (outputPath != null) {
+                //     Flushbar(
+                //       // title: "Saved!",
+                //       message: "File successfully saved to $outputPath",
+                //       flushbarPosition: FlushbarPosition.TOP,
+                //       duration: Duration(seconds: 3),
+                //       flushbarStyle: FlushbarStyle.GROUNDED,
+                //     ).show(context);
+                //   }
+                // }
               },
               child: const Text("confirm"),
             ),
@@ -1012,26 +1013,24 @@ class LoadDataSettingsTile extends StatelessWidget {
                     height: 100,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     onTap: () async {
-                      final result = await context.appMod.loadCostItemFromFile(
-                        overwrite: option['overwrite'] as bool? ?? false,
-                      );
-                      if (result == null) return;
-                      if (result == "success") {
-                        context.nav.pop();
-                        Flushbar(
-                          message: option['flushMsg'] as String? ?? "",
-                          flushbarPosition: FlushbarPosition.TOP,
-                          duration: Duration(seconds: 3),
-                          flushbarStyle: FlushbarStyle.GROUNDED,
-                        ).show(context);
-                      } else {
-                        Flushbar(
-                          message: "Operation failed. Error: $result ",
-                          flushbarPosition: FlushbarPosition.TOP,
-                          duration: Duration(seconds: 3),
-                          flushbarStyle: FlushbarStyle.GROUNDED,
-                        );
-                      }
+                      final result = await context.read<SettingsViewModel>().loadData();
+                      // if (result == null) return;
+                      // if (result == "success") {
+                      //   context.nav.pop();
+                      //   Flushbar(
+                      //     message: option['flushMsg'] as String? ?? "",
+                      //     flushbarPosition: FlushbarPosition.TOP,
+                      //     duration: Duration(seconds: 3),
+                      //     flushbarStyle: FlushbarStyle.GROUNDED,
+                      //   ).show(context);
+                      // } else {
+                      //   Flushbar(
+                      //     message: "Operation failed. Error: $result ",
+                      //     flushbarPosition: FlushbarPosition.TOP,
+                      //     duration: Duration(seconds: 3),
+                      //     flushbarStyle: FlushbarStyle.GROUNDED,
+                      //   );
+                      // }
                     },
                     child: Column(
                       spacing: 4,

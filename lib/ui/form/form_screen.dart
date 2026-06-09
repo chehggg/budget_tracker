@@ -14,6 +14,7 @@ import 'package:budget_tracker/ui/form/saved_item_option_enum.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 
 // screen for user to input a new cost item
 // or edit a existing cost item
@@ -32,6 +33,7 @@ class CostItemFormScreen extends StatelessWidget {
             initCostItem: arg.selectedCostItem,
             costItemRepo: context.read(),
             savedItemRepo: context.read(),
+            categoryRepo: context.read()
           ),
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -201,7 +203,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                   AnimatedScale(
                     scale: _isFormExpanded ? 0.7 : 1,
                     duration: Durations.medium1,
-                    child: selectedCategory.createIcon(40, ThemeMode.dark, context.cs.onPrimary),
+                    // child: selectedCategory.createIcon(40, ThemeMode.dark, context.cs.onPrimary),
                   ),
                   Expanded(
                     child: Column(
@@ -560,66 +562,62 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
               if (_selectedFormGroup != FormGroup.favorite)
                 SliverPadding(
                   padding: const EdgeInsets.only(top: 20.0, bottom: 120),
-                  sliver: SliverGrid.builder(
+                  sliver: SliverGrid.list(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: gridSize,
                       childAspectRatio: 0.95,
                       crossAxisSpacing: 4,
                       mainAxisSpacing: 4,
                     ),
-                    itemCount: _filteredCostItemCategories.length,
-                    itemBuilder: (context, index) {
-                      final CostItemCategory category = _filteredCostItemCategories.elementAt(
-                        index,
-                      );
-                      final catId = category.id;
-                      final isSelected = catId == _selectedCatId;
-                      // final ColorScheme colorScheme =
-                      //     category.colorScheme(ThemeMode.dark);
+                    children: [
+                      ...context.formMod.categories.map((category) {
+                        final catId = category.id;
+                        final isSelected = catId == _selectedCatId;
 
-                      final bgColor = context.cs.primary.withAlpha(isSelected ? 250 : 5);
-                      // final bgColor = index == _selectedItem ? colorScheme.primary : null;
-                      final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
+                        final bgColor = context.cs.primary.withAlpha(isSelected ? 100 : 5);
+                        final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
 
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedCatId = catId);
-                          context.formMod.selectNewCategory(category);
-                        },
-                        child: AnimatedScale(
-                          scale: isSelected ? 1.05 : 1,
-                          duration: Durations.short3,
-                          curve: Curves.easeInOut,
-                          child: Column(
-                            spacing: 4,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedContainer(
-                                duration: Durations.medium1,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.rectangle,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
-                                  color: bgColor,
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => _selectedCatId = catId);
+                            context.formMod.selectNewCategory(category);
+                          },
+                          child: AnimatedScale(
+                            scale: isSelected ? 1.05 : 1,
+                            duration: Durations.short3,
+                            curve: Curves.easeInOut,
+                            child: Column(
+                              spacing: 4,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedContainer(
+                                  duration: Durations.medium1,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.rectangle,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
+                                    color: bgColor,
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CategoryIconContainer(category: category, inContainer: false,)
+                                    // child: category.createIcon(30, selectedThemeMode, fgColor),
+                                  ),
                                 ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: category.createIcon(30, selectedThemeMode, fgColor),
+                                Text(
+                                  category.name!.capitalize(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium!.copyWith(fontSize: 12),
                                 ),
-                              ),
-                              Text(
-                                category.name!.capitalize(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium!.copyWith(fontSize: 12),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      })
+                    ],
                   ),
                 ),
               if (_selectedFormGroup == FormGroup.favorite)

@@ -1,6 +1,8 @@
 import 'dart:ui';
 
+import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/constants/categories.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
@@ -17,415 +19,6 @@ import 'package:provider/provider.dart';
 class CostListScreen extends StatelessWidget {
   const CostListScreen({super.key});
 
-  // Future<void> showFilterCategoryDialog() {
-  //   return showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       final fullCategories = context.read<AppModel>().categories;
-  //       Set<String> selectedCategories = context.read<AppModel>().filteredCategories;
-  //       final selectedThemeMode = context.select((ThemeModel state) => state.theme);
-  //       Set<CostItemCategory> displayCategories = {};
-  //       final TextEditingController controller = TextEditingController();
-  //       return StatefulBuilder(builder: (context, setState) {
-  //         final theme = Theme.of(context);
-  //         final hintColor = theme.colorScheme.primary.withAlpha(100);
-  //         displayCategories = Set.from(controller.text == ""
-  //             ? fullCategories
-  //             : fullCategories.where((category) => category.name!.contains(controller.text)));
-  //         return AlertDialog(
-  //           title: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Text("Filter Category"),
-  //               Text(
-  //                 "${selectedCategories.length} selected ${selectedCategories.length <= 1 ? "category" : "categories"}",
-  //                 overflow: TextOverflow.fade,
-  //                 maxLines: 1,
-  //                 style: Theme.of(context).textTheme.bodyMedium,
-  //               ),
-  //             ],
-  //           ),
-  //           contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-  //           content: SizedBox(
-  //             height: MediaQuery.of(context).size.height * 0.5,
-  //             width: MediaQuery.of(context).size.width * 0.7,
-  //             child: Column(
-  //               children: [
-  //                 Padding(
-  //                   padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 16),
-  //                   child: TextField(
-  //                     controller: controller,
-  //                     style: theme.textTheme.bodyMedium!,
-  //                     decoration: InputDecoration(
-  //                       border:
-  //                           OutlineInputBorder(borderRadius: BorderRadius.circular(200), borderSide: BorderSide.none),
-  //                       fillColor: theme.colorScheme.primary.withAlpha(30),
-  //                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-  //                       filled: true,
-  //                       isDense: true,
-  //                       hint: Row(
-  //                         spacing: 8,
-  //                         children: [
-  //                           Icon(Icons.search, color: hintColor),
-  //                           Text(
-  //                             "Search for categories...",
-  //                             style: theme.textTheme.bodyMedium!.copyWith(color: hintColor),
-  //                           ),
-  //                         ],
-  //                       ),
-  //                       hintStyle: Theme.of(context).textTheme.bodyMedium,
-  //                     ),
-  //                     onChanged: (value) {
-  //                       setState(() {});
-  //                     },
-  //                   ),
-  //                 ),
-  //                 Expanded(
-  //                   child: SingleChildScrollView(
-  //                     child: Column(mainAxisSize: MainAxisSize.min, children: [
-  //                       ...displayCategories.map((category) {
-  //                         final bool isCategorySelected = selectedCategories.contains(category.name);
-  //                         return ListTile(
-  //                           contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-  //                           // visualDensity: VisualDensity(vertical: -1, horizontal: 2),
-  //                           title: Text(category.name ?? ""),
-  //                           leading: Padding(
-  //                             padding: const EdgeInsets.only(left: 12.0),
-  //                             child: Container(
-  //                                 decoration: BoxDecoration(
-  //                                     shape: BoxShape.circle,
-  //                                     color: category.colorScheme(selectedThemeMode).primaryContainer),
-  //                                 child: Padding(
-  //                                   padding: const EdgeInsets.all(8.0),
-  //                                   child: Image.asset(
-  //                                     category.imagePath ?? "",
-  //                                     width: 28,
-  //                                     height: 28,
-  //                                     color: category.colorScheme(selectedThemeMode).onPrimaryContainer,
-  //                                   ),
-  //                                 )),
-  //                           ),
-  //                           trailing: Checkbox(
-  //                               value: isCategorySelected,
-  //                               onChanged: (newValue) {
-  //                                 if (!selectedCategories.remove(category.name)) {
-  //                                   debugPrint('adding new item');
-  //                                   selectedCategories.add(category.name ?? "");
-  //                                 }
-  //                                 setState(() => {});
-  //                               }),
-  //                           onTap: () {
-  //                             if (!selectedCategories.remove(category.name)) {
-  //                               debugPrint('adding new item');
-  //                               selectedCategories.add(category.name ?? "");
-  //                             }
-  //                             setState(() => {});
-  //                           },
-  //                         );
-  //                       }),
-  //                     ]),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //           actions: [
-  //             TextButton(
-  //                 onPressed: () {
-  //                   if (selectedCategories.length == fullCategories.length) {
-  //                     selectedCategories.clear();
-  //                   } else {
-  //                     selectedCategories = Set.from(fullCategories.map((category) => category.name));
-  //                   }
-  //                   setState(() {});
-  //                 },
-  //                 child: Text(selectedCategories.length == fullCategories.length ? "Unselect all" : "Select all")),
-  //             TextButton(
-  //                 onPressed: () {
-  //                   context.read<AppModel>().updateFilteredCategories(selectedCategories);
-  //                   Navigator.of(context).pop();
-  //                 },
-  //                 child: const Text("Save"))
-  //           ],
-  //         );
-  //       });
-  //     },
-  //   );
-  // }
-
-  // Future<void> showFilterAmountDialog() {
-  //   return showDialog(
-  //       context: context,
-  //       builder: (context) {
-  //         final percentiles = context.read<AppModel>().getPercentiles();
-  //         final max = percentiles.last;
-  //         final percentileString = percentiles
-  //             .map((percentile) => context.read<AppModel>().customCurrencyFormat(percentile, false))
-  //             .toList();
-  //         final Map<String, String> percentileMap = {
-  //           "<25%": "<${percentileString[1]}",
-  //           "25% - 50%": "${percentileString[1]} - ${percentileString[2]}",
-  //           "50% - 75%": "${percentileString[2]} - ${percentileString[3]}",
-  //           ">75%": ">${percentileString[3]}",
-  //         };
-  //         RangeValues _rangeValue = RangeValues(0, max);
-  //         Set<String> _selectedPercentileRange = {};
-  //         return StatefulBuilder(builder: (context, setState) {
-  //           return AlertDialog(
-  //             title: Text("Filter Amount"),
-  //             contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-  //             content: Padding(
-  //               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-  //               child: SizedBox(
-  //                 height: MediaQuery.of(context).size.height * 0.4,
-  //                 width: MediaQuery.of(context).size.width * 0.7,
-  //                 child: Column(
-  //                     mainAxisSize: MainAxisSize.min,
-  //                     // mainAxisAlignment: MainAxisAlignment.start,
-  //                     crossAxisAlignment: CrossAxisAlignment.start,
-  //                     children: [
-  //                       Text(
-  //                         "Filter by range",
-  //                         textAlign: TextAlign.left,
-  //                       ),
-  //                       Theme(
-  //                         data: Theme.of(context).copyWith(
-  //                             sliderTheme: SliderThemeData(
-  //                                 valueIndicatorTextStyle: Theme.of(context).textTheme.bodySmall,
-  //                                 valueIndicatorColor: Theme.of(context).colorScheme.primary.withAlpha(50))),
-  //                         child: RangeSlider(
-  //                           values: _rangeValue,
-  //                           onChanged: (newValue) {
-  //                             setState(() => _rangeValue = newValue);
-  //                           },
-  //                           divisions: max.round(),
-  //                           labels:
-  //                               RangeLabels(_rangeValue.start.round().toString(), _rangeValue.end.round().toString()),
-  //                           min: 0,
-  //                           max: max,
-  //                         ),
-  //                       ),
-  //                       const Divider(),
-  //                       Text(
-  //                         "Filter by quartile",
-  //                         textAlign: TextAlign.left,
-  //                       ),
-  //                       ...percentileMap
-  //                           .map((key, value) => MapEntry(
-  //                               key,
-  //                               ListTile(
-  //                                 title: Row(
-  //                                   mainAxisSize: MainAxisSize.max,
-  //                                   children: [
-  //                                     Expanded(child: Text(key)),
-  //                                     Text("(${value})"),
-  //                                   ],
-  //                                 ),
-  //                                 trailing: Checkbox(
-  //                                     value: _selectedPercentileRange.contains(key),
-  //                                     onChanged: (newValue) {
-  //                                       newValue == true
-  //                                           ? _selectedPercentileRange.add(key)
-  //                                           : _selectedPercentileRange.remove(key);
-  //                                       setState(() => {});
-  //                                     }),
-  //                               )))
-  //                           .values
-  //                     ]),
-  //               ),
-  //             ),
-  //             actions: [TextButton(onPressed: () {}, child: Text("Save"))],
-  //           );
-  //         });
-  //       });
-  // }
-
-  // Future<void> showFilterDateDialog() {
-  //   return showDialog(
-  //       context: context,
-  //       builder: (context) {
-  //         DateTimeRange? _selectedDateRange = context.select((AppModel state) => state.filterDateRange);
-  //         DateRangeFilterType dateFilter = context.select((AppModel state) => state.dateRangeFilter);
-  //         final now = DateTime.now();
-  //         final today = DateTime(now.year, now.month, now.day);
-  //         final Map<String, DateTimeRange> dateRanges = {
-  //           "Today": DateTimeRange(start: today, end: today),
-  //           "Yesterday": DateTimeRange(
-  //               start: today.subtract(const Duration(days: 1)), end: today.subtract(const Duration(days: 1))),
-  //           "Last 3 Days": DateTimeRange(start: today.subtract(const Duration(days: 2)), end: today),
-  //           "Last 5 Days": DateTimeRange(start: today.subtract(const Duration(days: 4)), end: today),
-  //           "Last 7 Days": DateTimeRange(start: today.subtract(const Duration(days: 6)), end: today),
-  //           "This week": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1)), end: today),
-  //           "Last week": DateTimeRange(
-  //               start: today.subtract(Duration(days: today.weekday - 1 + 7)),
-  //               end: today.subtract(Duration(days: today.weekday % 7))),
-  //           "Last 2 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 7)), end: today),
-  //           "Last 3 weeks": DateTimeRange(start: today.subtract(Duration(days: today.weekday - 1 + 14)), end: today)
-  //         };
-  //         String subtitleText = "";
-  //         bool showReset = dateFilter != DateRangeFilterType.none ? true : false;
-  //         return StatefulBuilder(builder: (context, setState) {
-  //           if (_selectedDateRange != null) {
-  //             if (_selectedDateRange!.start == _selectedDateRange!.end) {
-  //               subtitleText = "Selected range: ${_selectedDateRange!.start.displayFormat()}";
-  //             } else {
-  //               subtitleText =
-  //                   "Selected range: ${_selectedDateRange!.start.displayFormat()} - ${_selectedDateRange!.end.displayFormat()}";
-  //             }
-  //           } else {
-  //             subtitleText = "No range selected";
-  //           }
-  //           return AlertDialog(
-  //             title: Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 Text("Filter Date"),
-  //                 Text(
-  //                   subtitleText,
-  //                   overflow: TextOverflow.fade,
-  //                   maxLines: 1,
-  //                   style: Theme.of(context).textTheme.bodyMedium,
-  //                 ),
-  //               ],
-  //             ),
-  //             contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 20),
-  //             content: Padding(
-  //               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-  //               child: SizedBox(
-  //                 width: MediaQuery.of(context).size.width * 0.6,
-  //                 child: Column(
-  //                     mainAxisSize: MainAxisSize.min,
-  //                     crossAxisAlignment: CrossAxisAlignment.stretch,
-  //                     spacing: 12,
-  //                     children: [
-  //                       Row(
-  //                         spacing: 16,
-  //                         mainAxisSize: MainAxisSize.max,
-  //                         mainAxisAlignment: MainAxisAlignment.start,
-  //                         children: [
-  //                           SizedBox(
-  //                               height: 40,
-  //                               child: FittedBox(
-  //                                   fit: BoxFit.fill,
-  //                                   child: Switch(
-  //                                       value: dateFilter == DateRangeFilterType.relative,
-  //                                       onChanged: (value) {
-  //                                         dateFilter = value ? DateRangeFilterType.relative : DateRangeFilterType.none;
-  //                                         _selectedDateRange = null;
-  //                                         setState(() {});
-  //                                       }))),
-  //                           Expanded(
-  //                               child: Text(
-  //                             "Relative range",
-  //                             textAlign: TextAlign.left,
-  //                             style: Theme.of(context).textTheme.bodyMedium,
-  //                           )),
-  //                         ],
-  //                       ),
-  //                       DropdownMenu(
-  //                         width: MediaQuery.of(context).size.width * 0.5,
-  //                         menuHeight: 300,
-  //                         initialSelection: dateRanges.values.first,
-  //                         inputDecorationTheme: InputDecorationTheme(
-  //                           border: const UnderlineInputBorder(),
-  //                           isDense: true,
-  //                           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-  //                           constraints: BoxConstraints.tight(const Size.fromHeight(40)),
-  //                         ),
-  //                         textStyle: Theme.of(context).textTheme.bodyMedium,
-  //                         dropdownMenuEntries: dateRanges
-  //                             .map(
-  //                               (key, value) => MapEntry(
-  //                                   key,
-  //                                   DropdownMenuEntry(
-  //                                     value: value,
-  //                                     label: key,
-  //                                     enabled: dateFilter == DateRangeFilterType.relative,
-  //                                   )),
-  //                             )
-  //                             .values
-  //                             .toList(),
-  //                         onSelected: (value) {
-  //                           if (dateFilter != DateRangeFilterType.relative) return;
-  //                           _selectedDateRange = value as DateTimeRange;
-  //                           setState(() {});
-  //                         },
-  //                         selectedTrailingIcon: Icon(Icons.check),
-  //                       ),
-  //                       const Divider(),
-  //                       Row(
-  //                         spacing: 16,
-  //                         mainAxisSize: MainAxisSize.min,
-  //                         mainAxisAlignment: MainAxisAlignment.start,
-  //                         children: [
-  //                           SizedBox(
-  //                               height: 40,
-  //                               child: FittedBox(
-  //                                   fit: BoxFit.fill,
-  //                                   child: Switch(
-  //                                       value: dateFilter == DateRangeFilterType.absolute,
-  //                                       onChanged: (value) async {
-  //                                         dateFilter = value ? DateRangeFilterType.absolute : DateRangeFilterType.none;
-  //                                         _selectedDateRange = null;
-  //                                         if (value) {
-  //                                           final dateRange = await showCalendarDatePicker2Dialog(
-  //                                             context: context,
-  //                                             config: CalendarDatePicker2WithActionButtonsConfig(
-  //                                                 calendarType: CalendarDatePicker2Type.range),
-  //                                             dialogSize: Size(MediaQuery.of(context).size.width * 0.6,
-  //                                                 MediaQuery.of(context).size.height * 0.6),
-  //                                             value: [
-  //                                               DateTime(now.year, now.month, 1),
-  //                                               DateTime(now.year, now.month + 1, 0)
-  //                                             ],
-  //                                           );
-  //                                           if (dateRange != null) {
-  //                                             _selectedDateRange =
-  //                                                 DateTimeRange(start: dateRange.first!, end: dateRange.last!);
-  //                                           } else {
-  //                                             dateFilter = DateRangeFilterType.none;
-  //                                           }
-  //                                         }
-  //                                         setState(() {});
-  //                                       }))),
-  //                           Expanded(
-  //                               child: Text(
-  //                             "Custom range",
-  //                             textAlign: TextAlign.left,
-  //                             style: Theme.of(context).textTheme.bodyMedium,
-  //                           )),
-  //                         ],
-  //                       ),
-  //                       dateFilter == DateRangeFilterType.absolute && _selectedDateRange != null
-  //                           ? GestureDetector(child: Text('${subtitleText.split(":").last} (Change date)'))
-  //                           : SizedBox.shrink()
-  //                     ]),
-  //               ),
-  //             ),
-  //             actions: [
-  //               showReset
-  //                   ? TextButton(
-  //                       onPressed: () {
-  //                         context.read<AppModel>().updateFilteredDateRange(null, DateRangeFilterType.none);
-  //                         Navigator.of(context).pop();
-  //                       },
-  //                       child: Text(
-  //                         "Reset to default",
-  //                         style: TextStyle(color: Colors.lightBlue),
-  //                       ))
-  //                   : SizedBox.shrink(),
-  //               TextButton(
-  //                   onPressed: () {
-  //                     context.read<AppModel>().updateFilteredDateRange(_selectedDateRange, dateFilter);
-  //                     Navigator.of(context).pop();
-  //                   },
-  //                   child: Text("Save"))
-  //             ],
-  //           );
-  //         });
-  //       });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -435,41 +28,64 @@ class CostListScreen extends StatelessWidget {
   }
 }
 
-class CostListBody extends StatelessWidget {
+class CostListBody extends StatefulWidget {
   const CostListBody({
     super.key,
   });
 
   @override
+  State<CostListBody> createState() => _CostListBodyState();
+}
+
+class _CostListBodyState extends State<CostListBody> {
+  late final ScrollController _controller;
+  bool expanded = true;
+
+  void animateScroll() {
+    if (expanded) {
+      _controller.animateTo(80, duration: Durations.medium1, curve: Curves.easeInOut);
+    } else {
+      _controller.animateTo(0, duration: Durations.medium1, curve: Curves.easeInOut);
+    }
+    // setState(() {
+    //   expanded = !expanded;
+    // });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController();
+    _controller.addListener(() {
+      setState(() {
+        if (_controller.offset < 10) {
+          expanded = true;
+        } else {
+          expanded = false;
+        }
+        debugPrint(expanded.toString());
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
-    final isBlurred = context.select((ListModel state) => state.isBlurred);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar:
-          context.listMod.isSearchOpened
-              ? null
-              : AppBar(
-                title: Text("OVERVIEW", style: context.customTt.dateLabel),
-                actions: [
-                  IconButton(onPressed: context.listMod.toggleSearch, icon: Icon(Icons.search)),
-                  IconButton(
-                    onPressed: context.listMod.toggleBlur,
-                    icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
-                  ),
-                  IconButton(onPressed: context.listMod.getCurMonthData, icon: Icon(Icons.refresh)),
-                ],
-              ),
+      appBar: const ListViewAppBar(),
       body: SafeArea(
         child: Flex(
           direction: Axis.vertical,
           children: [
-            ...isSearchOpened ? [const SearchTab()] : [],
+            // ...isSearchOpened ? [const SearchTab()] : [],
             const DateBreadcrumb(),
             Expanded(
               child: CustomScrollView(
+                controller: _controller,
                 slivers: [
-                  const SummaryTab(),
+                  SummaryTab(
+                    onPressed: animateScroll,
+                  ),
                   const CostEntryList(),
                 ],
               ),
@@ -478,6 +94,79 @@ class CostListBody extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const ListViewAppBar({
+    super.key,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56.0);
+
+  @override
+  Widget build(BuildContext context) {
+    final isBlurred = context.select((ListModel state) => state.isBlurred);
+    final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
+    final selectionMode = context.select((ListModel state) => state.selectionMode);
+    final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
+
+    if (selectionMode) {
+      return AppBar(
+        actionsPadding: EdgeInsets.only(right: 10),
+        animateColor: true,
+        backgroundColor: context.customCs.fadeColor2,
+        leading: BackButton(
+          onPressed: () {
+            context.listMod.toggleSelectionMode(false);
+          },
+        ),
+        actions: [
+          IconButton(
+            onPressed: context.listMod.deleteSelectedItems,
+            icon: Icon(Icons.delete),
+          ),
+        ],
+        title: Text(
+          "Selected: ${selectedItemLength}",
+          style: context.customTt.numberFontMedium!,
+        ),
+      );
+    } else if (isSearchOpened) {
+      return AppBar(
+        actionsPadding: EdgeInsets.only(right: 10),
+        backgroundColor: context.customCs.fadeColor2,
+        leading: BackButton(
+          onPressed: () {
+            context.listMod.toggleSearch(false);
+          },
+        ),
+        title: const SearchTabTextField(),
+      );
+    } else {
+      return AppBar(
+        actionsPadding: EdgeInsets.only(right: 10),
+        title: Text("OVERVIEW", style: context.customTt.dateLabel),
+        actions: [
+          IconButton(
+            visualDensity: VisualDensityExtension.minimum,
+            onPressed: context.listMod.toggleSearch,
+            icon: Icon(Icons.search),
+          ),
+          IconButton(
+            visualDensity: VisualDensityExtension.minimum,
+            onPressed: context.listMod.toggleBlur,
+            icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
+          ),
+          IconButton(
+            visualDensity: VisualDensityExtension.minimum,
+            onPressed: context.listMod.getCurMonthData,
+            icon: Icon(Icons.refresh),
+          ),
+        ],
+      );
+    }
   }
 }
 
@@ -500,10 +189,10 @@ class DateBreadcrumb extends StatelessWidget {
         if (details.primaryVelocity == null) return;
         if (details.primaryVelocity! > 500) {
           // swipe right
-          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
+          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
         } else if (details.primaryVelocity! < -500) {
           // swipe left
-          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
+          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
         }
       },
       child: Container(
@@ -554,14 +243,9 @@ class DateBreadcrumb extends StatelessWidget {
   }
 }
 
-class CostEntryList extends StatefulWidget {
+class CostEntryList extends StatelessWidget {
   const CostEntryList({super.key});
 
-  @override
-  State<CostEntryList> createState() => _CostEntryListState();
-}
-
-class _CostEntryListState extends State<CostEntryList> {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((ListModel state) => state.ready);
@@ -569,7 +253,14 @@ class _CostEntryListState extends State<CostEntryList> {
 
     final groupedCostItems = context.select((ListModel state) => state.outputCostItems);
     final dailySummary = context.select((ListModel state) => state.outputDailySummary);
+    final selectionMode = context.select((ListModel state) => state.selectionMode);
+    final selectedItems = context.select((ListModel state) => state.selectedItems);
+    final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
 
+    debugPrint(
+      "rebuilt, item count: ${groupedCostItems.entries.isNotEmpty ? groupedCostItems.entries.first.value.length : 0}",
+    );
+    // debugPrint("rebuilt, item count: ${groupedCostItems.entries.length}");
     if (!ready) {
       return SliverToBoxAdapter(
         child: CircularProgressIndicator(),
@@ -586,7 +277,7 @@ class _CostEntryListState extends State<CostEntryList> {
       );
     } else {
       return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 12),
         sliver: SliverList.builder(
           itemCount: groupedCostItems.length,
           itemBuilder: (context, index) {
@@ -598,16 +289,12 @@ class _CostEntryListState extends State<CostEntryList> {
             final double daySummary = dailySummary[date]!.balance;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 4.0),
-              child: Container(
-                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: context.cs.surfaceContainer.withAlpha(0),
-                ),
-                child: Column(
-                  children: [
-                    Row(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, right: 12, bottom: 10),
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       textBaseline: TextBaseline.ideographic,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -623,51 +310,71 @@ class _CostEntryListState extends State<CostEntryList> {
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    ...costItems.map((costItem) {
-                      final cat = CustomUtils().findInList(costItem.category);
-
-                      return GestureDetector(
-                        onTap:
-                            () => context.read<NavigationModel>().openForm(
-                              FormArgument(selectedCostItem: costItem),
-                            ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            spacing: 12,
-                            children: [
-                              CategoryIconContainer(
-                                category: cat ?? CostItemCategory(name: "Placeholder"),
-                                size: 20,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  "${costItem.name} ${costItem.lastModified}",
-                                  // maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.tt.bodyMedium,
-                                ),
-                              ),
-                              HideableText(
-                                NumberFormat.currency(symbol: "RM").format(costItem.signedAmount),
-                                isCurrency: true,
-                                textStyle: context.customTt.numberFontSmall!.copyWith(
-                                  color:
-                                      costItem.isExpense
-                                          ? Colors.red.withAlpha(200)
-                                          : Colors.green.withAlpha(200),
-                                ),
-                              ),
-                            ],
-                          ),
+                  ),
+                  ...costItems.map((costItem) {
+                    //TODO: FIX THIS
+                    final cat = CustomUtils().findInList(costItem.category);
+                    final selected = selectedItems.any((item) => item.uuid == costItem.uuid);
+                    return GestureDetector(
+                      onLongPress: () {
+                        context.listMod.toggleSelectionMode(true);
+                        context.listMod.updateSelection(costItem, true);
+                      },
+                      onTap: () {
+                        if (selectionMode) {
+                          context.listMod.updateSelection(costItem, !selected);
+                        } else {
+                          context.navMod.openForm(
+                            FormArgument(selectedCostItem: costItem),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: selected ? context.customCs.fadeColor3 : Colors.transparent,
                         ),
-                      );
-                    }),
-                  ],
-                ),
+                        child: Row(
+                          spacing: 12,
+                          children: [
+                            if (selectionMode)
+                              Checkbox(
+                                visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+                                value: selected,
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    context.listMod.updateSelection(costItem, value);
+                                  }
+                                },
+                              ),
+                            CategoryIconContainer(
+                              category: cat ?? CostItemCategory(name: "Placeholder"),
+                              size: 20,
+                            ),
+                            Expanded(
+                              child: Text(
+                                "${costItem.name} - ${costItem.categoryId}",
+                                // maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.tt.bodyMedium,
+                              ),
+                            ),
+                            HideableText(
+                              NumberFormat.currency(symbol: "RM").format(costItem.signedAmount),
+                              isCurrency: true,
+                              textStyle: context.customTt.numberFontSmall!.copyWith(
+                                color:
+                                    costItem.isExpense
+                                        ? Colors.red.withAlpha(200)
+                                        : Colors.green.withAlpha(200),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
             );
           },
@@ -678,20 +385,25 @@ class _CostEntryListState extends State<CostEntryList> {
 }
 
 class SummaryTab extends StatelessWidget {
-  const SummaryTab({
-    super.key,
-  });
+  const SummaryTab({super.key, this.onPressed});
+
+  final void Function()? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final monthMetrics = context.select((ListModel state) => state.monthSummary);
-    final expense = monthMetrics.expense ?? 0;
-    final income = monthMetrics.income ?? 0;
-    final balance = monthMetrics.balance;
+    final expense = context.select((ListModel state) => state.outputMonthSummary.expense ?? 0);
+    final income = context.select((ListModel state) => state.outputMonthSummary.income ?? 0);
+    final balance = income - expense;
 
     return SliverPersistentHeader(
-      delegate: SummaryHeaderDelegate(expense: expense, income: income, balance: balance),
+      delegate: SummaryHeaderDelegate(
+        expense: expense,
+        income: income,
+        balance: balance,
+        onPressed: onPressed,
+      ),
       pinned: true,
+      floating: true,
     );
   }
 }
@@ -701,9 +413,11 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.expense,
     required this.income,
     required this.balance,
+    this.onPressed,
   });
 
   final double expense, income, balance;
+  final void Function()? onPressed;
 
   Widget expenseMetricCard(
     BuildContext context, {
@@ -782,49 +496,68 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
             children: [
               Expanded(
                 child: Column(
-                  spacing: 12,
+                  spacing: 0,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     expenseMetricCard(
                       context,
-                      labelText: "Balance",
+                      labelText: "Summary",
                       progress: progress,
                       value: NumberFormat.compactCurrency(symbol: "RM").format(balance),
                       isBig: true,
                     ),
-                    Row(
-                      spacing: 20,
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: expenseMetricCard(
-                            context,
-                            labelText: "Expense",
-                            progress: progress,
-                            value: NumberFormat.compactCurrency(symbol: "RM").format(expense),
-                            isBig: false,
-                          ),
+                    Opacity(
+                      opacity: lerpDouble(1, 0, progress)!,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Row(
+                          spacing: 20,
+                          mainAxisSize: MainAxisSize.max,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            HideableText(
+                              "-${NumberFormat.compactCurrency(symbol: "RM").format(expense)}",
+                              textStyle: context.customTt.numberFontSmall!.copyWith(
+                                color: Colors.red,
+                                fontSize: 18,
+                              ),
+                            ),
+                            Text(
+                              "+${NumberFormat.compactCurrency(symbol: "RM").format(income)}",
+                              style: context.customTt.numberFontSmall!.copyWith(
+                                color: Colors.green,
+                                fontSize: 18
+                              ),
+                            ),
+                            // Expanded(
+                            //   child: expenseMetricCard(
+                            //     context,
+                            //     labelText: "Expense",
+                            //     progress: progress,
+                            //     value: NumberFormat.compactCurrency(symbol: "RM").format(expense),
+                            //     isBig: false,
+                            //   ),
+                            // ),
+                            // Expanded(
+                            //   child: expenseMetricCard(
+                            //     context,
+                            //     labelText: "Income",
+                            //     progress: progress,
+                            //     value: NumberFormat.compactCurrency(symbol: "RM").format(income),
+                            //     isBig: false,
+                            //   ),
+                            // ),
+                          ],
                         ),
-                        Expanded(
-                          child: expenseMetricCard(
-                            context,
-                            labelText: "Income",
-                            progress: progress,
-                            value: NumberFormat.compactCurrency(symbol: "RM").format(income),
-                            isBig: false,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
               // Expanded(child: SizedBox()),
               Container(
-                width: 135,
+                width: 100,
                 // height: 250,
-                alignment: Alignment.centerRight,
                 decoration: BoxDecoration(
                   shape: BoxShape.rectangle,
                   border: BoxBorder.all(color: Colors.transparent),
@@ -836,7 +569,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                   child: Opacity(
                     opacity: lerpDouble(1, 0, Interval(0, 0.7).transform(progress))!,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20.0),
+                      padding: const EdgeInsets.symmetric(vertical: 18.0),
                       child: const SummaryChart(),
                     ),
                   ),
@@ -850,10 +583,10 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 190;
+  double get maxExtent => 157;
 
   @override
-  double get minExtent => 115;
+  double get minExtent => 105;
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => true;
@@ -895,6 +628,11 @@ class _SummaryChartState extends State<SummaryChart> {
 
   @override
   Widget build(BuildContext context) {
+    final expense = context.select((ListModel state) => state.outputMonthSummary.expense ?? 0);
+    final income = context.select((ListModel state) => state.outputMonthSummary.income ?? 0);
+    final balance = income - expense;
+
+    final double balancePercentage = income > 0 ? balance / income : 0;
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
     // final expense = context.select(
@@ -908,20 +646,23 @@ class _SummaryChartState extends State<SummaryChart> {
         alignment: Alignment.center,
         children: [
           Column(
+            spacing: 4,
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 'Balance',
-                style: context.customTt.numberLabel!.copyWith(
-                  color: context.cs.onPrimary,
-                  height: 0.5,
+                style: context.customTt.numberFontSmall!.copyWith(
+                  color: context.cs.surface.withAlpha(150),
+                  height: 1,
+                  fontSize: 12,
                 ),
               ),
               Text(
-                '20',
-                style: context.customTt.numberFontLarge!.copyWith(
-                  color: context.cs.onPrimary,
+                income > 0 ? NumberFormat.percentPattern().format(balancePercentage) : "N/A",
+                style: context.customTt.numberFontMedium!.copyWith(
+                  color: context.cs.surface,
+                  fontWeight: FontWeight(700),
                   height: 1,
                 ),
               ),
@@ -929,26 +670,25 @@ class _SummaryChartState extends State<SummaryChart> {
           ),
           PieChart(
             PieChartData(
-              // sectionsSpace: 5,
               sectionsSpace: 0,
-              centerSpaceRadius: 52,
+              centerSpaceRadius: 40,
               startDegreeOffset: -90,
+              centerSpaceColor: Colors.transparent,
               sections: [
                 PieChartSectionData(
                   showTitle: false,
-                  value: 3,
+                  value: balancePercentage == 0 ? 0.001 : balancePercentage,
                   radius: 10,
                   color: context.customCs.onFlipCard,
-                  cornerRadius: 10,
+                  // color: Colors.green.shade800,
+                  // cornerRadius: 10,
                 ),
                 PieChartSectionData(
                   showTitle: false,
-                  value: 2,
+                  value: 1 - balancePercentage,
                   radius: 10,
-                  color: context.cs.surface.withAlpha(50),
-                  // cornerRadius: 10,
+                  color: context.cs.surface.withAlpha(20),
                 ),
-                // PieChartSectionData(value: 1, radius: 10),
               ],
             ),
           ),
@@ -1022,7 +762,7 @@ class _SummaryChartState extends State<SummaryChart> {
           curve: Curves.fastOutSlowIn,
           PieChartData(
             centerSpaceColor: Theme.of(context).colorScheme.surfaceContainer,
-            centerSpaceRadius: 40,
+            centerSpaceRadius: 35,
             startDegreeOffset: 270,
             sections: [
               PieChartSectionData(
@@ -1244,22 +984,18 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      style: context.tt.bodyMedium!.copyWith(fontSize: 12),
+      style: context.tt.bodyMedium!,
       controller: _controller,
       autofocus: true,
+      textAlignVertical: TextAlignVertical.center,
       decoration: InputDecoration(
+        visualDensity: VisualDensity(vertical: -4, horizontal: -4),
         focusedBorder: InputBorder.none,
         border: InputBorder.none,
         isDense: true,
-        prefixIcon: IconButton(
-          iconSize: 24,
-          onPressed: () {
-            // context.appMod.clearFilter();
-            context.listMod.toggleSearch();
-          },
-          icon: Icon(Icons.arrow_back),
-        ),
+        contentPadding: EdgeInsets.all(0),
         suffixIcon: IconButton(
+          visualDensity: VisualDensity(vertical: -4, horizontal: -4),
           iconSize: 24,
           onPressed: () {
             _controller.clear();

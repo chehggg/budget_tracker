@@ -15,6 +15,8 @@ ThemeData get appTheme {
   final customTextTheme = baseTheme.textTheme.copyWith(
     bodySmall: TextStyle(fontFamily: 'Inter', color: Color(0xffF0EBE0).withAlpha(150)),
     bodyMedium: TextStyle(fontFamily: 'Inter'),
+    // headline
+    // titleSmall: TextStyle(fontFamily: 'Inter'),
     bodyLarge: TextStyle(fontFamily: 'DMSerifDisplay', fontSize: 26),
     labelSmall: TextStyle(fontFamily: 'Oranienbaum', fontWeight: FontWeight(600)),
     titleMedium: TextStyle(
@@ -33,8 +35,8 @@ ThemeData get appTheme {
       fontWeight: FontWeight(300),
     ),
     numberFontMedium: customTextTheme.bodyMedium!.copyWith(
-      fontSize: 25,
-      fontWeight: FontWeight(600),
+      fontSize: 20,
+      fontWeight: FontWeight(500),
     ),
     numberFontSmall: customTextTheme.bodyMedium!.copyWith(
       fontSize: 16,

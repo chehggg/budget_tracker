@@ -1,10 +1,9 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:budget_tracker/constants/categories.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/custom/extensions.dart';
-import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:uuid/uuid.dart';
@@ -51,7 +50,7 @@ class CostItem {
       date = result.date,
       costType = result.costType,
       categoryId = result.category.name!,
-      category = result.category.id,
+      category = result.category.id!,
       amount = result.amount,
       name = result.name,
       lastCreated = initItem.lastCreated,
@@ -75,7 +74,7 @@ class CostItem {
     name = json['name'] as String,
     amount = json['amount'] as double,
     category = json['category'] as String,
-    categoryId = json['categoryId'] as String,
+    categoryId = json['categoryId'] as String? ?? "",
     costType = CostType.values.where((costType) => costType.name == json['costType']).first,
     date = (json['date'] as String).dateParseStd(),
     lastCreated = DateTime.tryParse(json['lastCreated'] as String),
@@ -102,6 +101,18 @@ class CostItem {
           DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now(),
       lastModified =
           DateTime.tryParse(list.elementAtOrNull(8)) ?? DateTime.now();
+  
+  CostItem.fromCsvLegacy(List<dynamic> list, {bool newId = false})
+    : uuid = newId ? Uuid().v4() : list[0] as String,
+      date = (list[1] as String).dateParseStd(),
+      costType = CostType.values.where((costType) => costType.name == list[2] as String).first,
+      category = list[3] as String,
+      amount = double.tryParse(list[4] as String) ?? 0,
+      name = list[5] as String,
+      lastCreated =
+          DateTime.tryParse(list.elementAtOrNull(6)) ?? DateTime.now(),
+      lastModified =
+          DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now();
 
   String getCurrencyValue(String currencySymbol, [bool? includeSign]) {
     final String value = amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);
@@ -179,88 +190,7 @@ class FormArgument {
   final CostItem? selectedCostItem;
 }
 
-class CostItemCategory {
-  const CostItemCategory({this.id, this.name, this.color, this.imagePath, this.costType});
 
-  final String? id;
-  final String? name;
-  final Color? color;
-  final String? imagePath;
-  final CostType? costType;
-
-  ColorScheme colorScheme(ThemeMode mode) {
-    Brightness brightness;
-    // final themeMode = ThemeMode.light;
-    switch (mode) {
-      case ThemeMode.dark:
-        brightness = Brightness.dark;
-      case ThemeMode.light:
-        brightness = Brightness.light;
-      default:
-        brightness = PlatformDispatcher.instance.platformBrightness;
-    }
-
-    // debugPrint("getColorScheme, brightness: ${brightness.name}, theme: ${themeMode}");
-    return ColorScheme.fromSeed(
-      seedColor: color!,
-      dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
-      // contrastLevel: -0.1,
-      // contrastLevel: -0.5,
-      brightness: brightness,
-    );
-  }
-
-  Widget createIcon(double size, ThemeMode mode, [Color? foregroundColor]) {
-    // final fg = foregroundColor ?? colorScheme(mode).onPrimaryContainer;
-    return SvgPicture.asset(
-      imagePath!,
-      colorFilter:
-          foregroundColor == null ? null : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
-      // color: fg,
-      height: size,
-      width: size,
-    );
-  }
-
-
-  Widget generateRoundedIcon(
-    double size,
-    ThemeMode mode, [
-    Color? backgroundColor,
-    Color? foregroundColor,
-  ]) {
-    final bg = backgroundColor ?? colorScheme(mode).primaryContainer;
-    // final bg = backgroundColor ?? colorScheme.primary;
-    final fg = foregroundColor ?? colorScheme(mode).onPrimaryContainer;
-    return Container(
-      height: size + 12,
-      width: size + 12,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            bg.withValues(
-              red: min<double>((bg.r + 20 / 255), 1),
-              blue: min<double>((bg.b + 20 / 255), 1),
-              green: min<double>((bg.g + 20 / 255), 1),
-            ),
-            bg,
-            bg.withAlpha(100),
-          ],
-        ),
-        // color: bg
-      ),
-      child: Padding(padding: const EdgeInsets.all(8.0), child: createIcon(size, mode, fg)),
-    );
-  }
-
-  // String getLocalizedName(BuildContext context) {
-  //   final Map<String,dynamic> categoryJson = jsonDecode(AppLocalizations.of(context)!.categories);
-  //   return categoryJson[name] ?? "NA";
-  // }
-}
 
 class CostMetric {
   CostMetric({

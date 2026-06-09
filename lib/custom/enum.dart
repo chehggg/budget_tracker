@@ -2,7 +2,11 @@ import 'package:collection/collection.dart';
 
 enum CostType {
   expense,
-  income,
+  income;
+
+  factory CostType.from(String value) {
+    return CostType.values.firstWhere((type) => type.name == value, orElse: () => CostType.expense);
+  }
 }
 
 enum FormGroup {

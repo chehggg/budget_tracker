@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
 
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -990,7 +991,7 @@ class _CategoryListState extends State<CategoryList> {
                 ]))
               ],
             ),
-            leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
+            // leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
             subtitle: PercentageBar(
                 height: 8, color: categoryColorScheme.primaryFixed, percentage: categoryAmount / maxAmount),
             children: costItems.map((CostItem costItem) {

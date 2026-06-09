@@ -17,7 +17,7 @@ import 'package:budget_tracker/screens/chart_screen.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/list/list_screen.dart';
 import 'package:budget_tracker/screens/report_screen.dart';
-import 'package:budget_tracker/screens/settings_screen.dart';
+import 'package:budget_tracker/ui/settings/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:budget_tracker/constants/categories.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
@@ -27,6 +28,7 @@ extension DayExtension on DateTime {
   String formatPretty() => DateFormat('E, d MMM').format(this);
 
   DateTime get startOfMonth => DateTime(year, month, 1);
+  DateTime get startOfYear => DateTime(year, 1, 1);
 
   List<int> getFullMonthWeekdayList() {
     final int days = getTotalDayInMonth();
@@ -170,7 +172,7 @@ class MyTexts extends ThemeExtension<MyTexts> {
     }
     return MyTexts(
       numberFontLarge: TextStyle.lerp(numberFontLarge, other.numberFontLarge, t),
-      numberFontMedium: TextStyle.lerp(numberFontMedium, other.numberFontLarge, t),
+      numberFontMedium: TextStyle.lerp(numberFontMedium, other.numberFontMedium, t),
       numberFontSmall: TextStyle.lerp(numberFontSmall, other.numberFontSmall, t),
       numberLabel: TextStyle.lerp(numberLabel, other.numberLabel, t),
       dateLabel: TextStyle.lerp(dateLabel, other.dateLabel, t),
@@ -240,4 +242,9 @@ class CustomUtils {
   CostItemCategory? findInList(String name) {
     return defaultCostItemCategories.firstWhereOrNull((cat) => cat.name == name);
   }
+}
+
+
+extension VisualDensityExtension on VisualDensity {
+  static VisualDensity get minimum => VisualDensity(horizontal: -4.0, vertical: -4.0);
 }

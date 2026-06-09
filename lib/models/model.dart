@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
@@ -306,19 +307,19 @@ class AppModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void saveCostItemFromTemp(List<DateTime> dates) {
-    for (var date in dates) {
-      createCostItem(
-        CostItemFormResult(
-          name: _tempRecCostItem?.name ?? "",
-          category: _tempRecCostItem?.category ?? "",
-          date: date,
-          costType: _tempRecCostItem?.costType ?? CostType.expense,
-          amount: _tempRecCostItem?.amount ?? 0,
-        ),
-      );
-    }
-  }
+  // void saveCostItemFromTemp(List<DateTime> dates) {
+  //   for (var date in dates) {
+  //     createCostItem(
+  //       CostItemFormResult(
+  //         name: _tempRecCostItem?.name ?? "",
+  //         category: _tempRecCostItem?.category ?? "",
+  //         date: date,
+  //         costType: _tempRecCostItem?.costType ?? CostType.expense,
+  //         amount: _tempRecCostItem?.amount ?? 0,
+  //       ),
+  //     );
+  //   }
+  // }
 
   double calculateDailyTotal(String date, [CostType? costType]) {
     final dailyFilteredCostItems = _costItems.where((costItem) => costItem.date == date).toList();

@@ -5,7 +5,7 @@ import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
-import 'package:budget_tracker/screens/settings_screen.dart';
+import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -598,7 +598,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
                               actions: [
                                 TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
                                 TextButton(onPressed: () {
-                                  context.read<AppModel>().saveCostItemFromTemp(_recurringDates);
+                                  // context.read<AppModel>().saveCostItemFromTemp(_recurringDates);
                                   context.read<AppModel>().removeTempCostItem();
                                   Navigator.pop(context);
                                   context.read<NavigationModel>().navigateMainScreen(0);

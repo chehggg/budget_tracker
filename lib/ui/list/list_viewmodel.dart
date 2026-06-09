@@ -29,6 +29,12 @@ class ListModel extends ChangeNotifier {
   bool _isInitialized = false;
   bool get ready => _isInitialized;
 
+  bool _selectionMode = false;
+  bool get selectionMode => _selectionMode;
+  
+  List<CostItem> _selectedItems = [];
+  UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
+
   DateTime _curYearMonth = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime get currentMonth => _curYearMonth;
 
@@ -72,7 +78,18 @@ class ListModel extends ChangeNotifier {
     return outputCostItems.map((key, value) => MapEntry(key, CostMetric.fromCostItemList(value)));
   }
 
+  CostMetric get outputMonthSummary {
+    double income = 0;
+    double expense = 0;
+    for (final entry in outputDailySummary.entries) {
+        income += entry.value.income ?? 0;
+        expense += entry.value.expense ?? 0;
+    }
+    return CostMetric(income: income, expense: expense);
+  }
+
   void getCurMonthData() {
+    
     _dayGroupedCostItems = Map.fromEntries(
       _costItemRepository.gbDateCostItems.entries
           .where(
@@ -88,6 +105,8 @@ class ListModel extends ChangeNotifier {
     );
 
     _totalSummary = _costItemRepository.monthSummary[_curYearMonth] ?? CostMetric();
+    
+    debugPrint('get curMonth data loaded, total: ${_totalSummary.balance}');
 
     notifyListeners();
   }
@@ -144,6 +163,33 @@ class ListModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleSelectionMode(bool value) {
+    _selectionMode = value;
+    if (!value) {
+      _selectedItems.clear();
+    }
+    notifyListeners();
+  }
+
+  void updateSelection(CostItem item, bool selected) {
+    if (selected) {
+      _selectedItems.add(item);
+    } else {
+      _selectedItems.removeWhere((el) => el.uuid == item.uuid);
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteSelectedItems() async {
+    for (CostItem item in _selectedItems) {
+      await _costItemRepository.deleteCostItem(item);
+    }
+    notifyListeners();
+  }
+
+  
+
   double get maxAmount => _costItemRepository.costItems.fold(0, (init, item) => max(init,item.signedAmount));
   double get minAmount => _costItemRepository.costItems.fold(0, (init, item) => min(init,item.signedAmount));
+
 }
