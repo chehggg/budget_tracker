@@ -39,7 +39,7 @@ class ListModel extends ChangeNotifier {
   final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
 
-  DateTime _curYearMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime _curYearMonth = DateTime.now().startOfMonth;
   DateTime get currentMonth => _curYearMonth;
 
   bool _isSearchOpened = false;

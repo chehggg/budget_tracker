@@ -1,6 +1,7 @@
 import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
+import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
@@ -71,7 +72,7 @@ class FormModel extends ChangeNotifier {
   CostType _type = CostType.expense;
   CostType get type => _type;
 
-  DateTime _date = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  DateTime _date = DateTime.now().standardNow;
   DateTime get date => _date;
 
   String _savedTitle = "";

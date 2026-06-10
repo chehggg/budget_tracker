@@ -104,12 +104,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   void initState() {
     super.initState();
 
-    DateTime now = DateTime.now();
-    _selectedDate = DateTime(now.year, now.month, now.day);
-
-    if (context.formMod.selectedCategory != null) {
-      _selectedDate = context.formMod.date;
-    }
+    _selectedDate = context.formMod.date;
   }
 
   void selectDate() async {

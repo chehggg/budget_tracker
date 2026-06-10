@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
+import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:flutter/material.dart';
@@ -64,7 +65,7 @@ class SavedItemModel extends ChangeNotifier {
   double? _amount = 0;
   double? get amount => _amount;
 
-  DateTime? _date = DateTime.now();
+  DateTime? _date = DateTime.now().standardNow;
   DateTime? get date => _date;
 
   bool _keepDesc = true;
