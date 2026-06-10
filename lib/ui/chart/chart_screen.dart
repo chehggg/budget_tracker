@@ -7,6 +7,7 @@ import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/chart_details_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
+import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -102,56 +103,61 @@ class _ChartScreenState extends State<ChartScreen> {
                       child: Row(
                         spacing: 4,
                         children: [
-                          // FilterChip(label: Text("MTD"), onSelected: (value) {}),
-                          // FilterChip(label: Text("YTD"), onSelected: (value) {}),
-                          // FilterChip(label: Text("1W"), onSelected: (value) {}),
-                          FilterChip(
-                            label: Text("MTD"),
-                            onSelected: (value) {
-                              context.chartMod.updateDateRange('mtd');
-                            },
+                          ...DateRangeType.values.map(
+                            (type) => FilterChip(
+                              label: Text(type.name.capitalize()),
+                              onSelected: (value) {
+                                context.chartMod.updateDateRange(type);
+                              },
+                            ),
                           ),
-                          FilterChip(
-                            label: Text("1M"),
-                            onSelected: (value) {
-                              context.chartMod.updateDateRange('month');
-                            },
-                          ),
-                          // FilterChip(label: Text("1Y"), onSelected: (value) {}),
                         ],
                       ),
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.only(top: 12.0),
                       sliver: SliverToBoxAdapter(
-                        child: SizedBox(height: 300, child: Expanded(child: DailyTotalBarChart(titleData: chartTitleData)))
-                        // child: CustomChartSection(
-                        //   title: "Spending Trend",
-                        //   sectionHeight: 300,
-                        //   pageChildren: [
-                        //     // DailyTotalBarChart(),
-                        //     ,
-                        //     // DailyCumulativeSpendLineChart(titleData: chartTitleData()),
-                        //     // DateTrendLineChart(titleData: chartTitleData()),
-                        //   ],
-                        // ),
+                        child: SizedBox(
+                          height: 300,
+                          child: Expanded(child: DayBarChart(titleData: chartTitleData)),
+                        ),
                       ),
                     ),
                     SliverPadding(
                       padding: const EdgeInsets.only(top: 12.0),
                       sliver: SliverToBoxAdapter(
-                        child: CustomChartSection(
-                          title: "Daily Cumulative Spend",
-                          sectionHeight: 300,
-                          pageChildren: [
-                            // DailyTotalBarChart(),
-                            // DailyTotalBarChart(titleData: chartTitleData),
-                            DailyCumulativeSpendLineChart(titleData: chartTitleData),
-                            // DateTrendLineChart(titleData: chartTitleData()),
-                          ],
+                        child: SizedBox(
+                          height: 300,
+                          child: Expanded(child: NewCumulativeLineChart(titleData: chartTitleData)),
                         ),
                       ),
                     ),
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      sliver: SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 300,
+                          child: Expanded(
+                            child: NewAvgCumulativeLineChart(titleData: chartTitleData),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // SliverPadding(
+                    //   padding: const EdgeInsets.only(top: 12.0),
+                    //   sliver: SliverToBoxAdapter(
+                    //     child: CustomChartSection(
+                    //       title: "Daily Cumulative Spend",
+                    //       sectionHeight: 300,
+                    //       pageChildren: [
+                    //         // DailyTotalBarChart(),
+                    //         // DailyTotalBarChart(titleData: chartTitleData),
+                    //         DailyCumulativeSpendLineChart(titleData: chartTitleData),
+                    //         // DateTrendLineChart(titleData: chartTitleData()),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                     // Column(
                     //   spacing: 20,
                     //   children: [
@@ -239,8 +245,8 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 }
 
-class DailyTotalBarChart extends StatelessWidget {
-  const DailyTotalBarChart({
+class DayBarChart extends StatelessWidget {
+  const DayBarChart({
     super.key,
     this.titleData,
   });
@@ -249,9 +255,7 @@ class DailyTotalBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartModel state) => state.dailyOverviewComparsion);
-    // final maxValue = (data.values.map<double>((metric) => metric.expense!)).toList().maxCeiling();
-    // debugPrint('max value: ${maxValue}');
+    final data = context.select((ChartModel state) => state.overviewComparisonView);
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +270,10 @@ class DailyTotalBarChart extends StatelessWidget {
               duration: Durations.medium1,
               BarChartData(
                 barTouchData: BarTouchData(
+                  touchExtraThreshold: EdgeInsets.only(top: 100),
                   touchTooltipData: BarTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem("Test", context.tt.bodyMedium!);
                     },
@@ -277,39 +284,20 @@ class DailyTotalBarChart extends StatelessWidget {
                 titlesData: titleData,
                 // maxY: maxValue,
                 barGroups:
-                    data.entries
-                        .map(
-                          (entry) => BarChartGroupData(
-                            x: entry.key,
-                            barRods: [
-                              ...entry.value
-                                  .asMap()
-                                  .map(
-                                    (i, e) => MapEntry(
-                                      i,
-                                      BarChartRodData(
-                                        label: BarChartRodLabel(
-                                          show:
-                                              e.expense! >
-                                              context.chartMod.dailyRangePercentile(40),
-                                          text: (e.expense! > 0 ? e.expense!.compactFormat() : ""),
-                                          style: context.customTt.numberFontSmall!.copyWith(
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                        color: i == 1 ? Colors.blue : context.cs.secondary,
-                                        toY: e.expense ?? 0,
-                                        // rodStackItems: [
-                                        //   BarChartRodStackItem(fromY, toY, color)
-                                        // ]
-                                      ),
-                                    ),
-                                  )
-                                  .values,
-                            ],
-                          ),
-                        )
-                        .toList(),
+                    data.mapIndexed((index, value) {
+                      return BarChartGroupData(
+                        x: index,
+                        barRods:
+                            value.entries
+                                .map(
+                                  (entry) => BarChartRodData(
+                                    toY: entry.value,
+                                    label: BarChartRodLabel(text: entry.value.compactFormat()),
+                                  ),
+                                )
+                                .toList(),
+                      );
+                    }).toList(),
               ),
             ),
           ),
@@ -1390,6 +1378,74 @@ class BudgetBarChart extends StatelessWidget {
           ),
         ],
         rotationQuarterTurns: 1,
+      ),
+    );
+  }
+}
+
+class NewCumulativeLineChart extends StatelessWidget {
+  const NewCumulativeLineChart({super.key, this.titleData});
+
+  final FlTitlesData? titleData;
+
+  @override
+  Widget build(BuildContext context) {
+    final cumulativeComparison = context.select((ChartModel state) => state.cumulativeComparison);
+    return LineChart(
+      LineChartData(
+        titlesData: titleData ?? FlTitlesData(),
+        lineBarsData:
+            cumulativeComparison
+                .asMap()
+                .entries
+                .map(
+                  (cumulativeEntry) => LineChartBarData(
+                    color: cumulativeEntry.key == 0 ? context.cs.secondary : context.cs.tertiary,
+                    spots: [
+                      ...cumulativeEntry.value.entries.mapIndexed(
+                        (index, entry) => FlSpot(index.toDouble(), entry.value),
+                      ),
+                    ],
+                    isCurved: true,
+                    curveSmoothness: 1,
+                  ),
+                )
+                .toList(),
+      ),
+    );
+  }
+}
+
+class NewAvgCumulativeLineChart extends StatelessWidget {
+  const NewAvgCumulativeLineChart({super.key, this.titleData});
+
+  final FlTitlesData? titleData;
+
+  @override
+  Widget build(BuildContext context) {
+    final avgCumulativeComparison = context.select(
+      (ChartModel state) => state.avgCumulativeComparison,
+    );
+    return LineChart(
+      LineChartData(
+        titlesData: titleData ?? FlTitlesData(),
+        lineBarsData:
+            avgCumulativeComparison
+                .asMap()
+                .entries
+                .map(
+                  (cumulativeEntry) => LineChartBarData(
+                    color: cumulativeEntry.key == 0 ? context.cs.secondary : context.cs.tertiary,
+                    spots: [
+                      ...cumulativeEntry.value.entries.mapIndexed(
+                        (index, entry) => FlSpot(index.toDouble(), entry.value),
+                      ),
+                    ],
+                    isCurved: true,
+                    curveSmoothness: 1,
+                  ),
+                )
+                .toList(),
       ),
     );
   }

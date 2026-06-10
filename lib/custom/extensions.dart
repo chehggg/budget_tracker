@@ -29,10 +29,18 @@ extension DayExtension on DateTime {
   String formatShort() => DateFormat('dd-MM-yyyy').format(this);
   String formatPretty() => DateFormat('E, d MMM').format(this);
 
-  DateTime get startOfMonth => DateTime(year, month, 1);
-  DateTime get startOfYear => DateTime(year, 1, 1);
+  DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
+  DateTime toEOM(int addMonth) => DateTime(year, month + addMonth + 1, 0);
+  DateTime addYear(int addYear) => DateTime(year + addYear, month, day);
+  DateTime addMonth(int addMonth) => DateTime(year, month + addMonth, day);
+  DateTime addDay(int addDay) => DateTime(year, month, day + addDay);
   DateTime get standardNow => DateTime(year, month, day);
+  DateTime get startOfMonth => DateTime(year, month, 1);
   DateTime get endOfMonth => DateTime(year, month + 1, 0);
+  DateTime get startOfYear => DateTime(year, 1, 1);
+  DateTime get endOfYear => DateTime(year, 12, 31);
+  DateTime get startOfWeek => DateTime(year, month, day - (weekday - 1));
+  DateTime get endOfWeek => DateTime(year, month, day - (weekday - 1) + 7);
 
   bool isWithinRange(DateTimeRange range) {
     return (isBefore(range.end) || isAtSameMomentAs(range.end)) && isAfter(range.start) ||
@@ -68,7 +76,6 @@ extension DoubleExtension on double {
     }
   }
 
-
   String customCurrencyFormat(
     String currencySymbol, {
     bool usePositiveSign = false,
@@ -90,6 +97,7 @@ extension DoubleExtension on double {
       return NumberFormat("$sign$currencySymbol#,##0.00").format(absValue);
     }
   }
+
   // double formatPerce
 }
 
