@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
+import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
@@ -30,6 +31,13 @@ extension DayExtension on DateTime {
 
   DateTime get startOfMonth => DateTime(year, month, 1);
   DateTime get startOfYear => DateTime(year, 1, 1);
+  DateTime get standardNow => DateTime(year, month, day);
+  DateTime get endOfMonth => DateTime(year, month + 1, 0);
+
+  bool isWithinRange(DateTimeRange range) {
+    return (isBefore(range.end) || isAtSameMomentAs(range.end)) && isAfter(range.start) ||
+        isAtSameMomentAs(range.start);
+  }
 
   List<int> getFullMonthWeekdayList() {
     final int days = getTotalDayInMonth();
@@ -51,6 +59,15 @@ extension DoubleExtension on double {
     final maxValueDigit = (toInt()).toString().length;
     return pow(10, maxValueDigit - 1) * ((this / pow(10, maxValueDigit - 1)).toInt() + 1);
   }
+
+  String compactFormat() {
+    if (this < 1000) {
+      return toStringAsFixed(0);
+    } else {
+      return NumberFormat.compact().format(this);
+    }
+  }
+
 
   String customCurrencyFormat(
     String currencySymbol, {
@@ -132,6 +149,7 @@ extension BuildContextExtension on BuildContext {
   ThemeModel get themeMod => read<ThemeModel>();
   ListModel get listMod => read<ListModel>();
   SavedItemModel get savedItemMod => read<SavedItemModel>();
+  ChartModel get chartMod => read<ChartModel>();
 }
 
 @immutable
@@ -247,7 +265,6 @@ class CustomUtils {
     return defaultCostItemCategories.firstWhereOrNull((cat) => cat.name == name);
   }
 }
-
 
 extension VisualDensityExtension on VisualDensity {
   static VisualDensity get minimum => VisualDensity(horizontal: -4.0, vertical: -4.0);

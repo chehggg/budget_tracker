@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
@@ -7,7 +5,6 @@ import 'package:budget_tracker/custom/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
-import 'package:budget_tracker/custom/saved_item_option_enum.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -18,14 +15,15 @@ class FormModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required SavedItemRepository savedItemRepo,
     required CategoryRepository categoryRepo,
-    this.initCostItem,
+    CostItem? initCostItem,
   }) : _costItemRepository = costItemRepo,
        _savedItemRepository = savedItemRepo,
+       _initCostItem = initCostItem,
        _categoryRepo = categoryRepo {
     initialize();
   }
 
-  final CostItem? initCostItem;
+  final CostItem? _initCostItem;
   final CostItemRepository _costItemRepository;
   final SavedItemRepository _savedItemRepository;
   final CategoryRepository _categoryRepo;
@@ -52,17 +50,17 @@ class FormModel extends ChangeNotifier {
   bool _isLoaded = false;
   bool get ready => _isLoaded;
 
+  bool get editMode => _initCostItem != null;
+
   UnmodifiableListView<SavedItem> get savedItems => _savedItemRepository.savedItems;
 
   CostItemCategory getCatById(SavedItem item) {
-    return _categoryRepo.categories.firstWhereOrNull((el) => el.id == item.category) ?? CostItemCategory.error();
+    return _categoryRepo.categories.firstWhereOrNull((el) => el.id == item.category) ??
+        CostItemCategory.error();
   }
 
   CostItemCategory? _selectedCategory;
   CostItemCategory? get selectedCategory => _selectedCategory;
-
-  List<SavedItemOption> _saveOptions = [SavedItemOption.amount, SavedItemOption.description];
-  UnmodifiableListView<SavedItemOption> get saveOptions => UnmodifiableListView(_saveOptions);
 
   double _amount = 0;
   double get amount => _amount;
@@ -79,9 +77,30 @@ class FormModel extends ChangeNotifier {
   String _savedTitle = "";
   String get savedTitle => _savedTitle;
 
+  // description controller to be used in form
+  // need to be here because the saved item need to be able to update this
+  final TextEditingController _descriptionController = TextEditingController();
+  TextEditingController get descriptionController => _descriptionController;
+
+  final TextEditingController _amountController = TextEditingController();
+  TextEditingController get amountController => _amountController;
+
+  void updateControllerValue() {
+    descriptionController.value = descriptionController.value.copyWith(text: _itemDesc);
+    amountController.value = amountController.value.copyWith(
+      text: _amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2),
+    );
+  }
+
   Future<void> initialize() async {
     _isLoaded = false;
+
     populateInitValue();
+    updateControllerValue();
+
+    descriptionController.addListener(() => updateDesc(descriptionController.text));
+    amountController.addListener(() => updateAmount(double.tryParse(amountController.text) ?? 0));
+
     await _categoryRepo.ready;
 
     _isLoaded = true;
@@ -104,13 +123,12 @@ class FormModel extends ChangeNotifier {
   }
 
   void selectSavedItem(SavedItem item) {
-    _selectedCategory = categories.firstWhere(
-      (cat) => cat.name == item.category,
-    );
+    _selectedCategory = getCatById(item);
     _amount = item.amount!;
     _itemDesc = item.description!;
     _type = item.costType!;
-    // _date = item.date;
+
+    updateControllerValue();
 
     notifyListeners();
   }
@@ -136,51 +154,41 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateSaveOption(SavedItemOption option, bool value) {
-    if (value) {
-      _saveOptions.add(option);
-    } else {
-      _saveOptions.remove(option);
-    }
-    notifyListeners();
-  }
-
-  void getV() async {}
-
   void populateInitValue() {
     debugPrint('initializing form model');
 
-    if (initCostItem != null) {
+    if (_initCostItem != null) {
       debugPrint('found cost item');
       _selectedCategory =
           categories.firstWhereOrNull(
-            (cat) => cat.id == initCostItem!.categoryId,
+            (cat) => cat.id == _initCostItem.categoryId,
           ) ??
           CostItemCategory(
             id: "0",
             name: "Category 404",
-            costType: initCostItem!.costType,
+            costType: _initCostItem.costType,
             imagePath: "assets/images/warning.svg",
             color: Colors.white,
           );
-      _amount = initCostItem!.amount;
-      _itemDesc = initCostItem!.name;
-      _date = initCostItem!.date;
-      _type = initCostItem!.costType;
+      _amount = _initCostItem.amount;
+      _itemDesc = _initCostItem.name;
+      _date = _initCostItem.date;
+      _type = _initCostItem.costType;
       _formGroup = _type == CostType.expense ? FormGroup.expense : FormGroup.income;
     }
     notifyListeners();
   }
 
   void deleteItem() {
-    _costItemRepository.deleteCostItem(initCostItem!);
+    if (_initCostItem == null) return;
+    _costItemRepository.deleteCostItem(_initCostItem);
   }
 
   Future<Result<void>> submitForm() async {
     if (formResult != null) {
-      if (initCostItem != null) {
+      if (_initCostItem != null) {
         await _costItemRepository.updateCostItem(
-          CostItem.update(initCostItem!, formResult!),
+          CostItem.update(_initCostItem, formResult!),
         );
       } else {
         await _costItemRepository.createCostItem(CostItem.fromForm(formResult!, id: Uuid().v4()));
@@ -188,5 +196,4 @@ class FormModel extends ChangeNotifier {
     }
     return Result.error(Exception("no form result, cannot create cost item"));
   }
-
 }

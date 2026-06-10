@@ -77,8 +77,10 @@ ThemeData get appTheme {
     extensions: [customColorExtension, customTextExtension],
     textTheme: customTextTheme,
     iconButtonTheme: IconButtonThemeData(
-      style: ButtonStyle(
-        visualDensity: VisualDensity(vertical: -4, horizontal: -4)
+      style: IconButton.styleFrom(
+        visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+        // iconSize: 20,
+        fixedSize: Size.square(20)
       )
     ),
     

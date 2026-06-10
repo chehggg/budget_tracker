@@ -692,10 +692,7 @@ class CustomSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // final title = ti
     return ListTile(
-      title:
-          title != null
-              ? Text(title!, style: Theme.of(context).textTheme.titleMedium)
-              : titleWidget,
+      title: title != null ? Text(title!, style: context.customTt.numberFontMedium) : titleWidget,
       subtitle: subtitle,
       dense: true,
       trailing: trailingWidget,
@@ -972,13 +969,13 @@ class LoadDataSettingsTile extends StatelessWidget {
       "function": "Append",
       "desc": "Import selected file's data into existing list.",
       "overwrite": false,
-      "flushMsg": "Data appended"
+      "flushMsg": "Data appended",
     },
     {
       "function": "Overwrite",
       "desc": "Replace existing list with selected file's data. Previous data will be deleted.",
       "overwrite": true,
-      "flushMsg": "Data overwrited"
+      "flushMsg": "Data overwrited",
     },
   ];
 

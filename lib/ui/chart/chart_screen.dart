@@ -6,6 +6,7 @@ import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/enum.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/chart_details_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -33,57 +34,58 @@ class _ChartScreenState extends State<ChartScreen> {
     });
   }
 
-  FlTitlesData chartTitleData() {
-    return FlTitlesData(
-        rightTitles: AxisTitles(drawBelowEverything: false),
-        topTitles: AxisTitles(drawBelowEverything: false),
-        leftTitles: AxisTitles(
-            // axisNameWidget: Padding(
-            //   padding: const EdgeInsets.only(left: 40.0),
-            //   child: Text(
-            //     "Amount (${context.select((AppModel state) => state.currencySymbol)})",
-            //     style: Theme.of(context).textTheme.labelSmall,
-            //   ),
-            // ),
-            // axisNameSize: 40,
-            sideTitles: SideTitles(
-              getTitlesWidget: (value, meta) => Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Text(
-                  value.toStringAsFixed(value % 1 == 0 ? 0 : 1),
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 10),
-                ),
-              ),
-              // reservedSize: 40,
-              showTitles: true,
-              maxIncluded: true,
-              // interval: 50
-            )),
-        bottomTitles: AxisTitles(
-            axisNameSize: 16,
-            // axisNameWidget: Padding(
-            //   padding: const EdgeInsets.only(left: 60.0),
-            //   child: Text(
-            //     "Day",
-            //     style: Theme.of(context).textTheme.labelSmall,
-            //   ),
-            // ),
-            sideTitles: SideTitles(
-              getTitlesWidget: (value, meta) {
-                // if ((value - 1) % 2 != 0) return SizedBox.shrink();
-                return Text(
-                  "•"
-                );
-              },
-              // reservedSize: 30,
-              showTitles: true,
-              maxIncluded: true,
-            )));
-  }
+  FlTitlesData get chartTitleData => FlTitlesData(
+    rightTitles: AxisTitles(drawBelowEverything: false),
+    topTitles: AxisTitles(drawBelowEverything: false),
+    leftTitles: AxisTitles(
+      // axisNameWidget: Padding(
+      //   padding: const EdgeInsets.only(left: 40.0),
+      //   child: Text(
+      //     "Amount (${context.select((AppModel state) => state.currencySymbol)})",
+      //     style: Theme.of(context).textTheme.labelSmall,
+      //   ),
+      // ),
+      // axisNameSize: 40,
+      sideTitles: SideTitles(
+        getTitlesWidget:
+            (value, meta) => Text(
+              NumberFormat.compact().format(value),
+              textAlign: TextAlign.right,
+              style: context.customTt.numberFontSmall!.copyWith(fontSize: 10),
+            ),
+        reservedSize: 24,
+        showTitles: false,
+        maxIncluded: true,
+        // interval: 50
+      ),
+    ),
+    bottomTitles: AxisTitles(
+      axisNameSize: 16,
+      // axisNameWidget: Padding(
+      //   padding: const EdgeInsets.only(left: 60.0),
+      //   child: Text(
+      //     "Day",
+      //     style: Theme.of(context).textTheme.labelSmall,
+      //   ),
+      // ),
+      sideTitles: SideTitles(
+        getTitlesWidget: (value, meta) {
+          // if ((value - 1) % 2 != 0) return SizedBox.shrink();
+          return Text(
+            "•",
+            style: context.tt.bodyMedium!.copyWith(fontSize: 10),
+          );
+        },
+        // reservedSize: 30,
+        showTitles: true,
+        maxIncluded: true,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
+    final ready = context.select((ChartModel state) => state.ready);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -91,80 +93,147 @@ class _ChartScreenState extends State<ChartScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          spacing: 20,
-          children: [
-            const DateBreadcrumb(),
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            //   child: SegmentedButton(
-            //     segments: CostType.values.map((costType) {
-            //       return ButtonSegment(
-            //         value: costType,
-            //         icon: Icon(Icons.money),
-            //         label: Text(costType.name)
-            //       );
-            //     }).toList(),
-            //     selected: {_selectedCostType},
-            //     onSelectionChanged: (newSelection) {
-            //       setState(() {
-            //         _selectedCostType = newSelection.first;
-            //       });
-            //     },
-            //   ),
-            // ),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                    spacing: 20,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        // child: const BudgetWidget(),
-                        child: const CustomChartSection(
-                          title: "Budget breakdown",
-                          sectionHeight: 270,
-                          pageChildren: [BudgetWidget()],
-                        ),
+        minimum: EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child:
+            ready
+                ? CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Row(
+                        spacing: 4,
+                        children: [
+                          // FilterChip(label: Text("MTD"), onSelected: (value) {}),
+                          // FilterChip(label: Text("YTD"), onSelected: (value) {}),
+                          // FilterChip(label: Text("1W"), onSelected: (value) {}),
+                          FilterChip(
+                            label: Text("MTD"),
+                            onSelected: (value) {
+                              context.chartMod.updateDateRange('mtd');
+                            },
+                          ),
+                          FilterChip(
+                            label: Text("1M"),
+                            onSelected: (value) {
+                              context.chartMod.updateDateRange('month');
+                            },
+                          ),
+                          // FilterChip(label: Text("1Y"), onSelected: (value) {}),
+                        ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: CustomChartSection(
-                          title: "Expense breakdown",
-                          sectionHeight: 240,
-                          pageChildren: [
-                            BreakdownPieChart(
-                              selectedCostType: _selectedCostType,
-                            ),
-                            DateBreakdownChart(
-                              selectedCostType: _selectedCostType,
-                            ),
-                          ],
-                        ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      sliver: SliverToBoxAdapter(
+                        child: SizedBox(height: 300, child: Expanded(child: DailyTotalBarChart(titleData: chartTitleData)))
+                        // child: CustomChartSection(
+                        //   title: "Spending Trend",
+                        //   sectionHeight: 300,
+                        //   pageChildren: [
+                        //     // DailyTotalBarChart(),
+                        //     ,
+                        //     // DailyCumulativeSpendLineChart(titleData: chartTitleData()),
+                        //     // DateTrendLineChart(titleData: chartTitleData()),
+                        //   ],
+                        // ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      sliver: SliverToBoxAdapter(
                         child: CustomChartSection(
-                          title: "Spending Trend",
+                          title: "Daily Cumulative Spend",
                           sectionHeight: 300,
                           pageChildren: [
-                            DailyTotalBarChart(titleData: chartTitleData()),
-                            DailyCumulativeSpendLineChart(titleData: chartTitleData()),
-                            DateTrendLineChart(titleData: chartTitleData()),
+                            // DailyTotalBarChart(),
+                            // DailyTotalBarChart(titleData: chartTitleData),
+                            DailyCumulativeSpendLineChart(titleData: chartTitleData),
+                            // DateTrendLineChart(titleData: chartTitleData()),
                           ],
                         ),
                       ),
-                      // Divider(),
-                      // CategoryList(
-                      //   selectedCostType: _selectedCostType,
-                      // ),
-                    ]),
-              ),
-            )
-          ],
-        ),
+                    ),
+                    // Column(
+                    //   spacing: 20,
+                    //   children: [
+                    // const DateBreadcrumb(),
+                    // Padding(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    //   child: SegmentedButton(
+                    //     segments: CostType.values.map((costType) {
+                    //       return ButtonSegment(
+                    //         value: costType,
+                    //         icon: Icon(Icons.money),
+                    //         label: Text(costType.name)
+                    //       );
+                    //     }).toList(),
+                    //     selected: {_selectedCostType},
+                    //     onSelectionChanged: (newSelection) {
+                    //       setState(() {
+                    //         _selectedCostType = newSelection.first;
+                    //       });
+                    //     },
+                    //   ),
+                    // ),
+                    // Expanded(
+                    //   child: SingleChildScrollView(
+                    //     child: Column(
+                    //       spacing: 20,
+                    //       mainAxisSize: MainAxisSize.min,
+                    //       crossAxisAlignment: CrossAxisAlignment.start,
+                    //       children: [
+                    //         Padding(
+                    //           padding: const EdgeInsets.all(16.0),
+                    //           // child: const BudgetWidget(),
+                    //           child: const CustomChartSection(
+                    //             title: "Budget breakdown",
+                    //             sectionHeight: 270,
+                    //             pageChildren: [BudgetWidget()],
+                    //           ),
+                    //         ),
+                    //         Padding(
+                    //           padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    //           child: CustomChartSection(
+                    //             title: "Expense breakdown",
+                    //             sectionHeight: 240,
+                    //             pageChildren: [
+                    //               BreakdownPieChart(
+                    //                 selectedCostType: _selectedCostType,
+                    //               ),
+                    //               DateBreakdownChart(
+                    //                 selectedCostType: _selectedCostType,
+                    //               ),
+                    //             ],
+                    //           ),
+                    //         ),
+                    //         Padding(
+                    //           padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    //           child: CustomChartSection(
+                    //             title: "Spending Trend",
+                    //             sectionHeight: 300,
+                    //             pageChildren: [
+                    //               DailyTotalBarChart(titleData: chartTitleData()),
+                    //               // DailyCumulativeSpendLineChart(titleData: chartTitleData()),
+                    //               // DateTrendLineChart(titleData: chartTitleData()),
+                    //             ],
+                    //           ),
+                    //         ),
+                    //         // Divider(),
+                    //         // CategoryList(
+                    //         //   selectedCostType: _selectedCostType,
+                    //         // ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
+                    //   ],
+                    // ),
+                  ],
+                )
+                : Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
       ),
     );
   }
@@ -173,15 +242,15 @@ class _ChartScreenState extends State<ChartScreen> {
 class DailyTotalBarChart extends StatelessWidget {
   const DailyTotalBarChart({
     super.key,
-    required this.titleData,
+    this.titleData,
   });
 
-  final FlTitlesData titleData;
+  final FlTitlesData? titleData;
 
   @override
   Widget build(BuildContext context) {
-    final data = context.select((AppModel state) => state.getDailyMetric(CostType.expense));
-    final maxValue = (data.values.map<double>((metric) => metric.expense!)).toList().maxCeiling();
+    final data = context.select((ChartModel state) => state.dailyOverviewComparsion);
+    // final maxValue = (data.values.map<double>((metric) => metric.expense!)).toList().maxCeiling();
     // debugPrint('max value: ${maxValue}');
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
@@ -192,25 +261,57 @@ class DailyTotalBarChart extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: BarChart(BarChartData(
+            padding: const EdgeInsets.fromLTRB(16, 30, 16, 0),
+            child: BarChart(
+              duration: Durations.medium1,
+              BarChartData(
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem("Test", context.tt.bodyMedium!);
+                    },
+                  ),
+                ),
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(drawVerticalLine: false),
                 titlesData: titleData,
-                maxY: maxValue,
-                barGroups: data
-                    .map((dayInt, metric) => MapEntry(
-                        dayInt,
-                        BarChartGroupData(x: dayInt, barRods: [
-                          BarChartRodData(
-                            toY: metric.expense ?? 0,
-                            // rodStackItems: [
-                            //   BarChartRodStackItem(fromY, toY, color)
-                            // ]
-                          )
-                        ])))
-                    .values
-                    .toList())),
+                // maxY: maxValue,
+                barGroups:
+                    data.entries
+                        .map(
+                          (entry) => BarChartGroupData(
+                            x: entry.key,
+                            barRods: [
+                              ...entry.value
+                                  .asMap()
+                                  .map(
+                                    (i, e) => MapEntry(
+                                      i,
+                                      BarChartRodData(
+                                        label: BarChartRodLabel(
+                                          show:
+                                              e.expense! >
+                                              context.chartMod.dailyRangePercentile(40),
+                                          text: (e.expense! > 0 ? e.expense!.compactFormat() : ""),
+                                          style: context.customTt.numberFontSmall!.copyWith(
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        color: i == 1 ? Colors.blue : context.cs.secondary,
+                                        toY: e.expense ?? 0,
+                                        // rodStackItems: [
+                                        //   BarChartRodStackItem(fromY, toY, color)
+                                        // ]
+                                      ),
+                                    ),
+                                  )
+                                  .values,
+                            ],
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
           ),
         ),
       ],
@@ -226,66 +327,73 @@ class BudgetWidget extends StatelessWidget {
     final contextRead = context.read<AppModel>();
     final contextWatch = context.watch<AppModel>();
     return Column(
-        children: (contextRead.budgetMetrics[contextWatch.formatedSelectedYearMonth] ?? []).map((e) {
-      final double curAmount = e['amount'] ?? 0;
-      final double budgetAmount = e['budget'] ?? 1;
+      children:
+          (contextRead.budgetMetrics[contextWatch.formatedSelectedYearMonth] ?? []).map((e) {
+            final double curAmount = e['amount'] ?? 0;
+            final double budgetAmount = e['budget'] ?? 1;
 
-      final String curAmountString = contextRead.customCurrencyFormat(curAmount, true);
-      final String budgetAmountString = contextRead.customCurrencyFormat(budgetAmount, true);
+            final String curAmountString = contextRead.customCurrencyFormat(curAmount, true);
+            final String budgetAmountString = contextRead.customCurrencyFormat(budgetAmount, true);
 
-      final double spendPercentage = curAmount / budgetAmount;
-      final String budgetMessage = spendPercentage > 1
-          ? "${((spendPercentage - 1) * 100).round()}% over"
-          : "${(spendPercentage * 100).round()}%";
+            final double spendPercentage = curAmount / budgetAmount;
+            final String budgetMessage =
+                spendPercentage > 1
+                    ? "${((spendPercentage - 1) * 100).round()}% over"
+                    : "${(spendPercentage * 100).round()}%";
 
-      return GestureDetector(
-        onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => ChartBudgetDetailsScreen(curBudgetId: e['id']),
-          ));
-          debugPrint('updated!');
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // SizedBox(height: 12,),
-            Container(
-              width: double.maxFinite,
-              child: Text(
-                '${e['name']}',
-                textAlign: TextAlign.left,
-                style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
-              ),
-            ),
-            Container(
-                width: double.maxFinite,
-                child: Text(
-                  '$budgetMessage ($curAmountString/$budgetAmountString)',
-                  textAlign: TextAlign.left,
-                )),
-            Padding(
-              padding: const EdgeInsets.only(left: 2.0, right: 2.0, bottom: 2, top: 8),
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                    // border: BoxBorder.all(color: Colors.white)
+            return GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ChartBudgetDetailsScreen(curBudgetId: e['id']),
+                  ),
+                );
+                debugPrint('updated!');
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // SizedBox(height: 12,),
+                  Container(
+                    width: double.maxFinite,
+                    child: Text(
+                      '${e['name']}',
+                      textAlign: TextAlign.left,
+                      style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
                     ),
-                child: Row(
-                  spacing: 30,
-                  children: [
-                    Expanded(
-                        child: BudgetBarChart(
-                      budget: budgetAmount,
-                      current: curAmount,
-                    )),
-                  ],
-                ),
+                  ),
+                  Container(
+                    width: double.maxFinite,
+                    child: Text(
+                      '$budgetMessage ($curAmountString/$budgetAmountString)',
+                      textAlign: TextAlign.left,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 2.0, right: 2.0, bottom: 2, top: 8),
+                    child: Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        // border: BoxBorder.all(color: Colors.white)
+                      ),
+                      child: Row(
+                        spacing: 30,
+                        children: [
+                          Expanded(
+                            child: BudgetBarChart(
+                              budget: budgetAmount,
+                              current: curAmount,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      );
-    }).toList());
+            );
+          }).toList(),
+    );
   }
 }
 
@@ -298,63 +406,78 @@ class OverviewBudgetBar extends StatelessWidget {
     final budget = context.select((AppModel state) => state.totalBudget);
     final percentage = context.select((AppModel state) => state.budgetPercentage);
     final currencySymbol = context.select((AppModel state) => state.currencySymbol);
-    final remainingAverageSpend = context.select((AppModel state) => state.remainingDayAverageSpend);
+    final remainingAverageSpend = context.select(
+      (AppModel state) => state.remainingDayAverageSpend,
+    );
     // final percentage = expense/budget;
 
     // WidgetsBinding.instance.addPostFrameCallback((_) {
     //   tooltipKey.currentState!.ensureTooltipVisible();
     // });
-    return LayoutBuilder(builder: (context, constraints) {
-      const double thresholdPosition = 0.75;
-      return Column(
-        children: [
-          Text("You have spent:"),
-          Text(
-            NumberFormat("#0%").format(percentage),
-            style: Theme.of(context).textTheme.displayMedium,
-          ),
-          Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 32.0, bottom: 4),
-                child: PercentageBar(height: 12, color: Colors.red, percentage: percentage * thresholdPosition),
-              ),
-              Positioned(
-                left: constraints.maxWidth * thresholdPosition -
-                    (17 * 2) -
-                    (100 * (percentage > (4 / 3) ? percentage / (4 / 3) : 0)),
-                // widthFactor: 0.7,
-                child: Column(
-                  spacing: 8,
-                  children: [
-                    Text(
-                      "Threshold",
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const double thresholdPosition = 0.75;
+        return Column(
+          children: [
+            Text("You have spent:"),
+            Text(
+              NumberFormat("#0%").format(percentage),
+              style: Theme.of(context).textTheme.displayMedium,
+            ),
+            Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 32.0, bottom: 4),
+                  child: PercentageBar(
+                    height: 12,
+                    color: Colors.red,
+                    percentage: percentage * thresholdPosition,
+                  ),
+                ),
+                Positioned(
+                  left:
+                      constraints.maxWidth * thresholdPosition -
+                      (17 * 2) -
+                      (100 * (percentage > (4 / 3) ? percentage / (4 / 3) : 0)),
+                  // widthFactor: 0.7,
+                  child: Column(
+                    spacing: 8,
+                    children: [
+                      Text(
+                        "Threshold",
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(
                         height: 20,
                         child: VerticalDivider(
                           thickness: 2,
-                        )),
-                  ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Text(
-            ' spend below ${remainingAverageSpend.customCurrencyFormat(currencySymbol)} daily to reach your target',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          TextButton(onPressed: () {}, child: Text('or change your budget ? (but should you?)'))
-        ],
-      );
-    });
+              ],
+            ),
+            Text(
+              ' spend below ${remainingAverageSpend.customCurrencyFormat(currencySymbol)} daily to reach your target',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            TextButton(onPressed: () {}, child: Text('or change your budget ? (but should you?)')),
+          ],
+        );
+      },
+    );
   }
 }
 
 class CustomChartSection extends StatefulWidget {
-  const CustomChartSection({super.key, required this.title, required this.pageChildren, required this.sectionHeight});
+  const CustomChartSection({
+    super.key,
+    required this.title,
+    required this.pageChildren,
+    required this.sectionHeight,
+  });
 
   final String title;
   final double sectionHeight;
@@ -381,7 +504,11 @@ class _CustomChartSectionState extends State<CustomChartSection> {
       });
     }
 
-    _controller.animateToPage(_currentDateTrendPageIndex, duration: Durations.long1, curve: Curves.easeInOutExpo);
+    _controller.animateToPage(
+      _currentDateTrendPageIndex,
+      duration: Durations.long1,
+      curve: Curves.easeInOutExpo,
+    );
   }
 
   @override
@@ -416,21 +543,25 @@ class _CustomChartSectionState extends State<CustomChartSection> {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 20.0),
-                  child: PageIndicator(pageLength: widget.pageChildren.length, currentPage: _currentDateTrendPageIndex),
+                  child: PageIndicator(
+                    pageLength: widget.pageChildren.length,
+                    currentPage: _currentDateTrendPageIndex,
+                  ),
                 ),
               ],
             ),
             Expanded(
-                // child: const DateTrendLineChart()
-                child: PageView.builder(
-              itemCount: widget.pageChildren.length,
-              // padEnds: false,
-              physics: NeverScrollableScrollPhysics(),
-              controller: _controller,
-              itemBuilder: (context, index) {
-                return widget.pageChildren[index];
-              },
-            )),
+              // child: const DateTrendLineChart()
+              child: PageView.builder(
+                itemCount: widget.pageChildren.length,
+                // padEnds: false,
+                physics: NeverScrollableScrollPhysics(),
+                controller: _controller,
+                itemBuilder: (context, index) {
+                  return widget.pageChildren[index];
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -465,7 +596,8 @@ class BreakdownPieChart extends StatelessWidget {
       } else {
         for (i; i < categoryData.length; i++) {
           if (i < 4) {
-            summarizedData[categoryData.entries.toList()[i].key] = categoryData.entries.toList()[i].value;
+            summarizedData[categoryData.entries.toList()[i].key] =
+                categoryData.entries.toList()[i].value;
           } else {
             totalOtherExpense += categoryData.entries.toList()[i].value.expense!;
           }
@@ -490,87 +622,93 @@ class BreakdownPieChart extends StatelessWidget {
                 Expanded(
                   flex: 3,
                   child: PieChart(
-                      duration: Durations.medium1,
-                      curve: Curves.fastOutSlowIn,
-                      PieChartData(
-                        startDegreeOffset: -90,
-                        centerSpaceRadius: 48,
-                        pieTouchData: PieTouchData(
-                          enabled: true,
-                          touchCallback: (touchEvent, response) {
-                            if (touchEvent is FlTapDownEvent) {
-                              if (response?.touchedSection?.touchedSection != null) {
-                                debugPrint("Touched!");
-                                final categoryTitle = response!.touchedSection!.touchedSection!.title;
-                                // updateCategory(categoryTitle);
-                              }
+                    duration: Durations.medium1,
+                    curve: Curves.fastOutSlowIn,
+                    PieChartData(
+                      startDegreeOffset: -90,
+                      centerSpaceRadius: 48,
+                      pieTouchData: PieTouchData(
+                        enabled: true,
+                        touchCallback: (touchEvent, response) {
+                          if (touchEvent is FlTapDownEvent) {
+                            if (response?.touchedSection?.touchedSection != null) {
+                              debugPrint("Touched!");
+                              final categoryTitle = response!.touchedSection!.touchedSection!.title;
+                              // updateCategory(categoryTitle);
                             }
-                          },
-                        ),
-                        sections: summarizedCategoryData.entries.map((data) {
-                          final currentCategory = context.read<AppModel>().getCategoryEntry(data.key);
-                          Color primaryColor;
-                          Color secColor;
-                          if (currentCategory != null) {
-                            primaryColor = currentCategory.colorScheme(selectedThemeMode).primary;
-                            secColor = currentCategory.colorScheme(selectedThemeMode).primaryContainer;
-                            // categoryColorScheme = currentCategory.colorScheme;
-                          } else {
-                            primaryColor = Colors.amber;
-                            secColor = Colors.amber.shade700;
                           }
-                          return PieChartSectionData(
-                            value: data.value.expense!.abs(),
-                            radius: 20,
-                            // title: category,
-                            // badgeWidget: currentCategory.generateRoundedIcon(30, categoryColorScheme.primary, categoryColorScheme.onPrimary),
-                            // badgePositionPercentageOffset: 1,
-                            showTitle: false,
-                            gradient: LinearGradient(stops: [
-                              0,
-                              1
-                            ], colors: [
-                              primaryColor.withAlpha(200),
-                              secColor,
-                            ]),
-                            // color: categoryColorScheme.primary.withAlpha(200)
-                          );
-                        }).toList(),
-                      )),
+                        },
+                      ),
+                      sections:
+                          summarizedCategoryData.entries.map((data) {
+                            final currentCategory = context.read<AppModel>().getCategoryEntry(
+                              data.key,
+                            );
+                            Color primaryColor;
+                            Color secColor;
+                            if (currentCategory != null) {
+                              primaryColor = currentCategory.colorScheme(selectedThemeMode).primary;
+                              secColor =
+                                  currentCategory.colorScheme(selectedThemeMode).primaryContainer;
+                              // categoryColorScheme = currentCategory.colorScheme;
+                            } else {
+                              primaryColor = Colors.amber;
+                              secColor = Colors.amber.shade700;
+                            }
+                            return PieChartSectionData(
+                              value: data.value.expense!.abs(),
+                              radius: 20,
+                              // title: category,
+                              // badgeWidget: currentCategory.generateRoundedIcon(30, categoryColorScheme.primary, categoryColorScheme.onPrimary),
+                              // badgePositionPercentageOffset: 1,
+                              showTitle: false,
+                              gradient: LinearGradient(
+                                stops: [0, 1],
+                                colors: [
+                                  primaryColor.withAlpha(200),
+                                  secColor,
+                                ],
+                              ),
+                              // color: categoryColorScheme.primary.withAlpha(200)
+                            );
+                          }).toList(),
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: summarizedCategoryData.entries.map((data) {
-                      final category = context.read<AppModel>().getCategoryEntry(data.key);
-                      final totalAmount = context.read<AppModel>().totalCurrentMonthExpense;
-                      // final category = data['category'] as CostItemCategory?;
-                      Color primaryColor;
-                      if (category != null) {
-                        primaryColor = category.colorScheme(selectedThemeMode).primary;
-                      } else {
-                        primaryColor = Colors.amber;
-                      }
-                      return SizedBox(
-                        height: 28,
-                        child: ChartLegendItem(
-                          primaryColor: primaryColor,
-                          title: data.key,
-                          trailing: Text(
-                            // NumberFormat('#0%').format(data['percentage']),
-                            context.read<AppModel>().getCategoryPercentage(data.value.expense!),
-                            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    children:
+                        summarizedCategoryData.entries.map((data) {
+                          final category = context.read<AppModel>().getCategoryEntry(data.key);
+                          final totalAmount = context.read<AppModel>().totalCurrentMonthExpense;
+                          // final category = data['category'] as CostItemCategory?;
+                          Color primaryColor;
+                          if (category != null) {
+                            primaryColor = category.colorScheme(selectedThemeMode).primary;
+                          } else {
+                            primaryColor = Colors.amber;
+                          }
+                          return SizedBox(
+                            height: 28,
+                            child: ChartLegendItem(
+                              primaryColor: primaryColor,
+                              title: data.key,
+                              trailing: Text(
+                                // NumberFormat('#0%').format(data['percentage']),
+                                context.read<AppModel>().getCategoryPercentage(data.value.expense!),
+                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
                                   fontSize: 13,
                                   // color: Theme.of(context).colorScheme.primary
                                 ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -601,21 +739,23 @@ class ChartLegendItem extends StatelessWidget {
     return SizedBox(
       width: tileWidth,
       child: ListTile(
-          leading: Container(
-              height: 12,
-              width: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primaryColor.withAlpha(200),
-              )),
-          title: Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: fontSize),
+        leading: Container(
+          height: 12,
+          width: 12,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: primaryColor.withAlpha(200),
           ),
-          visualDensity: VisualDensity(vertical: -4),
-          dense: true,
-          contentPadding: EdgeInsets.only(right: 16),
-          trailing: trailing),
+        ),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: fontSize),
+        ),
+        visualDensity: VisualDensity(vertical: -4),
+        dense: true,
+        contentPadding: EdgeInsets.only(right: 16),
+        trailing: trailing,
+      ),
     );
   }
 }
@@ -627,8 +767,9 @@ class DateBreakdownChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateData =
-        context.select((AppModel state) => state.summarizedDateGroupDataForCustomCostType(selectedCostType));
+    final dateData = context.select(
+      (AppModel state) => state.summarizedDateGroupDataForCustomCostType(selectedCostType),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -644,67 +785,73 @@ class DateBreakdownChart extends StatelessWidget {
                 Expanded(
                   flex: 3,
                   child: PieChart(
-                      duration: Durations.medium1,
-                      curve: Curves.fastOutSlowIn,
-                      PieChartData(
-                        startDegreeOffset: -90,
-                        centerSpaceRadius: 48,
-                        pieTouchData: PieTouchData(
-                          enabled: true,
-                          touchCallback: (touchEvent, response) {
-                            if (touchEvent is FlTapDownEvent) {
-                              if (response?.touchedSection?.touchedSection != null) {
-                                debugPrint("Touched!");
-                                // final categoryTitle = response!.touchedSection!.touchedSection!.title;
-                                // updateCategory(categoryTitle);
-                              }
+                    duration: Durations.medium1,
+                    curve: Curves.fastOutSlowIn,
+                    PieChartData(
+                      startDegreeOffset: -90,
+                      centerSpaceRadius: 48,
+                      pieTouchData: PieTouchData(
+                        enabled: true,
+                        touchCallback: (touchEvent, response) {
+                          if (touchEvent is FlTapDownEvent) {
+                            if (response?.touchedSection?.touchedSection != null) {
+                              debugPrint("Touched!");
+                              // final categoryTitle = response!.touchedSection!.touchedSection!.title;
+                              // updateCategory(categoryTitle);
                             }
-                          },
-                        ),
-                        sections: dateData.map((data) {
-                          return PieChartSectionData(
-                            value: data['amount'],
-                            radius: 20,
-                            showTitle: false,
-                          );
-                        }).toList(),
-                      )),
+                          }
+                        },
+                      ),
+                      sections:
+                          dateData.map((data) {
+                            return PieChartSectionData(
+                              value: data['amount'],
+                              radius: 20,
+                              showTitle: false,
+                            );
+                          }).toList(),
+                    ),
+                  ),
                 ),
                 Expanded(
                   flex: 3,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: dateData.map((data) {
-                      return SizedBox(
-                        height: 28,
-                        child: ListTile(
-                          leading: Container(
-                              height: 12,
-                              width: 12,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.amber,
-                              )),
-                          title: Text(
-                            data['date'] as String,
-                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 13),
-                          ),
-                          visualDensity: VisualDensity(vertical: -4),
-                          dense: true,
-                          contentPadding: EdgeInsets.only(right: 16),
-                          trailing: Text(
-                            NumberFormat('#0%').format(data['percentage']),
-                            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    children:
+                        dateData.map((data) {
+                          return SizedBox(
+                            height: 28,
+                            child: ListTile(
+                              leading: Container(
+                                height: 12,
+                                width: 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.amber,
+                                ),
+                              ),
+                              title: Text(
+                                data['date'] as String,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium!.copyWith(fontSize: 13),
+                              ),
+                              visualDensity: VisualDensity(vertical: -4),
+                              dense: true,
+                              contentPadding: EdgeInsets.only(right: 16),
+                              trailing: Text(
+                                NumberFormat('#0%').format(data['percentage']),
+                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
                                   fontSize: 13,
                                   // color: Theme.of(context).colorScheme.primary
                                 ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                   ),
-                )
+                ),
               ],
             ),
           ),
@@ -722,21 +869,28 @@ class ChartTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appTextTheme = Theme.of(context).textTheme;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      if (title != null)
-        Text(
-          title!,
-          style: context.customTt.dateLabel!.copyWith(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (title != null)
+          Text(
+            title!,
+            style: context.customTt.dateLabel!.copyWith(
               // fontSize: 20,
               // color: Theme.of(context).colorScheme.primary
-              ),
-        ),
-      if (description != null)
-        Text(description!,
+            ),
+          ),
+        if (description != null)
+          Text(
+            description!,
             style: appTextTheme.bodyMedium!.copyWith(
-                // fontSize: 14
-                color: context.cs.primary.withAlpha(180))),
-    ]);
+              // fontSize: 14
+              color: context.cs.primary.withAlpha(180),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -872,31 +1026,37 @@ class SpendTrendLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final yearMonth = context.select((AppModel state) => state.selectedYearMonth);
-    return LineChart(LineChartData(
+    return LineChart(
+      LineChartData(
         borderData: FlBorderData(show: false),
         lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-          // fitInsideHorizontally: true,
-          fitInsideVertically: true,
-          getTooltipColor: (touchedSpot) => Colors.transparent,
-          getTooltipItems: (touchedSpots) {
-            return touchedSpots.map((spot) {
-              final modelRead = context.read<AppModel>();
-              final index = spot.spotIndex + 1;
-              final lineIndex = spot.barIndex;
-              String tooltipText = "";
-              if (lineIndex == 0) {
-                tooltipText = "Current: ${modelRead.customCurrencyFormat(currentMonthData[index]!, true)}";
-              } else {
-                tooltipText = "Previous: ${modelRead.customCurrencyFormat(previousMonthData[index]!, true)}";
-              }
-              return LineTooltipItem(
-                tooltipText,
-                Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: 10, color: spot.bar.color),
-              );
-            }).toList();
-          },
-        )),
+          touchTooltipData: LineTouchTooltipData(
+            // fitInsideHorizontally: true,
+            fitInsideVertically: true,
+            getTooltipColor: (touchedSpot) => Colors.transparent,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final modelRead = context.read<AppModel>();
+                final index = spot.spotIndex + 1;
+                final lineIndex = spot.barIndex;
+                String tooltipText = "";
+                if (lineIndex == 0) {
+                  tooltipText =
+                      "Current: ${modelRead.customCurrencyFormat(currentMonthData[index]!, true)}";
+                } else {
+                  tooltipText =
+                      "Previous: ${modelRead.customCurrencyFormat(previousMonthData[index]!, true)}";
+                }
+                return LineTooltipItem(
+                  tooltipText,
+                  Theme.of(
+                    context,
+                  ).textTheme.bodySmall!.copyWith(fontSize: 10, color: spot.bar.color),
+                );
+              }).toList();
+            },
+          ),
+        ),
         maxY: [...currentMonthData.values, ...previousMonthData.values].maxCeiling(),
         minY: 0,
         minX: 1,
@@ -905,7 +1065,9 @@ class SpendTrendLineChart extends StatelessWidget {
         lineBarsData: [
           spendTrendLineData(context, true, yearMonth), // current month data
           spendTrendLineData(context, false, yearMonth), // previous month data
-        ]));
+        ],
+      ),
+    );
   }
 
   LineChartBarData spendTrendLineData(BuildContext context, bool currentMonth, DateTime yearMonth) {
@@ -932,12 +1094,13 @@ class SpendTrendLineChart extends StatelessWidget {
           return false;
         },
       ),
-      spots: displayData
-          .map((int dayInt, double amount) {
-            return MapEntry(dayInt, FlSpot(dayInt.toDouble(), amount));
-          })
-          .values
-          .toList(),
+      spots:
+          displayData
+              .map((int dayInt, double amount) {
+                return MapEntry(dayInt, FlSpot(dayInt.toDouble(), amount));
+              })
+              .values
+              .toList(),
     );
   }
 }
@@ -954,19 +1117,24 @@ class CategoryList extends StatefulWidget {
 class _CategoryListState extends State<CategoryList> {
   bool _isSortDescending = true;
 
-  List<Widget> categoryListTile(Map<String, CostMetric> data, BuildContext context) => data.entries.map((categoryData) {
+  List<Widget> categoryListTile(Map<String, CostMetric> data, BuildContext context) =>
+      data.entries.map((categoryData) {
         final selectedThemeMode = context.select((ThemeModel state) => state.theme);
         final categoryName = categoryData.key;
-        final CostItemCategory categoryEntry = context.read<AppModel>().getCategoryEntry(categoryName)?? CostItemCategory();
+        final CostItemCategory categoryEntry =
+            context.read<AppModel>().getCategoryEntry(categoryName) ?? CostItemCategory();
         final double categoryAmount = categoryData.value.expense!;
         final ColorScheme categoryColorScheme = categoryEntry.colorScheme(selectedThemeMode);
         // final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);
         final amountString = context.read<AppModel>().customCurrencyFormat(categoryAmount, false);
         final currencySymbol = context.select((AppModel state) => state.currencySymbol);
-        final maxAmount = context.select((AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense));
+        final maxAmount = context.select(
+          (AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense),
+        );
         final percentageString = context.read<AppModel>().getCategoryPercentage(categoryAmount);
-        final List<CostItem> costItems =
-            context.select((AppModel state) => state.currentMonthCategoryList[categoryName] ?? []);
+        final List<CostItem> costItems = context.select(
+          (AppModel state) => state.currentMonthCategoryList[categoryName] ?? [],
+        );
 
         return Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -978,67 +1146,86 @@ class _CategoryListState extends State<CategoryList> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(categoryName),
-                Text.rich(TextSpan(children: [
+                Text.rich(
                   TextSpan(
-                      text: '$amountString ', style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12)),
-                  TextSpan(
-                      text: '($percentageString)',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelMedium!
-                          .copyWith(fontSize: 12, color: categoryColorScheme.primary)),
-                ]))
+                    children: [
+                      TextSpan(
+                        text: '$amountString ',
+                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
+                      ),
+                      TextSpan(
+                        text: '($percentageString)',
+                        style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                          fontSize: 12,
+                          color: categoryColorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             // leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
             subtitle: PercentageBar(
-                height: 8, color: categoryColorScheme.primaryFixed, percentage: categoryAmount / maxAmount),
-            children: costItems.map((CostItem costItem) {
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                visualDensity: VisualDensity(vertical: -3),
-                dense: true,
-                leading: Container(
-                    width: MediaQuery.of(context).size.width * 0.12,
-                    child: Text((costItem.date).displayFormat(),
-                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12))),
-                title: Flex(
-                  direction: Axis.horizontal,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  // mainAxisAlignment: MainAxisAlignment.end,
-                  spacing: 20,
-                  children: [
-                    Flexible(
-                        flex: 4,
-                        child: Text(
-                          costItem.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        )),
-                    Flexible(
-                        flex: 10,
-                        fit: FlexFit.tight,
-                        child: Divider(
-                          color: Colors.white.withAlpha(80),
-                        ))
-                  ],
-                ),
-                trailing: Container(
-                  width: MediaQuery.of(context).size.width * 0.12,
-                  child: Text(costItem.getCurrencyValue(currencySymbol, false),
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12)),
-                ),
-              );
-            }).toList(),
+              height: 8,
+              color: categoryColorScheme.primaryFixed,
+              percentage: categoryAmount / maxAmount,
+            ),
+            children:
+                costItems.map((CostItem costItem) {
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity(vertical: -3),
+                    dense: true,
+                    leading: Container(
+                      width: MediaQuery.of(context).size.width * 0.12,
+                      child: Text(
+                        (costItem.date).displayFormat(),
+                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
+                      ),
+                    ),
+                    title: Flex(
+                      direction: Axis.horizontal,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      // mainAxisAlignment: MainAxisAlignment.end,
+                      spacing: 20,
+                      children: [
+                        Flexible(
+                          flex: 4,
+                          child: Text(
+                            costItem.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Flexible(
+                          flex: 10,
+                          fit: FlexFit.tight,
+                          child: Divider(
+                            color: Colors.white.withAlpha(80),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: Container(
+                      width: MediaQuery.of(context).size.width * 0.12,
+                      child: Text(
+                        costItem.getCurrencyValue(currencySymbol, false),
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         );
       }).toList();
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, CostMetric> categoryData =
-        context.select((AppModel state) => state.getcurrentMonthCategoryView(_isSortDescending, CostType.expense));
+    final Map<String, CostMetric> categoryData = context.select(
+      (AppModel state) => state.getcurrentMonthCategoryView(_isSortDescending, CostType.expense),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1056,12 +1243,13 @@ class _CategoryListState extends State<CategoryList> {
                 ),
               ),
               IconButton(
-                  onPressed: () => setState(() => _isSortDescending = !_isSortDescending),
-                  icon: Transform.scale(scaleY: _isSortDescending ? 1 : -1, child: Icon(Icons.sort)))
+                onPressed: () => setState(() => _isSortDescending = !_isSortDescending),
+                icon: Transform.scale(scaleY: _isSortDescending ? 1 : -1, child: Icon(Icons.sort)),
+              ),
             ],
           ),
         ),
-        ...categoryListTile(categoryData, context)
+        ...categoryListTile(categoryData, context),
       ],
     );
   }
@@ -1077,10 +1265,10 @@ class FastCustomScrollPhysics extends ScrollPhysics {
 
   @override
   SpringDescription get spring => const SpringDescription(
-        mass: 5,
-        stiffness: 100,
-        damping: 50,
-      );
+    mass: 5,
+    stiffness: 100,
+    damping: 50,
+  );
 }
 
 class PercentageBar extends StatelessWidget {
@@ -1097,28 +1285,36 @@ class PercentageBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraint) {
-      return Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          Container(
-            height: height,
-            width: constraint.maxWidth,
-            decoration: BoxDecoration(color: color.withAlpha(50), borderRadius: BorderRadius.circular(12)),
-          ),
-          Container(
-            height: height,
-            width: constraint.maxWidth * (percentage).abs(),
-            decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  color.withAlpha(100),
-                  color,
-                ]),
-                borderRadius: BorderRadius.circular(12)),
-          )
-        ],
-      );
-    });
+    return LayoutBuilder(
+      builder: (context, constraint) {
+        return Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            Container(
+              height: height,
+              width: constraint.maxWidth,
+              decoration: BoxDecoration(
+                color: color.withAlpha(50),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            Container(
+              height: height,
+              width: constraint.maxWidth * (percentage).abs(),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    color.withAlpha(100),
+                    color,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -1134,7 +1330,8 @@ class BudgetBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BarChart(BarChartData(
+    return BarChart(
+      BarChartData(
         borderData: FlBorderData(show: false),
         maxY: max(current, budget) + 1,
         gridData: FlGridData(
@@ -1159,10 +1356,11 @@ class BudgetBarChart extends StatelessWidget {
                   return SideTitleWidget(
                     meta: meta,
                     fitInside: SideTitleFitInsideData(
-                        enabled: budget > current,
-                        axisPosition: 0,
-                        parentAxisSize: budget > current ? 50 : 0,
-                        distanceFromEdge: 0),
+                      enabled: budget > current,
+                      axisPosition: 0,
+                      parentAxisSize: budget > current ? 50 : 0,
+                      distanceFromEdge: 0,
+                    ),
                     child: Text('Limit'),
                   );
                 }
@@ -1172,16 +1370,27 @@ class BudgetBarChart extends StatelessWidget {
           ),
         ),
         barGroups: [
-          BarChartGroupData(x: 1, barsSpace: 0, barRods: [
-            BarChartRodData(
+          BarChartGroupData(
+            x: 1,
+            barsSpace: 0,
+            barRods: [
+              BarChartRodData(
                 toY: current,
                 color: current > budget ? Colors.red : context.read<ThemeModel>().color,
                 width: 12,
-                backDrawRodData:
-                    BackgroundBarChartRodData(show: true, color: Colors.grey.withAlpha(100), fromY: 0, toY: budget)),
-            // BarChartRodData(toY: 40),
-          ])
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  color: Colors.grey.withAlpha(100),
+                  fromY: 0,
+                  toY: budget,
+                ),
+              ),
+              // BarChartRodData(toY: 40),
+            ],
+          ),
         ],
-        rotationQuarterTurns: 1));
+        rotationQuarterTurns: 1,
+      ),
+    );
   }
 }

@@ -1,10 +1,9 @@
 import 'dart:math';
 
-import 'package:budget_tracker/constants/categories.dart';
+import 'package:budget_tracker/custom/category_class.dart';
 import 'package:budget_tracker/custom/class.dart';
 import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
-// import 'package:budget_tracker/custom/extensions.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -15,21 +14,21 @@ class ListModel extends ChangeNotifier {
       _categoryRepo = categoryRepo {
     init();
   }
+  final CostItemRepository _costItemRepo;
+  final CategoryRepository _categoryRepo;
+
 
   Future<void> init() async {
     _isInitialized = false;
 
     await _costItemRepo.ready;
     await _categoryRepo.ready;
-    getCurMonthData();
 
     _isInitialized = true;
     debugPrint("viewmodel done");
     notifyListeners();
   }
 
-  final CostItemRepository _costItemRepo;
-  final CategoryRepository _categoryRepo;
 
   bool _isInitialized = false;
   bool get ready => _isInitialized;
@@ -37,7 +36,7 @@ class ListModel extends ChangeNotifier {
   bool _selectionMode = false;
   bool get selectionMode => _selectionMode;
 
-  List<CostItem> _selectedItems = [];
+  final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
 
   DateTime _curYearMonth = DateTime(DateTime.now().year, DateTime.now().month);
@@ -63,7 +62,7 @@ class ListModel extends ChangeNotifier {
   // CostMetric get monthSummary => _totalSummary;
 
   Map<DateTime, List<CostItem>> get outputCostItems {
-    final sorted = _dayGroupedCostItems.map(
+    final sorted = curMonthGbDateCostItems.map(
       (key, value) =>
           MapEntry(key, value.sorted((a, b) => b.lastModified!.compareTo(a.lastModified!))),
     );
@@ -83,7 +82,10 @@ class ListModel extends ChangeNotifier {
   }
 
   Map<DateTime, CostMetric> get outputDailySummary {
-    return outputCostItems.map((key, value) => MapEntry(key, CostMetric.fromCostItemList(value)));
+    final summary = outputCostItems.map(
+      (key, value) => MapEntry(key, CostMetric.fromCostItemList(value)),
+    );
+    return summary;
   }
 
   CostMetric get outputMonthSummary {
@@ -98,26 +100,19 @@ class ListModel extends ChangeNotifier {
 
   Map<DateTime, CostMetric> get monthlyOverview => _costItemRepo.monthSummary;
 
-  void getCurMonthData() {
-    _dayGroupedCostItems = Map.fromEntries(
-      _costItemRepo.gbDateCostItems.entries
-          .where(
-            (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
-          )
-          .sorted((a, b) => b.key.compareTo(a.key)),
-    );
+  Map<DateTime, List<CostItem>> get curMonthGbDateCostItems => Map.fromEntries(
+    _costItemRepo.gbDateCostItems.entries
+        .where(
+          (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
+        )
+        .sorted((a, b) => b.key.compareTo(a.key)),
+  );
 
-    _dailySummary = Map.fromEntries(
-      _costItemRepo.daySummary.entries.where(
-        (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
-      ),
-    );
-
-    // _totalSummary = _costItemRepo.monthSummary[_curYearMonth] ?? CostMetric();
-
-    // debugPrint('get curMonth data loaded, total: ${_totalSummary.balance}');
-
-    notifyListeners();
+  CostItemCategory findCatInList(CostItem item) {
+    return _categoryRepo.categories.firstWhereOrNull(
+          (category) => category.id == item.categoryId,
+        ) ??
+        CostItemCategory.error();
   }
 
   void updateSearch(String searchValue) {
@@ -128,7 +123,6 @@ class ListModel extends ChangeNotifier {
 
   void changeYearMonth(DateTime newYearMonth) {
     _curYearMonth = newYearMonth;
-    getCurMonthData();
     notifyListeners();
   }
 
@@ -194,6 +188,7 @@ class ListModel extends ChangeNotifier {
       await _costItemRepo.deleteCostItem(item);
     }
     _selectionMode = false;
+    _selectedItems.clear();
     notifyListeners();
   }
 

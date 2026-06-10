@@ -16,7 +16,7 @@ class CostItemCategory {
     : id = '0',
       name = "Not Found",
       color = Colors.white,
-      imagePath = "",
+      imagePath = "assets/images/warning.svg",
       costType = CostType.expense;
 
   ColorScheme colorScheme(ThemeMode mode) {

@@ -11,10 +11,10 @@ import 'package:budget_tracker/ui/form/saved_item_screen.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/custom/saved_item_option_enum.dart';
 import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/category_class.dart';
 
@@ -98,8 +98,6 @@ class FormBottomSheet extends StatefulWidget {
 class _FormBottomSheetState extends State<FormBottomSheet> {
   bool _isFormExpanded = false;
   bool _isFormOpened = false;
-  late final TextEditingController _amountController;
-  late final TextEditingController _descController;
   late DateTime _selectedDate;
 
   @override
@@ -108,28 +106,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
 
     DateTime now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
-    _amountController = TextEditingController();
-    _descController = TextEditingController();
 
     if (context.formMod.selectedCategory != null) {
       _selectedDate = context.formMod.date;
-      _amountController.value = _amountController.value.copyWith(
-        text: context.formMod.amount.toStringAsFixed(context.formMod.amount % 1 == 0 ? 0 : 2),
-      );
-      _descController.value = _descController.value.copyWith(text: context.formMod.itemDesc);
     }
-
-    _amountController.addListener(
-      () => context.formMod.updateAmount(double.tryParse(_amountController.text) ?? 0),
-    );
-    _descController.addListener(() => context.formMod.updateDesc(_descController.text));
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _descController.dispose();
-    super.dispose();
   }
 
   void selectDate() async {
@@ -186,6 +166,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
     });
     String itemDesc = context.select((FormModel state) => state.itemDesc);
     double amount = context.select((FormModel state) => state.amount);
+    TextEditingController descController = context.watch<FormModel>().descriptionController;
+    TextEditingController amountController = context.watch<FormModel>().amountController;
 
     if (selectedCategory == null) {
       return SizedBox.shrink();
@@ -271,7 +253,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             style: context.customTt.numberFontSmall!.copyWith(
                               color: context.cs.surface,
                               fontSize: 12,
-                              fontWeight: FontWeight(200),
+                              // fontWeight: FontWeight(200),
                             ),
                           ),
                       ],
@@ -281,7 +263,6 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ? [
                         IconButton(
                           onPressed: () async {
-                            // final formMod = context.formMod;
                             context.nav.push(
                               MaterialPageRoute(
                                 builder:
@@ -289,14 +270,12 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                                       create:
                                           (_) => SavedItemModel(
                                             formData:
-                                                context.formMod.initCostItem == null
+                                                context.formMod.editMode
                                                     ? null
                                                     : context.formMod.formResult,
                                             category: selectedCategory,
                                             savedItemRepository: context.read(),
-                                            categoryRepo: context.read(),
                                           ),
-                                      // value: context.formMod,
                                       child: const CreateSavedItemScreen(),
                                     ),
                               ),
@@ -304,6 +283,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                           },
                           icon: Icon(
                             Icons.favorite,
+                            color: Colors.red.shade500,
                             // color: context.cs.error,
                           ),
                         ),
@@ -313,20 +293,24 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               context: context,
                               builder: (context) => const DeleteItemDialog(),
                             );
-                            if (deleteResponse == true) {
+                            if (deleteResponse == true && context.mounted) {
                               context.formMod.deleteItem();
+                              context.navMod.popFormToMain();
+
                               Flushbar(
                                 duration: Duration(seconds: 2),
+                                backgroundColor: context.cs.secondary,
+                                animationDuration: Duration(milliseconds: 300),
+                                flushbarPosition: FlushbarPosition.TOP,
+                                flushbarStyle: FlushbarStyle.GROUNDED,
                                 title: "Bye bye!",
                                 message: "Item deleted successfully.",
                               ).show(context);
-
-                              context.navMod.popFormToMain();
                             }
                           },
                           icon: Icon(
                             Icons.delete,
-                            color: context.cs.error,
+                            color: context.cs.surface,
                           ),
                         ),
                       ]
@@ -357,7 +341,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                           ),
                           Expanded(
                             child:
-                                _amountController.text.isEmpty
+                                amount == 0
                                     ? Text(
                                       "0.00",
                                       textAlign: TextAlign.end,
@@ -367,7 +351,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                                       ),
                                     )
                                     : Text(
-                                      _amountController.text,
+                                      amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2),
                                       textAlign: TextAlign.end,
                                       style: context.customTt.numberFontLarge!.copyWith(
                                         fontSize: 60,
@@ -382,7 +366,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       color: context.cs.primary.withAlpha(50),
                     ),
                     TextFormField(
-                      controller: _descController,
+                      controller: descController,
                       style: context.tt.bodyMedium!,
                       minLines: 3,
                       maxLines: 3,
@@ -401,7 +385,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                     ),
                     Expanded(
                       child: CustomKeyboard(
-                        controller: _amountController,
+                        controller: amountController,
                         onDone: () {
                           final result = context.formMod.formResult;
                           if (result != null) {
@@ -424,54 +408,6 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   }
 }
 
-class SavedItemDialog extends StatefulWidget {
-  const SavedItemDialog({
-    super.key,
-  });
-
-  @override
-  State<SavedItemDialog> createState() => _SavedItemDialogState();
-}
-
-class _SavedItemDialogState extends State<SavedItemDialog> {
-  late final TextEditingController _controller;
-  List _options = [];
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-    _controller.addListener(() => context.formMod.updateSavedItemTitle);
-    _options = context.formMod.saveOptions;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // final options = context.select((FormModel state) => state.saveOptions);
-    return AlertDialog(
-      title: Text("Saved Item Name"),
-      content: Column(
-        children: [
-          TextFormField(
-            controller: _controller,
-          ),
-          Text("Preserve value for"),
-          ...SavedItemOption.values.map(
-            (option) => FilterChip(
-              label: Text(option.name),
-              selected: _options.contains(option),
-              onSelected: (selected) => context.formMod.updateSaveOption(option, selected),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        const DismissTextButton(text: "Cancel"),
-        const AffirmativeTextButton(text: "Save"),
-      ],
-    );
-  }
-}
-
 class DeleteItemDialog extends StatelessWidget {
   const DeleteItemDialog({
     super.key,
@@ -484,7 +420,10 @@ class DeleteItemDialog extends StatelessWidget {
       content: Text("Warning: You cannot undo this action."),
       actions: [
         const DismissTextButton(text: "Cancel"),
-        const PrimaryNegativeTextButton(text: "Delete"),
+        PrimaryNegativeTextButton(
+          text: "Delete",
+          onTap: () => context.nav.pop(true),
+        ),
       ],
     );
   }
@@ -556,6 +495,8 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
           width: screenSize.width,
           child: SegmentedButton(
             style: SegmentedButton.styleFrom(
+              // padding: EdgeInsets.symmetric(vertical: 12),
+              visualDensity: VisualDensity(vertical: 0),
               selectedBackgroundColor: context.customCs.flipCardColor,
               selectedForegroundColor: context.customCs.onFlipCard,
               side: BorderSide(color: context.cs.primary.withAlpha(100)),
@@ -600,7 +541,8 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                   sliver: SliverGrid.list(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: gridSize,
-                      childAspectRatio: 0.95,
+                      mainAxisExtent: 100,
+                      // childAspectRatio: 0.95,
                       crossAxisSpacing: 4,
                       mainAxisSpacing: 4,
                     ),
@@ -609,7 +551,7 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                         final catId = category.id;
                         final isSelected = catId == _selectedCatId;
 
-                        final bgColor = context.cs.primary.withAlpha(isSelected ? 100 : 5);
+                        final bgColor = context.cs.secondary.withAlpha(isSelected ? 250 : 5);
                         final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
 
                         return GestureDetector(
@@ -675,8 +617,14 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
               if (selectedFormGroup == FormGroup.favorite)
                 context.formMod.savedItems.isNotEmpty
                     ? SliverPadding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      sliver: SliverList.builder(
+                      padding: const EdgeInsets.only(top: 14.0),
+                      sliver: SliverGrid.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 0,
+                          crossAxisSpacing: 12,
+                          mainAxisExtent: 150
+                        ),
                         itemCount: context.formMod.savedItems.length,
                         itemBuilder: (context, index) {
                           final SavedItem item = context.formMod.savedItems.elementAt(index);
@@ -686,16 +634,71 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
                             child: ReusableContainer(
                               onTap: () => context.formMod.selectSavedItem(item),
                               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              child: Row(
-                                spacing: 12,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                spacing: 4,
                                 children: [
-                                  CategoryIconContainer(
-                                    category: cat,
-                                    inContainer: false,
+                                  Row(
+                                    spacing: 12,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      CategoryIconContainer(
+                                        category: cat,
+                                        size: 24,
+                                        inContainer: false,
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          item.title!.isNotEmpty? item.title! :  "Untitled",
+                                          style: context.customTt.dateLabel!.copyWith(fontSize: 24),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          context.nav.push(
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (buildContext) => ChangeNotifierProvider(
+                                                    create:
+                                                        (_) => SavedItemModel(
+                                                          initItem: item,
+                                                          category: cat,
+                                                          savedItemRepository: context.read(),
+                                                        ),
+                                                    child: CreateSavedItemScreen(),
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.edit, size: 20,),
+                                      ),
+                                    ],
                                   ),
-                                  Expanded(child: Text(item.title!)),
-                                  Icon(Icons.favorite),
+                                  Expanded(
+                                    child: Text(
+                                      '${item.description}',
+                                      maxLines: 2,
+                                      style: context.tt.bodyMedium!.copyWith(
+                                        color: context.customCs.fadeColor1,
+                                        fontSize: 12
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          NumberFormat.currency(symbol: "RM").format(item.amount),
+                                          style: context.customTt.numberFontSmall,
+                                        ),
+                                      ),
+                                      
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),

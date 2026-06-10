@@ -23,13 +23,18 @@ class _CreateSavedItemScreenState extends State<CreateSavedItemScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController();
+    _titleController = TextEditingController(text: context.savedItemMod.title);
     _descController = TextEditingController(text: context.savedItemMod.description);
-    _amountController = TextEditingController(text: context.savedItemMod.amount.toString());
-    _dateController = TextEditingController(text: context.savedItemMod.date.formatFull());
+    _amountController = TextEditingController(text: context.savedItemMod.amount?.toString());
+    _dateController = TextEditingController(text: context.savedItemMod.date?.formatFull());
 
     debugPrint("controller value: ${_descController.text}");
-    // _controller.addListener(() => context.formMod.updateSavedItemTitle);
+    _titleController.addListener(() => context.savedItemMod.updateTitle(_titleController.text));
+    _descController.addListener(() => context.savedItemMod.updateDesc(_descController.text));
+    _amountController.addListener(
+      () => context.savedItemMod.updateAmount(_amountController.text),
+    );
+    // _titleController.addListener(() => context.formMod.updateSavedItemTitle(_titleController.text));
     // _options = context.formMod.saveOptions;
   }
 
@@ -55,7 +60,7 @@ class _CreateSavedItemScreenState extends State<CreateSavedItemScreen> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text("Create Saved Item"),
+        title: Text(context.savedItemMod.isEditMode ? "Edit Saved Item" : "New Saved Item"),
       ),
       body: SafeArea(
         minimum: EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -78,13 +83,6 @@ class _CreateSavedItemScreenState extends State<CreateSavedItemScreen> {
                       mainAxisSize: MainAxisSize.max,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Text(
-                        //   'Title',
-                        //   style: context.customTt.numberFontMedium!.copyWith(
-                        //     fontSize: 20,
-                        //     color: context.cs.surface,
-                        //   ),
-                        // ),
                         Row(
                           spacing: 8,
                           children: [
@@ -95,9 +93,12 @@ class _CreateSavedItemScreenState extends State<CreateSavedItemScreen> {
                             Expanded(
                               child: TextFormField(
                                 cursorColor: context.cs.surface,
-                                autofocus: true,
+                                autofocus: !context.savedItemMod.isEditMode,
                                 // canRequestFocus: true,
-                                style: context.customTt.dateLabel!.copyWith(fontSize: 30, color: context.cs.surface),
+                                style: context.customTt.dateLabel!.copyWith(
+                                  fontSize: 30,
+                                  color: context.cs.surface,
+                                ),
                                 decoration: inputDecoration,
                                 controller: _titleController,
                               ),
@@ -184,6 +185,7 @@ class SavedItemField extends StatelessWidget {
     required this.controller,
     required this.title,
     required this.checkboxValue,
+    this.onTap,
     this.onToggleCheckbox,
     this.textAlign = TextAlign.left,
     this.prefix,
@@ -196,6 +198,7 @@ class SavedItemField extends StatelessWidget {
 
   final TextAlign textAlign;
   final Widget? prefix;
+  final GestureTapCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +250,7 @@ class SavedItemField extends StatelessWidget {
         ),
         TextFormField(
           enabled: checkboxValue,
+          onTap: onTap,
           textAlign: textAlign,
           style: context.tt.bodyMedium!.copyWith(fontSize: 14),
           decoration: inputDecoration,

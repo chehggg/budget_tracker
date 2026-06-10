@@ -160,10 +160,10 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
             onPressed: context.listMod.toggleBlur,
             icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
           ),
-          IconButton(
-            onPressed: context.listMod.getCurMonthData,
-            icon: Icon(Icons.refresh),
-          ),
+          // IconButton(
+          //   onPressed: context.listMod.getCurMonthData,
+          //   icon: Icon(Icons.refresh),
+          // ),
         ],
       );
     }
@@ -306,8 +306,7 @@ class CostEntryList extends StatelessWidget {
                     ),
                   ),
                   ...costItems.map((costItem) {
-                    //TODO: FIX THIS
-                    final cat = CustomUtils().findInList(costItem.category);
+                    final CostItemCategory cat = context.listMod.findCatInList(costItem);
                     final selected = selectedItems.any((item) => item.uuid == costItem.uuid);
                     return GestureDetector(
                       onLongPress: () {
@@ -342,12 +341,12 @@ class CostEntryList extends StatelessWidget {
                                 },
                               ),
                             CategoryIconContainer(
-                              category: cat ?? CostItemCategory(name: "Placeholder"),
+                              category: cat,
                               size: 20,
                             ),
                             Expanded(
                               child: Text(
-                                "${costItem.name} - ${costItem.categoryId}",
+                                "${costItem.name}",
                                 // maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                                 style: context.tt.bodyMedium,

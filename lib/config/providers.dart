@@ -8,6 +8,7 @@ import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -44,8 +45,11 @@ List<SingleChildWidget> get providers => [
   ChangeNotifierProvider<AppModel>(
     create: (context) => AppModel(costItemRepository: context.read()),
   ),
+  ChangeNotifierProvider<ChartModel>(
+    create: (context) => ChartModel(costItemRepo: context.read(), categoryRepo: context.read()),
+  ),
   ChangeNotifierProvider<ListModel>(
-    create: (context) => ListModel(costItemRepo: context.read(),categoryRepo: context.read()),
+    create: (context) => ListModel(costItemRepo: context.read(), categoryRepo: context.read()),
   ),
   ChangeNotifierProvider<SettingsViewModel>(
     create:

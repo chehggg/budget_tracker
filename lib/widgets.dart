@@ -278,7 +278,7 @@ class HideableText extends StatelessWidget {
           maxLines: maxLine,
         )) {
           return Text(
-            isBlurred ? data.replaceAll(RegExp(r'[0-9.,]+'), '***') : data,
+            isBlurred ? data.replaceAll(RegExp(r'[0-9,.]+[kKMbB]?'), '***') : data,
             style: textStyle,
           );
           // } else if (overflowText == null) {
@@ -314,7 +314,6 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
     super.initState();
     _selectedDateTime = context.listMod.currentMonth;
   }
-
 
   @override
   Widget build(BuildContext context) {
