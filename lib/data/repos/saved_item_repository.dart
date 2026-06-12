@@ -1,25 +1,25 @@
-import 'package:budget_tracker/custom/saved_item_class.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
+import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/data/services/saved_item_service.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class SavedItemRepository {
-  SavedItemRepository({required SavedItemServices savedItemServices})
-    : _savedItemServices = savedItemServices {
+  SavedItemRepository({required LocalServices localServices}) : _localServices = localServices {
     _initFuture = _init();
   }
 
-  final SavedItemServices _savedItemServices;
+  final LocalServices _localServices;
 
-  List<SavedItem> _savedItems = [];
+  final List<SavedItem> _savedItems = [];
   UnmodifiableListView<SavedItem> get savedItems => UnmodifiableListView(_savedItems);
 
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
 
   Future<void> _init() async {
-    final Result<List<SavedItem>> result = await _savedItemServices.loadSavedItems();
+    final Result<List<SavedItem>> result = await _localServices.loadSavedItems();
     switch (result) {
       case Ok():
         _savedItems.clear();
@@ -32,11 +32,18 @@ class SavedItemRepository {
   Future<void> addToSaved(SavedItem item) async {
     _savedItems.add(item);
     debugPrint('saved item length: ${_savedItems.length}');
-    await _savedItemServices.writeSavedItems(_savedItems);
+    await _localServices.writeSavedItems(_savedItems);
   }
-  
-  Future<void> removeSaved(SavedItem item) async {
-    // _savedItems.add(item);
-    await _savedItemServices.writeSavedItems(_savedItems);
+
+  Future<void> removeSaved(SavedItem deletedItem) async {
+    _savedItems.removeWhere((item) => item.id == deletedItem.id);
+    await _localServices.writeSavedItems(_savedItems);
+  }
+
+  Future<void> updateSaved(SavedItem updatedItem) async {
+    await removeSaved(updatedItem);
+    await addToSaved(updatedItem);
+
+    await _localServices.writeSavedItems(_savedItems);
   }
 }

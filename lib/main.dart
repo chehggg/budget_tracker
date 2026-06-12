@@ -1,6 +1,6 @@
 import 'package:budget_tracker/config/providers.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/firebase_options.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';

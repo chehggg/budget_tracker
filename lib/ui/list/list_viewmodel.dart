@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:collection/collection.dart';

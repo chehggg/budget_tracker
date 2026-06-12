@@ -1,18 +1,17 @@
 import 'dart:collection';
 
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/enum.dart';
-import 'package:budget_tracker/data/services/category_service.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:flutter/material.dart';
 
 class CategoryRepository {
-  CategoryRepository({required CategoryServices categoryServices})
-    : _categoryServices = categoryServices {
+  CategoryRepository({required LocalServices localServices}) : _localServices = localServices {
     _initFuture = _init();
   }
 
-  final CategoryServices _categoryServices;
+  final LocalServices _localServices;
 
   List<CostItemCategory> _categories = [];
   UnmodifiableListView<CostItemCategory> get categories => UnmodifiableListView(_categories);
@@ -26,11 +25,12 @@ class CategoryRepository {
 
   Future<void> getCategory({bool customFile = false, bool revertToDefault = false}) async {
     Result<List<CostItemCategory>> result;
-    if (revertToDefault) {
-      result = await _categoryServices.loadInitCategory();
-    } else {
-      result = await _categoryServices.loadDefaultCategoryJson();
-    }
+    result = await _localServices.loadCategoriesFile();
+    // if (revertToDefault) {
+    //   result = await _categoryServices.();
+    // } else {
+    // result = await _categoryServices.loadDefaultCategoryJson();
+    // }
 
     switch (result) {
       case Ok():
@@ -41,9 +41,9 @@ class CategoryRepository {
     }
   }
 
-  Future<void> exportCategory() async {
-    await _categoryServices.exportCategoryJson(_categories);
-  }
+  // Future<void> exportCategory() async {
+  //   await _categoryServices.exportCategoryJson(_categories);
+  // }
 
   Future<void> addCategory({
     required String name,

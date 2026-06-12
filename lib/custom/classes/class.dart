@@ -1,11 +1,7 @@
-import 'dart:math';
-import 'dart:ui';
-
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/enum.dart';
-import 'package:budget_tracker/custom/extensions.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
 
 class CostItem {
@@ -69,20 +65,20 @@ class CostItem {
     'lastModified': lastModified?.toString(),
   };
 
-  CostItem.fromJson(Map<String, dynamic> json) :
-    uuid = json['uuid'] as String,
-    name = json['name'] as String,
-    amount = json['amount'] as double,
-    category = json['category'] as String,
-    categoryId = json['categoryId'] as String? ?? "",
-    costType = CostType.values.where((costType) => costType.name == json['costType']).first,
-    date = (json['date'] as String).dateParseStd(),
-    lastCreated = DateTime.tryParse(json['lastCreated'] as String),
-    lastModified = DateTime.tryParse(json['lastModified'] as String);
+  CostItem.fromJson(Map<String, dynamic> json)
+    : uuid = json['uuid'] as String,
+      name = json['name'] as String,
+      amount = json['amount'] as double,
+      category = json['category'] as String,
+      categoryId = json['categoryId'] as String,
+      costType = CostType.fromString(json['costType']),
+      date = (json['date'] as String).dateParseStd(),
+      lastCreated = DateTime.tryParse(json['lastCreated'] ?? "") ?? DateTime.now(),
+      lastModified = DateTime.tryParse(json['lastModified'] ?? "") ?? DateTime.now();
 
   bool get isExpense => costType == CostType.expense;
 
-  double get signedAmount => isExpense ? 0 - amount: amount;
+  double get signedAmount => isExpense ? 0 - amount : amount;
 
   List<dynamic> toCsv() {
     final jsonObject = toJson();
@@ -97,11 +93,9 @@ class CostItem {
       categoryId = list[4] as String,
       amount = double.tryParse(list[5] as String) ?? 0,
       name = list[6] as String,
-      lastCreated =
-          DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now(),
-      lastModified =
-          DateTime.tryParse(list.elementAtOrNull(8)) ?? DateTime.now();
-  
+      lastCreated = DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now(),
+      lastModified = DateTime.tryParse(list.elementAtOrNull(8)) ?? DateTime.now();
+
   CostItem.fromCsvLegacy(List<dynamic> list, {bool newId = false})
     : uuid = newId ? Uuid().v4() : list[0] as String,
       date = (list[1] as String).dateParseStd(),
@@ -109,10 +103,8 @@ class CostItem {
       category = list[3] as String,
       amount = double.tryParse(list[4] as String) ?? 0,
       name = list[5] as String,
-      lastCreated =
-          DateTime.tryParse(list.elementAtOrNull(6)) ?? DateTime.now(),
-      lastModified =
-          DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now();
+      lastCreated = DateTime.tryParse(list.elementAtOrNull(6)) ?? DateTime.now(),
+      lastModified = DateTime.tryParse(list.elementAtOrNull(7)) ?? DateTime.now();
 
   String getCurrencyValue(String currencySymbol, [bool? includeSign]) {
     final String value = amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);
@@ -125,7 +117,6 @@ class CostItem {
     return '$sign $currencySymbol$value';
   }
 
-  // CostItemCategory get catObj => defaultCostItemCategories.
   double getAbsoluteAmount() => costType == CostType.expense ? 0 - amount : amount;
 }
 
@@ -189,8 +180,6 @@ class FormArgument {
   final String? oriRoute;
   final CostItem? selectedCostItem;
 }
-
-
 
 class CostMetric {
   CostMetric({

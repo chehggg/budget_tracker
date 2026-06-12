@@ -44,6 +44,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/currencies.json
   fonts:
     - family: DMSerifDisplay
       fonts:

@@ -1,17 +1,14 @@
 import 'dart:collection';
 
-import 'package:budget_tracker/constants/categories.dart';
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/extensions.dart';
-import 'package:budget_tracker/data/services/cost_item_service.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class CostItemRepository {
-  CostItemRepository({required CostItemServices costItemServices})
-    : _costItemService = costItemServices {
+  CostItemRepository({required LocalServices localServices}) : _localServices = localServices {
     _initFuture = _init();
   }
 
@@ -20,7 +17,7 @@ class CostItemRepository {
     // await _migrationUtils();
   }
 
-  final CostItemServices _costItemService;
+  final LocalServices _localServices;
 
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
@@ -43,17 +40,8 @@ class CostItemRepository {
   Future<void> getCostItem({bool customFile = false}) async {
     debugPrint('repo call service load data');
 
-    Result<List<CostItem>>? result; 
-    if (customFile) {
-      result = await _costItemService.loadCostItemJsonFromCustomFile();
-    } else {
-      result = await _costItemService.loadDefaultCostItemJson();
-    }
-
-    if (result == null) {
-      _costItems = [];
-      return;
-    } 
+    Result<List<CostItem>>? result;
+    result = await _localServices.loadCostItemFile(isDefault: !customFile);
 
     switch (result) {
       case Ok():
@@ -87,8 +75,8 @@ class CostItemRepository {
         );
 
         if (customFile) {
-          await _costItemService.writeCostItemJsonToFile(_costItems);
-          debugPrint("write custom file to default file");
+          await _localServices.writeCostItemFile(_costItems);
+          // debugPrint("write custom file to default file");
         }
       case Error():
         debugPrint(result.error.toString());
@@ -106,23 +94,23 @@ class CostItemRepository {
       _gbDateCostItems.remove(deletedItem.date);
     }
 
-    return await _costItemService.writeCostItemJsonToFile(_costItems);
+    return await _localServices.writeCostItemFile(_costItems);
   }
 
   Future<Result<void>> updateCostItem(CostItem newItem) async {
     deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));
     createCostItem(newItem);
 
-    return await _costItemService.writeCostItemJsonToFile(_costItems);
+    return await _localServices.writeCostItemFile(_costItems);
   }
 
   Future<Result<void>> createCostItem(CostItem item) async {
     _costItems.add(item);
-    (_gbDateCostItems[item.date] ??= []).insert(0,item);
+    (_gbDateCostItems[item.date] ??= []).insert(0, item);
     (_monthSummary[item.date.startOfMonth] ??= CostMetric()).addToMetric(item);
     (_yearSummary[item.date.startOfYear] ??= CostMetric()).addToMetric(item);
 
-    return await _costItemService.writeCostItemJsonToFile(_costItems);
+    return await _localServices.writeCostItemFile(_costItems);
   }
 
   // Future<void> loadDataFromFile() async{
@@ -131,10 +119,10 @@ class CostItemRepository {
 
   Future<void> clearCostItem() async {
     _costItems.clear();
-    _costItemService.writeCostItemJsonToFile(_costItems);
+    _localServices.writeCostItemFile(_costItems);
   }
 
   Future<void> exportCostItem() async {
-    _costItemService.exportCostItemJson(_costItems);
+    _localServices.exportCostItemJson(_costItems);
   }
 }

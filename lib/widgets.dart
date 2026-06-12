@@ -1,5 +1,5 @@
 import 'package:another_flushbar/flushbar.dart';
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:flutter/material.dart';

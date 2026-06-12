@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:budget_tracker/custom/enum.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:flutter/material.dart';
 
 class CostItemCategory {
@@ -49,7 +49,7 @@ class CostItemCategory {
   CostItemCategory.fromJson(Map<String, dynamic> json)
     : id = json['id'],
       name = json['name'],
-      color = Color(json['color'] as int),
+      color = Color(json['color'] ?? 0xff000000),
       imagePath = json['imagePath'],
-      costType = CostType.from(json['costType'] as String);
+      costType = CostType.fromString(json['costType']);
 }

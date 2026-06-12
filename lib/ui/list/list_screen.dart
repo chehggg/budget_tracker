@@ -2,9 +2,9 @@ import 'dart:ui';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/constants/categories.dart';
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';

@@ -1,5 +1,5 @@
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/enum.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:flutter/material.dart';
 
 List<CostItemCategory> defaultCostItemCategories = [

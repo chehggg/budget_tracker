@@ -1,8 +1,8 @@
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/enum.dart';
-import 'package:budget_tracker/custom/extensions.dart';
-import 'package:budget_tracker/custom/saved_item_class.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
@@ -78,6 +78,9 @@ class FormModel extends ChangeNotifier {
   String _savedTitle = "";
   String get savedTitle => _savedTitle;
 
+  bool _utilityRefresh = false;
+  bool get refreshed => _utilityRefresh;
+  
   // description controller to be used in form
   // need to be here because the saved item need to be able to update this
   final TextEditingController _descriptionController = TextEditingController();
@@ -125,9 +128,9 @@ class FormModel extends ChangeNotifier {
 
   void selectSavedItem(SavedItem item) {
     _selectedCategory = getCatById(item);
-    _amount = item.amount!;
-    _itemDesc = item.description!;
     _type = item.costType!;
+    _amount = item.amount?? _amount;
+    _itemDesc = item.description ?? _itemDesc;
 
     updateControllerValue();
 
@@ -180,9 +183,15 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void deleteItem() {
+  Future<void> deleteItem() async {
     if (_initCostItem == null) return;
-    _costItemRepository.deleteCostItem(_initCostItem);
+    await _costItemRepository.deleteCostItem(_initCostItem);
+    notifyListeners();
+  }
+
+  Future<void> deleteSavedItem(SavedItem item) async {
+    await _savedItemRepository.removeSaved(item);
+    notifyListeners();
   }
 
   Future<Result<void>> submitForm() async {
@@ -196,5 +205,10 @@ class FormModel extends ChangeNotifier {
       }
     }
     return Result.error(Exception("no form result, cannot create cost item"));
+  }
+
+  void refresh() {
+    _utilityRefresh = _utilityRefresh;
+    notifyListeners();
   }
 }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:budget_tracker/custom/saved_item_class.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,20 +1,20 @@
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class CreateSavedItemScreen extends StatefulWidget {
-  const CreateSavedItemScreen({
+class EditSavedItemScreen extends StatefulWidget {
+  const EditSavedItemScreen({
     super.key,
   });
 
   @override
-  State<CreateSavedItemScreen> createState() => _CreateSavedItemScreenState();
+  State<EditSavedItemScreen> createState() => _EditSavedItemScreenState();
 }
 
-class _CreateSavedItemScreenState extends State<CreateSavedItemScreen> {
+class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _descController;
   late final TextEditingController _amountController;
@@ -161,12 +161,22 @@ class _CreateSavedItemScreenState extends State<CreateSavedItemScreen> {
                       DismissTextButton(
                         onTap: context.nav.pop,
                       ),
-                      AffirmativeTextButton(
-                        onTap: () async {
-                          await context.savedItemMod.saveItem();
-                          context.nav.pop();
-                        },
-                      ),
+                      if (!context.savedItemMod.isEditMode)
+                        AffirmativeTextButton(
+                          text: "Save",
+                          onTap: () async {
+                            await context.savedItemMod.saveItem();
+                            context.nav.pop();
+                          },
+                        ),
+                      if (context.savedItemMod.isEditMode)
+                        AffirmativeTextButton(
+                          text: "Update",
+                          onTap: () async {
+                            await context.savedItemMod.updateSavedItem();
+                            context.nav.pop();
+                          },
+                        ),
                     ],
                   ),
                 ],

@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/enum.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,7 +22,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/constants/currency.dart';
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 
 class AppModel extends ChangeNotifier {
@@ -1118,21 +1118,6 @@ class AppModel extends ChangeNotifier {
       debugPrint('Error when writing data to firebase: $e');
     }
   }
-}
-
-class RelativeDateRange {
-  RelativeDateRange({
-    required this.name,
-    required this.startDate,
-    required this.endDate,
-  });
-
-  final String name;
-  final DateTime startDate;
-  final DateTime endDate;
-
-  RelativeDateRange.toCurrent({required this.name, required this.startDate})
-    : endDate = DateTime.now();
 }
 
 enum DateRangeFilterType { relative, absolute, none }

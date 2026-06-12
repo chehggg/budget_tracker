@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:budget_tracker/constants/categories.dart';
-import 'package:budget_tracker/custom/category_class.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';

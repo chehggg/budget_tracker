@@ -1,4 +1,4 @@
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 ThemeData get appTheme {

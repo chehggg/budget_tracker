@@ -2,21 +2,21 @@ import 'dart:ui';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/constants/categories.dart';
-import 'package:budget_tracker/custom/class.dart';
-import 'package:budget_tracker/custom/enum.dart';
-import 'package:budget_tracker/custom/extensions.dart';
-import 'package:budget_tracker/custom/saved_item_class.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/models/currency_model.dart';
-import 'package:budget_tracker/ui/form/saved_item_screen.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:budget_tracker/custom/category_class.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
 
 // screen for user to input a new cost item
 // or edit a existing cost item
@@ -76,7 +76,7 @@ class CostFormBody extends StatelessWidget {
         bottom: false,
         child:
             ready
-                ? const CostItemCategoryGrid()
+                ? const FormMainSelectionView()
                 : Expanded(
                   child: Center(
                     child: const CircularProgressIndicator(),
@@ -258,23 +258,21 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ? [
                         IconButton(
                           onPressed: () async {
-                            context.nav.push(
+                            await context.nav.push(
                               MaterialPageRoute(
                                 builder:
                                     (buildContext) => ChangeNotifierProvider(
                                       create:
                                           (_) => SavedItemModel(
-                                            formData:
-                                                context.formMod.editMode
-                                                    ? null
-                                                    : context.formMod.formResult,
+                                            formData: context.formMod.formResult,
                                             category: selectedCategory,
                                             savedItemRepository: context.read(),
                                           ),
-                                      child: const CreateSavedItemScreen(),
+                                      child: const EditSavedItemScreen(),
                                     ),
                               ),
                             );
+                            context.formMod.refresh();
                           },
                           icon: Icon(
                             Icons.favorite,
@@ -346,7 +344,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                                       ),
                                     )
                                     : Text(
-                                      amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2),
+                                      amountController.text,
                                       textAlign: TextAlign.end,
                                       style: context.customTt.numberFontLarge!.copyWith(
                                         fontSize: 60,
@@ -424,16 +422,16 @@ class DeleteItemDialog extends StatelessWidget {
   }
 }
 
-class CostItemCategoryGrid extends StatefulWidget {
-  const CostItemCategoryGrid({
+class FormMainSelectionView extends StatefulWidget {
+  const FormMainSelectionView({
     super.key,
   });
 
   @override
-  State<CostItemCategoryGrid> createState() => _CostItemCategoryGridState();
+  State<FormMainSelectionView> createState() => _FormMainSelectionViewState();
 }
 
-class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
+class _FormMainSelectionViewState extends State<FormMainSelectionView> {
   String? _selectedCatId;
   List<CostItemCategory> _filteredCostItemCategories = [];
 
@@ -475,19 +473,14 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = context.mq.size;
-    final selectedThemeMode = context.themeMod.theme;
     final selectedFormGroup = context.select((FormModel state) => state.formGroup);
     final gridSize = context.select((ThemeModel state) => state.gridSize);
-
-    // ignore: unused_local_variable
-    int favoriteLength = context.select((FormModel state) => state.savedItems.length);
 
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
         SizedBox(
-          width: screenSize.width,
+          width: double.infinity,
           child: SegmentedButton(
             style: SegmentedButton.styleFrom(
               // padding: EdgeInsets.symmetric(vertical: 12),
@@ -530,187 +523,243 @@ class _CostItemCategoryGridState extends State<CostItemCategoryGrid> {
         Expanded(
           child: CustomScrollView(
             slivers: [
-              if (selectedFormGroup != FormGroup.favorite)
-                SliverPadding(
-                  padding: const EdgeInsets.only(top: 20.0, bottom: 120),
-                  sliver: SliverGrid.list(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: gridSize,
-                      mainAxisExtent: 100,
-                      // childAspectRatio: 0.95,
-                      crossAxisSpacing: 4,
-                      mainAxisSpacing: 4,
-                    ),
-                    children: [
-                      ...context.formMod.categories.map((category) {
-                        final catId = category.id;
-                        final isSelected = catId == _selectedCatId;
-
-                        final bgColor = context.cs.secondary.withAlpha(isSelected ? 250 : 5);
-                        final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => _selectedCatId = catId);
-                            context.formMod.selectNewCategory(category);
-                          },
-                          child: AnimatedScale(
-                            scale: isSelected ? 1.05 : 1,
-                            duration: Durations.short3,
-                            curve: Curves.easeInOut,
-                            child: Column(
-                              spacing: 4,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedContainer(
-                                  duration: Durations.medium1,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.rectangle,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
-                                    color: bgColor,
-                                  ),
-                                  child: Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: CategoryIconContainer(
-                                      category: category,
-                                      inContainer: false,
-                                    ),
-                                    // child: category.createIcon(30, selectedThemeMode, fgColor),
-                                  ),
-                                ),
-                                Text(
-                                  category.name!.capitalize(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: context.tt.bodyMedium!.copyWith(fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                      Column(
-                        spacing: 4,
-                        children: [
-                          ReusableContainer(
-                            padding: EdgeInsets.all(16),
-                            highlight: true,
-                            filled: true,
-                            onTap: () => debugPrint("create new category"),
-                            child: Icon(
-                              Icons.add,
-                              size: 30,
-                            ),
-                          ),
-                          Text("Add New", style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              if (selectedFormGroup == FormGroup.favorite)
-                context.formMod.savedItems.isNotEmpty
-                    ? SliverPadding(
-                      padding: const EdgeInsets.only(top: 14.0),
-                      sliver: SliverGrid.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 0,
-                          crossAxisSpacing: 12,
-                          mainAxisExtent: 150
-                        ),
-                        itemCount: context.formMod.savedItems.length,
-                        itemBuilder: (context, index) {
-                          final SavedItem item = context.formMod.savedItems.elementAt(index);
-                          final CostItemCategory cat = context.formMod.getCatById(item);
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: ReusableContainer(
-                              onTap: () => context.formMod.selectSavedItem(item),
-                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                spacing: 4,
-                                children: [
-                                  Row(
-                                    spacing: 12,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      CategoryIconContainer(
-                                        category: cat,
-                                        size: 24,
-                                        inContainer: false,
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          item.title!.isNotEmpty? item.title! :  "Untitled",
-                                          style: context.customTt.dateLabel!.copyWith(fontSize: 24),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () {
-                                          context.nav.push(
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (buildContext) => ChangeNotifierProvider(
-                                                    create:
-                                                        (_) => SavedItemModel(
-                                                          initItem: item,
-                                                          category: cat,
-                                                          savedItemRepository: context.read(),
-                                                        ),
-                                                    child: CreateSavedItemScreen(),
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        icon: Icon(Icons.edit, size: 20,),
-                                      ),
-                                    ],
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      '${item.description}',
-                                      maxLines: 2,
-                                      style: context.tt.bodyMedium!.copyWith(
-                                        color: context.customCs.fadeColor1,
-                                        fontSize: 12
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          NumberFormat.currency(symbol: "RM").format(item.amount),
-                                          style: context.customTt.numberFontSmall,
-                                        ),
-                                      ),
-                                      
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                    : SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: context.mq.size.height * 0.8,
-                        child: Center(child: const Text("You have no saved item.")),
-                      ),
-                    ),
+              if (selectedFormGroup != FormGroup.favorite) const CategorySelectionView(),
+              if (selectedFormGroup == FormGroup.favorite) const SavedItemSelectionView(),
             ],
           ),
         ),
       ],
     );
+  }
+}
+
+class CategorySelectionView extends StatelessWidget {
+  const CategorySelectionView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedCategory = context.select(
+      (FormModel state) => state.selectedCategory ?? CostItemCategory.error(),
+    );
+    return SliverPadding(
+      padding: const EdgeInsets.only(top: 20.0, bottom: 120),
+      sliver: SliverGrid.list(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisExtent: 100,
+          // childAspectRatio: 0.95,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+        ),
+        children: [
+          ...context.formMod.categories.map((category) {
+            final isSelected = category.id == selectedCategory.id;
+
+            final bgColor = context.cs.secondary.withAlpha(isSelected ? 250 : 5);
+            final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
+
+            return GestureDetector(
+              onTap: () => context.formMod.selectNewCategory(category),
+              child: AnimatedScale(
+                scale: isSelected ? 1.05 : 1,
+                duration: Durations.short3,
+                curve: Curves.easeInOut,
+                child: Column(
+                  spacing: 4,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: Durations.medium1,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.rectangle,
+                        borderRadius: BorderRadius.circular(16),
+                        border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
+                        color: bgColor,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CategoryIconContainer(
+                          category: category,
+                          inContainer: false,
+                        ),
+                        // child: category.createIcon(30, selectedThemeMode, fgColor),
+                      ),
+                    ),
+                    Text(
+                      category.name!.capitalize(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.tt.bodyMedium!.copyWith(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          Column(
+            spacing: 4,
+            children: [
+              ReusableContainer(
+                padding: EdgeInsets.all(16),
+                highlight: true,
+                filled: true,
+                onTap: () => debugPrint("create new category"),
+                child: Icon(
+                  Icons.add,
+                  size: 30,
+                ),
+              ),
+              Text("Add New", style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SavedItemSelectionView extends StatelessWidget {
+  const SavedItemSelectionView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final savedItems = context.watch<FormModel>().savedItems;
+    // ignore: unused_local_variable
+    final refresh = context.select((FormModel state) => state.refreshed);
+    // final savedItemLength = context.select((FormModel state) => state.savedItems.length);
+    debugPrint('saved item list rebuilt');
+
+    if (savedItems.isNotEmpty) {
+      return SliverPadding(
+        padding: const EdgeInsets.only(top: 14.0, bottom: 120),
+        sliver: SliverGrid.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 1,
+            mainAxisSpacing: 0,
+            crossAxisSpacing: 12,
+            mainAxisExtent: 100,
+          ),
+          itemCount: savedItems.length,
+          itemBuilder: (context, index) {
+            final SavedItem item = savedItems.elementAt(index);
+            final CostItemCategory cat = context.formMod.getCatById(item);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: BoxBorder.all(color: context.customCs.fadeColor2 ?? Colors.transparent),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => context.formMod.selectSavedItem(item),
+                  child: Padding(
+                    // filled: false,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 4,
+                      children: [
+                        Row(
+                          spacing: 12,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CategoryIconContainer(
+                              category: cat,
+                              size: 20,
+                              inContainer: false,
+                            ),
+                            Expanded(
+                              child: Text(
+                                item.title!.isNotEmpty ? item.title! : "Untitled",
+                                style: context.customTt.dateLabel!.copyWith(fontSize: 18),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () async {
+                                await context.nav.push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (buildContext) => ChangeNotifierProvider(
+                                          create:
+                                              (_) => SavedItemModel(
+                                                initItem: item,
+                                                category: cat,
+                                                formData: context.formMod.formResult,
+                                                savedItemRepository: context.read(),
+                                              ),
+                                          child: const EditSavedItemScreen(),
+                                        ),
+                                  ),
+                                );
+                                context.formMod.refresh();
+                              },
+                              icon: Icon(
+                                Icons.edit,
+                                size: 16,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () async {
+                                final response = await showDialog(
+                                  context: context,
+                                  builder: (context) => DeleteItemDialog(),
+                                );
+                                if (response == true) {
+                                  await context.formMod.deleteSavedItem(item);
+                                }
+                              },
+                              icon: Icon(
+                                Icons.delete,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0, top: 4),
+                          child: Row(
+                            spacing: 10,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                "${item.description ?? "[Default Desc]"} | ${item.amount != null ? NumberFormat.currency(symbol: "RM").format(item.amount) : "[Default Amount]"} | ${item.date != null ? item.date!.formatShort() : "[Default Date]"}",
+                                maxLines: 2,
+                                style: context.tt.bodyMedium!.copyWith(
+                                  color: context.customCs.fadeColor1,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Row(
+                        //   children: [
+                        //     Expanded(
+                        //       child:
+                        //     ),
+                        //   ],
+                        // ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    } else {
+      return SliverToBoxAdapter(
+        child: SizedBox(
+          height: context.mq.size.height * 0.8,
+          child: Center(child: const Text("You have no saved item.")),
+        ),
+      );
+    }
   }
 }

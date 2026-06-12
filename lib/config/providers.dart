@@ -25,13 +25,13 @@ List<SingleChildWidget> get providers => [
     create: (context) => CategoryServices(),
   ),
   Provider(
-    create: (context) => CostItemRepository(costItemServices: context.read()),
+    create: (context) => CostItemRepository(localServices: context.read()),
   ),
   Provider(
-    create: (context) => CategoryRepository(categoryServices: context.read()),
+    create: (context) => CategoryRepository(localServices: context.read()),
   ),
   Provider(
-    create: (context) => SavedItemRepository(savedItemServices: context.read()),
+    create: (context) => SavedItemRepository(localServices: context.read()),
   ),
   ChangeNotifierProvider<ThemeModel>(
     create: (context) => ThemeModel(),
@@ -51,9 +51,9 @@ List<SingleChildWidget> get providers => [
   ChangeNotifierProvider<ListModel>(
     create: (context) => ListModel(costItemRepo: context.read(), categoryRepo: context.read()),
   ),
-  ChangeNotifierProvider<SettingsViewModel>(
+  ChangeNotifierProvider<SettingsModel>(
     create:
-        (context) => SettingsViewModel(
+        (context) => SettingsModel(
           costItemRepository: context.read(),
           categoryRepository: context.read(),
         ),

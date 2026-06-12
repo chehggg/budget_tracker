@@ -1,12 +1,11 @@
 import 'package:another_flushbar/flushbar.dart';
-import 'package:budget_tracker/custom/extensions.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/constants/currency.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
-import 'package:collection/wrappers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
@@ -934,7 +933,7 @@ class ExportDataSettingsTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () async {
-                await context.read<SettingsViewModel>().exportCostItemData();
+                await context.read<SettingsModel>().exportCostItemData();
                 // if (context.mounted) {
                 //   Navigator.pop(context);
                 //   if (outputPath != null) {
@@ -1010,7 +1009,7 @@ class LoadDataSettingsTile extends StatelessWidget {
                     height: 100,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     onTap: () async {
-                      final result = await context.read<SettingsViewModel>().loadData();
+                      final result = await context.read<SettingsModel>().loadData();
                       // if (result == null) return;
                       // if (result == "success") {
                       //   context.nav.pop();

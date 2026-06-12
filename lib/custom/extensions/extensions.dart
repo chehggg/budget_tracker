@@ -1,14 +1,13 @@
 import 'dart:math';
 import 'package:budget_tracker/constants/categories.dart';
-import 'package:budget_tracker/custom/category_class.dart';
-import 'package:budget_tracker/custom/class.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
-import 'package:budget_tracker/ui/form/saved_item_viewmodel.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
-import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -40,7 +39,7 @@ extension DayExtension on DateTime {
   DateTime get startOfYear => DateTime(year, 1, 1);
   DateTime get endOfYear => DateTime(year, 12, 31);
   DateTime get startOfWeek => DateTime(year, month, day - (weekday - 1));
-  DateTime get endOfWeek => DateTime(year, month, day - (weekday - 1) + 7);
+  DateTime get endOfWeek => DateTime(year, month, day - (weekday - 1) + 6);
 
   bool isWithinRange(DateTimeRange range) {
     return (isBefore(range.end) || isAtSameMomentAs(range.end)) && isAfter(range.start) ||
@@ -151,11 +150,12 @@ extension BuildContextExtension on BuildContext {
 
   MediaQueryData get mq => MediaQuery.of(this);
 
-  AppModel get appMod => read<AppModel>();
+  // AppModel get appMod => read<AppModel>();
   NavigationModel get navMod => read<NavigationModel>();
   FormModel get formMod => read<FormModel>();
   ThemeModel get themeMod => read<ThemeModel>();
   ListModel get listMod => read<ListModel>();
+  SettingsModel get settingMod => read<SettingsModel>();
   SavedItemModel get savedItemMod => read<SavedItemModel>();
   ChartModel get chartMod => read<ChartModel>();
 }

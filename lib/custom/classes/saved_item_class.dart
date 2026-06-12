@@ -1,4 +1,4 @@
-import 'package:budget_tracker/custom/enum.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 
 class SavedItem {
   SavedItem({
@@ -9,6 +9,7 @@ class SavedItem {
     this.date,
     this.costType,
     this.amount,
+    this.lastModified,
   });
 
   String? id;
@@ -18,6 +19,7 @@ class SavedItem {
   String? category;
   CostType? costType;
   double? amount;
+  DateTime? lastModified;
 
   // SavedItem.fromFormResult(String this.id, String this.title, CostItemFormResult result)
   //   : description = result.name,
@@ -32,8 +34,9 @@ class SavedItem {
     "description": description,
     "category": category,
     "costType": costType!.name,
-    "date": date.toString(),
+    "date": date?.toString(),
     "amount": amount,
+    "lastModified": (lastModified ?? DateTime.now).toString(),
   };
 
   SavedItem.fromJson(Map<String, dynamic> json)
@@ -41,7 +44,8 @@ class SavedItem {
       title = json['title'],
       description = json['description'],
       category = json['category'],
-      date = DateTime.tryParse(json['date']),
+      date = DateTime.tryParse(json['date'] ?? ""),
       costType = CostType.values.firstWhere((type) => type.name == json['costType']),
-      amount = json['amount'];
+      amount = json['amount'],
+      lastModified = DateTime.tryParse(json['lastModified'] ?? "") ?? DateTime.now();
 }
