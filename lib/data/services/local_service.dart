@@ -104,7 +104,6 @@ class LocalServices {
         items.length,
         (i) => items[i].toJson(),
       );
-      final jsonString = jsonEncode(json);
       final export = await _exportFile("costItems-${Uuid().v4().split('-').first}", json);
 
       return Result.ok(export);
@@ -154,9 +153,12 @@ class LocalServices {
   /// saved item
   Future<Result<List<SavedItem>>> loadSavedItems() async {
     try {
-      final itemString = await _loadSharedPref("savedItems");
+      String? itemString = await _loadSharedPref("savedItems");
       if (itemString == null) return Result.ok([]);
 
+      if (itemString.startsWith('"') && itemString.endsWith('"')) {
+        itemString = itemString.substring(1, itemString.length - 1);
+      }
       final results =
           (jsonDecode(itemString) as List<dynamic>)
               .map((el) => SavedItem.fromJson(el as Map<String, dynamic>))

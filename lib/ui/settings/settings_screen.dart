@@ -691,7 +691,7 @@ class CustomSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // final title = ti
     return ListTile(
-      title: title != null ? Text(title!, style: context.customTt.numberFontMedium) : titleWidget,
+      title: title != null ? Text(title!, style: context.customTt.numberFontMedium!.copyWith(fontSize: 12)) : titleWidget,
       subtitle: subtitle,
       dense: true,
       trailing: trailingWidget,

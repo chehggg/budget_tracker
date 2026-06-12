@@ -1,15 +1,14 @@
 import 'package:budget_tracker/custom/classes/goal_class.dart';
-import 'package:budget_tracker/data/services/goal_service.dart';
+import 'package:budget_tracker/data/services/local_service.dart';
 
 class GoalRepository {
-  GoalRepository({required GoalService goalService}) : _goalService = goalService {
+  GoalRepository({required LocalServices localServices}) : _localServices = localServices {
     _initFuture = init();
   }
 
-  final GoalService _goalService;
+  final LocalServices _localServices;
 
-  Future<void> init() async {
-  }
+  Future<void> init() async {}
 
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
@@ -19,12 +18,17 @@ class GoalRepository {
 
   Future<void> addGoal(Goal goal) async {
     _goals.add(goal);
-    await _goalService.writeGoalToFile(_goals);
+    await _localServices.writeGoalsFile(_goals);
   }
 
   Future<void> removeGoal(Goal deletedGoal) async {
     _goals.removeWhere((goal) => goal.id == deletedGoal.id);
-    await _goalService.writeGoalToFile(_goals);
+    await _localServices.writeGoalsFile(_goals);
   }
-  
+
+  Future<void> updateGoal(Goal updatedGoal) async {
+    _goals.removeWhere((goal) => goal.id == updatedGoal.id);
+    _goals.add(updatedGoal);
+    await _localServices.writeGoalsFile(_goals);
+  }
 }

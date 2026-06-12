@@ -53,14 +53,6 @@ class ListModel extends ChangeNotifier {
 
   String _searchText = "";
 
-  Map<DateTime, List<CostItem>> _dayGroupedCostItems = {};
-
-  Map<DateTime, CostMetric> _dailySummary = {};
-  Map<DateTime, CostMetric> get dailySummary => _dailySummary;
-
-  // CostMetric _totalSummary = CostMetric();
-  // CostMetric get monthSummary => _totalSummary;
-
   Map<DateTime, List<CostItem>> get outputCostItems {
     final sorted = curMonthGbDateCostItems.map(
       (key, value) =>
@@ -125,10 +117,6 @@ class ListModel extends ChangeNotifier {
     _curYearMonth = newYearMonth;
     notifyListeners();
   }
-
-  // void searchCostItem() {
-  //   updateSearch(searchValue)
-  // }
 
   void toggleSearch([bool? value]) {
     if (value != null) {

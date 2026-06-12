@@ -7,6 +7,8 @@ import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:budget_tracker/ui/core/themes/theme.dart';
+import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
+import 'package:budget_tracker/ui/goal/goal_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -137,6 +139,16 @@ class HomeScreen extends StatelessWidget {
                   builder: (context) => const RecurringCostScreen(),
                   // settings: RouteSettings(name: settings.name)
                 );
+              case '/goals':
+                return MaterialPageRoute(
+                  builder: (context) => const GoalScreen(),
+                  settings: RouteSettings(name: settings.name)
+                );
+              case '/goals-form':
+                return MaterialPageRoute(
+                  builder: (context) => const GoalFormScreen(),
+                  settings: RouteSettings(name: settings.name)
+                );
               default:
                 return MaterialPageRoute(builder: (context) => const Placeholder());
               // throw UnimplementedError();
@@ -192,7 +204,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
   final List<IconData> buttons = [
     Icons.home, // list
     Icons.auto_graph, // chart
-    Icons.dataset_linked, // report
+    Icons.ads_click_outlined, // goals
     Icons.settings, // settings
   ];
 
@@ -214,7 +226,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
                     iconButton = IconButton.filled(
                       style: IconButton.styleFrom(
                         fixedSize: Size.square(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       visualDensity: VisualDensity.comfortable,
                       padding: EdgeInsets.all(8),
@@ -229,7 +241,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
                     iconButton = IconButton(
                       style: IconButton.styleFrom(
                         fixedSize: Size.square(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       visualDensity: VisualDensity.comfortable,
                       padding: EdgeInsets.all(8),

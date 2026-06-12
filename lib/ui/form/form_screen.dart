@@ -672,7 +672,7 @@ class SavedItemSelectionView extends StatelessWidget {
                             ),
                             Expanded(
                               child: Text(
-                                item.title!.isNotEmpty ? item.title! : "Untitled",
+                                item.title?? "Untitled",
                                 style: context.customTt.dateLabel!.copyWith(fontSize: 18),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

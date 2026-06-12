@@ -1,21 +1,17 @@
-import 'dart:convert';
+// import 'dart:convert';
 
-import 'package:budget_tracker/data/services/cost_item_service.dart';
-import 'package:budget_tracker/data/services/saved_item_service.dart';
-import 'package:budget_tracker/utils/result.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:uuid/uuid.dart';
+// import 'package:budget_tracker/data/services/saved_item_service.dart';
+// import 'package:budget_tracker/utils/result.dart';
+// import 'package:file_picker/file_picker.dart';
+// import 'package:uuid/uuid.dart';
 
-class ExporterServices {
-  ExporterServices({
-    required SavedItemServices savedItemServices,
-    required CostItemServices costItemServices,
-  }) : _savedItemServices = savedItemServices,
-       _costItemServices = costItemServices;
+// class ExporterServices {
+//   ExporterServices({
+//     required SavedItemServices savedItemServices,
+//   }) : _savedItemServices = savedItemServices;
 
-  // _final CategoryServices\
-  final SavedItemServices _savedItemServices;
-  final CostItemServices _costItemServices;
+//   // _final CategoryServices\
+//   final SavedItemServices _savedItemServices;
 
   // Future<Result<void>?> createConfigOutput() async {
   //   final savedItemResult = await _savedItemServices.loadSavedItems();
@@ -47,4 +43,4 @@ class ExporterServices {
   //     return Result.error(e);
   //   }
   // }
-}
+// }

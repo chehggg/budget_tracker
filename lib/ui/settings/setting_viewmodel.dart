@@ -1,6 +1,5 @@
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
-import 'package:budget_tracker/data/services/cost_item_service.dart';
 import 'package:flutter/material.dart';
 
 class SettingsModel extends ChangeNotifier {

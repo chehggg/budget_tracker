@@ -8,7 +8,7 @@ class NavigationModel extends ChangeNotifier {
   final List<String> _routeName = [
     "/",
     "/data",
-    "/report",
+    "/goals",
     "/settings"
   ];
 
