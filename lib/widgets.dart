@@ -518,3 +518,7 @@ class DismissTextButton extends StatelessWidget {
     );
   }
 }
+
+class CustomFlushbar {
+  
+} 

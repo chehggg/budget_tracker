@@ -1,15 +1,10 @@
-import 'dart:ui';
-
 import 'package:another_flushbar/flushbar.dart';
-import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
-import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
-import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -30,13 +25,12 @@ class CostItemFormScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create:
-          (context) => FormModel(
-            initCostItem: arg.selectedCostItem,
-            costItemRepo: context.read(),
-            savedItemRepo: context.read(),
-            categoryRepo: context.read(),
-          ),
+      create: (context) => FormModel(
+        initCostItem: arg.selectedCostItem,
+        costItemRepo: context.read(),
+        savedItemRepo: context.read(),
+        categoryRepo: context.read(),
+      ),
       child: CostFormBody(arg: arg),
     );
   }
@@ -74,14 +68,13 @@ class CostFormBody extends StatelessWidget {
       body: SafeArea(
         minimum: EdgeInsets.only(top: 12, left: 12, right: 12),
         bottom: false,
-        child:
-            ready
-                ? const FormMainSelectionView()
-                : Expanded(
-                  child: Center(
-                    child: const CircularProgressIndicator(),
-                  ),
+        child: ready
+            ? const FormMainSelectionView()
+            : Expanded(
+                child: Center(
+                  child: const CircularProgressIndicator(),
                 ),
+              ),
       ),
       // bottomNavigationBar: bottom,
     );
@@ -130,7 +123,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
               weekdayStyle: context.customTt.numberFontSmall,
               yearStyle: context.customTt.numberFontSmall,
               toggleButtonTextStyle: context.customTt.numberFontSmall,
-              headerHeadlineStyle: context.customTt.dateLabel!.copyWith(fontSize: 40),
+              headerHeadlineStyle:
+                  context.customTt.dateLabel!.copyWith(fontSize: 40),
             ),
           ),
           child: child!,
@@ -161,8 +155,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
     });
     String itemDesc = context.select((FormModel state) => state.itemDesc);
     double amount = context.select((FormModel state) => state.amount);
-    TextEditingController descController = context.watch<FormModel>().descriptionController;
-    TextEditingController amountController = context.watch<FormModel>().amountController;
+    TextEditingController descController =
+        context.watch<FormModel>().descriptionController;
+    TextEditingController amountController =
+        context.watch<FormModel>().amountController;
 
     if (selectedCategory == null) {
       return SizedBox.shrink();
@@ -183,10 +179,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
         duration: Durations.medium1,
         curve: Curves.easeInOutExpo,
         width: context.mq.size.width,
-        height:
-            !_isFormOpened
-                ? 0
-                : _isFormExpanded
+        height: !_isFormOpened
+            ? 0
+            : _isFormExpanded
                 ? 510
                 : 120,
         decoration: BoxDecoration(
@@ -203,7 +198,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
               duration: Durations.medium1,
               curve: Curves.easeInOutExpo,
               height: _isFormExpanded ? 64 : 120,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 spacing: 12,
@@ -256,57 +252,64 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                   ),
                   ...(context.formMod.selectedCategory != null)
                       ? [
-                        IconButton(
-                          onPressed: () async {
-                            await context.nav.push(
-                              MaterialPageRoute(
-                                builder:
-                                    (buildContext) => ChangeNotifierProvider(
-                                      create:
-                                          (_) => SavedItemModel(
-                                            formData: context.formMod.formResult,
-                                            category: selectedCategory,
-                                            savedItemRepository: context.read(),
-                                          ),
-                                      child: const EditSavedItemScreen(),
+                          IconButton(
+                            onPressed: () async {
+                              final bool response = await context.nav.push(
+                                MaterialPageRoute(
+                                  builder: (buildContext) =>
+                                      ChangeNotifierProvider(
+                                    create: (_) => SavedItemModel(
+                                      formData: context.formMod.formResult,
+                                      category: selectedCategory,
+                                      savedItemRepository: context.read(),
                                     ),
-                              ),
-                            );
-                            context.formMod.refresh();
-                          },
-                          icon: Icon(
-                            Icons.favorite,
-                            color: Colors.red.shade500,
-                            // color: context.cs.error,
+                                    child: const EditSavedItemScreen(),
+                                  ),
+                                ),
+                              );
+                              if (response) {
+                                context.showSuccessNotification(
+                                    message: "Saved item created!");
+                                context.formMod
+                                    .updateFormGroup(FormGroup.favorite);
+                              }
+                              context.formMod.refresh();
+                            },
+                            icon: Icon(
+                              Icons.favorite,
+                              color: Colors.red.shade500,
+                              // color: context.cs.error,
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            final bool? deleteResponse = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => const DeleteItemDialog(),
-                            );
-                            if (deleteResponse == true && context.mounted) {
-                              context.formMod.deleteItem();
-                              context.navMod.popFormToMain();
+                          IconButton(
+                            onPressed: () async {
+                              final bool? deleteResponse =
+                                  await showDialog<bool>(
+                                context: context,
+                                builder: (context) => const DeleteItemDialog(),
+                              );
+                              if (deleteResponse == true && context.mounted) {
+                                await context.formMod.deleteItem();
+                                context.navMod.popFormToMain();
 
-                              Flushbar(
-                                duration: Duration(seconds: 2),
-                                backgroundColor: context.cs.secondary,
-                                animationDuration: Duration(milliseconds: 300),
-                                flushbarPosition: FlushbarPosition.TOP,
-                                flushbarStyle: FlushbarStyle.GROUNDED,
-                                title: "Bye bye!",
-                                message: "Item deleted successfully.",
-                              ).show(context);
-                            }
-                          },
-                          icon: Icon(
-                            Icons.delete,
-                            color: context.cs.surface,
+                                Flushbar(
+                                  duration: Duration(seconds: 2),
+                                  backgroundColor: context.cs.secondary,
+                                  animationDuration:
+                                      Duration(milliseconds: 300),
+                                  flushbarPosition: FlushbarPosition.TOP,
+                                  flushbarStyle: FlushbarStyle.GROUNDED,
+                                  title: "Bye bye!",
+                                  message: "Item deleted successfully.",
+                                ).show(context);
+                              }
+                            },
+                            icon: Icon(
+                              Icons.delete,
+                              color: context.cs.surface,
+                            ),
                           ),
-                        ),
-                      ]
+                        ]
                       : [],
                 ],
               ),
@@ -333,24 +336,25 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             ),
                           ),
                           Expanded(
-                            child:
-                                amount == 0
-                                    ? Text(
-                                      "0.00",
-                                      textAlign: TextAlign.end,
-                                      style: context.customTt.numberFontLarge!.copyWith(
-                                        fontSize: 60,
-                                        color: context.cs.primary.withAlpha(100),
-                                      ),
-                                    )
-                                    : Text(
-                                      amountController.text,
-                                      textAlign: TextAlign.end,
-                                      style: context.customTt.numberFontLarge!.copyWith(
-                                        fontSize: 60,
-                                        color: context.cs.primary,
-                                      ),
+                            child: amount == 0
+                                ? Text(
+                                    "0.00",
+                                    textAlign: TextAlign.end,
+                                    style: context.customTt.numberFontLarge!
+                                        .copyWith(
+                                      fontSize: 60,
+                                      color: context.cs.primary.withAlpha(100),
                                     ),
+                                  )
+                                : Text(
+                                    amountController.text,
+                                    textAlign: TextAlign.end,
+                                    style: context.customTt.numberFontLarge!
+                                        .copyWith(
+                                      fontSize: 60,
+                                      color: context.cs.primary,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -422,23 +426,12 @@ class DeleteItemDialog extends StatelessWidget {
   }
 }
 
-class FormMainSelectionView extends StatefulWidget {
+class FormMainSelectionView extends StatelessWidget {
   const FormMainSelectionView({
     super.key,
   });
 
-  @override
-  State<FormMainSelectionView> createState() => _FormMainSelectionViewState();
-}
-
-class _FormMainSelectionViewState extends State<FormMainSelectionView> {
-  String? _selectedCatId;
-  List<CostItemCategory> _filteredCostItemCategories = [];
-
-  FormGroup _selectedFormGroup = FormGroup.expense;
-  CostType? _selectedCostType = CostType.expense;
-
-  final gridSettings = {
+  static Map gridSettings = {
     3: {
       "mainSpacing": 8.0,
       "crossSpacing": 12.0,
@@ -457,24 +450,10 @@ class _FormMainSelectionViewState extends State<FormMainSelectionView> {
   };
 
   @override
-  void initState() {
-    super.initState();
-
-    if (context.formMod.selectedCategory != null) {
-      _selectedCostType = context.formMod.type;
-      _selectedCatId = context.formMod.selectedCategory!.id!;
-    }
-
-    _filteredCostItemCategories =
-        defaultCostItemCategories
-            .where((category) => category.costType == _selectedCostType)
-            .toList();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final selectedFormGroup = context.select((FormModel state) => state.formGroup);
-    final gridSize = context.select((ThemeModel state) => state.gridSize);
+    final selectedFormGroup =
+        context.select((FormModel state) => state.formGroup);
+    // final gridSize = context.select((ThemeModel state) => state.gridSize);
 
     return Column(
       mainAxisSize: MainAxisSize.max,
@@ -488,7 +467,8 @@ class _FormMainSelectionViewState extends State<FormMainSelectionView> {
               selectedBackgroundColor: context.customCs.flipCardColor,
               selectedForegroundColor: context.customCs.onFlipCard,
               side: BorderSide(color: context.cs.primary.withAlpha(100)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadiusGeometry.circular(12)),
             ),
             segments: [
               ...FormGroup.values.map((formGroup) {
@@ -504,10 +484,9 @@ class _FormMainSelectionViewState extends State<FormMainSelectionView> {
                     child: Text(
                       formGroup.name.capitalize(),
                       style: context.customTt.numberLabel!.copyWith(
-                        color:
-                            selectedFormGroup == formGroup
-                                ? context.customCs.onFlipCard
-                                : context.cs.primary,
+                        color: selectedFormGroup == formGroup
+                            ? context.customCs.onFlipCard
+                            : context.cs.primary,
                       ),
                     ),
                   ),
@@ -523,8 +502,10 @@ class _FormMainSelectionViewState extends State<FormMainSelectionView> {
         Expanded(
           child: CustomScrollView(
             slivers: [
-              if (selectedFormGroup != FormGroup.favorite) const CategorySelectionView(),
-              if (selectedFormGroup == FormGroup.favorite) const SavedItemSelectionView(),
+              if (selectedFormGroup != FormGroup.favorite)
+                const CategorySelectionView(),
+              if (selectedFormGroup == FormGroup.favorite)
+                const SavedItemSelectionView(),
             ],
           ),
         ),
@@ -555,8 +536,10 @@ class CategorySelectionView extends StatelessWidget {
           ...context.formMod.categories.map((category) {
             final isSelected = category.id == selectedCategory.id;
 
-            final bgColor = context.cs.secondary.withAlpha(isSelected ? 250 : 5);
-            final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
+            final bgColor =
+                context.cs.secondary.withAlpha(isSelected ? 250 : 5);
+            final fgColor =
+                isSelected ? context.cs.onPrimary : context.cs.primary;
 
             return GestureDetector(
               onTap: () => context.formMod.selectNewCategory(category),
@@ -573,7 +556,8 @@ class CategorySelectionView extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.rectangle,
                         borderRadius: BorderRadius.circular(16),
-                        border: BoxBorder.all(color: context.cs.primary.withAlpha(50)),
+                        border: BoxBorder.all(
+                            color: context.cs.primary.withAlpha(50)),
                         color: bgColor,
                       ),
                       child: Padding(
@@ -609,7 +593,8 @@ class CategorySelectionView extends StatelessWidget {
                   size: 30,
                 ),
               ),
-              Text("Add New", style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
+              Text("Add New",
+                  style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
             ],
           ),
         ],
@@ -647,7 +632,8 @@ class SavedItemSelectionView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12.0),
               child: Container(
                 decoration: BoxDecoration(
-                  border: BoxBorder.all(color: context.customCs.fadeColor2 ?? Colors.transparent),
+                  border: BoxBorder.all(
+                      color: context.customCs.fadeColor2 ?? Colors.transparent),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: InkWell(
@@ -672,29 +658,35 @@ class SavedItemSelectionView extends StatelessWidget {
                             ),
                             Expanded(
                               child: Text(
-                                item.title?? "Untitled",
-                                style: context.customTt.dateLabel!.copyWith(fontSize: 18),
+                                item.title ?? "Untitled",
+                                style: context.customTt.dateLabel!
+                                    .copyWith(fontSize: 18),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             IconButton(
                               onPressed: () async {
-                                await context.nav.push(
+                                final response = await context.nav.push(
                                   MaterialPageRoute(
-                                    builder:
-                                        (buildContext) => ChangeNotifierProvider(
-                                          create:
-                                              (_) => SavedItemModel(
-                                                initItem: item,
-                                                category: cat,
-                                                formData: context.formMod.formResult,
-                                                savedItemRepository: context.read(),
-                                              ),
-                                          child: const EditSavedItemScreen(),
-                                        ),
+                                    builder: (buildContext) =>
+                                        ChangeNotifierProvider(
+                                      create: (_) => SavedItemModel(
+                                        initItem: item,
+                                        category: cat,
+                                        formData: context.formMod.formResult,
+                                        savedItemRepository: context.read(),
+                                      ),
+                                      child: const EditSavedItemScreen(),
+                                    ),
                                   ),
                                 );
+                                if (response) {
+                                  context.showSuccessNotification(
+                                      message: "Saved item updated!");
+                                  context.formMod
+                                      .updateFormGroup(FormGroup.favorite);
+                                }
                                 context.formMod.refresh();
                               },
                               icon: Icon(

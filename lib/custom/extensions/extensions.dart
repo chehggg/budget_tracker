@@ -1,8 +1,10 @@
 import 'dart:math';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
+import 'package:budget_tracker/ui/goal/goal_viewmodel.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
@@ -42,7 +44,8 @@ extension DayExtension on DateTime {
   DateTime get endOfWeek => DateTime(year, month, day - (weekday - 1) + 6);
 
   bool isWithinRange(DateTimeRange range) {
-    return (isBefore(range.end) || isAtSameMomentAs(range.end)) && isAfter(range.start) ||
+    return (isBefore(range.end) || isAtSameMomentAs(range.end)) &&
+            isAfter(range.start) ||
         isAtSameMomentAs(range.start);
   }
 
@@ -64,7 +67,8 @@ extension DayExtension on DateTime {
 extension DoubleExtension on double {
   double ceilingToFirstDigit() {
     final maxValueDigit = (toInt()).toString().length;
-    return pow(10, maxValueDigit - 1) * ((this / pow(10, maxValueDigit - 1)).toInt() + 1);
+    return pow(10, maxValueDigit - 1) *
+        ((this / pow(10, maxValueDigit - 1)).toInt() + 1);
   }
 
   String compactFormat() {
@@ -81,10 +85,9 @@ extension DoubleExtension on double {
     bool useSuffix = false,
   }) {
     final absValue = abs();
-    final sign =
-        this < 0
-            ? "-"
-            : usePositiveSign
+    final sign = this < 0
+        ? "-"
+        : usePositiveSign
             ? "+"
             : "";
     if (useSuffix) {
@@ -155,9 +158,27 @@ extension BuildContextExtension on BuildContext {
   FormModel get formMod => read<FormModel>();
   ThemeModel get themeMod => read<ThemeModel>();
   ListModel get listMod => read<ListModel>();
+  GoalModel get goalMod => read<GoalModel>();
   SettingsModel get settingMod => read<SettingsModel>();
   SavedItemModel get savedItemMod => read<SavedItemModel>();
   ChartModel get chartMod => read<ChartModel>();
+
+  void showSuccessNotification({required String message, String? title}) {
+    Flushbar(
+      title: title,
+      message: message,
+      icon: const Icon(Icons.check_circle, color: Colors.white),
+      backgroundColor: Colors.green.shade700,
+      duration: const Duration(seconds: 3),
+      flushbarPosition: FlushbarPosition.TOP,
+      flushbarStyle: FlushbarStyle.GROUNDED,
+      borderRadius: BorderRadius.circular(8),
+      margin: const EdgeInsets.all(12),
+      boxShadows: const [
+        BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)
+      ],
+    ).show(this);
+  }
 }
 
 @immutable
@@ -199,9 +220,12 @@ class MyTexts extends ThemeExtension<MyTexts> {
       return this;
     }
     return MyTexts(
-      numberFontLarge: TextStyle.lerp(numberFontLarge, other.numberFontLarge, t),
-      numberFontMedium: TextStyle.lerp(numberFontMedium, other.numberFontMedium, t),
-      numberFontSmall: TextStyle.lerp(numberFontSmall, other.numberFontSmall, t),
+      numberFontLarge:
+          TextStyle.lerp(numberFontLarge, other.numberFontLarge, t),
+      numberFontMedium:
+          TextStyle.lerp(numberFontMedium, other.numberFontMedium, t),
+      numberFontSmall:
+          TextStyle.lerp(numberFontSmall, other.numberFontSmall, t),
       numberLabel: TextStyle.lerp(numberLabel, other.numberLabel, t),
       dateLabel: TextStyle.lerp(dateLabel, other.dateLabel, t),
     );
@@ -270,10 +294,12 @@ class CustomUtils {
   }
 
   CostItemCategory? findInList(String name) {
-    return defaultCostItemCategories.firstWhereOrNull((cat) => cat.name == name);
+    return defaultCostItemCategories
+        .firstWhereOrNull((cat) => cat.name == name);
   }
 }
 
 extension VisualDensityExtension on VisualDensity {
-  static VisualDensity get minimum => VisualDensity(horizontal: -4.0, vertical: -4.0);
+  static VisualDensity get minimum =>
+      VisualDensity(horizontal: -4.0, vertical: -4.0);
 }

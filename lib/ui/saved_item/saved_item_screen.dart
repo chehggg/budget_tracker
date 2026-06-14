@@ -159,14 +159,14 @@ class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
                     children: [
                       Expanded(child: SizedBox()),
                       DismissTextButton(
-                        onTap: context.nav.pop,
+                        onTap: () => context.nav.pop(false),
                       ),
                       if (!context.savedItemMod.isEditMode)
                         AffirmativeTextButton(
                           text: "Save",
                           onTap: () async {
                             await context.savedItemMod.saveItem();
-                            context.nav.pop();
+                            context.nav.pop(true);
                           },
                         ),
                       if (context.savedItemMod.isEditMode)
@@ -174,7 +174,7 @@ class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
                           text: "Update",
                           onTap: () async {
                             await context.savedItemMod.updateSavedItem();
-                            context.nav.pop();
+                            context.nav.pop(true);
                           },
                         ),
                     ],

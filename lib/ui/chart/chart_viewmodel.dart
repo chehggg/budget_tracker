@@ -7,12 +7,22 @@ import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-enum DateRangeType { thisMonth, thisYear, thisWeek, oneWeek, oneMonth, oneYear, custom }
+enum DateRangeType {
+  thisMonth,
+  thisYear,
+  thisWeek,
+  oneWeek,
+  oneMonth,
+  oneYear,
+  custom
+}
 
 class ChartModel extends ChangeNotifier {
-  ChartModel({required CostItemRepository costItemRepo, required CategoryRepository categoryRepo})
-    : _costItemRepo = costItemRepo,
-      _categoryRepo = categoryRepo {
+  ChartModel(
+      {required CostItemRepository costItemRepo,
+      required CategoryRepository categoryRepo})
+      : _costItemRepo = costItemRepo,
+        _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
@@ -45,7 +55,6 @@ class ChartModel extends ChangeNotifier {
   DateTime get rangeStart => _curRange.start;
   DateTime get rangeEnd => _curRange.end;
 
-
   DateTimeRange get _prevRange {
     switch (_rangeType) {
       case DateRangeType.oneMonth:
@@ -73,50 +82,64 @@ class ChartModel extends ChangeNotifier {
     }
   }
 
-  Map<int, CostMetric> get curRangeOverview {
-    Iterable<MapEntry<int, CostMetric>> result = {};
-    
+  Map<int, Map<DateTime, CostMetric>> get curRangeOverview {
+    Iterable<MapEntry<int, Map<DateTime, CostMetric>>> result = {};
+
     if (showMonths) {
       return {};
       // List.generate(_curRange.across, generator)
     } else {
-      result = List.generate(
-        _curRange.duration.inDays + 1,
-        (i) => i
-      ).map((i) {
+      result = List.generate(_curRange.duration.inDays + 1, (i) => i).map((i) {
         final date = rangeStart.add(Duration(days: i));
         final metrics = _costItemRepo.daySummary[date] ?? CostMetric();
-        return MapEntry(i, metrics);
+        return MapEntry(i, {
+          date: metrics
+        });
       });
     }
 
     return Map.fromEntries(result);
   }
 
-  Map<int, CostMetric> get prevRangeOverview {
-    final result = List.generate(
-      _prevRange.duration.inDays + 1,
-      (i) => i
-    ).map((i) {
+  Map<int, Map<DateTime, CostMetric>> get prevRangeOverview {
+    Iterable<MapEntry<int, Map<DateTime, CostMetric>>> result = {};
+    
+    result =
+        List.generate(_prevRange.duration.inDays + 1, (i) => i).map((i) {
       final date = rangeStart.add(Duration(days: i));
       final metrics = _costItemRepo.daySummary[date] ?? CostMetric();
-      return MapEntry(i, metrics);
+      return MapEntry(i, {
+          date: metrics
+        });
     });
 
     return Map.fromEntries(result);
   }
 
-  List<Map<DateTime, double>> get overviewComparisonView {
-    Map<int, CostMetric> largerMap, smallerMap;
+  Map<int, Map<DateTime, double>> get overviewComparisonView {
+    // Map<int, CostMetric> largerMap, smallerMap;
 
-    if (curRangeOverview.length > prevRangeOverview.length) {
-      largerMap = curRangeOverview;
-      smallerMap = prevRangeOverview;
-    } else {
-      smallerMap = curRangeOverview;
-      largerMap = prevRangeOverview;
+    // if (curRangeOverview.length > prevRangeOverview.length) {
+    //   largerMap = curRangeOverview;
+    //   smallerMap = prevRangeOverview;
+    // } else {
+    //   smallerMap = curRangeOverview;
+    //   largerMap = prevRangeOverview;
+    // }
+    List<Map<DateTime,double>> _overview = [];
+    // return [];
+    int i = 0;
+    while (true) {
+      _overview.add({
+        
+      })
+      if (curRangeOverview.entries.elementAtOrNull(i) == null ||
+          prevRangeOverview.entries.elementAtOrNull(i) == null) {
+        break;
+      }
+      i++;
     }
-    return [];
+    return {};
     // return largerMap.entries.mapIndexed((index, entry) {
     //   Map<DateTime, double> newMap = {};
     //   final smallerEntry = smallerMap.entries.elementAtOrNull(index);
@@ -129,22 +152,22 @@ class ChartModel extends ChangeNotifier {
     // }).toList();
   }
 
-  Map<DateTime, double> calculateCumulative(bool isCurrent) {
+  Map<int, double> calculateCumulative(bool isCurrent) {
     double total = 0;
-    Map<DateTime, double> result = {};
-    return {};
-    // if (isCurrent) {
-    //   curRangeOverview.forEach((date, metric) {
-    //     total += metric.expense ?? 0;
-    //     result.addEntries([MapEntry(date, total)]);
-    //   });
-    // } else {
-    //   prevRangeOverview.forEach((date, metric) {
-    //     total += metric.expense ?? 0;
-    //     result.addEntries([MapEntry(date, total)]);
-    //   });
-    // }
-    // return result;
+    Map<int, double> result = {};
+    // return {};
+    if (isCurrent) {
+      curRangeOverview.forEach((key, metric) {
+        total += metric.expense ?? 0;
+        result.addEntries([MapEntry(key, total)]);
+      });
+    } else {
+      prevRangeOverview.forEach((key, metric) {
+        total += metric.expense ?? 0;
+        result.addEntries([MapEntry(key, total)]);
+      });
+    }
+    return result;
   }
 
   Map<DateTime, double> calculateAverageCumulative(bool isCurrent) {
@@ -156,14 +179,14 @@ class ChartModel extends ChangeNotifier {
   }
 
   List<Map<DateTime, double>> get cumulativeComparison => [
-    calculateCumulative(true),
-    calculateCumulative(false),
-  ];
+        calculateCumulative(true),
+        calculateCumulative(false),
+      ];
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
-    calculateAverageCumulative(true),
-    calculateAverageCumulative(false),
-  ];
+        calculateAverageCumulative(true),
+        calculateAverageCumulative(false),
+      ];
 
   double dailyRangePercentile(double percent) {
     final maxValue = curRangeOverview.entries.fold<double>(
@@ -186,11 +209,14 @@ class ChartModel extends ChangeNotifier {
       case DateRangeType.thisWeek:
         _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
       case DateRangeType.oneWeek:
-        _curRange = DateTimeRange(start: now.standardNow.addDay(-6), end: now.standardNow);
+        _curRange = DateTimeRange(
+            start: now.standardNow.addDay(-6), end: now.standardNow);
       case DateRangeType.oneMonth:
-        _curRange = DateTimeRange(start: now.standardNow.addMonth(-1), end: now.standardNow);
+        _curRange = DateTimeRange(
+            start: now.standardNow.addMonth(-1), end: now.standardNow);
       case DateRangeType.oneYear:
-        _curRange = DateTimeRange(start: now.standardNow.addYear(-1), end: now.standardNow);
+        _curRange = DateTimeRange(
+            start: now.standardNow.addYear(-1), end: now.standardNow);
       default:
         return;
     }
