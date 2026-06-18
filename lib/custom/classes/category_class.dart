@@ -52,4 +52,17 @@ class CostItemCategory {
       color = Color(json['color'] ?? 0xff000000),
       imagePath = json['imagePath'],
       costType = CostType.fromString(json['costType']);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true; // Fast path if they are the exact same instance
+
+    return other is CostItemCategory &&
+        other.runtimeType == runtimeType &&
+        other.id == id &&
+        other.name == name;
+  }
+  
+  @override
+  int get hashCode => Object.hash(id, name);
 }

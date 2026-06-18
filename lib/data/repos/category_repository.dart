@@ -2,8 +2,10 @@ import 'dart:collection';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class CategoryRepository {
@@ -41,9 +43,9 @@ class CategoryRepository {
     }
   }
 
-  // Future<void> exportCategory() async {
-  //   await _categoryServices.exportCategoryJson(_categories);
-  // }
+  CostItemCategory getCategoryById(String id) {
+    return categories.firstWhereOrNull((el) => el.id == id) ?? CostItemCategory.error();
+  }
 
   Future<void> addCategory({
     required String name,

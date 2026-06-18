@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 class GoalModel extends ChangeNotifier {
   GoalModel({required CostItemRepository costItemRepo, required GoalRepository goalRepository})
     : _costItemRepo = costItemRepo,
-      _goalRepository = goalRepository;
+      _goalRepository = goalRepository {
+        init();
+      }
 
   final CostItemRepository _costItemRepo;
   final GoalRepository _goalRepository;
@@ -18,6 +20,8 @@ class GoalModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _goalRepository.ready;
     _isInit = true;
+    
+    debugPrint('goal view model done');
     notifyListeners();
   }
 

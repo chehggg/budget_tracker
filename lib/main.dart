@@ -6,6 +6,7 @@ import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
+import 'package:budget_tracker/test.dart';
 import 'package:budget_tracker/ui/core/themes/theme.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_screen.dart';
@@ -97,11 +98,17 @@ class HomeScreen extends StatelessWidget {
                   builder: (context) => CostListScreen(),
                   settings: RouteSettings(name: settings.name),
                 );
+              case '/test':
+                return MaterialPageRoute(
+                  builder: (context) {
+                    return TestPage();
+                  },
+                  settings: RouteSettings(name: settings.name),
+                );
               case '/form':
                 return MaterialPageRoute(
                   builder: (context) {
-                    return CostItemFormScreen(
-                        arg: settings.arguments as FormArgument);
+                    return CostItemFormScreen(arg: settings.arguments as FormArgument);
                   },
                   settings: RouteSettings(name: settings.name),
                 );
@@ -132,20 +139,21 @@ class HomeScreen extends StatelessWidget {
                 );
               case '/goals':
                 return MaterialPageRoute(
-                    builder: (context) => const GoalScreen(),
-                    settings: RouteSettings(name: settings.name));
+                  builder: (context) => GoalScreen(),
+                  settings: RouteSettings(name: settings.name),
+                );
               case '/goals-form':
                 return MaterialPageRoute(
-                    builder: (context) => const GoalFormScreen(),
-                    settings: RouteSettings(name: settings.name));
+                  builder: (context) => const GoalFormScreen(),
+                  settings: RouteSettings(name: settings.name),
+                );
               default:
-                return MaterialPageRoute(
-                    builder: (context) => const Placeholder());
+                return MaterialPageRoute(builder: (context) => const Placeholder());
               // throw UnimplementedError();
             }
           },
         ),
-        floatingActionButton: navigationModel.isFormOpened ? null : CustomFAB(),
+        floatingActionButton: isFormOpened ? null : CustomFAB(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: isFormOpened ? null : CustomNavigationBottomBar(),
       ),
@@ -153,18 +161,18 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future showPopDialog(BuildContext context) => showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Exit app?"),
-            content: Text("Exit app"),
-            actions: [
-              TextButton(onPressed: null, child: Text("Exit")),
-              TextButton(onPressed: null, child: Text("Cancel")),
-            ],
-          );
-        },
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text("Exit app?"),
+        content: Text("Exit app"),
+        actions: [
+          TextButton(onPressed: null, child: Text("Exit")),
+          TextButton(onPressed: null, child: Text("Cancel")),
+        ],
       );
+    },
+  );
 }
 
 class CustomFAB extends StatelessWidget {
@@ -176,8 +184,7 @@ class CustomFAB extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton.large(
       onPressed: () => context.read<NavigationModel>().openForm(FormArgument()),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadiusGeometry.circular(30)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(30)),
       enableFeedback: true,
       elevation: 0,
       foregroundColor: context.cs.surfaceContainer,
@@ -201,59 +208,56 @@ class CustomNavigationBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageIndex =
-        context.select((NavigationModel state) => state.currentRouteIndex);
+    final pageIndex = context.select((NavigationModel state) => state.currentRouteIndex);
     return BottomAppBar(
       notchMargin: 10,
       shape: CircularNotchedRectangle(),
       child: Row(
         spacing: 5,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: buttons
-            .asMap()
-            .map((index, buttonIcon) {
-              Widget iconButton;
-              if (pageIndex == index) {
-                iconButton = IconButton.filled(
-                  style: IconButton.styleFrom(
-                    fixedSize: Size.square(50),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  visualDensity: VisualDensity.comfortable,
-                  padding: EdgeInsets.all(8),
-                  onPressed: () => {},
-                  icon: Icon(
-                    buttonIcon,
-                    color: context.cs.surface,
-                  ),
-                  iconSize: 32,
-                );
-              } else {
-                iconButton = IconButton(
-                  style: IconButton.styleFrom(
-                    fixedSize: Size.square(50),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                  visualDensity: VisualDensity.comfortable,
-                  padding: EdgeInsets.all(8),
-                  onPressed: () =>
-                      context.read<NavigationModel>().navigateMainScreen(index),
-                  icon: Icon(buttonIcon),
-                  iconSize: 28,
-                );
-              }
-              return MapEntry(index, iconButton);
-            })
-            .values
-            .toList()
-          ..insert(
-            2,
-            SizedBox(
-              width: 120,
-            ),
-          ), // add space for FAB
+        children:
+            buttons
+                .asMap()
+                .map((index, buttonIcon) {
+                  Widget iconButton;
+                  if (pageIndex == index) {
+                    iconButton = IconButton.filled(
+                      style: IconButton.styleFrom(
+                        fixedSize: Size.square(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      visualDensity: VisualDensity.comfortable,
+                      padding: EdgeInsets.all(8),
+                      onPressed: () => {},
+                      icon: Icon(
+                        buttonIcon,
+                        color: context.cs.surface,
+                      ),
+                      iconSize: 32,
+                    );
+                  } else {
+                    iconButton = IconButton(
+                      style: IconButton.styleFrom(
+                        fixedSize: Size.square(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      visualDensity: VisualDensity.comfortable,
+                      padding: EdgeInsets.all(8),
+                      onPressed: () => context.read<NavigationModel>().navigateMainScreen(index),
+                      icon: Icon(buttonIcon),
+                      iconSize: 28,
+                    );
+                  }
+                  return MapEntry(index, iconButton);
+                })
+                .values
+                .toList()
+              ..insert(
+                2,
+                SizedBox(
+                  width: 120,
+                ),
+              ), // add space for FAB
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/ui/goal/goal_view_model.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -106,7 +107,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
     final selectionMode = context.select((ListModel state) => state.selectionMode);
     final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
-
+    
     if (selectionMode) {
       return AppBar(
         actionsPadding: EdgeInsets.only(right: 10),

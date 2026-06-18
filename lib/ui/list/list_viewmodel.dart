@@ -25,7 +25,7 @@ class ListModel extends ChangeNotifier {
     await _categoryRepo.ready;
 
     _isInitialized = true;
-    debugPrint("viewmodel done");
+    debugPrint("list viewmodel done");
     notifyListeners();
   }
 

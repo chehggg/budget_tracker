@@ -63,7 +63,12 @@ class NavigationModel extends ChangeNotifier {
       ModalRoute.withName(_routeName[_currentRouteIndex])
     );
 
-    // Navigator.of(context).push
   }
-  
+
+  void toGoalScreen() {
+    navigationKey.currentState!.pushNamedAndRemoveUntil(
+      '/goals', 
+      ModalRoute.withName('/goals')
+    );
+  }  
 }

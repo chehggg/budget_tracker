@@ -1,6 +1,8 @@
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
-import 'package:budget_tracker/ui/goal/goal_viewModel.dart';
+import 'package:budget_tracker/ui/goal/goal_view_model.dart';
+import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,13 +11,31 @@ class GoalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // return ChangeNotifierProvider(
+    //   create: (context) => GoalModel(costItemRepo: context.read(), goalRepository: context.read()),
+    //   child: Scaffold(
+    //     appBar: AppBar(
+    //       actions: [
+    //         IconButton(
+    //           onPressed: () async {
+    //             await Navigator.push(
+    //               context,
+    //               MaterialPageRoute(builder: (context) => const GoalFormScreen()),
+    //             );
+    //           },
+    //           icon: Icon(Icons.add),
+    //         ),
+    //       ],
+    //     ),
+    //     body: SafeArea(child: GoalBody()),
+    //   ),
+    // );
     return Scaffold(
       appBar: AppBar(
         actions: [
           IconButton(
             onPressed: () async {
-              await Navigator.push(
-                context,
+              await context.nav.push(
                 MaterialPageRoute(builder: (context) => const GoalFormScreen()),
               );
             },
@@ -33,7 +53,12 @@ class GoalBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goals = context.select((GoalModel state) => state.goalOverview);
+    // final dynamic model = Provider.of(context, listen: false);
+    // debugPrint("Found provider runtime type: ${model.runtimeType}");
+    final ready = context.select((GoalModel state) => state.ready);
+    // final goals = context.select((GoalModel state) => state.goalOverview);
+    final goals = {};
+    final test = context.select((ListModel state) => state.currentMonth);
     return CustomScrollView(
       slivers: [
         SliverPadding(

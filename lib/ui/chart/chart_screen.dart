@@ -5,7 +5,9 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/screens/settings/chart_details_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -80,12 +82,29 @@ class _ChartScreenState extends State<ChartScreen> {
   Widget build(BuildContext context) {
     final ready = context.select((ChartModel state) => state.ready);
     final rangeType = context.select((ChartModel state) => state.rangeType);
-
+    final type = context.select((ChartModel state) => state.type);
     return Scaffold(
       appBar: AppBar(
         title: Text(
           "Visualize".toUpperCase(),
         ),
+        actions: [
+          SizedBox(
+            height: 40,
+            child: DropdownMenu(
+              inputDecorationTheme: InputDecorationThemeData(),
+              onSelected: (value) {
+                if (value == null) return;
+                context.chartMod.updateCostType(value);
+              },
+              initialSelection: type,
+              dropdownMenuEntries:
+                  CostType.values
+                      .map((type) => DropdownMenuEntry(value: type, label: type.name))
+                      .toList(),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         minimum: EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -94,53 +113,53 @@ class _ChartScreenState extends State<ChartScreen> {
                 ? CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(
-                      child: Wrap(
-                        spacing: 4,
-                        children: [
-                          ...DateRangeType.values.map(
-                            (type) => FilterChip(
-                              selected: rangeType == type,
-                              label: Text(type.name.capitalize()),
-                              onSelected: (value) {
-                                context.chartMod.updateDateRange(type);
-                              },
-                            ),
-                          ),
-                        ],
+                      child: const ChartFilterButtons(),
+                    ),
+                    const ChartSection(
+                      title: "Category Breakdown",
+                      page: ChartCategoryBreakdownScreen(),
+                      child: CategoryBreakdownChart(),
+                    ),
+                    ChartSection(
+                      title: "Cumulative Spend",
+                      showLabelSubtitle: true,
+                      page: ChartCategoryBreakdownScreen(),
+                      child: NewCumulativeLineChart(
+                        titleData: chartTitleData,
                       ),
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          spacing: 12,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text("Daily Trend", style: context.customTt.dateLabel),
-                            SizedBox(
-                              height: 250,
-                              child: DayBarChart(titleData: chartTitleData),
-                            ),
-                          ],
-                        ),
+                    ChartSection(
+                      title: "Cumulative Average Spend",
+                      showLabelSubtitle: true,
+                      page: ChartCategoryBreakdownScreen(),
+                      child: NewAverageCumulativeLineChart(
+                        titleData: chartTitleData,
                       ),
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.only(top: 20.0),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          spacing: 12,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text("Cumulative Spend", style: context.customTt.dateLabel),
-                            SizedBox(
-                              height: 250,
-                              child: NewCumulativeLineChart(titleData: chartTitleData),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // const ChartSection(
+                    //   title: "Category Comparison",
+                    //   child: CategoryBreakdownList(),
+                    // ),
+                    // const ChartSection(
+                    //   title: "Date Trend",
+                    //   child: DayBarChart(),
+                    // ),
+                    // SliverPadding(
+                    //   padding: const EdgeInsets.only(top: 12.0),
+                    //   sliver: SliverToBoxAdapter(
+                    //     child: Column(
+                    //       spacing: 12,
+                    //       crossAxisAlignment: CrossAxisAlignment.stretch,
+                    //       children: [
+                    //         Text("Daily Trend", style: context.customTt.dateLabel),
+                    //         SizedBox(
+                    //           height: 250,
+                    //           child: DayBarChart(titleData: chartTitleData),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                     // SliverPadding(
                     //   padding: const EdgeInsets.only(top: 12.0),
                     //   sliver: SliverToBoxAdapter(
@@ -254,6 +273,310 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 }
 
+class ChartFilterButtons extends StatelessWidget {
+  const ChartFilterButtons({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final type = context.select((ChartModel state) => state.type);
+    final period = context.select((ChartModel state) => state.period);
+    final displayPeriod = context.select((ChartModel state) => state.displayPeriodDuration);
+    final displayDetailsPeriod = context.select(
+      (ChartModel state) => state.displayDetailsPeriodDuration,
+    );
+    debugPrint('rebuild');
+    return Column(
+      spacing: 12,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton(
+            style: SegmentedButton.styleFrom(
+              visualDensity: VisualDensity(vertical: 0),
+              textStyle: context.customTt.dateLabel?.copyWith(fontSize: 20),
+            ),
+            showSelectedIcon: false,
+            onSelectionChanged: (value) => context.chartMod.updatePeriod(value.first),
+            segments:
+                ChartPeriod.values
+                    .map(
+                      (el) => ButtonSegment(
+                        value: el,
+                        label: Text(
+                          el.name.capitalize(),
+                        ),
+                      ),
+                    )
+                    .toList(),
+            selected: {period},
+          ),
+        ),
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragEnd: (details) {
+            if (details.primaryVelocity == null) return;
+            if (details.primaryVelocity!.abs() < 1000) return;
+            debugPrint(details.primaryVelocity!.toStringAsFixed(0));
+            context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
+          },
+          child: ReusableContainer(
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            width: double.infinity,
+            filled: true,
+            highlight: true,
+            child: Row(
+              children: [
+                Icon(Icons.arrow_left_outlined, color: context.cs.surface,),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Your charts for",
+                        style: context.customTt.paragraphText?.copyWith(color: context.cs.surface),
+                      ),
+                      Text(
+                        displayPeriod,
+                        style: context.customTt.elegantLabelLarge?.copyWith(
+                          color: context.cs.surface,
+                          fontSize: 40,
+                        ),
+                      ),
+                      Text(
+                        displayDetailsPeriod,
+                        style: context.customTt.paragraphText?.copyWith(color: context.cs.surface),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_right_outlined, color: context.cs.surface),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ChartSection extends StatelessWidget {
+  const ChartSection({
+    super.key,
+    this.showLabelSubtitle = false,
+    required this.title,
+    required this.child,
+    this.page,
+  });
+
+  final String title;
+  final Widget child;
+  final bool showLabelSubtitle;
+  final Widget? page;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.only(top: 12.0),
+      sliver: SliverToBoxAdapter(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap:
+              () =>
+                  context.nav.push(MaterialPageRoute(builder: (context) => page ?? Placeholder())),
+          child: Column(
+            spacing: 12,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: context.customTt.dateLabel,
+                        ),
+                      ),
+                      Text(
+                        "Expand →",
+                        style: context.customTt.numberFontSmall?.copyWith(
+                          color: context.customCs.fadeColor1,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (showLabelSubtitle)
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: context.cs.secondary,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "Current Range",
+                          style: context.customTt.paragraphText?.copyWith(fontSize: 12),
+                        ),
+                        SizedBox(width: 20),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.blue.shade400,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "Previous Range",
+                          style: context.customTt.paragraphText?.copyWith(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CategoryBreakdownChart extends StatelessWidget {
+  const CategoryBreakdownChart({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = context.select((ChartModel state) => state.simplifiedCurRangeCategorySummary);
+    final total = context.select((ChartModel state) => state.curRangeSummary);
+    return Column(
+      children: [
+        SizedBox(
+          height: 110,
+        ),
+        SizedBox(
+          height: 50,
+          child: PieChart(
+            PieChartData(
+              centerSpaceRadius: 100,
+              startDegreeOffset: -180,
+              sections: [
+                ...data.entries.map(
+                  (e) => PieChartSectionData(
+                    color: context.cs.secondary,
+                    cornerRadius: 12,
+                    value: e.value.expense ?? 0,
+                    radius: 8,
+                    titlePositionPercentageOffset: 3,
+                    badgeWidget: Column(
+                      children: [
+                        Text(e.key.name ?? ""),
+                        Text(
+                          NumberFormat.percentPattern().format(e.value.expense! / total.expense!),
+                        ),
+                      ],
+                    ),
+                    showTitle: false,
+                    badgePositionPercentageOffset: 5,
+                    // title:
+                    //     e.key.name ??
+                    //     " ${NumberFormat.percentPattern().format(e.value.expense! / total.expense!)}",
+                  ),
+                ),
+                PieChartSectionData(
+                  value: total.expense,
+                  color: Colors.transparent,
+                  showTitle: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CategoryBreakdownList extends StatelessWidget {
+  const CategoryBreakdownList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = context.select((ChartModel state) => state.categoryComparison);
+    return ListView.builder(
+      itemCount: summary.length,
+      itemBuilder: (context, index) {
+        final category = summary.entries.elementAt(index).key;
+        final metrics = summary.entries.elementAt(index).value;
+        final prevRangeValue = metrics.first.expense ?? 0;
+        final curRangeValue = metrics.last.expense ?? 0;
+        final percentageChange = (curRangeValue / prevRangeValue).abs();
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            spacing: 20,
+            children: [
+              CategoryIconContainer(
+                category: category,
+                size: 24,
+              ),
+              Expanded(
+                child: Column(
+                  spacing: 4,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text((category.name ?? "").capitalize())),
+                        Text(
+                          "${curRangeValue.customCurrencyFormat("RM")} (${NumberFormat.percentPattern().format(percentageChange)})",
+                        ),
+                      ],
+                    ),
+                    Container(
+                      width: double.infinity,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: context.customCs.fadeColor2,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: FractionallySizedBox(
+                        widthFactor: min(percentageChange, 1),
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: percentageChange > 1 ? Colors.red : context.customCs.fadeColor1,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // CategoryIconContainer(category: category),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class DayBarChart extends StatelessWidget {
   const DayBarChart({
     super.key,
@@ -283,22 +606,22 @@ class DayBarChart extends StatelessWidget {
         gridData: FlGridData(drawVerticalLine: false),
         titlesData: titleData,
         // maxY: maxValue,
-        barGroups:
-            data.mapIndexed((index, value) {
-              return BarChartGroupData(
-                x: index,
-                barRods:
-                    value.entries
-                        .mapIndexed(
-                          (index, entry) => BarChartRodData(
-                            color: index == 0 ? context.cs.secondary : Colors.blue,
-                            toY: entry.value,
-                            // label: BarChartRodLabel(text: entry.value.compactFormat()),
-                          ),
-                        )
-                        .toList(),
-              );
-            }).toList(),
+        barGroups: [],
+        // data.mapIndexed((index, value) {
+        //   return BarChartGroupData(
+        //     x: index,
+        //     barRods:
+        //         value.entries
+        //             .mapIndexed(
+        //               (index, entry) => BarChartRodData(
+        //                 color: index == 0 ? context.cs.secondary : Colors.blue,
+        //                 toY: entry.value,
+        //                 // label: BarChartRodLabel(text: entry.value.compactFormat()),
+        //               ),
+        //             )
+        //             .toList(),
+        //   );
+        // }).toList(),
       ),
     );
   }
@@ -1388,83 +1711,194 @@ class NewCumulativeLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cumulativeComparison = context.select((ChartModel state) => state.cumulativeComparison);
-    return LineChart(
-      LineChartData(
-        titlesData: titleData ?? FlTitlesData(),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          getDrawingHorizontalLine:
-              (value) => FlLine(strokeWidth: 1, color: context.customCs.fadeColor3),
-        ),
-        lineBarsData:
-            cumulativeComparison
-                .asMap()
-                .entries
-                .map(
-                  (cumulativeEntry) => LineChartBarData(
-                    dotData: FlDotData(
-                      checkToShowDot: (spot, barData) {
-                        if (spot.x == cumulativeEntry.value.length - 1) {
-                          return true;
-                        } else {
-                          return false;
-                        }
-                      },
+    final curRangeStart = context.select((ChartModel state) => state.rangeStart);
+    final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
+
+    final now = DateTime.now().standardNow;
+    return Container(
+      height: 180,
+      padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+      child: LineChart(
+        LineChartData(
+          titlesData: titleData ?? FlTitlesData(),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            getTouchedSpotIndicator: (barData, spotIndexes) {
+              return spotIndexes
+                  .map(
+                    (el) => TouchedSpotIndicatorData(
+                      FlLine(strokeWidth: 1.5, color: barData.color),
+                      FlDotData(),
                     ),
-                    color:
-                        cumulativeEntry.key == 0
-                            ? context.cs.secondary
-                            : Colors.blue.withAlpha(150),
-                    spots: [
-                      ...cumulativeEntry.value.entries.mapIndexed(
-                        (index, entry) => FlSpot(index.toDouble(), entry.value),
-                      ),
-                    ],
-                    // isCurved: true,
-                    curveSmoothness: 0.1,
+                  )
+                  .toList();
+            },
+            touchSpotThreshold: 50,
+            touchTooltipData: LineTouchTooltipData(
+              tooltipHorizontalAlignment: FLHorizontalAlignment.left,
+              getTooltipColor: (touchedSpot) {
+                return context.cs.surface;
+              },
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map(
+                  (spot) {
+                    final isPrev = spot.barIndex == 0;
+                    final DateTime curDate = curRangeStart.addDay(spot.x.round());
+                    final DateTime prevDate = prevRangeStart.addDay(spot.x.round());
+                    return LineTooltipItem(
+                      "${isPrev ? prevDate.formatShorter() : curDate.formatShorter()}: ${spot.y.customCurrencyFormat("RM")}",
+                      context.tt.bodyMedium!.copyWith(fontSize: 12),
+                      textAlign: TextAlign.right,
+                    );
+                  },
+                ).toList();
+              },
+              tooltipHorizontalOffset: 20,
+              fitInsideVertically: true,
+              fitInsideHorizontally: true,
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine:
+                (value) => FlLine(strokeWidth: 1, color: context.customCs.fadeColor3),
+          ),
+          lineBarsData:
+              cumulativeComparison.mapIndexed((i, element) {
+                final bool isPrev = i == 0;
+                final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
+                return LineChartBarData(
+                  dashArray: isPrev ? [2, 8] : null,
+                  barWidth: 1.5,
+                  isStrokeCapRound: true,
+                  isStrokeJoinRound: true,
+                  belowBarData: BarAreaData(
+                    show: true,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [(mainColor.withAlpha(50)), Colors.transparent],
+                    ),
                   ),
-                )
-                .toList(),
+                  color: mainColor,
+                  dotData: FlDotData(
+                    checkToShowDot: (spot, barData) {
+                      return !isPrev && curRangeStart.addDay(spot.x.round()).isAtSameMomentAs(now);
+                    },
+                  ),
+                  spots: [
+                    // FlSpot(0, 0),
+                    ...element.entries.mapIndexed(
+                      (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
+                    ),
+                  ],
+                );
+              }).toList(),
+        ),
       ),
     );
   }
 }
 
-class NewAvgCumulativeLineChart extends StatelessWidget {
-  const NewAvgCumulativeLineChart({super.key, this.titleData});
+class NewAverageCumulativeLineChart extends StatelessWidget {
+  const NewAverageCumulativeLineChart({super.key, this.titleData});
 
   final FlTitlesData? titleData;
 
   @override
   Widget build(BuildContext context) {
-    final avgCumulativeComparison = context.select(
+    final cumulativeComparison = context.select(
       (ChartModel state) => state.avgCumulativeComparison,
     );
-    return LineChart(
-      LineChartData(
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(show: false, drawVerticalLine: false),
-        titlesData: titleData ?? FlTitlesData(),
-        lineBarsData:
-            avgCumulativeComparison
-                .asMap()
-                .entries
-                .map(
-                  (cumulativeEntry) => LineChartBarData(
-                    dotData: FlDotData(show: false),
-                    color: cumulativeEntry.key == 0 ? context.cs.secondary : context.cs.tertiary,
-                    spots: [
-                      ...cumulativeEntry.value.entries.mapIndexed(
-                        (index, entry) => FlSpot(index.toDouble(), entry.value),
-                      ),
-                    ],
-                    isCurved: true,
-                    curveSmoothness: 1,
+    final curRangeStart = context.select((ChartModel state) => state.rangeStart);
+    final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
+
+    final now = DateTime.now().standardNow;
+    return Container(
+      height: 180,
+      padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+      child: LineChart(
+        LineChartData(
+          titlesData: titleData ?? FlTitlesData(),
+          borderData: FlBorderData(show: false),
+          lineTouchData: LineTouchData(
+            getTouchedSpotIndicator: (barData, spotIndexes) {
+              return spotIndexes
+                  .map(
+                    (el) => TouchedSpotIndicatorData(
+                      FlLine(strokeWidth: 1.5, color: barData.color),
+                      FlDotData(),
+                    ),
+                  )
+                  .toList();
+            },
+            touchSpotThreshold: 50,
+            touchTooltipData: LineTouchTooltipData(
+              tooltipHorizontalAlignment: FLHorizontalAlignment.left,
+              getTooltipColor: (touchedSpot) {
+                return context.cs.surface;
+              },
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map(
+                  (spot) {
+                    final isPrev = spot.barIndex == 0;
+                    final DateTime curDate = curRangeStart.addDay(spot.x.round());
+                    final DateTime prevDate = prevRangeStart.addDay(spot.x.round());
+                    return LineTooltipItem(
+                      "${isPrev ? prevDate.formatShorter() : curDate.formatShorter()}: ${spot.y.customCurrencyFormat("RM")}",
+                      context.tt.bodyMedium!.copyWith(fontSize: 12),
+                      textAlign: TextAlign.right,
+                    );
+                  },
+                ).toList();
+              },
+              tooltipHorizontalOffset: 20,
+              fitInsideVertically: true,
+              fitInsideHorizontally: true,
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine:
+                (value) => FlLine(strokeWidth: 1, color: context.customCs.fadeColor3),
+          ),
+          lineBarsData:
+              cumulativeComparison.mapIndexed((i, element) {
+                final bool isPrev = i == 0;
+                final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
+                return LineChartBarData(
+                  curveSmoothness: 0.5,
+                  isCurved: true,
+                  // preventCurveOverShooting: true,
+                  dashArray: isPrev ? [2, 8] : null,
+                  barWidth: 1.5,
+                  isStrokeCapRound: true,
+                  isStrokeJoinRound: true,
+                  belowBarData: BarAreaData(
+                    show: true,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [(mainColor.withAlpha(50)), Colors.transparent],
+                    ),
                   ),
-                )
-                .toList(),
+                  color: mainColor,
+                  dotData: FlDotData(
+                    checkToShowDot: (spot, barData) {
+                      return !isPrev && curRangeStart.addDay(spot.x.round()).isAtSameMomentAs(now);
+                    },
+                  ),
+                  spots: [
+                    // FlSpot(0, 0),
+                    ...element.entries.mapIndexed(
+                      (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
+                    ),
+                  ],
+                );
+              }).toList(),
+        ),
       ),
     );
   }

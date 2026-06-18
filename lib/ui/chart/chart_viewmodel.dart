@@ -1,28 +1,22 @@
 import 'dart:math';
 
+import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:week_number/iso.dart';
 
-enum DateRangeType {
-  thisMonth,
-  thisYear,
-  thisWeek,
-  oneWeek,
-  oneMonth,
-  oneYear,
-  custom
-}
+enum DateRangeType { thisMonth, thisYear, thisWeek, oneWeek, oneMonth, oneYear, custom }
 
 class ChartModel extends ChangeNotifier {
-  ChartModel(
-      {required CostItemRepository costItemRepo,
-      required CategoryRepository categoryRepo})
-      : _costItemRepo = costItemRepo,
-        _categoryRepo = categoryRepo {
+  ChartModel({required CostItemRepository costItemRepo, required CategoryRepository categoryRepo})
+    : _costItemRepo = costItemRepo,
+      _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
@@ -45,6 +39,33 @@ class ChartModel extends ChangeNotifier {
       (_rangeType == DateRangeType.custom && _curRange.duration.inDays > 35);
   bool get showPrevious => _rangeType != DateRangeType.custom;
 
+  ChartPeriod _period = ChartPeriod.month;
+  ChartPeriod get period => _period;
+
+  CostType _type = CostType.expense;
+  CostType get type => _type;
+
+  DateTime _periodStart = DateTime.now().standardNow;
+  // DateTime _weekPeriod = DateTime.now().startOfWeek;
+  // DateTime _yearPeriod = DateTime.now().startOfYear;
+
+  String get displayPeriodDuration {
+    switch (_period) {
+      case ChartPeriod.month:
+        return DateFormat('MMMM yyyy').format(_periodStart);
+      case ChartPeriod.week:
+        return "${_curRange.end.year}, Week ${_periodStart.weekNumber}";
+      case ChartPeriod.year:
+        return DateFormat('yyyy').format(_periodStart);
+      case ChartPeriod.custom:
+        return "Custom";
+    }
+  }
+
+  String get displayDetailsPeriodDuration {
+    return '${DateFormat("dd MMM yyyy").format(_curRange.start)} - ${DateFormat("dd MMM yyyy").format(_curRange.end)}';
+  }
+
   DateRangeType _rangeType = DateRangeType.thisMonth;
   DateRangeType get rangeType => _rangeType;
 
@@ -54,36 +75,121 @@ class ChartModel extends ChangeNotifier {
   );
   DateTime get rangeStart => _curRange.start;
   DateTime get rangeEnd => _curRange.end;
+  DateTime get prevRangeStart => _prevRange.start;
 
   DateTimeRange get _prevRange {
-    switch (_rangeType) {
-      case DateRangeType.oneMonth:
+    switch (_period) {
+      case ChartPeriod.month:
         return DateTimeRange(
-          start: rangeStart.toSOM(-1),
-          end: rangeStart.toEOM(-1),
+          start: rangeStart.addMonth(-1),
+          end: rangeStart.addMonth(-1).endOfMonth,
         );
-      case DateRangeType.thisMonth:
-        return DateTimeRange(
-          start: rangeStart.toSOM(-1),
-          end: rangeStart.toEOM(-1),
-        );
-      case DateRangeType.oneWeek:
-        return DateTimeRange(
-          start: rangeStart.addDay(-8),
-          end: rangeEnd.addDay(-8),
-        );
-      case DateRangeType.thisWeek:
-        return DateTimeRange(
-          start: rangeStart.addDay(-8),
-          end: rangeEnd.addDay(-8),
-        );
-      default:
-        return _curRange;
+      case ChartPeriod.week:
+        return DateTimeRange(start: rangeStart.addDay(-7), end: rangeStart.addDay(-7).endOfWeek);
+      case ChartPeriod.year:
+        return DateTimeRange(start: rangeStart.addYear(-1), end: rangeStart.addYear(-1).endOfYear);
+      case ChartPeriod.custom:
+        return DateTimeRange(start: rangeStart, end: rangeEnd);
+    }
+    // switch (_rangeType) {
+    //   case DateRangeType.oneMonth:
+    //     return DateTimeRange(
+    //       start: rangeStart.toSOM(-1),
+    //       end: rangeStart.toEOM(-1),
+    //     );
+    //   case DateRangeType.thisMonth:
+    //     return DateTimeRange(
+    //       start: rangeStart.toSOM(-1),
+    //       end: rangeStart.toEOM(-1),
+    //     );
+    //   case DateRangeType.oneWeek:
+    //     return DateTimeRange(
+    //       start: rangeStart.addDay(-8),
+    //       end: rangeEnd.addDay(-8),
+    //     );
+    //   case DateRangeType.thisWeek:
+    //     return DateTimeRange(
+    //       start: rangeStart.addDay(-8),
+    //       end: rangeEnd.addDay(-8),
+    //     );
+    //   default:
+    //     return _curRange;
+    // }
+  }
+
+  Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({bool curRange = true}) {
+    final items = _costItemRepo.costItems.where(
+      (item) => item.date.isWithinRange(curRange ? _curRange : _prevRange),
+    );
+    return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
+  }
+
+  // Map<CostItemCategory, List<CostItem>> get curRangeGbCategoryItems {
+  //   final items = _costItemRepo.costItems.where((item) => item.date.isWithinRange(_curRange));
+  //   return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
+  // }
+
+  // Map<CostItemCategory, List<CostItem>> get prevRangeGbCategoryItems {
+  //   final items = _costItemRepo.costItems.where((item) => item.date.isWithinRange(_prevRange));
+  //   return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
+  // }
+
+  Map<CostItemCategory, CostMetric> getCategorySummary({
+    bool curRange = true,
+    bool simplified = false,
+  }) {
+    final items = getItemsGroupedByCategory(curRange: curRange);
+    Map<CostItemCategory, CostMetric> result = items.map(
+      (id, list) => MapEntry(id, CostMetric.fromCostItemList(list)),
+    );
+    final sorted = Map.fromEntries(
+      result.entries.sorted((a, b) => b.value.expense!.compareTo(a.value.expense!)),
+    );
+    if (!simplified) return sorted;
+    if (sorted.length <= 5) {
+      return sorted;
+    } else {
+      double expense = sorted.entries.foldIndexed(
+        0.0,
+        ((index, previous, element) => previous + (index >= 4 ? element.value.expense ?? 0 : 0)),
+      );
+      return Map.fromEntries([
+        ...sorted.entries.take(4),
+        MapEntry(CostItemCategory(name: "others"), CostMetric(expense: expense, income: 0)),
+      ]);
     }
   }
 
-  Map<int, Map<DateTime, CostMetric>> get curRangeOverview {
-    Iterable<MapEntry<int, Map<DateTime, CostMetric>>> result = {};
+  Map<CostItemCategory, CostMetric> get curRangeCategorySummary =>
+      getCategorySummary(curRange: true, simplified: false);
+  Map<CostItemCategory, CostMetric> get simplifiedCurRangeCategorySummary =>
+      getCategorySummary(curRange: true, simplified: true);
+  Map<CostItemCategory, CostMetric> get _prevRangeCategorySummary =>
+      getCategorySummary(curRange: false, simplified: false);
+
+  Map<CostItemCategory, List<CostMetric>> get categoryComparison {
+    final categories = {
+      ...simplifiedCurRangeCategorySummary.keys,
+      ..._prevRangeCategorySummary.keys,
+    };
+    Map<CostItemCategory, List<CostMetric>> result = {};
+    for (final category in categories) {
+      result[category] = [
+        _prevRangeCategorySummary[category] ?? CostMetric(),
+        curRangeCategorySummary[category] ?? CostMetric(),
+      ];
+    }
+    return Map.fromEntries(result.entries.take(3));
+  }
+
+  CostMetric get curRangeSummary {
+    final items =
+        _costItemRepo.costItems.where((item) => item.date.isWithinRange(_curRange)).toList();
+    return CostMetric.fromCostItemList(items);
+  }
+
+  Map<DateTime, CostMetric> get curRangeOverview {
+    Iterable<MapEntry<DateTime, CostMetric>> result = {};
 
     if (showMonths) {
       return {};
@@ -92,25 +198,20 @@ class ChartModel extends ChangeNotifier {
       result = List.generate(_curRange.duration.inDays + 1, (i) => i).map((i) {
         final date = rangeStart.add(Duration(days: i));
         final metrics = _costItemRepo.daySummary[date] ?? CostMetric();
-        return MapEntry(i, {
-          date: metrics
-        });
+        return MapEntry(date, metrics);
       });
     }
 
     return Map.fromEntries(result);
   }
 
-  Map<int, Map<DateTime, CostMetric>> get prevRangeOverview {
-    Iterable<MapEntry<int, Map<DateTime, CostMetric>>> result = {};
-    
-    result =
-        List.generate(_prevRange.duration.inDays + 1, (i) => i).map((i) {
-      final date = rangeStart.add(Duration(days: i));
+  Map<DateTime, CostMetric> get prevRangeOverview {
+    Iterable<MapEntry<DateTime, CostMetric>> result = {};
+
+    result = List.generate(_prevRange.duration.inDays + 1, (i) => i).map((i) {
+      final date = _prevRange.start.add(Duration(days: i));
       final metrics = _costItemRepo.daySummary[date] ?? CostMetric();
-      return MapEntry(i, {
-          date: metrics
-        });
+      return MapEntry(date, metrics);
     });
 
     return Map.fromEntries(result);
@@ -126,13 +227,13 @@ class ChartModel extends ChangeNotifier {
     //   smallerMap = curRangeOverview;
     //   largerMap = prevRangeOverview;
     // }
-    List<Map<DateTime,double>> _overview = [];
+    List<Map<DateTime, double>> _overview = [];
     // return [];
     int i = 0;
     while (true) {
-      _overview.add({
-        
-      })
+      // _overview.add({
+
+      // })
       if (curRangeOverview.entries.elementAtOrNull(i) == null ||
           prevRangeOverview.entries.elementAtOrNull(i) == null) {
         break;
@@ -152,48 +253,44 @@ class ChartModel extends ChangeNotifier {
     // }).toList();
   }
 
-  Map<int, double> calculateCumulative(bool isCurrent) {
+  Map<DateTime, double> calculateCumulative(bool isCurrent) {
     double total = 0;
-    Map<int, double> result = {};
-    // return {};
-    if (isCurrent) {
-      curRangeOverview.forEach((key, metric) {
-        total += metric.expense ?? 0;
-        result.addEntries([MapEntry(key, total)]);
-      });
-    } else {
-      prevRangeOverview.forEach((key, metric) {
-        total += metric.expense ?? 0;
-        result.addEntries([MapEntry(key, total)]);
-      });
-    }
-    return result;
+    List<MapEntry<DateTime, double>> result = [];
+    final rangeMap = isCurrent ? curRangeOverview : prevRangeOverview;
+    rangeMap.forEach((key, metric) {
+      total += (_type == CostType.expense ? (metric.expense ?? 0) : (metric.income ?? 0));
+      result.add(MapEntry(key, total));
+    });
+    return Map.fromEntries(result);
   }
 
   Map<DateTime, double> calculateAverageCumulative(bool isCurrent) {
-    Map<DateTime, double> result = {};
-    calculateCumulative(isCurrent).entries.mapIndexed((index, entry) {
-      result.addEntries([MapEntry(entry.key, entry.value / index)]);
-    });
-    return result;
+    // List<MapEntry<DateTime, double>> result = [];
+    return Map.fromEntries(
+      calculateCumulative(isCurrent).entries.mapIndexed((index, entry) {
+        return MapEntry(entry.key, entry.value / (index + 1));
+      }),
+    );
+    // return Map.fromEntries(result);
   }
 
   List<Map<DateTime, double>> get cumulativeComparison => [
-        calculateCumulative(true),
-        calculateCumulative(false),
-      ];
+    calculateCumulative(false),
+    calculateCumulative(true),
+  ];
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
-        calculateAverageCumulative(true),
-        calculateAverageCumulative(false),
-      ];
+    calculateAverageCumulative(false),
+    calculateAverageCumulative(true),
+  ];
 
   double dailyRangePercentile(double percent) {
-    final maxValue = curRangeOverview.entries.fold<double>(
-      0,
-      (prev, entry) => max(prev, entry.value.expense ?? 0),
-    );
-    return maxValue * percent / 100;
+    return 0;
+    // final maxValue = curRangeOverview.entries.fold<double>(
+    //   0,
+    //   (prev, entry) => max(prev, entry.value.expense ?? 0),
+    // );
+    // return maxValue * percent / 100;
   }
 
   // void getCu
@@ -209,19 +306,59 @@ class ChartModel extends ChangeNotifier {
       case DateRangeType.thisWeek:
         _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
       case DateRangeType.oneWeek:
-        _curRange = DateTimeRange(
-            start: now.standardNow.addDay(-6), end: now.standardNow);
+        _curRange = DateTimeRange(start: now.standardNow.addDay(-6), end: now.standardNow);
       case DateRangeType.oneMonth:
-        _curRange = DateTimeRange(
-            start: now.standardNow.addMonth(-1), end: now.standardNow);
+        _curRange = DateTimeRange(start: now.standardNow.addMonth(-1), end: now.standardNow);
       case DateRangeType.oneYear:
-        _curRange = DateTimeRange(
-            start: now.standardNow.addYear(-1), end: now.standardNow);
+        _curRange = DateTimeRange(start: now.standardNow.addYear(-1), end: now.standardNow);
       default:
         return;
     }
+  }
 
-    debugPrint("log range, $_curRange, $_prevRange");
+  void updatePeriod(ChartPeriod selectedPeriod) {
+    _period = selectedPeriod;
+    switch (_period) {
+      case ChartPeriod.month:
+        _curRange = DateTimeRange(start: _periodStart.startOfMonth, end: _periodStart.endOfMonth);
+      case ChartPeriod.week:
+        _curRange = DateTimeRange(start: _periodStart.startOfWeek, end: _periodStart.endOfWeek);
+      case ChartPeriod.year:
+        _curRange = DateTimeRange(start: _periodStart.startOfYear, end: _periodStart.endOfYear);
+      case ChartPeriod.custom:
+        _curRange = DateTimeRange(start: _periodStart.startOfYear, end: _periodStart.endOfYear);
+      // case DateRangeType.thisYear:
+      //   _curRange = DateTimeRange(start: now.startOfYear, end: now.endOfYear);
+      // case DateRangeType.thisWeek:
+      //   _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
+      // case DateRangeType.oneWeek:
+      //   _curRange = DateTimeRange(start: now.standardNow.addDay(-6), end: now.standardNow);
+      // case DateRangeType.oneMonth:
+      //   _curRange = DateTimeRange(start: now.standardNow.addMonth(-1), end: now.standardNow);
+      // case DateRangeType.oneYear:
+      //   _curRange = DateTimeRange(start: now.standardNow.addYear(-1), end: now.standardNow);
+    }
+
+    notifyListeners();
+    // debugPrint("log range, $_curRange, $_prevRange");
+  }
+
+  void updatePeriodDuration({bool increase = false}) {
+    switch (_period) {
+      case ChartPeriod.month:
+        _periodStart = _periodStart.addMonth(increase ? 1 : -1);
+      case ChartPeriod.week:
+        _periodStart = _periodStart.addDay(increase ? 7 : -7);
+      case ChartPeriod.year:
+        _periodStart = _periodStart.addYear(increase ? 1 : -1);
+      case ChartPeriod.custom:
+        _periodStart = _periodStart.addYear(increase ? 1 : -1);
+    }
+    updatePeriod(_period);
+  }
+
+  void updateCostType(CostType type) {
+    _type = type;
     notifyListeners();
   }
 }

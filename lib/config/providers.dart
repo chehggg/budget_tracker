@@ -8,7 +8,7 @@ import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_viewmodel.dart';
+import 'package:budget_tracker/ui/goal/goal_view_model.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -40,16 +40,21 @@ List<SingleChildWidget> get providers => [
     create: (context) => NavigationModel(),
   ),
   ChangeNotifierProvider<AppModel>(
-    create: (context) => AppModel(costItemRepository: context.read()),
+    create: (context) {
+      return AppModel(costItemRepository: context.read());
+    },
+  ),
+  ChangeNotifierProvider<GoalModel>(
+    // lazy: false,
+    create: (context) {
+      return GoalModel(costItemRepo: context.read(), goalRepository: context.read());
+    },
   ),
   ChangeNotifierProvider<ChartModel>(
     create: (context) => ChartModel(costItemRepo: context.read(), categoryRepo: context.read()),
   ),
   ChangeNotifierProvider<ListModel>(
     create: (context) => ListModel(costItemRepo: context.read(), categoryRepo: context.read()),
-  ),
-  ChangeNotifierProvider<GoalModel>(
-    create: (context) => GoalModel(costItemRepo: context.read(), goalRepository: context.read()),
   ),
   ChangeNotifierProvider<SettingsModel>(
     create:

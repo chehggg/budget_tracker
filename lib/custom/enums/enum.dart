@@ -34,3 +34,7 @@ enum GoalTrackingPeriod {
 
   const GoalTrackingPeriod(this.title, this.description);
 }
+
+enum ChartPeriod {
+  week, month, year, custom
+}

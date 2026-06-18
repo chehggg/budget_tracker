@@ -62,6 +62,17 @@ ThemeData get appTheme {
       letterSpacing: 0,
       color: customColorScheme.primary,
     ),
+    paragraphTitle: customTextTheme.bodyMedium!.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight(500),
+      letterSpacing: 0,
+      color: customColorScheme.primary,
+    ),
+    paragraphText: customTextTheme.bodyMedium!.copyWith(
+      fontSize: 14,
+      letterSpacing: 0,
+      color: Color(0xffF0EBE0).withAlpha(150),
+    ),
   );
 
   final MyColors customColorExtension = MyColors(
@@ -96,5 +107,13 @@ ThemeData get appTheme {
         side: BorderSide(color: customColorExtension.fadeColor2!),
       ),
     ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: SegmentedButton.styleFrom(
+        visualDensity: VisualDensity(vertical: 2),
+        selectedBackgroundColor: customColorExtension.flipCardColor,
+        selectedForegroundColor: customColorExtension.onFlipCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12))
+      )
+    )
   );
 }
