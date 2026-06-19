@@ -8,6 +8,7 @@ import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -20,8 +21,8 @@ class LocalServices {
     return prefString;
   }
 
-  Future<void> _writeToSharedPref(String key, dynamic json) async {
-    await pref.setString(key, jsonEncode(json));
+  Future<void> _writeToSharedPref(String key, String jsonString) async {
+    await pref.setString(key, jsonString);
   }
 
   Future<void> _writeToFile(String fileName, dynamic json) async {
@@ -156,6 +157,7 @@ class LocalServices {
       String? itemString = await _loadSharedPref("savedItems");
       if (itemString == null) return Result.ok([]);
 
+      debugPrint("saved items: $itemString");
       if (itemString.startsWith('"') && itemString.endsWith('"')) {
         itemString = itemString.substring(1, itemString.length - 1);
       }
@@ -165,6 +167,7 @@ class LocalServices {
               .toList();
       return Result.ok(results);
     } on Exception catch (e) {
+      debugPrint("error in getting saved item, $e");
       return Result.error(e);
     }
   }

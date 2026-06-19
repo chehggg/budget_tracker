@@ -39,9 +39,9 @@ class SavedItemModel extends ChangeNotifier {
       _keepDate = _date != null;
     } else {
       _id = Uuid().v4();
-      _description = _formData!.name;
-      _amount = _formData.amount;
-      _date = _formData.date;
+      _description = _formData?.name;
+      _amount = _formData?.amount;
+      _date = _formData?.date;
     }
 
     await _savedItemRepository.ready;

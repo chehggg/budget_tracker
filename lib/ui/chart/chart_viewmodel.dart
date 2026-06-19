@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
@@ -26,6 +27,21 @@ class ChartModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
 
+    _costItems = _costItemRepo.costItems;
+    _daySummary = _costItemRepo.daySummary;
+    _monthSummary = _costItemRepo.monthSummary;
+
+    _subscription = _costItemRepo.valueStream.listen((value) {
+      // debugPrint('stream updated');
+      debugPrint(
+        'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
+      );
+      _costItems = value.items;
+      _daySummary = value.daySummary;
+      _monthSummary = value.monthSummary;
+      notifyListeners();
+    });
+
     _isInitalized = true;
 
     notifyListeners();
@@ -34,9 +50,7 @@ class ChartModel extends ChangeNotifier {
   bool _isInitalized = false;
   bool get ready => _isInitalized;
 
-  bool get showMonths =>
-      [DateRangeType.thisYear, DateRangeType.oneYear].contains(_rangeType) ||
-      (_rangeType == DateRangeType.custom && _curRange.duration.inDays > 35);
+  bool get showMonths => _period == ChartPeriod.year;
   bool get showPrevious => _rangeType != DateRangeType.custom;
 
   ChartPeriod _period = ChartPeriod.month;
@@ -46,8 +60,13 @@ class ChartModel extends ChangeNotifier {
   CostType get type => _type;
 
   DateTime _periodStart = DateTime.now().standardNow;
-  // DateTime _weekPeriod = DateTime.now().startOfWeek;
-  // DateTime _yearPeriod = DateTime.now().startOfYear;
+
+  // ignore: unused_field
+  StreamSubscription<CostItemRepoDataStream>? _subscription;
+
+  List<CostItem> _costItems = [];
+  Map<DateTime, CostMetric> _daySummary = {};
+  Map<DateTime, CostMetric> _monthSummary = {};
 
   String get displayPeriodDuration {
     switch (_period) {
@@ -118,21 +137,11 @@ class ChartModel extends ChangeNotifier {
   }
 
   Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({bool curRange = true}) {
-    final items = _costItemRepo.costItems.where(
+    final items = _costItems.where(
       (item) => item.date.isWithinRange(curRange ? _curRange : _prevRange),
     );
     return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
   }
-
-  // Map<CostItemCategory, List<CostItem>> get curRangeGbCategoryItems {
-  //   final items = _costItemRepo.costItems.where((item) => item.date.isWithinRange(_curRange));
-  //   return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
-  // }
-
-  // Map<CostItemCategory, List<CostItem>> get prevRangeGbCategoryItems {
-  //   final items = _costItemRepo.costItems.where((item) => item.date.isWithinRange(_prevRange));
-  //   return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
-  // }
 
   Map<CostItemCategory, CostMetric> getCategorySummary({
     bool curRange = true,
@@ -183,21 +192,24 @@ class ChartModel extends ChangeNotifier {
   }
 
   CostMetric get curRangeSummary {
-    final items =
-        _costItemRepo.costItems.where((item) => item.date.isWithinRange(_curRange)).toList();
+    final items = _costItems.where((item) => item.date.isWithinRange(_curRange)).toList();
     return CostMetric.fromCostItemList(items);
   }
 
-  Map<DateTime, CostMetric> get curRangeOverview {
+  Map<DateTime, CostMetric> getRangeOverview({bool isCurrent = true}) {
     Iterable<MapEntry<DateTime, CostMetric>> result = {};
+    final DateTimeRange range = isCurrent ? _curRange : _prevRange;
 
     if (showMonths) {
-      return {};
-      // List.generate(_curRange.across, generator)
+      result = List.generate(range.end.month - range.start.month + 1, (i) => i).map((i) {
+        final date = range.start.addMonth(i);
+        final metrics = _monthSummary[date] ?? CostMetric();
+        return MapEntry(date, metrics);
+      });
     } else {
-      result = List.generate(_curRange.duration.inDays + 1, (i) => i).map((i) {
-        final date = rangeStart.add(Duration(days: i));
-        final metrics = _costItemRepo.daySummary[date] ?? CostMetric();
+      result = List.generate(range.duration.inDays + 1, (i) => i).map((i) {
+        final date = range.start.addDay(i);
+        final metrics = _daySummary[date] ?? CostMetric();
         return MapEntry(date, metrics);
       });
     }
@@ -205,55 +217,28 @@ class ChartModel extends ChangeNotifier {
     return Map.fromEntries(result);
   }
 
-  Map<DateTime, CostMetric> get prevRangeOverview {
-    Iterable<MapEntry<DateTime, CostMetric>> result = {};
+  Map<DateTime, CostMetric> get prevRangeOverview => getRangeOverview(isCurrent: false);
+  Map<DateTime, CostMetric> get curRangeOverview => getRangeOverview(isCurrent: true);
 
-    result = List.generate(_prevRange.duration.inDays + 1, (i) => i).map((i) {
-      final date = _prevRange.start.add(Duration(days: i));
-      final metrics = _costItemRepo.daySummary[date] ?? CostMetric();
-      return MapEntry(date, metrics);
-    });
-
-    return Map.fromEntries(result);
-  }
-
-  Map<int, Map<DateTime, double>> get overviewComparisonView {
-    // Map<int, CostMetric> largerMap, smallerMap;
-
-    // if (curRangeOverview.length > prevRangeOverview.length) {
-    //   largerMap = curRangeOverview;
-    //   smallerMap = prevRangeOverview;
-    // } else {
-    //   smallerMap = curRangeOverview;
-    //   largerMap = prevRangeOverview;
-    // }
-    List<Map<DateTime, double>> _overview = [];
-    // return [];
-    int i = 0;
-    while (true) {
-      // _overview.add({
-
-      // })
-      if (curRangeOverview.entries.elementAtOrNull(i) == null ||
-          prevRangeOverview.entries.elementAtOrNull(i) == null) {
-        break;
+  List<Map<DateTime, CostMetric>> get dayToDayComparison {
+    final maxLength = max(prevRangeOverview.length, curRangeOverview.length);
+    List<Map<DateTime, CostMetric>> result = [];
+    for (int i = 0; i < maxLength; i++) {
+      List<MapEntry<DateTime, CostMetric>> entries = [];
+      final curData = curRangeOverview.entries.elementAtOrNull(i);
+      if (curData != null) {
+        entries.add(curData);
       }
-      i++;
+      final prevData = prevRangeOverview.entries.elementAtOrNull(i);
+      if (prevData != null) {
+        entries.add(prevData);
+      }
+      result.add(Map.fromEntries(entries));
     }
-    return {};
-    // return largerMap.entries.mapIndexed((index, entry) {
-    //   Map<DateTime, double> newMap = {};
-    //   final smallerEntry = smallerMap.entries.elementAtOrNull(index);
-    //   newMap[entry.key] = entry.value.expense ?? 0;
-    //   if (smallerEntry != null) {
-    //     newMap[smallerEntry.key] = smallerEntry.value.expense ?? 0;
-    //   }
-
-    //   return newMap;
-    // }).toList();
+    return result;
   }
 
-  Map<DateTime, double> calculateCumulative(bool isCurrent) {
+  Map<DateTime, double> calculateCumulative({bool isCurrent = true}) {
     double total = 0;
     List<MapEntry<DateTime, double>> result = [];
     final rangeMap = isCurrent ? curRangeOverview : prevRangeOverview;
@@ -264,10 +249,10 @@ class ChartModel extends ChangeNotifier {
     return Map.fromEntries(result);
   }
 
-  Map<DateTime, double> calculateAverageCumulative(bool isCurrent) {
+  Map<DateTime, double> calculateAverageCumulative({bool isCurrent = true}) {
     // List<MapEntry<DateTime, double>> result = [];
     return Map.fromEntries(
-      calculateCumulative(isCurrent).entries.mapIndexed((index, entry) {
+      calculateCumulative(isCurrent: isCurrent).entries.mapIndexed((index, entry) {
         return MapEntry(entry.key, entry.value / (index + 1));
       }),
     );
@@ -275,13 +260,13 @@ class ChartModel extends ChangeNotifier {
   }
 
   List<Map<DateTime, double>> get cumulativeComparison => [
-    calculateCumulative(false),
-    calculateCumulative(true),
+    calculateCumulative(isCurrent: false),
+    calculateCumulative(isCurrent: true),
   ];
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
-    calculateAverageCumulative(false),
-    calculateAverageCumulative(true),
+    calculateAverageCumulative(isCurrent: false),
+    calculateAverageCumulative(isCurrent: true),
   ];
 
   double dailyRangePercentile(double percent) {

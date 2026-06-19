@@ -181,20 +181,7 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
                           if (_isCalculating) {
                             calculateAmount();
                           } else {
-                            // validate amount here
-                            // cannot be empty / 0 / negative
-                            if (widget.controller.text == "0" || widget.controller.text == "") {
-                              saveErrorFlushbar(
-                                "Amount cannot be 0. Please input a number larger than 0!",
-                              ).show(context);
-                            } else if ((widget.controller.text).contains(RegExp(r'^\-\d+$'))) {
-                              // one negative number
-                              saveErrorFlushbar(
-                                "Amount cannot be negative. Please input a number larger than 0",
-                              ).show(context);
-                            } else {
-                              widget.onDone();
-                            }
+                            widget.onDone();
                           }
                       }
                       HapticFeedback.lightImpact();
@@ -495,7 +482,7 @@ class PrimaryNegativeTextButton extends StatelessWidget {
       onTap: onTap,
       child: Text(
         text,
-        style: context.customTt.numberFontSmall!.copyWith(color: context.cs.error),
+        style: context.customTt.numberFontSmall!.copyWith(color: Colors.red.shade600),
       ),
     );
   }
@@ -513,7 +500,7 @@ class DismissTextButton extends StatelessWidget {
       onTap: () => context.nav.pop(false),
       child: Text(
         text,
-        style: context.customTt.numberFontSmall!.copyWith(color: context.customCs.fadeColor2),
+        style: context.customTt.numberFontSmall!.copyWith(color: context.customCs.fadeColor1),
       ),
     );
   }

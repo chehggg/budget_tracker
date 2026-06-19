@@ -30,6 +30,7 @@ extension DayExtension on DateTime {
   String formatFull() => DateFormat('MMMM dd, yyyy').format(this);
   String formatShort() => DateFormat('dd-MM-yyyy').format(this);
   String formatShorter() => DateFormat('dd MMM').format(this);
+  String formatMonth() => DateFormat('MMM yy').format(this);
   String formatPretty() => DateFormat('E, d MMM').format(this);
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
@@ -170,13 +171,28 @@ extension BuildContextExtension on BuildContext {
       title: title,
       message: message,
       icon: const Icon(Icons.check_circle, color: Colors.white),
-      backgroundColor: Colors.green.shade700,
-      duration: const Duration(seconds: 3),
+      backgroundColor: Colors.green.shade800,
+      duration: const Duration(seconds: 4),
+      animationDuration: Duration(milliseconds: 400),
       flushbarPosition: FlushbarPosition.TOP,
       flushbarStyle: FlushbarStyle.GROUNDED,
       borderRadius: BorderRadius.circular(8),
-      margin: const EdgeInsets.all(12),
-      boxShadows: const [BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
+      // boxShadows: const [BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
+    ).show(this);
+  }
+
+  void showErrorNotification({required String message, String? title}) {
+    Flushbar(
+      title: title,
+      message: message,
+      icon: const Icon(Icons.error, color: Colors.white),
+      backgroundColor: Colors.red.shade800,
+      duration: const Duration(seconds: 4),
+      animationDuration: Duration(milliseconds: 400),
+      flushbarPosition: FlushbarPosition.TOP,
+      flushbarStyle: FlushbarStyle.GROUNDED,
+      borderRadius: BorderRadius.circular(8),
+      // boxShadows: const [BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
     ).show(this);
   }
 }

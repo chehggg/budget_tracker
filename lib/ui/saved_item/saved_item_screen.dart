@@ -34,13 +34,10 @@ class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
     _amountController.addListener(
       () => context.savedItemMod.updateAmount(_amountController.text),
     );
-    // _titleController.addListener(() => context.formMod.updateSavedItemTitle(_titleController.text));
-    // _options = context.formMod.saveOptions;
   }
 
   @override
   Widget build(BuildContext context) {
-    // final options = context.select((FormModel state) => state.saveOptions);
     final inputDecoration = InputDecoration(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -138,6 +135,7 @@ class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
                   ),
                   SavedItemField(
                     controller: _amountController,
+                    keyboardType: TextInputType.number,
                     title: 'Amount',
                     prefix: Text("RM"),
                     textAlign: TextAlign.right,
@@ -195,6 +193,7 @@ class SavedItemField extends StatelessWidget {
     required this.controller,
     required this.title,
     required this.checkboxValue,
+    this.keyboardType,
     this.onTap,
     this.onToggleCheckbox,
     this.textAlign = TextAlign.left,
@@ -209,9 +208,10 @@ class SavedItemField extends StatelessWidget {
   final TextAlign textAlign;
   final Widget? prefix;
   final GestureTapCallback? onTap;
+  final TextInputType? keyboardType;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, ) {
     final inputDecoration = InputDecoration(
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -260,6 +260,7 @@ class SavedItemField extends StatelessWidget {
         ),
         TextFormField(
           enabled: checkboxValue,
+          keyboardType: keyboardType,
           onTap: onTap,
           textAlign: textAlign,
           style: context.tt.bodyMedium!.copyWith(fontSize: 14),

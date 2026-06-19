@@ -7,6 +7,7 @@ ThemeData get appTheme {
 
   final customColorScheme = baseTheme.colorScheme.copyWith(
     surface: Color(0xff0A0A0C),
+    surfaceContainerHigh: Color.fromARGB(255, 30, 30, 37),
     surfaceContainer: Color(0xff0A0A0C),
     primary: Color(0xffF0EBE0),
     secondary: Color(0xffFFAB00),
@@ -99,9 +100,9 @@ ThemeData get appTheme {
     colorScheme: customColorScheme,
     visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(
-      actionsPadding: EdgeInsets.only(bottom: 8, right: 4),
+      // actionsPadding: EdgeInsets.only(bottom: 8, right: 4),
       titleTextStyle: customTextExtension.elegantLabelLarge,
-      backgroundColor: customColorScheme.surface,
+      backgroundColor: customColorScheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadiusGeometry.circular(20),
         side: BorderSide(color: customColorExtension.fadeColor2!),

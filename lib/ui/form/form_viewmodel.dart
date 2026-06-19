@@ -17,10 +17,10 @@ class FormModel extends ChangeNotifier {
     required SavedItemRepository savedItemRepo,
     required CategoryRepository categoryRepo,
     CostItem? initCostItem,
-  })  : _costItemRepository = costItemRepo,
-        _savedItemRepository = savedItemRepo,
-        _initCostItem = initCostItem,
-        _categoryRepo = categoryRepo {
+  }) : _costItemRepository = costItemRepo,
+       _savedItemRepository = savedItemRepo,
+       _initCostItem = initCostItem,
+       _categoryRepo = categoryRepo {
     initialize();
   }
 
@@ -29,43 +29,49 @@ class FormModel extends ChangeNotifier {
   final SavedItemRepository _savedItemRepository;
   final CategoryRepository _categoryRepo;
 
-  CostItemFormResult? get formResult {
-    if (selectedCategory == null) return null;
+  CostItemFormResult get formResult {
     return CostItemFormResult(
       name: _itemDesc,
       date: _date,
       costType: _type,
       category: _selectedCategory!,
-      amount: _amount,
+      amount: _amount ?? 0,
     );
   }
+
+  String? validateFormResult() {
+    if (_selectedCategory == null) {
+      return "No category selected.";
+    } 
+    if (_amount == null || _amount == 0) {
+      return "Amount cannot be 0!";
+    } 
+    return null;
+  } 
 
   FormGroup _formGroup = FormGroup.expense;
   FormGroup get formGroup => _formGroup;
 
-  List<CostItemCategory> get categories => _categoryRepo.categories
-      .where((category) => category.costType == _type)
-      .toList();
+  List<CostItemCategory> get categories =>
+      _categoryRepo.categories.where((category) => category.costType == _type).toList();
 
   bool _isLoaded = false;
   bool get ready => _isLoaded;
 
   bool get editMode => _initCostItem != null;
 
-  UnmodifiableListView<SavedItem> get savedItems =>
-      _savedItemRepository.savedItems;
+  UnmodifiableListView<SavedItem> get savedItems => _savedItemRepository.savedItems;
 
   CostItemCategory getCatById(SavedItem item) {
-    return _categoryRepo.categories
-            .firstWhereOrNull((el) => el.id == item.category) ??
+    return _categoryRepo.categories.firstWhereOrNull((el) => el.id == item.category) ??
         CostItemCategory.error();
   }
 
   CostItemCategory? _selectedCategory;
   CostItemCategory? get selectedCategory => _selectedCategory;
 
-  double _amount = 0;
-  double get amount => _amount;
+  double? _amount;
+  double? get amount => _amount;
 
   String _itemDesc = "";
   String get itemDesc => _itemDesc;
@@ -91,11 +97,12 @@ class FormModel extends ChangeNotifier {
   TextEditingController get amountController => _amountController;
 
   void updateControllerValue() {
-    descriptionController.value =
-        descriptionController.value.copyWith(text: _itemDesc);
-    amountController.value = amountController.value.copyWith(
-      text: _amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2),
-    );
+    _descriptionController.value = _descriptionController.value.copyWith(text: _itemDesc);
+    if (amount != null) {
+      _amountController.value = _amountController.value.copyWith(
+        text: _amount!.toStringAsFixed(amount! % 1 == 0 ? 0 : 2),
+      );
+    }
   }
 
   Future<void> initialize() async {
@@ -104,10 +111,10 @@ class FormModel extends ChangeNotifier {
     populateInitValue();
     updateControllerValue();
 
-    descriptionController
-        .addListener(() => updateDesc(descriptionController.text));
-    amountController.addListener(
-        () => updateAmount(double.tryParse(amountController.text) ?? 0));
+    _descriptionController.addListener(() => updateDesc(_descriptionController.text));
+    _amountController.addListener(() {
+      updateAmount(double.tryParse(_amountController.text) ?? 0);
+    });
 
     await _categoryRepo.ready;
 
@@ -168,7 +175,8 @@ class FormModel extends ChangeNotifier {
 
     if (_initCostItem != null) {
       debugPrint('found cost item');
-      _selectedCategory = categories.firstWhereOrNull(
+      _selectedCategory =
+          categories.firstWhereOrNull(
             (cat) => cat.id == _initCostItem.categoryId,
           ) ??
           CostItemCategory(
@@ -182,8 +190,7 @@ class FormModel extends ChangeNotifier {
       _itemDesc = _initCostItem.name;
       _date = _initCostItem.date;
       _type = _initCostItem.costType;
-      _formGroup =
-          _type == CostType.expense ? FormGroup.expense : FormGroup.income;
+      _formGroup = _type == CostType.expense ? FormGroup.expense : FormGroup.income;
     }
     notifyListeners();
   }
@@ -199,18 +206,14 @@ class FormModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Result<void>> submitForm() async {
-    if (formResult != null) {
-      if (_initCostItem != null) {
-        await _costItemRepository.updateCostItem(
-          CostItem.update(_initCostItem, formResult!),
-        );
-      } else {
-        await _costItemRepository
-            .createCostItem(CostItem.fromForm(formResult!, id: Uuid().v4()));
-      }
+  Future<void> submitForm() async {
+    if (_initCostItem != null) {
+      await _costItemRepository.updateCostItem(
+        CostItem.update(_initCostItem, formResult!),
+      );
+    } else {
+      await _costItemRepository.createCostItem(CostItem.fromForm(formResult, id: Uuid().v4()));
     }
-    return Result.error(Exception("no form result, cannot create cost item"));
   }
 
   void refresh() {

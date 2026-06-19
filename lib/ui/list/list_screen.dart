@@ -107,7 +107,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
     final selectionMode = context.select((ListModel state) => state.selectionMode);
     final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
-    
+
     if (selectionMode) {
       return AppBar(
         actionsPadding: EdgeInsets.only(right: 10),
@@ -256,10 +256,9 @@ class CostEntryList extends StatelessWidget {
     // ignore: unused_local_variable
     final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
 
-    debugPrint(
-      "rebuilt, item count: ${groupedCostItems.entries.isNotEmpty ? groupedCostItems.entries.first.value.length : 0}",
-    );
-    // debugPrint("rebuilt, item count: ${groupedCostItems.entries.length}");
+    // debugPrint(
+    //   "rebuilt, item count: ${groupedCostItems.entries.isNotEmpty ? groupedCostItems.entries.first.value.length : 0}",
+    // );
     if (groupedCostItems.isEmpty) {
       return SliverToBoxAdapter(
         child: SizedBox(
@@ -284,11 +283,11 @@ class CostEntryList extends StatelessWidget {
             final double daySummary = dailySummary[date]!.balance;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
+              padding: const EdgeInsets.only(bottom: 20.0),
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 12, right: 12, bottom: 10),
+                    padding: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       textBaseline: TextBaseline.ideographic,
@@ -297,7 +296,8 @@ class CostEntryList extends StatelessWidget {
                         Text(dateString, style: context.customTt.dateLabel!.copyWith()),
                         // style: context.tt.bodyLarge),
                         HideableText(
-                          NumberFormat.currency(symbol: "RM").format(daySummary),
+                          (daySummary >= 0 ? "+" : "") +
+                              NumberFormat.currency(symbol: "RM").format(daySummary),
                           isCurrency: true,
                           textStyle: context.customTt.numberFontMedium!.copyWith(
                             color: daySummary < 0 ? Colors.redAccent : Colors.greenAccent,
@@ -324,7 +324,7 @@ class CostEntryList extends StatelessWidget {
                         }
                       },
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: selected ? context.customCs.fadeColor3 : Colors.transparent,
                         ),
@@ -354,7 +354,8 @@ class CostEntryList extends StatelessWidget {
                               ),
                             ),
                             HideableText(
-                              NumberFormat.currency(symbol: "RM").format(costItem.signedAmount),
+                              (!costItem.isExpense ? "+" : "") +
+                                  NumberFormat.currency(symbol: "RM").format(costItem.signedAmount),
                               isCurrency: true,
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color:

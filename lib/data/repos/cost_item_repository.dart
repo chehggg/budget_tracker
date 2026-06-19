@@ -1,11 +1,14 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:async';
 import 'dart:collection';
+
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
-import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 
 class CostItemRepository {
   CostItemRepository({required LocalServices localServices}) : _localServices = localServices {
@@ -14,7 +17,7 @@ class CostItemRepository {
 
   Future<void> _init() async {
     await getCostItem();
-    // await _migrationUtils();
+
   }
 
   final LocalServices _localServices;
@@ -36,6 +39,16 @@ class CostItemRepository {
 
   Map<DateTime, CostMetric> _yearSummary = {};
   Map<DateTime, CostMetric> get yearSummary => UnmodifiableMapView(_yearSummary);
+
+  CostItemRepoDataStream get dataStream => CostItemRepoDataStream(
+    items: _costItems,
+    daySummary: _daySummary,
+    monthSummary: _monthSummary,
+  );
+
+  final StreamController<CostItemRepoDataStream> _dataStreamController =
+      StreamController<CostItemRepoDataStream>.broadcast();
+  Stream<CostItemRepoDataStream> get valueStream => _dataStreamController.stream;
 
   Future<void> getCostItem({bool customFile = false}) async {
     debugPrint('repo call service load data');
@@ -86,6 +99,7 @@ class CostItemRepository {
   Future<Result<void>> deleteCostItem(CostItem deletedItem) async {
     _costItems.removeWhere((item) => item.uuid == deletedItem.uuid);
     _gbDateCostItems[deletedItem.date]!.removeWhere((item) => item.uuid == deletedItem.uuid);
+    (_daySummary[deletedItem.date] ??= CostMetric()).minusFromMetric(deletedItem);
     (_monthSummary[deletedItem.date.startOfMonth] ??= CostMetric()).minusFromMetric(deletedItem);
     (_yearSummary[deletedItem.date.startOfYear] ??= CostMetric()).minusFromMetric(deletedItem);
 
@@ -94,12 +108,13 @@ class CostItemRepository {
       _gbDateCostItems.remove(deletedItem.date);
     }
 
+    _dataStreamController.add(dataStream);
     return await _localServices.writeCostItemFile(_costItems);
   }
 
   Future<Result<void>> updateCostItem(CostItem newItem) async {
-    deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));
-    createCostItem(newItem);
+    await deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));
+    await createCostItem(newItem);
 
     return await _localServices.writeCostItemFile(_costItems);
   }
@@ -107,9 +122,11 @@ class CostItemRepository {
   Future<Result<void>> createCostItem(CostItem item) async {
     _costItems.add(item);
     (_gbDateCostItems[item.date] ??= []).insert(0, item);
+    (_daySummary[item.date] ??= CostMetric()).addToMetric(item);
     (_monthSummary[item.date.startOfMonth] ??= CostMetric()).addToMetric(item);
     (_yearSummary[item.date.startOfYear] ??= CostMetric()).addToMetric(item);
-
+    
+    _dataStreamController.add(dataStream);
     return await _localServices.writeCostItemFile(_costItems);
   }
 
@@ -119,10 +136,26 @@ class CostItemRepository {
 
   Future<void> clearCostItem() async {
     _costItems.clear();
+    _daySummary = {};
+    _monthSummary = {};
+    _yearSummary = {};
+    _dataStreamController.add(dataStream);
     _localServices.writeCostItemFile(_costItems);
   }
 
   Future<void> exportCostItem() async {
     _localServices.exportCostItemJson(_costItems);
   }
+}
+
+class CostItemRepoDataStream {
+  CostItemRepoDataStream({
+    required this.items,
+    required this.daySummary,
+    required this.monthSummary,
+  });
+
+  List<CostItem> items;
+  Map<DateTime, CostMetric> daySummary;
+  Map<DateTime, CostMetric> monthSummary;
 }

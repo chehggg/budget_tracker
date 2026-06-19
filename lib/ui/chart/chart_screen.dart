@@ -19,70 +19,95 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/ui/list/list_screen.dart';
 
-class ChartScreen extends StatefulWidget {
+class ChartScreen extends StatelessWidget {
   const ChartScreen({super.key});
 
-  @override
-  State<ChartScreen> createState() => _ChartScreenState();
-}
+  static List<String> weekdayInitials = [
+    "M",
+    "T",
+    "W",
+    "T",
+    "F",
+    "S",
+    "S",
+  ];
 
-class _ChartScreenState extends State<ChartScreen> {
-  String? _selectedCategory;
-  final CostType _selectedCostType = CostType.expense;
-
-  void updateSelectedCategory(String categoryName) {
-    setState(() {
-      _selectedCategory = categoryName;
-      // debugPrint("This works");
-    });
-  }
-
-  FlTitlesData get chartTitleData => FlTitlesData(
-    rightTitles: AxisTitles(drawBelowEverything: false),
-    topTitles: AxisTitles(drawBelowEverything: false),
-    leftTitles: AxisTitles(
-      // axisNameWidget: Padding(
-      //   padding: const EdgeInsets.only(left: 40.0),
-      //   child: Text(
-      //     "Amount (${context.select((AppModel state) => state.currencySymbol)})",
-      //     style: Theme.of(context).textTheme.labelSmall,
-      //   ),
-      // ),
-      // axisNameSize: 40,
-      sideTitles: SideTitles(
-        getTitlesWidget:
-            (value, meta) => Text(
-              NumberFormat.compact().format(value),
-              textAlign: TextAlign.right,
-              style: context.customTt.numberFontSmall!.copyWith(fontSize: 10),
-            ),
-        reservedSize: 24,
-        showTitles: false,
-        maxIncluded: true,
-        // interval: 50
-      ),
-    ),
-    bottomTitles: AxisTitles(
-      axisNameSize: 16,
-      sideTitles: SideTitles(
-        interval: 1,
-        getTitlesWidget: (value, meta) {
-          return Text(
-            "•",
-            style: context.tt.bodyMedium!.copyWith(fontSize: 10),
-          );
-        },
-        showTitles: true,
-        maxIncluded: true,
-      ),
-    ),
-  );
+  static List<String> monthInitials = [
+    "J",
+    "F",
+    "M",
+    "A",
+    "M",
+    "J",
+    "J",
+    "A",
+    "S",
+    "O",
+    "N",
+    "D",
+  ];
 
   @override
   Widget build(BuildContext context) {
     final ready = context.select((ChartModel state) => state.ready);
     final rangeType = context.select((ChartModel state) => state.rangeType);
     final type = context.select((ChartModel state) => state.type);
+    final period = context.select((ChartModel state) => state.period);
+
+    final FlTitlesData chartTitleData = FlTitlesData(
+      rightTitles: AxisTitles(drawBelowEverything: false),
+      topTitles: AxisTitles(drawBelowEverything: false),
+      leftTitles: AxisTitles(
+        // axisNameWidget: Padding(
+        //   padding: const EdgeInsets.only(left: 40.0),
+        //   child: Text(
+        //     "Amount (${context.select((AppModel state) => state.currencySymbol)})",
+        //     style: Theme.of(context).textTheme.labelSmall,
+        //   ),
+        // ),
+        // axisNameSize: 40,
+        sideTitles: SideTitles(
+          getTitlesWidget:
+              (value, meta) => Text(
+                NumberFormat.compact().format(value),
+                textAlign: TextAlign.right,
+                style: context.customTt.numberFontSmall!.copyWith(fontSize: 10),
+              ),
+          reservedSize: 24,
+          showTitles: false,
+          maxIncluded: true,
+          // interval: 50
+        ),
+      ),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          interval: 1,
+          reservedSize: 30,
+          getTitlesWidget: (value, meta) {
+            final day = value.toInt();
+            String text = "";
+            switch (period) {
+              case ChartPeriod.week:
+                text = weekdayInitials.elementAtOrNull(day) ?? "";
+              case ChartPeriod.year:
+                text = monthInitials.elementAtOrNull(day) ?? "";
+              default:
+                text = "•";
+            }
+            return Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                text,
+                style: context.tt.bodyMedium!.copyWith(fontSize: 10),
+              ),
+            );
+          },
+          showTitles: true,
+          maxIncluded: true,
+        ),
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -119,6 +144,14 @@ class _ChartScreenState extends State<ChartScreen> {
                       title: "Category Breakdown",
                       page: ChartCategoryBreakdownScreen(),
                       child: CategoryBreakdownChart(),
+                    ),
+                    ChartSection(
+                      title: "Day by Day Comparison",
+                      showLabelSubtitle: true,
+                      page: ChartCategoryBreakdownScreen(),
+                      child: DayToDayBarChart(
+                        titleData: chartTitleData,
+                      ),
                     ),
                     ChartSection(
                       title: "Cumulative Spend",
@@ -328,7 +361,10 @@ class ChartFilterButtons extends StatelessWidget {
             highlight: true,
             child: Row(
               children: [
-                Icon(Icons.arrow_left_outlined, color: context.cs.surface,),
+                Icon(
+                  Icons.arrow_left_outlined,
+                  color: context.cs.surface,
+                ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -577,8 +613,8 @@ class CategoryBreakdownList extends StatelessWidget {
   }
 }
 
-class DayBarChart extends StatelessWidget {
-  const DayBarChart({
+class DayToDayBarChart extends StatelessWidget {
+  const DayToDayBarChart({
     super.key,
     this.titleData,
   });
@@ -587,41 +623,51 @@ class DayBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartModel state) => state.overviewComparisonView);
-    return BarChart(
-      duration: Durations.medium1,
-      BarChartData(
-        groupsSpace: 20,
-        barTouchData: BarTouchData(
-          touchExtraThreshold: EdgeInsets.only(top: 100),
-          touchTooltipData: BarTouchTooltipData(
-            fitInsideHorizontally: true,
-            fitInsideVertically: true,
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem("Test", context.tt.bodyMedium!);
-            },
+    final data = context.select((ChartModel state) => state.dayToDayComparison);
+    final rangeStart = context.chartMod.rangeStart;
+    return Container(
+      height: 180,
+      padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+      child: BarChart(
+        duration: Durations.medium1,
+        BarChartData(
+          alignment: BarChartAlignment.spaceBetween,
+          // groupsSpace: 20,
+          barTouchData: BarTouchData(
+            touchExtraThreshold: EdgeInsets.all(20),
+            touchTooltipData: BarTouchTooltipData(
+              tooltipHorizontalOffset: 20,
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                return BarTooltipItem("Test", context.tt.bodyMedium!);
+              },
+            ),
           ),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(drawVerticalLine: false),
+          titlesData: titleData,
+          // maxY: maxValue,
+          barGroups:
+              data.mapIndexed((i, el) {
+                return BarChartGroupData(
+                  x: i,
+                  groupVertically: true,
+                  barRods:
+                      el.entries.map(
+                        (entry) {
+                          final isPrev = entry.key.isBefore(rangeStart);
+                          return BarChartRodData(
+                            width: isPrev ? 2 : 5,
+                            color:
+                                isPrev ? Colors.blue.shade400.withAlpha(150) : context.cs.secondary,
+                            toY: entry.value.expense ?? 0,
+                          );
+                        },
+                      ).toList(),
+                );
+              }).toList(),
         ),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(drawVerticalLine: false),
-        titlesData: titleData,
-        // maxY: maxValue,
-        barGroups: [],
-        // data.mapIndexed((index, value) {
-        //   return BarChartGroupData(
-        //     x: index,
-        //     barRods:
-        //         value.entries
-        //             .mapIndexed(
-        //               (index, entry) => BarChartRodData(
-        //                 color: index == 0 ? context.cs.secondary : Colors.blue,
-        //                 toY: entry.value,
-        //                 // label: BarChartRodLabel(text: entry.value.compactFormat()),
-        //               ),
-        //             )
-        //             .toList(),
-        //   );
-        // }).toList(),
       ),
     );
   }
@@ -1713,6 +1759,7 @@ class NewCumulativeLineChart extends StatelessWidget {
     final cumulativeComparison = context.select((ChartModel state) => state.cumulativeComparison);
     final curRangeStart = context.select((ChartModel state) => state.rangeStart);
     final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
+    final showMonths = context.select((ChartModel state) => state.showMonths);
 
     final now = DateTime.now().standardNow;
     return Container(
@@ -1727,7 +1774,7 @@ class NewCumulativeLineChart extends StatelessWidget {
               return spotIndexes
                   .map(
                     (el) => TouchedSpotIndicatorData(
-                      FlLine(strokeWidth: 1.5, color: barData.color),
+                      FlLine(strokeWidth: 1, color: barData.color),
                       FlDotData(),
                     ),
                   )
@@ -1743,11 +1790,18 @@ class NewCumulativeLineChart extends StatelessWidget {
                 return touchedSpots.map(
                   (spot) {
                     final isPrev = spot.barIndex == 0;
-                    final DateTime curDate = curRangeStart.addDay(spot.x.round());
-                    final DateTime prevDate = prevRangeStart.addDay(spot.x.round());
+
+                    final String curDate =
+                        showMonths
+                            ? curRangeStart.addMonth(spot.x.round()).formatMonth()
+                            : curRangeStart.addDay(spot.x.round()).formatShorter();
+                    final String prevDate =
+                        showMonths
+                            ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
+                            : prevRangeStart.addDay(spot.x.round()).formatShorter();
                     return LineTooltipItem(
-                      "${isPrev ? prevDate.formatShorter() : curDate.formatShorter()}: ${spot.y.customCurrencyFormat("RM")}",
-                      context.tt.bodyMedium!.copyWith(fontSize: 12),
+                      "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
+                      context.tt.bodyMedium!.copyWith(fontSize: 10),
                       textAlign: TextAlign.right,
                     );
                   },
@@ -1784,7 +1838,13 @@ class NewCumulativeLineChart extends StatelessWidget {
                   color: mainColor,
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) {
-                      return !isPrev && curRangeStart.addDay(spot.x.round()).isAtSameMomentAs(now);
+                      if (showMonths) {
+                        return !isPrev &&
+                            curRangeStart.addMonth(spot.x.round()).isInSameYearMonthAs(now);
+                      } else {
+                        return !isPrev &&
+                            curRangeStart.addDay(spot.x.round()).isAtSameMomentAs(now);
+                      }
                     },
                   ),
                   spots: [
@@ -1813,7 +1873,7 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
     );
     final curRangeStart = context.select((ChartModel state) => state.rangeStart);
     final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
-
+    final showMonths = context.select((ChartModel state) => state.showMonths);
     final now = DateTime.now().standardNow;
     return Container(
       height: 180,
@@ -1827,7 +1887,7 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
               return spotIndexes
                   .map(
                     (el) => TouchedSpotIndicatorData(
-                      FlLine(strokeWidth: 1.5, color: barData.color),
+                      FlLine(strokeWidth: 1, color: barData.color),
                       FlDotData(),
                     ),
                   )
@@ -1843,11 +1903,18 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                 return touchedSpots.map(
                   (spot) {
                     final isPrev = spot.barIndex == 0;
-                    final DateTime curDate = curRangeStart.addDay(spot.x.round());
-                    final DateTime prevDate = prevRangeStart.addDay(spot.x.round());
+
+                    final String curDate =
+                        showMonths
+                            ? curRangeStart.addMonth(spot.x.round()).formatMonth()
+                            : curRangeStart.addDay(spot.x.round()).formatShorter();
+                    final String prevDate =
+                        showMonths
+                            ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
+                            : prevRangeStart.addDay(spot.x.round()).formatShorter();
                     return LineTooltipItem(
-                      "${isPrev ? prevDate.formatShorter() : curDate.formatShorter()}: ${spot.y.customCurrencyFormat("RM")}",
-                      context.tt.bodyMedium!.copyWith(fontSize: 12),
+                      "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
+                      context.tt.bodyMedium!.copyWith(fontSize: 10),
                       textAlign: TextAlign.right,
                     );
                   },
@@ -1887,7 +1954,13 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                   color: mainColor,
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) {
-                      return !isPrev && curRangeStart.addDay(spot.x.round()).isAtSameMomentAs(now);
+                      if (showMonths) {
+                        return !isPrev &&
+                            curRangeStart.addMonth(spot.x.round()).isInSameYearMonthAs(now);
+                      } else {
+                        return !isPrev &&
+                            curRangeStart.addDay(spot.x.round()).isAtSameMomentAs(now);
+                      }
                     },
                   ),
                   spots: [
