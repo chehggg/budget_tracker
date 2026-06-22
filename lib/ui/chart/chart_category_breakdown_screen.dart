@@ -186,7 +186,7 @@ class _CategoryTileState extends State<CategoryTile> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -199,7 +199,7 @@ class _CategoryTileState extends State<CategoryTile> {
           showTrailingIcon: false,
           visualDensity: VisualDensity(horizontal: -4, vertical: -4),
           tilePadding: EdgeInsets.symmetric(horizontal: 12),
-          childrenPadding: EdgeInsets.symmetric(horizontal: 12),
+          childrenPadding: EdgeInsets.fromLTRB(12, 0, 12, 10),
           title: Row(
             spacing: 12,
             children: [
@@ -210,7 +210,7 @@ class _CategoryTileState extends State<CategoryTile> {
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
-                  spacing: 12,
+                  spacing: 8,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -260,7 +260,7 @@ class _CategoryTileState extends State<CategoryTile> {
           children:
               widget.items.map((item) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(vertical: 6.0),
                   child: Row(
                     spacing: 14,
                     children: [

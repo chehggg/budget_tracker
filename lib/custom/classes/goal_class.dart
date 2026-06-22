@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:flutter/material.dart';
 
 class Goal {
   Goal({
@@ -62,6 +65,54 @@ class Goal {
     "lastCreated": lastCreated?.toString(),
     "lastModified": lastModified?.toString(),
   };
+
+  List<GoalProgress> getGoalProgress(List<CostItem> items) {
+    List<GoalProgress> resultList = [];
+    final end = endDate ?? DateTime.now().startOfMonth;
+
+    if (goalTracking == GoalTrackingPeriod.monthly) {
+      resultList =
+          List.generate(
+                min(1, end.month - startDate!.month),
+                (i) => startDate!.addMonth(i),
+              )
+              .map(
+                (month) => GoalProgress(
+                  date: month,
+                  items:
+                      items.where((item) {
+                        final dateQuery = item.date.isInSameYearMonthAs(month);
+                        final categoryQuery = categories?.contains(item.categoryId) ?? true;
+                        final nameQuery = item.name.contains(filterString ?? "");
+                        return dateQuery && categoryQuery && nameQuery;
+                        // return dateQuery;
+                      }).toList(),
+                  goalType: goalType,
+                  target: target,
+                ),
+              )
+              .toList();
+    } else {
+      resultList.add(
+        GoalProgress(
+          date: startDate!,
+          items:
+              items.where((item) {
+                final dateQuery =
+                    (item.date.isAtSameMomentAs(startDate!)) ||
+                    (item.date.isAtSameMomentAs(end)) ||
+                    (item.date.isAfter(startDate!) && item.date.isBefore(startDate!));
+                final categoryQuery = categories?.contains(item.categoryId) ?? true;
+                final nameQuery = item.name.contains(filterString ?? "");
+                return dateQuery && categoryQuery && nameQuery;
+              }).toList(),
+          goalType: goalType,
+          target: target,
+        ),
+      );
+    }
+    return resultList;
+  }
 }
 
 class GoalProgress {
@@ -82,15 +133,15 @@ class GoalProgress {
       case GoalType.budget:
         return CostMetric.fromCostItemList(items ?? []).expense ?? 0;
       case GoalType.savings:
-        return CostMetric.fromCostItemList(items ?? []).balance;
+        return max(0, CostMetric.fromCostItemList(items ?? []).balance);
       case GoalType.payment:
-        return CostMetric.fromCostItemList(items ?? []).balance;
+        return max(0, CostMetric.fromCostItemList(items ?? []).balance);
       default:
         return 0;
     }
   }
 
-  double get progress => (value ?? 0) / (target ?? 1);
+  double get progress => max(0, value / (target ?? 1));
 
   bool get achieved {
     switch (goalType) {
@@ -102,6 +153,19 @@ class GoalProgress {
         return progress > 1;
       default:
         return false;
+    }
+  }
+
+  String get status {
+    switch (goalType) {
+      case GoalType.budget:
+        return achieved ? "Contained" : "Overbudget";
+      case GoalType.savings:
+        return achieved ? "Achieved" : "Not Achieved";
+      case GoalType.payment:
+        return achieved ? "Not Achieved" : "Achieved";
+      default:
+        return "";
     }
   }
 }

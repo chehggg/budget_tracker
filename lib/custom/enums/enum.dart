@@ -33,6 +33,7 @@ enum GoalTrackingPeriod {
   final String description;
 
   const GoalTrackingPeriod(this.title, this.description);
+
 }
 
 enum ChartPeriod {

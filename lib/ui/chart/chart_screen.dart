@@ -437,13 +437,14 @@ class ChartSection extends StatelessWidget {
                           style: context.customTt.dateLabel,
                         ),
                       ),
-                      Text(
-                        "Expand →",
-                        style: context.customTt.numberFontSmall?.copyWith(
-                          color: context.customCs.fadeColor1,
-                          fontSize: 14,
-                        ),
-                      ),
+                      IconButton(onPressed: () {}, icon: Icon(Icons.more_vert_outlined)),
+                      // Text(
+                      //   "Expand →",
+                      //   style: context.customTt.numberFontSmall?.copyWith(
+                      //     color: context.customCs.fadeColor1,
+                      //     fontSize: 14,
+                      //   ),
+                      // ),
                     ],
                   ),
                   if (showLabelSubtitle)
@@ -496,50 +497,108 @@ class CategoryBreakdownChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = context.select((ChartModel state) => state.simplifiedCurRangeCategorySummary);
     final total = context.select((ChartModel state) => state.curRangeSummary);
-    return Column(
-      children: [
-        SizedBox(
-          height: 110,
-        ),
-        SizedBox(
-          height: 50,
-          child: PieChart(
-            PieChartData(
-              centerSpaceRadius: 100,
-              startDegreeOffset: -180,
-              sections: [
+    return Padding(
+      padding: const EdgeInsets.only(left: 12.0, right: 12, bottom: 12),
+      child: Row(
+        spacing: 30,
+        // crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 150,
+            width: 140,
+            child: PieChart(
+              PieChartData(
+                centerSpaceRadius: 60,
+                startDegreeOffset: -90,
+                sections: [
+                  ...data.entries.map(
+                    (e) => PieChartSectionData(
+                      color: e.key.color ?? Colors.amber,
+                      cornerRadius: 12,
+                      value: e.value.expense ?? 0,
+                      radius: 8,
+                      titlePositionPercentageOffset: 3,
+                      // badgeWidget: Column(
+                      //   mainAxisSize: MainAxisSize.min,
+                      //   children: [
+                      //     Text(e.key.name ?? ""),
+                      //     Text(
+                      //       NumberFormat.percentPattern().format(e.value.expense! / total.expense!),
+                      //     ),
+                      //   ],
+                      // ),
+                      showTitle: false,
+                      badgePositionPercentageOffset: 5,
+                      // title:
+                      //     e.key.name ??
+                      //     " ${NumberFormat.percentPattern().format(e.value.expense! / total.expense!)}",
+                    ),
+                  ),
+                  // PieChartSectionData(
+                  //   value: total.expense,
+                  //   color: Colors.transparent,
+                  //   showTitle: false,
+                  // ),
+                ],
+              ),
+            ),
+          ),
+          Flexible(
+            flex: 1,
+            child: Column(
+              spacing: 8,
+              children: [
                 ...data.entries.map(
-                  (e) => PieChartSectionData(
-                    color: context.cs.secondary,
-                    cornerRadius: 12,
-                    value: e.value.expense ?? 0,
-                    radius: 8,
-                    titlePositionPercentageOffset: 3,
-                    badgeWidget: Column(
+                  (e) {
+                    final percentage = e.value.expense! / total.expense!;
+                    return Row(
+                      spacing: 8,
                       children: [
-                        Text(e.key.name ?? ""),
-                        Text(
-                          NumberFormat.percentPattern().format(e.value.expense! / total.expense!),
+                        Flexible(
+                          flex: 2,
+                          fit: FlexFit.tight,
+                          child: LabelIndicator(
+                            text: e.key.name?.capitalize() ?? "",
+                            color: e.key.color ?? Colors.amber,
+                          ),
+                        ),
+                        Flexible(
+                          flex: 2,
+                          fit: FlexFit.tight,
+                          child: Text(
+                            NumberFormat.compactCurrency(symbol: "RM").format(e.value.expense!),
+                            style: context.tt.bodyMedium!.copyWith(
+                              fontSize: 12,
+                              color: context.cs.primary,
+                            ),
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Flexible(
+                          flex: 1,
+                          fit: FlexFit.tight,
+                          child: Text(
+                            "(${NumberFormat.percentPattern().format(percentage)})",
+                            style: context.tt.bodyMedium!.copyWith(
+                              fontSize: 12,
+                              color: context.cs.primary,
+                            ),
+                            textAlign: TextAlign.end,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
-                    ),
-                    showTitle: false,
-                    badgePositionPercentageOffset: 5,
-                    // title:
-                    //     e.key.name ??
-                    //     " ${NumberFormat.percentPattern().format(e.value.expense! / total.expense!)}",
-                  ),
-                ),
-                PieChartSectionData(
-                  value: total.expense,
-                  color: Colors.transparent,
-                  showTitle: false,
+                    );
+                  },
                 ),
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -624,7 +683,9 @@ class DayToDayBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = context.select((ChartModel state) => state.dayToDayComparison);
-    final rangeStart = context.chartMod.rangeStart;
+    final showMonths = context.select((ChartModel state) => state.showMonths);
+    final curRangeStart = context.chartMod.rangeStart;
+    final prevRangeStart = context.chartMod.prevRangeStart;
     return Container(
       height: 180,
       padding: EdgeInsets.only(left: 12, right: 12, top: 12),
@@ -636,11 +697,25 @@ class DayToDayBarChart extends StatelessWidget {
           barTouchData: BarTouchData(
             touchExtraThreshold: EdgeInsets.all(20),
             touchTooltipData: BarTouchTooltipData(
-              tooltipHorizontalOffset: 20,
+              getTooltipColor: (group) => context.cs.surface,
+              tooltipHorizontalOffset: 0,
               fitInsideHorizontally: true,
-              fitInsideVertically: true,
+              // fitInsideVertically: true,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                return BarTooltipItem("Test", context.tt.bodyMedium!);
+                final String curDate =
+                    showMonths
+                        ? curRangeStart.addMonth(group.x).formatMonth()
+                        : curRangeStart.addDay(group.x).formatShorter();
+                final String prevDate =
+                    showMonths
+                        ? prevRangeStart.addMonth(group.x).formatMonth()
+                        : prevRangeStart.addDay(group.x).formatShorter();
+                return BarTooltipItem(
+                  "$curDate: ${group.barRods.first.toY.customCurrencyFormat("RM")}\n"
+                  "$prevDate: ${group.barRods.last.toY.customCurrencyFormat("RM")}",
+                  context.tt.bodyMedium!.copyWith(fontSize: 10),
+                  textAlign: TextAlign.end,
+                );
               },
             ),
           ),
@@ -656,7 +731,7 @@ class DayToDayBarChart extends StatelessWidget {
                   barRods:
                       el.entries.map(
                         (entry) {
-                          final isPrev = entry.key.isBefore(rangeStart);
+                          final isPrev = entry.key.isBefore(curRangeStart);
                           return BarChartRodData(
                             width: isPrev ? 2 : 5,
                             color:
@@ -673,83 +748,83 @@ class DayToDayBarChart extends StatelessWidget {
   }
 }
 
-class BudgetWidget extends StatelessWidget {
-  const BudgetWidget({super.key});
+// class BudgetWidget extends StatelessWidget {
+//   const BudgetWidget({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final contextRead = context.read<AppModel>();
-    final contextWatch = context.watch<AppModel>();
-    return Column(
-      children:
-          (contextRead.budgetMetrics[contextWatch.formatedSelectedYearMonth] ?? []).map((e) {
-            final double curAmount = e['amount'] ?? 0;
-            final double budgetAmount = e['budget'] ?? 1;
+//   @override
+//   Widget build(BuildContext context) {
+//     final contextRead = context.read<AppModel>();
+//     final contextWatch = context.watch<AppModel>();
+//     return Column(
+//       children:
+//           (contextRead.budgetMetrics[contextWatch.formatedSelectedYearMonth] ?? []).map((e) {
+//             final double curAmount = e['amount'] ?? 0;
+//             final double budgetAmount = e['budget'] ?? 1;
 
-            final String curAmountString = contextRead.customCurrencyFormat(curAmount, true);
-            final String budgetAmountString = contextRead.customCurrencyFormat(budgetAmount, true);
+//             final String curAmountString = contextRead.customCurrencyFormat(curAmount, true);
+//             final String budgetAmountString = contextRead.customCurrencyFormat(budgetAmount, true);
 
-            final double spendPercentage = curAmount / budgetAmount;
-            final String budgetMessage =
-                spendPercentage > 1
-                    ? "${((spendPercentage - 1) * 100).round()}% over"
-                    : "${(spendPercentage * 100).round()}%";
+//             final double spendPercentage = curAmount / budgetAmount;
+//             final String budgetMessage =
+//                 spendPercentage > 1
+//                     ? "${((spendPercentage - 1) * 100).round()}% over"
+//                     : "${(spendPercentage * 100).round()}%";
 
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ChartBudgetDetailsScreen(curBudgetId: e['id']),
-                  ),
-                );
-                debugPrint('updated!');
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // SizedBox(height: 12,),
-                  Container(
-                    width: double.maxFinite,
-                    child: Text(
-                      '${e['name']}',
-                      textAlign: TextAlign.left,
-                      style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
-                    ),
-                  ),
-                  Container(
-                    width: double.maxFinite,
-                    child: Text(
-                      '$budgetMessage ($curAmountString/$budgetAmountString)',
-                      textAlign: TextAlign.left,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 2.0, right: 2.0, bottom: 2, top: 8),
-                    child: Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        // border: BoxBorder.all(color: Colors.white)
-                      ),
-                      child: Row(
-                        spacing: 30,
-                        children: [
-                          Expanded(
-                            child: BudgetBarChart(
-                              budget: budgetAmount,
-                              current: curAmount,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-    );
-  }
-}
+//             return GestureDetector(
+//               onTap: () {
+//                 Navigator.of(context).push(
+//                   MaterialPageRoute(
+//                     builder: (context) => ChartBudgetDetailsScreen(curBudgetId: e['id']),
+//                   ),
+//                 );
+//                 debugPrint('updated!');
+//               },
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   // SizedBox(height: 12,),
+//                   Container(
+//                     width: double.maxFinite,
+//                     child: Text(
+//                       '${e['name']}',
+//                       textAlign: TextAlign.left,
+//                       style: Theme.of(context).textTheme.headlineSmall!.copyWith(fontSize: 20),
+//                     ),
+//                   ),
+//                   Container(
+//                     width: double.maxFinite,
+//                     child: Text(
+//                       '$budgetMessage ($curAmountString/$budgetAmountString)',
+//                       textAlign: TextAlign.left,
+//                     ),
+//                   ),
+//                   Padding(
+//                     padding: const EdgeInsets.only(left: 2.0, right: 2.0, bottom: 2, top: 8),
+//                     child: Container(
+//                       height: 50,
+//                       decoration: BoxDecoration(
+//                         // border: BoxBorder.all(color: Colors.white)
+//                       ),
+//                       child: Row(
+//                         spacing: 30,
+//                         children: [
+//                           Expanded(
+//                             child: BudgetBarChart(
+//                               budget: budgetAmount,
+//                               current: curAmount,
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             );
+//           }).toList(),
+//     );
+//   }
+// }
 
 class OverviewBudgetBar extends StatelessWidget {
   const OverviewBudgetBar({super.key});
@@ -1248,382 +1323,382 @@ class ChartTitleBar extends StatelessWidget {
   }
 }
 
-class DateTrendLineChart extends StatelessWidget {
-  const DateTrendLineChart({
-    super.key,
-    required this.titleData,
-  });
+// class DateTrendLineChart extends StatelessWidget {
+//   const DateTrendLineChart({
+//     super.key,
+//     required this.titleData,
+//   });
 
-  final FlTitlesData titleData;
+//   final FlTitlesData titleData;
 
-  @override
-  Widget build(BuildContext context) {
-    final currentMonthData = context.select((AppModel state) => state.currentCumulativeAverage);
-    final previousMonthData = context.select((AppModel state) => state.previousCumulativeAverage);
+//   @override
+//   Widget build(BuildContext context) {
+//     final currentMonthData = context.select((AppModel state) => state.currentCumulativeAverage);
+//     final previousMonthData = context.select((AppModel state) => state.previousCumulativeAverage);
 
-    final colorTheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 4,
-      children: [
-        const ChartTitleBar(
-          description: "Cumulative average spend",
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: SpendTrendLineChart(
-              currentMonthData: currentMonthData,
-              previousMonthData: previousMonthData,
-              titleData: titleData,
-            ),
-          ),
-        ),
-        // Align(
-        //   alignment: Alignment.center,
-        //   child: Row(
-        //     spacing: 12,
-        //     mainAxisSize: MainAxisSize.min,
-        //     children: [
-        //       ChartLegendItem(
-        //         primaryColor: colorTheme.primary,
-        //         title: "This month",
-        //         tileWidth: 200,
-        //       ),
-        //       ChartLegendItem(
-        //         primaryColor: colorTheme.tertiary,
-        //         title: "Previous month",
-        //         tileWidth: 200,
-        //       ),
-        //     ],
-        //   ),
-        // )
-      ],
-    );
-  }
-}
+//     final colorTheme = Theme.of(context).colorScheme;
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       spacing: 4,
+//       children: [
+//         const ChartTitleBar(
+//           description: "Cumulative average spend",
+//         ),
+//         Expanded(
+//           child: Padding(
+//             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+//             child: SpendTrendLineChart(
+//               currentMonthData: currentMonthData,
+//               previousMonthData: previousMonthData,
+//               titleData: titleData,
+//             ),
+//           ),
+//         ),
+//         // Align(
+//         //   alignment: Alignment.center,
+//         //   child: Row(
+//         //     spacing: 12,
+//         //     mainAxisSize: MainAxisSize.min,
+//         //     children: [
+//         //       ChartLegendItem(
+//         //         primaryColor: colorTheme.primary,
+//         //         title: "This month",
+//         //         tileWidth: 200,
+//         //       ),
+//         //       ChartLegendItem(
+//         //         primaryColor: colorTheme.tertiary,
+//         //         title: "Previous month",
+//         //         tileWidth: 200,
+//         //       ),
+//         //     ],
+//         //   ),
+//         // )
+//       ],
+//     );
+//   }
+// }
 
-class DailyCumulativeSpendLineChart extends StatelessWidget {
-  const DailyCumulativeSpendLineChart({
-    super.key,
-    required this.titleData,
-  });
+// class DailyCumulativeSpendLineChart extends StatelessWidget {
+//   const DailyCumulativeSpendLineChart({
+//     super.key,
+//     required this.titleData,
+//   });
 
-  final FlTitlesData titleData;
+//   final FlTitlesData titleData;
 
-  @override
-  Widget build(BuildContext context) {
-    final currentMonthData = context.select((AppModel state) => state.currentCumulative);
-    final previousMonthData = context.select((AppModel state) => state.previousCumulative);
+//   @override
+//   Widget build(BuildContext context) {
+//     final currentMonthData = context.select((AppModel state) => state.currentCumulative);
+//     final previousMonthData = context.select((AppModel state) => state.previousCumulative);
 
-    final colorTheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 4,
-      children: [
-        const ChartTitleBar(
-          description: "Cumulative spend",
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: SpendTrendLineChart(
-              currentMonthData: currentMonthData,
-              previousMonthData: previousMonthData,
-              titleData: titleData,
-            ),
-          ),
-        ),
-        // Align(
-        //   alignment: Alignment.center,
-        //   child: Container(
-        //     // decoration: ,
-        //     child: Row(
-        //       spacing: 12,
-        //       mainAxisSize: MainAxisSize.min,
-        //       mainAxisAlignment: MainAxisAlignment.center,
-        //       children: [
-        //         ChartLegendItem(
-        //           primaryColor: colorTheme.primary,
-        //           title: "This month",
-        //           tileWidth: 160,
-        //           fontSize: 10,
-        //         ),
-        //         ChartLegendItem(
-        //           primaryColor: colorTheme.tertiary,
-        //           title: "Previous month",
-        //           tileWidth: 160,
-        //           fontSize: 10,
-        //         ),
-        //       ],
-        //     ),
-        //   ),
-        // )
-      ],
-    );
-  }
-}
+//     final colorTheme = Theme.of(context).colorScheme;
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       spacing: 4,
+//       children: [
+//         const ChartTitleBar(
+//           description: "Cumulative spend",
+//         ),
+//         Expanded(
+//           child: Padding(
+//             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+//             child: SpendTrendLineChart(
+//               currentMonthData: currentMonthData,
+//               previousMonthData: previousMonthData,
+//               titleData: titleData,
+//             ),
+//           ),
+//         ),
+//         // Align(
+//         //   alignment: Alignment.center,
+//         //   child: Container(
+//         //     // decoration: ,
+//         //     child: Row(
+//         //       spacing: 12,
+//         //       mainAxisSize: MainAxisSize.min,
+//         //       mainAxisAlignment: MainAxisAlignment.center,
+//         //       children: [
+//         //         ChartLegendItem(
+//         //           primaryColor: colorTheme.primary,
+//         //           title: "This month",
+//         //           tileWidth: 160,
+//         //           fontSize: 10,
+//         //         ),
+//         //         ChartLegendItem(
+//         //           primaryColor: colorTheme.tertiary,
+//         //           title: "Previous month",
+//         //           tileWidth: 160,
+//         //           fontSize: 10,
+//         //         ),
+//         //       ],
+//         //     ),
+//         //   ),
+//         // )
+//       ],
+//     );
+//   }
+// }
 
-class SpendTrendLineChart extends StatelessWidget {
-  const SpendTrendLineChart({
-    super.key,
-    required this.currentMonthData,
-    required this.previousMonthData,
-    required this.titleData,
-  });
+// class SpendTrendLineChart extends StatelessWidget {
+//   const SpendTrendLineChart({
+//     super.key,
+//     required this.currentMonthData,
+//     required this.previousMonthData,
+//     required this.titleData,
+//   });
 
-  final Map<int, double> currentMonthData;
-  final Map<int, double> previousMonthData;
-  // final List<double> previousMonthData;
-  final FlTitlesData titleData;
+//   final Map<int, double> currentMonthData;
+//   final Map<int, double> previousMonthData;
+//   // final List<double> previousMonthData;
+//   final FlTitlesData titleData;
 
-  @override
-  Widget build(BuildContext context) {
-    final yearMonth = context.select((AppModel state) => state.selectedYearMonth);
-    return LineChart(
-      LineChartData(
-        borderData: FlBorderData(show: false),
-        lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            // fitInsideHorizontally: true,
-            fitInsideVertically: true,
-            getTooltipColor: (touchedSpot) => Colors.transparent,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final modelRead = context.read<AppModel>();
-                final index = spot.spotIndex + 1;
-                final lineIndex = spot.barIndex;
-                String tooltipText = "";
-                if (lineIndex == 0) {
-                  tooltipText =
-                      "Current: ${modelRead.customCurrencyFormat(currentMonthData[index]!, true)}";
-                } else {
-                  tooltipText =
-                      "Previous: ${modelRead.customCurrencyFormat(previousMonthData[index]!, true)}";
-                }
-                return LineTooltipItem(
-                  tooltipText,
-                  Theme.of(
-                    context,
-                  ).textTheme.bodySmall!.copyWith(fontSize: 10, color: spot.bar.color),
-                );
-              }).toList();
-            },
-          ),
-        ),
-        maxY: [...currentMonthData.values, ...previousMonthData.values].maxCeiling(),
-        minY: 0,
-        minX: 1,
-        gridData: FlGridData(show: true),
-        titlesData: titleData,
-        lineBarsData: [
-          spendTrendLineData(context, true, yearMonth), // current month data
-          spendTrendLineData(context, false, yearMonth), // previous month data
-        ],
-      ),
-    );
-  }
+//   @override
+//   Widget build(BuildContext context) {
+//     final yearMonth = context.select((AppModel state) => state.selectedYearMonth);
+//     return LineChart(
+//       LineChartData(
+//         borderData: FlBorderData(show: false),
+//         lineTouchData: LineTouchData(
+//           touchTooltipData: LineTouchTooltipData(
+//             // fitInsideHorizontally: true,
+//             fitInsideVertically: true,
+//             getTooltipColor: (touchedSpot) => Colors.transparent,
+//             getTooltipItems: (touchedSpots) {
+//               return touchedSpots.map((spot) {
+//                 final modelRead = context.read<AppModel>();
+//                 final index = spot.spotIndex + 1;
+//                 final lineIndex = spot.barIndex;
+//                 String tooltipText = "";
+//                 if (lineIndex == 0) {
+//                   tooltipText =
+//                       "Current: ${modelRead.customCurrencyFormat(currentMonthData[index]!, true)}";
+//                 } else {
+//                   tooltipText =
+//                       "Previous: ${modelRead.customCurrencyFormat(previousMonthData[index]!, true)}";
+//                 }
+//                 return LineTooltipItem(
+//                   tooltipText,
+//                   Theme.of(
+//                     context,
+//                   ).textTheme.bodySmall!.copyWith(fontSize: 10, color: spot.bar.color),
+//                 );
+//               }).toList();
+//             },
+//           ),
+//         ),
+//         maxY: [...currentMonthData.values, ...previousMonthData.values].maxCeiling(),
+//         minY: 0,
+//         minX: 1,
+//         gridData: FlGridData(show: true),
+//         titlesData: titleData,
+//         lineBarsData: [
+//           spendTrendLineData(context, true, yearMonth), // current month data
+//           spendTrendLineData(context, false, yearMonth), // previous month data
+//         ],
+//       ),
+//     );
+//   }
 
-  LineChartBarData spendTrendLineData(BuildContext context, bool currentMonth, DateTime yearMonth) {
-    final displayData = currentMonth ? currentMonthData : previousMonthData;
-    final colorTheme = Theme.of(context).colorScheme;
-    return LineChartBarData(
-      // current month data
-      isCurved: true,
-      barWidth: currentMonth ? 3 : 1,
-      color: currentMonth ? colorTheme.primary : colorTheme.tertiary,
-      preventCurveOvershootingThreshold: 0,
-      dashArray: currentMonth ? null : [10, 5],
-      curveSmoothness: 0.5,
-      isStrokeCapRound: true,
-      preventCurveOverShooting: true,
-      dotData: FlDotData(
-        show: currentMonth ? true : false,
-        checkToShowDot: (spot, barData) {
-          // if the month is completed, do not show dot
-          if (!yearMonth.isInSameYearMonthAs(DateTime.now())) return false;
-          // only show dot for the latest date
-          if (spot.x == displayData.length) return true;
+//   LineChartBarData spendTrendLineData(BuildContext context, bool currentMonth, DateTime yearMonth) {
+//     final displayData = currentMonth ? currentMonthData : previousMonthData;
+//     final colorTheme = Theme.of(context).colorScheme;
+//     return LineChartBarData(
+//       // current month data
+//       isCurved: true,
+//       barWidth: currentMonth ? 3 : 1,
+//       color: currentMonth ? colorTheme.primary : colorTheme.tertiary,
+//       preventCurveOvershootingThreshold: 0,
+//       dashArray: currentMonth ? null : [10, 5],
+//       curveSmoothness: 0.5,
+//       isStrokeCapRound: true,
+//       preventCurveOverShooting: true,
+//       dotData: FlDotData(
+//         show: currentMonth ? true : false,
+//         checkToShowDot: (spot, barData) {
+//           // if the month is completed, do not show dot
+//           if (!yearMonth.isInSameYearMonthAs(DateTime.now())) return false;
+//           // only show dot for the latest date
+//           if (spot.x == displayData.length) return true;
 
-          return false;
-        },
-      ),
-      spots:
-          displayData
-              .map((int dayInt, double amount) {
-                return MapEntry(dayInt, FlSpot(dayInt.toDouble(), amount));
-              })
-              .values
-              .toList(),
-    );
-  }
-}
+//           return false;
+//         },
+//       ),
+//       spots:
+//           displayData
+//               .map((int dayInt, double amount) {
+//                 return MapEntry(dayInt, FlSpot(dayInt.toDouble(), amount));
+//               })
+//               .values
+//               .toList(),
+//     );
+//   }
+// }
 
-class CategoryList extends StatefulWidget {
-  const CategoryList({super.key, required this.selectedCostType});
+// class CategoryList extends StatefulWidget {
+//   const CategoryList({super.key, required this.selectedCostType});
 
-  final CostType selectedCostType;
+//   final CostType selectedCostType;
 
-  @override
-  State<CategoryList> createState() => _CategoryListState();
-}
+//   @override
+//   State<CategoryList> createState() => _CategoryListState();
+// }
 
-class _CategoryListState extends State<CategoryList> {
-  bool _isSortDescending = true;
+// class _CategoryListState extends State<CategoryList> {
+//   bool _isSortDescending = true;
 
-  List<Widget> categoryListTile(Map<String, CostMetric> data, BuildContext context) =>
-      data.entries.map((categoryData) {
-        final selectedThemeMode = context.select((ThemeModel state) => state.theme);
-        final categoryName = categoryData.key;
-        final CostItemCategory categoryEntry =
-            context.read<AppModel>().getCategoryEntry(categoryName) ?? CostItemCategory();
-        final double categoryAmount = categoryData.value.expense!;
-        final ColorScheme categoryColorScheme = categoryEntry.colorScheme(selectedThemeMode);
-        // final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);
-        final amountString = context.read<AppModel>().customCurrencyFormat(categoryAmount, false);
-        final currencySymbol = context.select((AppModel state) => state.currencySymbol);
-        final maxAmount = context.select(
-          (AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense),
-        );
-        final percentageString = context.read<AppModel>().getCategoryPercentage(categoryAmount);
-        final List<CostItem> costItems = context.select(
-          (AppModel state) => state.currentMonthCategoryList[categoryName] ?? [],
-        );
+//   List<Widget> categoryListTile(Map<String, CostMetric> data, BuildContext context) =>
+//       data.entries.map((categoryData) {
+//         final selectedThemeMode = context.select((ThemeModel state) => state.theme);
+//         final categoryName = categoryData.key;
+//         final CostItemCategory categoryEntry =
+//             context.read<AppModel>().getCategoryEntry(categoryName) ?? CostItemCategory();
+//         final double categoryAmount = categoryData.value.expense!;
+//         final ColorScheme categoryColorScheme = categoryEntry.colorScheme(selectedThemeMode);
+//         // final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);
+//         final amountString = context.read<AppModel>().customCurrencyFormat(categoryAmount, false);
+//         final currencySymbol = context.select((AppModel state) => state.currencySymbol);
+//         final maxAmount = context.select(
+//           (AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense),
+//         );
+//         final percentageString = context.read<AppModel>().getCategoryPercentage(categoryAmount);
+//         final List<CostItem> costItems = context.select(
+//           (AppModel state) => state.currentMonthCategoryList[categoryName] ?? [],
+//         );
 
-        return Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            key: ValueKey(categoryName),
-            tilePadding: EdgeInsets.fromLTRB(4, 4, 4, 4),
-            childrenPadding: EdgeInsets.fromLTRB(4, 0, 4, 8),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(categoryName),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '$amountString ',
-                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
-                      ),
-                      TextSpan(
-                        text: '($percentageString)',
-                        style: Theme.of(context).textTheme.labelMedium!.copyWith(
-                          fontSize: 12,
-                          color: categoryColorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            // leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
-            subtitle: PercentageBar(
-              height: 8,
-              color: categoryColorScheme.primaryFixed,
-              percentage: categoryAmount / maxAmount,
-            ),
-            children:
-                costItems.map((CostItem costItem) {
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                    visualDensity: VisualDensity(vertical: -3),
-                    dense: true,
-                    leading: Container(
-                      width: MediaQuery.of(context).size.width * 0.12,
-                      child: Text(
-                        (costItem.date).displayFormat(),
-                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
-                      ),
-                    ),
-                    title: Flex(
-                      direction: Axis.horizontal,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      // mainAxisAlignment: MainAxisAlignment.end,
-                      spacing: 20,
-                      children: [
-                        Flexible(
-                          flex: 4,
-                          child: Text(
-                            costItem.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Flexible(
-                          flex: 10,
-                          fit: FlexFit.tight,
-                          child: Divider(
-                            color: Colors.white.withAlpha(80),
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Container(
-                      width: MediaQuery.of(context).size.width * 0.12,
-                      child: Text(
-                        costItem.getCurrencyValue(currencySymbol, false),
-                        textAlign: TextAlign.right,
-                        style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
-                      ),
-                    ),
-                  );
-                }).toList(),
-          ),
-        );
-      }).toList();
+//         return Theme(
+//           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+//           child: ExpansionTile(
+//             key: ValueKey(categoryName),
+//             tilePadding: EdgeInsets.fromLTRB(4, 4, 4, 4),
+//             childrenPadding: EdgeInsets.fromLTRB(4, 0, 4, 8),
+//             title: Row(
+//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//               children: [
+//                 Text(categoryName),
+//                 Text.rich(
+//                   TextSpan(
+//                     children: [
+//                       TextSpan(
+//                         text: '$amountString ',
+//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
+//                       ),
+//                       TextSpan(
+//                         text: '($percentageString)',
+//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(
+//                           fontSize: 12,
+//                           color: categoryColorScheme.primary,
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//             // leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
+//             subtitle: PercentageBar(
+//               height: 8,
+//               color: categoryColorScheme.primaryFixed,
+//               percentage: categoryAmount / maxAmount,
+//             ),
+//             children:
+//                 costItems.map((CostItem costItem) {
+//                   return ListTile(
+//                     contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+//                     visualDensity: VisualDensity(vertical: -3),
+//                     dense: true,
+//                     leading: Container(
+//                       width: MediaQuery.of(context).size.width * 0.12,
+//                       child: Text(
+//                         (costItem.date).displayFormat(),
+//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
+//                       ),
+//                     ),
+//                     title: Flex(
+//                       direction: Axis.horizontal,
+//                       crossAxisAlignment: CrossAxisAlignment.center,
+//                       // mainAxisAlignment: MainAxisAlignment.end,
+//                       spacing: 20,
+//                       children: [
+//                         Flexible(
+//                           flex: 4,
+//                           child: Text(
+//                             costItem.name,
+//                             maxLines: 1,
+//                             overflow: TextOverflow.ellipsis,
+//                           ),
+//                         ),
+//                         Flexible(
+//                           flex: 10,
+//                           fit: FlexFit.tight,
+//                           child: Divider(
+//                             color: Colors.white.withAlpha(80),
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                     trailing: Container(
+//                       width: MediaQuery.of(context).size.width * 0.12,
+//                       child: Text(
+//                         costItem.getCurrencyValue(currencySymbol, false),
+//                         textAlign: TextAlign.right,
+//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
+//                       ),
+//                     ),
+//                   );
+//                 }).toList(),
+//           ),
+//         );
+//       }).toList();
 
-  @override
-  Widget build(BuildContext context) {
-    final Map<String, CostMetric> categoryData = context.select(
-      (AppModel state) => state.getcurrentMonthCategoryView(_isSortDescending, CostType.expense),
-    );
+//   @override
+//   Widget build(BuildContext context) {
+//     final Map<String, CostMetric> categoryData = context.select(
+//       (AppModel state) => state.getcurrentMonthCategoryView(_isSortDescending, CostType.expense),
+//     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Expanded(
-                child: ChartTitleBar(
-                  title: "Expense overview",
-                  description: "by Category",
-                ),
-              ),
-              IconButton(
-                onPressed: () => setState(() => _isSortDescending = !_isSortDescending),
-                icon: Transform.scale(scaleY: _isSortDescending ? 1 : -1, child: Icon(Icons.sort)),
-              ),
-            ],
-          ),
-        ),
-        ...categoryListTile(categoryData, context),
-      ],
-    );
-  }
-}
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       mainAxisSize: MainAxisSize.min,
+//       children: [
+//         Padding(
+//           padding: const EdgeInsets.all(16.0),
+//           child: Row(
+//             mainAxisSize: MainAxisSize.max,
+//             children: [
+//               Expanded(
+//                 child: ChartTitleBar(
+//                   title: "Expense overview",
+//                   description: "by Category",
+//                 ),
+//               ),
+//               IconButton(
+//                 onPressed: () => setState(() => _isSortDescending = !_isSortDescending),
+//                 icon: Transform.scale(scaleY: _isSortDescending ? 1 : -1, child: Icon(Icons.sort)),
+//               ),
+//             ],
+//           ),
+//         ),
+//         ...categoryListTile(categoryData, context),
+//       ],
+//     );
+//   }
+// }
 
-class FastCustomScrollPhysics extends ScrollPhysics {
-  const FastCustomScrollPhysics({super.parent});
+// class FastCustomScrollPhysics extends ScrollPhysics {
+//   const FastCustomScrollPhysics({super.parent});
 
-  @override
-  FastCustomScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return FastCustomScrollPhysics(parent: buildParent(ancestor)!);
-  }
+//   @override
+//   FastCustomScrollPhysics applyTo(ScrollPhysics? ancestor) {
+//     return FastCustomScrollPhysics(parent: buildParent(ancestor)!);
+//   }
 
-  @override
-  SpringDescription get spring => const SpringDescription(
-    mass: 5,
-    stiffness: 100,
-    damping: 50,
-  );
-}
+//   @override
+//   SpringDescription get spring => const SpringDescription(
+//     mass: 5,
+//     stiffness: 100,
+//     damping: 50,
+//   );
+// }
 
 class PercentageBar extends StatelessWidget {
   const PercentageBar({
@@ -1672,82 +1747,82 @@ class PercentageBar extends StatelessWidget {
   }
 }
 
-class BudgetBarChart extends StatelessWidget {
-  const BudgetBarChart({
-    super.key,
-    this.current = 0,
-    this.budget = 0,
-  });
+// class BudgetBarChart extends StatelessWidget {
+//   const BudgetBarChart({
+//     super.key,
+//     this.current = 0,
+//     this.budget = 0,
+//   });
 
-  final double current;
-  final double budget;
+//   final double current;
+//   final double budget;
 
-  @override
-  Widget build(BuildContext context) {
-    return BarChart(
-      BarChartData(
-        borderData: FlBorderData(show: false),
-        maxY: max(current, budget) + 1,
-        gridData: FlGridData(
-          horizontalInterval: budget,
-          getDrawingHorizontalLine: (value) {
-            if (value == budget.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
-            return FlLine(strokeWidth: 0);
-          },
-          // show: false
-        ),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(drawBelowEverything: false),
-          topTitles: AxisTitles(drawBelowEverything: false),
-          leftTitles: AxisTitles(drawBelowEverything: false),
-          rightTitles: AxisTitles(
-            sideTitles: SideTitles(
-              interval: budget,
-              reservedSize: 30,
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                if (value == budget.roundToDouble()) {
-                  return SideTitleWidget(
-                    meta: meta,
-                    fitInside: SideTitleFitInsideData(
-                      enabled: budget > current,
-                      axisPosition: 0,
-                      parentAxisSize: budget > current ? 50 : 0,
-                      distanceFromEdge: 0,
-                    ),
-                    child: Text('Limit'),
-                  );
-                }
-                return SizedBox.shrink();
-              },
-            ),
-          ),
-        ),
-        barGroups: [
-          BarChartGroupData(
-            x: 1,
-            barsSpace: 0,
-            barRods: [
-              BarChartRodData(
-                toY: current,
-                color: current > budget ? Colors.red : context.read<ThemeModel>().color,
-                width: 12,
-                backDrawRodData: BackgroundBarChartRodData(
-                  show: true,
-                  color: Colors.grey.withAlpha(100),
-                  fromY: 0,
-                  toY: budget,
-                ),
-              ),
-              // BarChartRodData(toY: 40),
-            ],
-          ),
-        ],
-        rotationQuarterTurns: 1,
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return BarChart(
+//       BarChartData(
+//         borderData: FlBorderData(show: false),
+//         maxY: max(current, budget) + 1,
+//         gridData: FlGridData(
+//           horizontalInterval: budget,
+//           getDrawingHorizontalLine: (value) {
+//             if (value == budget.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
+//             return FlLine(strokeWidth: 0);
+//           },
+//           // show: false
+//         ),
+//         titlesData: FlTitlesData(
+//           bottomTitles: AxisTitles(drawBelowEverything: false),
+//           topTitles: AxisTitles(drawBelowEverything: false),
+//           leftTitles: AxisTitles(drawBelowEverything: false),
+//           rightTitles: AxisTitles(
+//             sideTitles: SideTitles(
+//               interval: budget,
+//               reservedSize: 30,
+//               showTitles: true,
+//               getTitlesWidget: (value, meta) {
+//                 if (value == budget.roundToDouble()) {
+//                   return SideTitleWidget(
+//                     meta: meta,
+//                     fitInside: SideTitleFitInsideData(
+//                       enabled: budget > current,
+//                       axisPosition: 0,
+//                       parentAxisSize: budget > current ? 50 : 0,
+//                       distanceFromEdge: 0,
+//                     ),
+//                     child: Text('Limit'),
+//                   );
+//                 }
+//                 return SizedBox.shrink();
+//               },
+//             ),
+//           ),
+//         ),
+//         barGroups: [
+//           BarChartGroupData(
+//             x: 1,
+//             barsSpace: 0,
+//             barRods: [
+//               BarChartRodData(
+//                 toY: current,
+//                 color: current > budget ? Colors.red : context.read<ThemeModel>().color,
+//                 width: 12,
+//                 backDrawRodData: BackgroundBarChartRodData(
+//                   show: true,
+//                   color: Colors.grey.withAlpha(100),
+//                   fromY: 0,
+//                   toY: budget,
+//                 ),
+//               ),
+//               // BarChartRodData(toY: 40),
+//             ],
+//           ),
+//         ],
+//         rotationQuarterTurns: 1,
+//       ),
+//     );
+//   }
+// }
 
 class NewCumulativeLineChart extends StatelessWidget {
   const NewCumulativeLineChart({super.key, this.titleData});
@@ -1761,7 +1836,7 @@ class NewCumulativeLineChart extends StatelessWidget {
     final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
     final showMonths = context.select((ChartModel state) => state.showMonths);
 
-    final now = DateTime.now().standardNow;
+    final now = DateTime.now().standard;
     return Container(
       height: 180,
       padding: EdgeInsets.only(left: 12, right: 12, top: 12),
@@ -1874,7 +1949,7 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
     final curRangeStart = context.select((ChartModel state) => state.rangeStart);
     final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
     final showMonths = context.select((ChartModel state) => state.showMonths);
-    final now = DateTime.now().standardNow;
+    final now = DateTime.now().standard;
     return Container(
       height: 180,
       padding: EdgeInsets.only(left: 12, right: 12, top: 12),
@@ -1973,6 +2048,36 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
               }).toList(),
         ),
       ),
+    );
+  }
+}
+
+class LabelIndicator extends StatelessWidget {
+  const LabelIndicator({super.key, required this.text, this.color});
+
+  final String text;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: color,
+          ),
+        ),
+        SizedBox(width: 6),
+        Text(
+          text,
+          style: context.tt.bodyMedium!.copyWith(fontSize: 12, color: context.cs.primary),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

@@ -192,6 +192,11 @@ class CostMetric {
 
   double get balance => (income ?? 0) - (expense ?? 0);
 
+  void combine(CostMetric otherMetric) {
+    expense = expense! + otherMetric.expense!;
+    income = income! + otherMetric.income!;
+  }
+
   void addToMetric(CostItem costItem) {
     expense = expense! + (costItem.costType == CostType.expense ? costItem.amount : 0);
     income = income! + (costItem.costType == CostType.income ? costItem.amount : 0);

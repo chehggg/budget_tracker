@@ -68,7 +68,7 @@ class SavedItemModel extends ChangeNotifier {
   double? _amount = 0;
   double? get amount => _amount;
 
-  DateTime? _date = DateTime.now().standardNow;
+  DateTime? _date = DateTime.now().standard;
   DateTime? get date => _date;
 
   bool _keepDesc = true;

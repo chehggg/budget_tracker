@@ -27,7 +27,7 @@ class ChartModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
 
-    _costItems = _costItemRepo.costItems;
+    _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
     _daySummary = _costItemRepo.daySummary;
     _monthSummary = _costItemRepo.monthSummary;
 
@@ -36,7 +36,7 @@ class ChartModel extends ChangeNotifier {
       debugPrint(
         'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
       );
-      _costItems = value.items;
+      _costItems = value.items.where((i) => i.costType == _type).toList();
       _daySummary = value.daySummary;
       _monthSummary = value.monthSummary;
       notifyListeners();
@@ -59,7 +59,7 @@ class ChartModel extends ChangeNotifier {
   CostType _type = CostType.expense;
   CostType get type => _type;
 
-  DateTime _periodStart = DateTime.now().standardNow;
+  DateTime _periodStart = DateTime.now().standard;
 
   // ignore: unused_field
   StreamSubscription<CostItemRepoDataStream>? _subscription;
@@ -90,7 +90,7 @@ class ChartModel extends ChangeNotifier {
 
   DateTimeRange _curRange = DateTimeRange(
     start: DateTime.now().startOfMonth,
-    end: DateTime.now().standardNow,
+    end: DateTime.now().standard,
   );
   DateTime get rangeStart => _curRange.start;
   DateTime get rangeEnd => _curRange.end;
@@ -291,11 +291,11 @@ class ChartModel extends ChangeNotifier {
       case DateRangeType.thisWeek:
         _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
       case DateRangeType.oneWeek:
-        _curRange = DateTimeRange(start: now.standardNow.addDay(-6), end: now.standardNow);
+        _curRange = DateTimeRange(start: now.standard.addDay(-6), end: now.standard);
       case DateRangeType.oneMonth:
-        _curRange = DateTimeRange(start: now.standardNow.addMonth(-1), end: now.standardNow);
+        _curRange = DateTimeRange(start: now.standard.addMonth(-1), end: now.standard);
       case DateRangeType.oneYear:
-        _curRange = DateTimeRange(start: now.standardNow.addYear(-1), end: now.standardNow);
+        _curRange = DateTimeRange(start: now.standard.addYear(-1), end: now.standard);
       default:
         return;
     }

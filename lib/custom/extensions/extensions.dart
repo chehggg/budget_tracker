@@ -5,6 +5,7 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
+import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_view_model.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/list/list_viewmodel.dart';
@@ -38,7 +39,7 @@ extension DayExtension on DateTime {
   DateTime addYear(int addYear) => DateTime(year + addYear, month, day);
   DateTime addMonth(int addMonth) => DateTime(year, month + addMonth, day);
   DateTime addDay(int addDay) => DateTime(year, month, day + addDay);
-  DateTime get standardNow => DateTime(year, month, day);
+  DateTime get standard => DateTime(year, month, day);
   DateTime get startOfMonth => DateTime(year, month, 1);
   DateTime get endOfMonth => DateTime(year, month + 1, 0);
   DateTime get startOfYear => DateTime(year, 1, 1);
@@ -162,6 +163,7 @@ extension BuildContextExtension on BuildContext {
   ListModel get listMod => read<ListModel>();
   GoalModel get goalMod => read<GoalModel>();
   GoalFormViewmodel get goalFormMod => read<GoalFormViewmodel>();
+  GoalInfoViewmodel get goalInfoMod => read<GoalInfoViewmodel>();
   SettingsModel get settingMod => read<SettingsModel>();
   SavedItemModel get savedItemMod => read<SavedItemModel>();
   ChartModel get chartMod => read<ChartModel>();

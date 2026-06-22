@@ -73,7 +73,7 @@ class _ChartBudgetDetailsScreenState extends State<ChartBudgetDetailsScreen> {
                 Text(categoryDescription),
                 Container(
                   height: 50,
-                  child: BudgetBarChart(current:  curAmount, budget:  budgetAmount,)
+                  // child: BudgetBarChart(current:  curAmount, budget:  budgetAmount,)
                 ),
                 Text("Expense under budget"),
                 CustomDropDownMenu(

@@ -90,7 +90,8 @@ ThemeData get appTheme {
     textTheme: customTextTheme,
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(
-        visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity(vertical: -2, horizontal: -2),
         // iconSize: 20,
         fixedSize: Size.square(20)
       )

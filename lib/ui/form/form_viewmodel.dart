@@ -6,7 +6,6 @@ import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
-import 'package:budget_tracker/utils/result.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -41,13 +40,16 @@ class FormModel extends ChangeNotifier {
 
   String? validateFormResult() {
     if (_selectedCategory == null) {
-      return "No category selected.";
-    } 
+      return "No category selected!";
+    }
+    if (double.tryParse(_amountController.text) == null) {
+      return "Amount is invalid!";
+    }
     if (_amount == null || _amount == 0) {
       return "Amount cannot be 0!";
-    } 
+    }
     return null;
-  } 
+  }
 
   FormGroup _formGroup = FormGroup.expense;
   FormGroup get formGroup => _formGroup;
@@ -79,7 +81,7 @@ class FormModel extends ChangeNotifier {
   CostType _type = CostType.expense;
   CostType get type => _type;
 
-  DateTime _date = DateTime.now().standardNow;
+  DateTime _date = DateTime.now().standard;
   DateTime get date => _date;
 
   String _savedTitle = "";

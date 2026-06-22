@@ -9,6 +9,7 @@ class ReusableContainer extends StatelessWidget {
     this.onTap,
     this.padding = const EdgeInsets.all(8),
     this.child,
+    this.customColor,
     this.height,
     this.width,
     this.filled = false,
@@ -19,6 +20,7 @@ class ReusableContainer extends StatelessWidget {
   final void Function()? onTap;
   final Widget? child;
   final bool filled;
+  final Color? customColor;
   final bool highlight;
   final double? height;
   final double? width;
@@ -33,7 +35,21 @@ class ReusableContainer extends StatelessWidget {
         padding: padding,
         decoration: BoxDecoration(
           border: BoxBorder.all(color: context.customCs.fadeColor2 ?? Colors.transparent),
-          color: highlight ? context.customCs.flipCardColor : filled ? context.customCs.fadeColor3 : null,
+          color: customColor ??
+              (highlight
+                  ? context.customCs.flipCardColor
+                  : filled
+                  ? context.customCs.fadeColor3
+                  : null),
+          // gradient:
+          //     customColor != null
+          //         ? LinearGradient(
+          //           stops: [0, 1.5],
+          //           colors: [customColor!, Colors.transparent],
+          //           begin: Alignment.topCenter,
+          //           end: Alignment.bottomRight,
+          //         )
+          //         : null,
           borderRadius: BorderRadius.circular(12),
         ),
         child: child,
@@ -60,11 +76,15 @@ class CategoryIconContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     if (inContainer) {
       return ReusableContainer(
+        customColor: category.color?.withAlpha(50),
         filled: true,
         highlight: inverse,
         child: SvgPicture.asset(
-          category.imagePath?? "assets/images/placeholder.svg",
-          colorFilter: ColorFilter.mode(inverse ? context.cs.surface : context.cs.primary, BlendMode.srcIn),
+          category.imagePath ?? "assets/images/placeholder.svg",
+          colorFilter: ColorFilter.mode(
+            inverse ? context.cs.surface : context.cs.primary,
+            BlendMode.srcIn,
+          ),
           // foregroundColor == null ? null : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
           height: size,
           width: size,
@@ -72,8 +92,11 @@ class CategoryIconContainer extends StatelessWidget {
       );
     } else {
       return SvgPicture.asset(
-        category.imagePath?? "assets/images/placeholder.svg",
-        colorFilter: ColorFilter.mode(inverse ? context.cs.surface : context.cs.primary, BlendMode.srcIn),
+        category.imagePath ?? "assets/images/placeholder.svg",
+        colorFilter: ColorFilter.mode(
+          inverse ? context.cs.surface : context.cs.primary,
+          BlendMode.srcIn,
+        ),
         // foregroundColor == null ? null : ColorFilter.mode(foregroundColor, BlendMode.srcIn),
         height: size,
         width: size,
