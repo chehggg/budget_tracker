@@ -3,11 +3,9 @@ import 'dart:math';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
-import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_view_model.dart';
-import 'package:budget_tracker/ui/list/list_viewmodel.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -18,25 +16,7 @@ class GoalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return ChangeNotifierProvider(
-    //   create: (context) => GoalModel(costItemRepo: context.read(), goalRepository: context.read()),
-    //   child: Scaffold(
-    //     appBar: AppBar(
-    //       actions: [
-    //         IconButton(
-    //           onPressed: () async {
-    //             await Navigator.push(
-    //               context,
-    //               MaterialPageRoute(builder: (context) => const GoalFormScreen()),
-    //             );
-    //           },
-    //           icon: Icon(Icons.add),
-    //         ),
-    //       ],
-    //     ),
-    //     body: SafeArea(child: GoalBody()),
-    //   ),
-    // );
+    final ready = context.select((GoalModel state) => state.ready);
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -50,7 +30,7 @@ class GoalScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SafeArea(child: GoalBody()),
+      body: SafeArea(child: ready ? Center(child: CircularProgressIndicator()) : GoalBody()),
     );
   }
 }
@@ -60,13 +40,10 @@ class GoalBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final dynamic model = Provider.of(context, listen: false);
-    // debugPrint("Found provider runtime type: ${model.runtimeType}");
-    final ready = context.select((GoalModel state) => state.ready);
     final goals = context.select((GoalModel state) => state.goalOverview);
 
     // final goals = context.select((GoalModel state) => state);
-    final test = context.select((ListModel state) => state.currentMonth);
+    // final test = context.select((ListModel state) => state.currentMonth);
     return CustomScrollView(
       slivers: [
         SliverPadding(

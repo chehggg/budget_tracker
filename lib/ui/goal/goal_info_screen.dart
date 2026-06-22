@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
@@ -72,7 +73,7 @@ class GoalInfoBody extends StatelessWidget {
     final goal = context.select((GoalInfoViewmodel state) => state.goal);
     final goalProgress = context.select((GoalInfoViewmodel state) => state.goalProgress);
     final curProgress = goalProgress.last;
-    final dayinCurMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 0).day;
+    final dayinCurMonth = DateTime.now().dayinCurrentMonth;
     final spendPerday = (goal.target ?? 0) / dayinCurMonth;
 
     return CustomScrollView(
@@ -224,6 +225,12 @@ class GoalInfoBody extends StatelessWidget {
             children: [
               // Divider(),
               Text("Visualize", style: context.customTt.dateLabel),
+              Text(
+                "If distributing the monthly spend across the entire month, you need to cap daily spend at",
+                style: context.customTt.paragraphText,
+              ),
+              Text(spendPerday.customCurrencyFormat("RM"), style: context.customTt.paragraphTitle),
+
               SizedBox(
                 height: 100,
                 child: BarChart(
@@ -256,117 +263,22 @@ class GoalInfoBody extends StatelessWidget {
                           );
                         },
                       ),
-                      // BarChartGroupData(x: x)
-                      // LineChartBarData(
-                      //   spots: [
-                      //     FlSpot(0, spendPerday),
-                      //     FlSpot(dayinCurMonth.toDouble(), spendPerday),
-                      //   ],
-                      // ),
-                      // LineChartBarData(
-                      //   spots: [
-                      //     ...context.goalInfoMod.barChartData.entries.map(
-                      //       (el) => FlSpot(el.key.day.toDouble(), el.value.expense!),
-                      //     ),
-                      //     // FlSpot(0, goal.target!),
-                      //     // FlSpot(30, goal.target!),
-                      //   ],
-                      // ),
                     ],
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, bottom: 20),
-                child: Text(
-                  "${context.goalInfoMod.targetReachingDays}/${DateTime.now().day} days which your daily target reached!",
-                ),
-              ),
-              SizedBox(
-                height: 100,
-                child: LineChart(
-                  LineChartData(
-                    titlesData: FlTitlesData(show: false),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: [
-                          FlSpot(0, goal.target!),
-                          FlSpot(dayinCurMonth.toDouble(), goal.target!),
-                        ],
-                      ),
-                      LineChartBarData(
-                        spots: [
-                          ...context.goalInfoMod.lineChartData.entries.map(
-                            (el) => FlSpot(el.key.day.toDouble(), el.value.expense!),
-                          ),
-                          // FlSpot(0, goal.target!),
-                          // FlSpot(30, goal.target!),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, bottom: 20),
-                child: Text(
-                  // ignore: prefer_adjacent_string_concatenation
-                  "${context.goalInfoMod.remainingValue.customCurrencyFormat("RM")} before exceeding target, which translate to " +
-                      "${context.goalInfoMod.remainingValueOverDay.customCurrencyFormat("RM")} per day!",
-                ),
-              ),
+              // Padding(
+              //   padding: const EdgeInsets.only(top: 8.0, bottom: 20),
+              //   child: Text(
+              //     "${context.goalInfoMod.targetReachingDays}/${DateTime.now().day} days which your daily target reached!",
+              //   ),
+              // ),
+              const GoalInfoLineChart(),
             ],
           ),
         ),
         SliverToBoxAdapter(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 20,
-            children: [
-              Flexible(
-                flex: 2,
-                fit: FlexFit.tight,
-                child: HeatmapGraph(
-                  target: spendPerday,
-                  totalCount: dayinCurMonth,
-                  getTooltipMessage: (index) {
-                    final val = context.goalInfoMod.barChartData.entries.elementAtOrNull(index);
-                    if (val == null) {
-                      return "No data yet";
-                    } else {
-                      return "${val.key.formatShorter()}: ${val.value.expense!.customCurrencyFormat("RM")}";
-                    }
-                  },
-                  data:
-                      context.goalInfoMod.barChartData.entries
-                          .map((el) => el.value.expense ?? 0)
-                          .toList(),
-                ),
-              ),
-              Flexible(
-                flex: 2,
-                fit: FlexFit.tight,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Good Job!",
-                      style: context.customTt.paragraphTitle,
-                    ),
-                    SizedBox(height: 6,),
-                    Text(
-                      NumberFormat.percentPattern().format(context.goalInfoMod.targetReachingDays / DateTime.now().day),
-                      style: context.customTt.numberFontLarge!.copyWith(height: 1.1),
-                    ),
-                    Text(
-                      "or days where you reach your daily spend. (${context.goalInfoMod.targetReachingDays}/${DateTime.now().day})",
-                      style: context.customTt.paragraphText,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          child: const GoalInfoHeatmapChart(),
         ),
         SliverList(
           delegate: SliverChildListDelegate([
@@ -384,6 +296,139 @@ class GoalInfoBody extends StatelessWidget {
               ),
             ),
           ]),
+        ),
+      ],
+    );
+  }
+}
+
+class GoalInfoHeatmapChart extends StatelessWidget {
+  const GoalInfoHeatmapChart({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dayinCurMonth = DateTime.now().dayinCurrentMonth;
+    final spendPerday = (context.goalInfoMod.goal.target ?? 0) / dayinCurMonth;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 20,
+      children: [
+        Flexible(
+          flex: 2,
+          fit: FlexFit.tight,
+          child: HeatmapGraph(
+            target: spendPerday,
+            totalCount: dayinCurMonth,
+            getTooltipMessage: (index) {
+              final val = context.goalInfoMod.barChartData.entries.elementAtOrNull(index);
+              if (val == null) {
+                return "No data yet.";
+              } else {
+                final percentage = val.value.expense! / spendPerday;
+                return "${val.key.formatShorter()}: ${val.value.expense!.customCurrencyFormat("RM")} (${NumberFormat.percentPattern().format(percentage)})";
+              }
+            },
+            data:
+                context.goalInfoMod.barChartData.entries
+                    .map((el) => el.value.expense ?? 0)
+                    .toList(),
+          ),
+        ),
+        Flexible(
+          flex: 2,
+          fit: FlexFit.tight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Good Job!",
+                style: context.customTt.paragraphTitle,
+              ),
+              SizedBox(
+                height: 6,
+              ),
+              Text(
+                NumberFormat.percentPattern().format(
+                  context.goalInfoMod.targetReachingDays / DateTime.now().day,
+                ),
+                style: context.customTt.numberFontLarge!.copyWith(height: 1.1),
+              ),
+              Text(
+                "or days where you reach your daily spend. (${context.goalInfoMod.targetReachingDays}/${DateTime.now().day})",
+                style: context.customTt.paragraphText,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class GoalInfoLineChart extends StatelessWidget {
+  const GoalInfoLineChart({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final target = context.goalInfoMod.goal.target;
+    final dayinCurMonth = DateTime.now().dayinCurrentMonth;
+
+    return Row(
+      spacing: 20,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 100,
+            child: LineChart(
+              LineChartData(
+                titlesData: FlTitlesData(show: false),
+                lineTouchData: getCustomLineTouchData(
+                  context: context,
+                ),
+                gridData: customGrid,
+                lineBarsData: [
+                  getCustomLineChartBarData(
+                    isCurved: false,
+                    showGradient: false,
+                    color: Colors.blue.shade400,
+                    dashArray: [2, 8],
+                    spots: [
+                      FlSpot(0, target!),
+                      FlSpot(dayinCurMonth.toDouble(), target),
+                    ],
+                  ),
+                  getCustomLineChartBarData(
+                    spots: [
+                      ...context.goalInfoMod.lineChartData.entries.map(
+                        (el) => FlSpot(el.key.day.toDouble(), el.value.expense!),
+                      ),
+                    ],
+                    isCurved: false,
+                    color: context.cs.secondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              Text(
+                context.goalInfoMod.remainingValueOverDay.customCurrencyFormat("RM"),
+                style: context.customTt.dateLabel,
+              ),
+              Text(
+                "spend per day to prevent overbudget.",
+                style: context.customTt.paragraphText,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -460,7 +505,7 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
         }
         return Tooltip(
           enableTapToDismiss: false,
-          textStyle: context.tt.bodyMedium!.copyWith(fontSize: 12, color: context.cs.primary),
+          textStyle: context.customTt.numberFontSmall!.copyWith(fontSize: 12, color: context.cs.primary),
           decoration: BoxDecoration(
             color: context.cs.surface.withAlpha(220),
             borderRadius: BorderRadius.circular(4),

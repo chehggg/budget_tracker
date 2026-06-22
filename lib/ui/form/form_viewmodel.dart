@@ -211,7 +211,7 @@ class FormModel extends ChangeNotifier {
   Future<void> submitForm() async {
     if (_initCostItem != null) {
       await _costItemRepository.updateCostItem(
-        CostItem.update(_initCostItem, formResult!),
+        CostItem.update(_initCostItem, formResult),
       );
     } else {
       await _costItemRepository.createCostItem(CostItem.fromForm(formResult, id: Uuid().v4()));

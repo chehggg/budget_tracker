@@ -9,6 +9,8 @@ import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -69,23 +71,28 @@ class SettingsList extends StatelessWidget {
                 // SettingsSectionTitle(titleName: "General", icon: Icons.display_settings),
                 // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Theme Mode"),
                 // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Currency"),
+                Text('Display', style: context.customTt.dateLabel),
+                const HideCostSettingsTile(),
+                Text('Configuration', style: context.customTt.dateLabel),
                 CurrencySettingsTile(
                   selectedCurrencySymbol: selectedCurrencySymbol,
                 ),
-                const BudgetSettingsTile(),
                 const RecurringCostSettingsTile(),
-                const HideCostSettingsTile(),
+                // const BudgetSettingsTile(),
                 Divider(),
+                Text('Theme', style: context.customTt.dateLabel),
                 ThemeModeSettingsTile(selectedThemeMode: selectedThemeMode),
                 const ColorSettingsTile(),
                 const VisualDensitySettingsTile(),
                 const FormGridColumnItemSettingsTile(),
                 const FontSizeSettingsTile(),
                 Divider(),
+                Text('Data', style: context.customTt.dateLabel),
                 const ExportDataSettingsTile(),
                 const LoadDataSettingsTile(),
                 const ClearDataSettingsTile(),
                 Divider(),
+                Text('App', style: context.customTt.dateLabel),
                 const AboutSettingsTile(),
                 const ReportBugSettingsTile(),
                 const SupportMeSettingsTile(),
@@ -105,11 +112,13 @@ class AboutSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       title: "About",
-      onTap:
-          () => showDialog(
-            context: context,
-            builder: (context) => AboutDialog(),
-          ),
+      onTap: () {
+        showAboutDialog(
+          context: context,
+          applicationName: "Nomi",
+          applicationVersion: "1",
+        );
+      },
     );
   }
 }
@@ -120,12 +129,10 @@ class ReportBugSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
-      title: "Report a bug",
-      onTap:
-          () => showDialog(
-            context: context,
-            builder: (context) => AboutDialog(),
-          ),
+      title: "Report issue",
+      onTap: () async {
+        await launchUrlString("https://github.com/chehggg/budget_tracker/issues/new");
+      },
     );
   }
 }
@@ -137,11 +144,9 @@ class SupportMeSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       title: "Support Me",
-      onTap:
-          () => showDialog(
-            context: context,
-            builder: (context) => AboutDialog(),
-          ),
+      onTap: () async {
+        await launchUrlString("https://github.com/chehggg/");
+      },
     );
   }
 }
@@ -691,7 +696,7 @@ class CustomSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // final title = ti
     return ListTile(
-      title: title != null ? Text(title!, style: context.customTt.numberFontMedium!.copyWith(fontSize: 12)) : titleWidget,
+      title: title != null ? Text(title!, style: context.tt.bodyMedium) : titleWidget,
       subtitle: subtitle,
       dense: true,
       trailing: trailingWidget,

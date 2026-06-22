@@ -1,12 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
 
-import 'package:budget_tracker/custom/classes/category_class.dart';
-import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
-import 'package:budget_tracker/models/theme_model.dart';
+import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/screens/settings/chart_details_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
@@ -50,36 +47,12 @@ class ChartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((ChartModel state) => state.ready);
-    final rangeType = context.select((ChartModel state) => state.rangeType);
     final type = context.select((ChartModel state) => state.type);
     final period = context.select((ChartModel state) => state.period);
 
-    final FlTitlesData chartTitleData = FlTitlesData(
-      rightTitles: AxisTitles(drawBelowEverything: false),
-      topTitles: AxisTitles(drawBelowEverything: false),
-      leftTitles: AxisTitles(
-        // axisNameWidget: Padding(
-        //   padding: const EdgeInsets.only(left: 40.0),
-        //   child: Text(
-        //     "Amount (${context.select((AppModel state) => state.currencySymbol)})",
-        //     style: Theme.of(context).textTheme.labelSmall,
-        //   ),
-        // ),
-        // axisNameSize: 40,
-        sideTitles: SideTitles(
-          getTitlesWidget:
-              (value, meta) => Text(
-                NumberFormat.compact().format(value),
-                textAlign: TextAlign.right,
-                style: context.customTt.numberFontSmall!.copyWith(fontSize: 10),
-              ),
-          reservedSize: 24,
-          showTitles: false,
-          maxIncluded: true,
-          // interval: 50
-        ),
-      ),
-      bottomTitles: AxisTitles(
+    final FlTitlesData chartTitleData = getCustomChartTitleData(
+      context: context,
+      bottomTitle: AxisTitles(
         sideTitles: SideTitles(
           interval: 1,
           reservedSize: 30,
@@ -169,137 +142,10 @@ class ChartScreen extends StatelessWidget {
                         titleData: chartTitleData,
                       ),
                     ),
-                    // const ChartSection(
-                    //   title: "Category Comparison",
-                    //   child: CategoryBreakdownList(),
-                    // ),
-                    // const ChartSection(
-                    //   title: "Date Trend",
-                    //   child: DayBarChart(),
-                    // ),
-                    // SliverPadding(
-                    //   padding: const EdgeInsets.only(top: 12.0),
-                    //   sliver: SliverToBoxAdapter(
-                    //     child: Column(
-                    //       spacing: 12,
-                    //       crossAxisAlignment: CrossAxisAlignment.stretch,
-                    //       children: [
-                    //         Text("Daily Trend", style: context.customTt.dateLabel),
-                    //         SizedBox(
-                    //           height: 250,
-                    //           child: DayBarChart(titleData: chartTitleData),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ),
-                    // SliverPadding(
-                    //   padding: const EdgeInsets.only(top: 12.0),
-                    //   sliver: SliverToBoxAdapter(
-                    //     child: SizedBox(
-                    //       height: 300,
-                    //       child: Expanded(
-                    //         child: NewAvgCumulativeLineChart(titleData: chartTitleData),
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    // SliverPadding(
-                    //   padding: const EdgeInsets.only(top: 12.0),
-                    //   sliver: SliverToBoxAdapter(
-                    //     child: CustomChartSection(
-                    //       title: "Daily Cumulative Spend",
-                    //       sectionHeight: 300,
-                    //       pageChildren: [
-                    //         // DailyTotalBarChart(),
-                    //         // DailyTotalBarChart(titleData: chartTitleData),
-                    //         DailyCumulativeSpendLineChart(titleData: chartTitleData),
-                    //         // DateTrendLineChart(titleData: chartTitleData()),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ),
-                    // Column(
-                    //   spacing: 20,
-                    //   children: [
-                    // const DateBreadcrumb(),
-                    // Padding(
-                    //   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    //   child: SegmentedButton(
-                    //     segments: CostType.values.map((costType) {
-                    //       return ButtonSegment(
-                    //         value: costType,
-                    //         icon: Icon(Icons.money),
-                    //         label: Text(costType.name)
-                    //       );
-                    //     }).toList(),
-                    //     selected: {_selectedCostType},
-                    //     onSelectionChanged: (newSelection) {
-                    //       setState(() {
-                    //         _selectedCostType = newSelection.first;
-                    //       });
-                    //     },
-                    //   ),
-                    // ),
-                    // Expanded(
-                    //   child: SingleChildScrollView(
-                    //     child: Column(
-                    //       spacing: 20,
-                    //       mainAxisSize: MainAxisSize.min,
-                    //       crossAxisAlignment: CrossAxisAlignment.start,
-                    //       children: [
-                    //         Padding(
-                    //           padding: const EdgeInsets.all(16.0),
-                    //           // child: const BudgetWidget(),
-                    //           child: const CustomChartSection(
-                    //             title: "Budget breakdown",
-                    //             sectionHeight: 270,
-                    //             pageChildren: [BudgetWidget()],
-                    //           ),
-                    //         ),
-                    //         Padding(
-                    //           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    //           child: CustomChartSection(
-                    //             title: "Expense breakdown",
-                    //             sectionHeight: 240,
-                    //             pageChildren: [
-                    //               BreakdownPieChart(
-                    //                 selectedCostType: _selectedCostType,
-                    //               ),
-                    //               DateBreakdownChart(
-                    //                 selectedCostType: _selectedCostType,
-                    //               ),
-                    //             ],
-                    //           ),
-                    //         ),
-                    //         Padding(
-                    //           padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    //           child: CustomChartSection(
-                    //             title: "Spending Trend",
-                    //             sectionHeight: 300,
-                    //             pageChildren: [
-                    //               DailyTotalBarChart(titleData: chartTitleData()),
-                    //               // DailyCumulativeSpendLineChart(titleData: chartTitleData()),
-                    //               // DateTrendLineChart(titleData: chartTitleData()),
-                    //             ],
-                    //           ),
-                    //         ),
-                    //         // Divider(),
-                    //         // CategoryList(
-                    //         //   selectedCostType: _selectedCostType,
-                    //         // ),
-                    //       ],
-                    //     ),
-                    //   ),
-                    // ),
-                    //   ],
-                    // ),
                   ],
                 )
-                : Expanded(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                : Center(
+                  child: CircularProgressIndicator(),
                 ),
       ),
     );
@@ -313,7 +159,6 @@ class ChartFilterButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = context.select((ChartModel state) => state.type);
     final period = context.select((ChartModel state) => state.period);
     final displayPeriod = context.select((ChartModel state) => state.displayPeriodDuration);
     final displayDetailsPeriod = context.select(
@@ -350,7 +195,7 @@ class ChartFilterButtons extends StatelessWidget {
           behavior: HitTestBehavior.translucent,
           onHorizontalDragEnd: (details) {
             if (details.primaryVelocity == null) return;
-            if (details.primaryVelocity!.abs() < 1000) return;
+            if (details.primaryVelocity!.abs() < 100) return;
             debugPrint(details.primaryVelocity!.toStringAsFixed(0));
             context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
           },
@@ -438,44 +283,19 @@ class ChartSection extends StatelessWidget {
                         ),
                       ),
                       IconButton(onPressed: () {}, icon: Icon(Icons.more_vert_outlined)),
-                      // Text(
-                      //   "Expand →",
-                      //   style: context.customTt.numberFontSmall?.copyWith(
-                      //     color: context.customCs.fadeColor1,
-                      //     fontSize: 14,
-                      //   ),
-                      // ),
                     ],
                   ),
                   if (showLabelSubtitle)
                     Row(
+                      spacing: 4,
                       children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: context.cs.secondary,
-                          ),
+                        LabelIndicator(
+                          text: "Current Range",
+                          color: context.cs.secondary,
                         ),
-                        SizedBox(width: 4),
-                        Text(
-                          "Current Range",
-                          style: context.customTt.paragraphText?.copyWith(fontSize: 12),
-                        ),
-                        SizedBox(width: 20),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.blue.shade400,
-                          ),
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          "Previous Range",
-                          style: context.customTt.paragraphText?.copyWith(fontSize: 12),
+                        LabelIndicator(
+                          text: "Prev Range",
+                          color: Colors.blue.shade400,
                         ),
                       ],
                     ),
@@ -826,80 +646,6 @@ class DayToDayBarChart extends StatelessWidget {
 //   }
 // }
 
-class OverviewBudgetBar extends StatelessWidget {
-  const OverviewBudgetBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final expense = context.select((AppModel state) => state.totalCurrentMonthExpense);
-    final budget = context.select((AppModel state) => state.totalBudget);
-    final percentage = context.select((AppModel state) => state.budgetPercentage);
-    final currencySymbol = context.select((AppModel state) => state.currencySymbol);
-    final remainingAverageSpend = context.select(
-      (AppModel state) => state.remainingDayAverageSpend,
-    );
-    // final percentage = expense/budget;
-
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   tooltipKey.currentState!.ensureTooltipVisible();
-    // });
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const double thresholdPosition = 0.75;
-        return Column(
-          children: [
-            Text("You have spent:"),
-            Text(
-              NumberFormat("#0%").format(percentage),
-              style: Theme.of(context).textTheme.displayMedium,
-            ),
-            Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 32.0, bottom: 4),
-                  child: PercentageBar(
-                    height: 12,
-                    color: Colors.red,
-                    percentage: percentage * thresholdPosition,
-                  ),
-                ),
-                Positioned(
-                  left:
-                      constraints.maxWidth * thresholdPosition -
-                      (17 * 2) -
-                      (100 * (percentage > (4 / 3) ? percentage / (4 / 3) : 0)),
-                  // widthFactor: 0.7,
-                  child: Column(
-                    spacing: 8,
-                    children: [
-                      Text(
-                        "Threshold",
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(
-                        height: 20,
-                        child: VerticalDivider(
-                          thickness: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              ' spend below ${remainingAverageSpend.customCurrencyFormat(currencySymbol)} daily to reach your target',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            TextButton(onPressed: () {}, child: Text('or change your budget ? (but should you?)')),
-          ],
-        );
-      },
-    );
-  }
-}
-
 class CustomChartSection extends StatefulWidget {
   const CustomChartSection({
     super.key,
@@ -994,155 +740,6 @@ class _CustomChartSectionState extends State<CustomChartSection> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class CategoryPieChart extends StatelessWidget {
-  const CategoryPieChart({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
-  }
-}
-
-class BreakdownPieChart extends StatelessWidget {
-  const BreakdownPieChart({super.key, required this.selectedCostType});
-
-  final CostType selectedCostType;
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
-    final summarizedCategoryData = context.select((AppModel state) {
-      final categoryData = state.getcurrentMonthCategoryView(true, CostType.expense);
-      final Map<String, CostMetric> summarizedData = {};
-      int i = 0;
-      double totalOtherExpense = 0;
-      if (categoryData.length < 5) {
-        return categoryData;
-      } else {
-        for (i; i < categoryData.length; i++) {
-          if (i < 4) {
-            summarizedData[categoryData.entries.toList()[i].key] =
-                categoryData.entries.toList()[i].value;
-          } else {
-            totalOtherExpense += categoryData.entries.toList()[i].value.expense!;
-          }
-        }
-        summarizedData['other'] = CostMetric(expense: totalOtherExpense);
-        return summarizedData;
-      }
-    });
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ChartTitleBar(
-          description: "by Category",
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Row(
-              spacing: 20,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: PieChart(
-                    duration: Durations.medium1,
-                    curve: Curves.fastOutSlowIn,
-                    PieChartData(
-                      startDegreeOffset: -90,
-                      centerSpaceRadius: 48,
-                      pieTouchData: PieTouchData(
-                        enabled: true,
-                        touchCallback: (touchEvent, response) {
-                          if (touchEvent is FlTapDownEvent) {
-                            if (response?.touchedSection?.touchedSection != null) {
-                              debugPrint("Touched!");
-                              final categoryTitle = response!.touchedSection!.touchedSection!.title;
-                              // updateCategory(categoryTitle);
-                            }
-                          }
-                        },
-                      ),
-                      sections:
-                          summarizedCategoryData.entries.map((data) {
-                            final currentCategory = context.read<AppModel>().getCategoryEntry(
-                              data.key,
-                            );
-                            Color primaryColor;
-                            Color secColor;
-                            if (currentCategory != null) {
-                              primaryColor = currentCategory.colorScheme(selectedThemeMode).primary;
-                              secColor =
-                                  currentCategory.colorScheme(selectedThemeMode).primaryContainer;
-                              // categoryColorScheme = currentCategory.colorScheme;
-                            } else {
-                              primaryColor = Colors.amber;
-                              secColor = Colors.amber.shade700;
-                            }
-                            return PieChartSectionData(
-                              value: data.value.expense!.abs(),
-                              radius: 20,
-                              // title: category,
-                              // badgeWidget: currentCategory.generateRoundedIcon(30, categoryColorScheme.primary, categoryColorScheme.onPrimary),
-                              // badgePositionPercentageOffset: 1,
-                              showTitle: false,
-                              gradient: LinearGradient(
-                                stops: [0, 1],
-                                colors: [
-                                  primaryColor.withAlpha(200),
-                                  secColor,
-                                ],
-                              ),
-                              // color: categoryColorScheme.primary.withAlpha(200)
-                            );
-                          }).toList(),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        summarizedCategoryData.entries.map((data) {
-                          final category = context.read<AppModel>().getCategoryEntry(data.key);
-                          final totalAmount = context.read<AppModel>().totalCurrentMonthExpense;
-                          // final category = data['category'] as CostItemCategory?;
-                          Color primaryColor;
-                          if (category != null) {
-                            primaryColor = category.colorScheme(selectedThemeMode).primary;
-                          } else {
-                            primaryColor = Colors.amber;
-                          }
-                          return SizedBox(
-                            height: 28,
-                            child: ChartLegendItem(
-                              primaryColor: primaryColor,
-                              title: data.key,
-                              trailing: Text(
-                                // NumberFormat('#0%').format(data['percentage']),
-                                context.read<AppModel>().getCategoryPercentage(data.value.expense!),
-                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                                  fontSize: 13,
-                                  // color: Theme.of(context).colorScheme.primary
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -1323,383 +920,6 @@ class ChartTitleBar extends StatelessWidget {
   }
 }
 
-// class DateTrendLineChart extends StatelessWidget {
-//   const DateTrendLineChart({
-//     super.key,
-//     required this.titleData,
-//   });
-
-//   final FlTitlesData titleData;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final currentMonthData = context.select((AppModel state) => state.currentCumulativeAverage);
-//     final previousMonthData = context.select((AppModel state) => state.previousCumulativeAverage);
-
-//     final colorTheme = Theme.of(context).colorScheme;
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       spacing: 4,
-//       children: [
-//         const ChartTitleBar(
-//           description: "Cumulative average spend",
-//         ),
-//         Expanded(
-//           child: Padding(
-//             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-//             child: SpendTrendLineChart(
-//               currentMonthData: currentMonthData,
-//               previousMonthData: previousMonthData,
-//               titleData: titleData,
-//             ),
-//           ),
-//         ),
-//         // Align(
-//         //   alignment: Alignment.center,
-//         //   child: Row(
-//         //     spacing: 12,
-//         //     mainAxisSize: MainAxisSize.min,
-//         //     children: [
-//         //       ChartLegendItem(
-//         //         primaryColor: colorTheme.primary,
-//         //         title: "This month",
-//         //         tileWidth: 200,
-//         //       ),
-//         //       ChartLegendItem(
-//         //         primaryColor: colorTheme.tertiary,
-//         //         title: "Previous month",
-//         //         tileWidth: 200,
-//         //       ),
-//         //     ],
-//         //   ),
-//         // )
-//       ],
-//     );
-//   }
-// }
-
-// class DailyCumulativeSpendLineChart extends StatelessWidget {
-//   const DailyCumulativeSpendLineChart({
-//     super.key,
-//     required this.titleData,
-//   });
-
-//   final FlTitlesData titleData;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final currentMonthData = context.select((AppModel state) => state.currentCumulative);
-//     final previousMonthData = context.select((AppModel state) => state.previousCumulative);
-
-//     final colorTheme = Theme.of(context).colorScheme;
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       spacing: 4,
-//       children: [
-//         const ChartTitleBar(
-//           description: "Cumulative spend",
-//         ),
-//         Expanded(
-//           child: Padding(
-//             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-//             child: SpendTrendLineChart(
-//               currentMonthData: currentMonthData,
-//               previousMonthData: previousMonthData,
-//               titleData: titleData,
-//             ),
-//           ),
-//         ),
-//         // Align(
-//         //   alignment: Alignment.center,
-//         //   child: Container(
-//         //     // decoration: ,
-//         //     child: Row(
-//         //       spacing: 12,
-//         //       mainAxisSize: MainAxisSize.min,
-//         //       mainAxisAlignment: MainAxisAlignment.center,
-//         //       children: [
-//         //         ChartLegendItem(
-//         //           primaryColor: colorTheme.primary,
-//         //           title: "This month",
-//         //           tileWidth: 160,
-//         //           fontSize: 10,
-//         //         ),
-//         //         ChartLegendItem(
-//         //           primaryColor: colorTheme.tertiary,
-//         //           title: "Previous month",
-//         //           tileWidth: 160,
-//         //           fontSize: 10,
-//         //         ),
-//         //       ],
-//         //     ),
-//         //   ),
-//         // )
-//       ],
-//     );
-//   }
-// }
-
-// class SpendTrendLineChart extends StatelessWidget {
-//   const SpendTrendLineChart({
-//     super.key,
-//     required this.currentMonthData,
-//     required this.previousMonthData,
-//     required this.titleData,
-//   });
-
-//   final Map<int, double> currentMonthData;
-//   final Map<int, double> previousMonthData;
-//   // final List<double> previousMonthData;
-//   final FlTitlesData titleData;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final yearMonth = context.select((AppModel state) => state.selectedYearMonth);
-//     return LineChart(
-//       LineChartData(
-//         borderData: FlBorderData(show: false),
-//         lineTouchData: LineTouchData(
-//           touchTooltipData: LineTouchTooltipData(
-//             // fitInsideHorizontally: true,
-//             fitInsideVertically: true,
-//             getTooltipColor: (touchedSpot) => Colors.transparent,
-//             getTooltipItems: (touchedSpots) {
-//               return touchedSpots.map((spot) {
-//                 final modelRead = context.read<AppModel>();
-//                 final index = spot.spotIndex + 1;
-//                 final lineIndex = spot.barIndex;
-//                 String tooltipText = "";
-//                 if (lineIndex == 0) {
-//                   tooltipText =
-//                       "Current: ${modelRead.customCurrencyFormat(currentMonthData[index]!, true)}";
-//                 } else {
-//                   tooltipText =
-//                       "Previous: ${modelRead.customCurrencyFormat(previousMonthData[index]!, true)}";
-//                 }
-//                 return LineTooltipItem(
-//                   tooltipText,
-//                   Theme.of(
-//                     context,
-//                   ).textTheme.bodySmall!.copyWith(fontSize: 10, color: spot.bar.color),
-//                 );
-//               }).toList();
-//             },
-//           ),
-//         ),
-//         maxY: [...currentMonthData.values, ...previousMonthData.values].maxCeiling(),
-//         minY: 0,
-//         minX: 1,
-//         gridData: FlGridData(show: true),
-//         titlesData: titleData,
-//         lineBarsData: [
-//           spendTrendLineData(context, true, yearMonth), // current month data
-//           spendTrendLineData(context, false, yearMonth), // previous month data
-//         ],
-//       ),
-//     );
-//   }
-
-//   LineChartBarData spendTrendLineData(BuildContext context, bool currentMonth, DateTime yearMonth) {
-//     final displayData = currentMonth ? currentMonthData : previousMonthData;
-//     final colorTheme = Theme.of(context).colorScheme;
-//     return LineChartBarData(
-//       // current month data
-//       isCurved: true,
-//       barWidth: currentMonth ? 3 : 1,
-//       color: currentMonth ? colorTheme.primary : colorTheme.tertiary,
-//       preventCurveOvershootingThreshold: 0,
-//       dashArray: currentMonth ? null : [10, 5],
-//       curveSmoothness: 0.5,
-//       isStrokeCapRound: true,
-//       preventCurveOverShooting: true,
-//       dotData: FlDotData(
-//         show: currentMonth ? true : false,
-//         checkToShowDot: (spot, barData) {
-//           // if the month is completed, do not show dot
-//           if (!yearMonth.isInSameYearMonthAs(DateTime.now())) return false;
-//           // only show dot for the latest date
-//           if (spot.x == displayData.length) return true;
-
-//           return false;
-//         },
-//       ),
-//       spots:
-//           displayData
-//               .map((int dayInt, double amount) {
-//                 return MapEntry(dayInt, FlSpot(dayInt.toDouble(), amount));
-//               })
-//               .values
-//               .toList(),
-//     );
-//   }
-// }
-
-// class CategoryList extends StatefulWidget {
-//   const CategoryList({super.key, required this.selectedCostType});
-
-//   final CostType selectedCostType;
-
-//   @override
-//   State<CategoryList> createState() => _CategoryListState();
-// }
-
-// class _CategoryListState extends State<CategoryList> {
-//   bool _isSortDescending = true;
-
-//   List<Widget> categoryListTile(Map<String, CostMetric> data, BuildContext context) =>
-//       data.entries.map((categoryData) {
-//         final selectedThemeMode = context.select((ThemeModel state) => state.theme);
-//         final categoryName = categoryData.key;
-//         final CostItemCategory categoryEntry =
-//             context.read<AppModel>().getCategoryEntry(categoryName) ?? CostItemCategory();
-//         final double categoryAmount = categoryData.value.expense!;
-//         final ColorScheme categoryColorScheme = categoryEntry.colorScheme(selectedThemeMode);
-//         // final amountString = categoryAmount.toStringAsFixed(categoryAmount % 1 == 0? 0 : 2);
-//         final amountString = context.read<AppModel>().customCurrencyFormat(categoryAmount, false);
-//         final currencySymbol = context.select((AppModel state) => state.currencySymbol);
-//         final maxAmount = context.select(
-//           (AppModel state) => state.getMaxCurrentMonthCategoryAmount(CostType.expense),
-//         );
-//         final percentageString = context.read<AppModel>().getCategoryPercentage(categoryAmount);
-//         final List<CostItem> costItems = context.select(
-//           (AppModel state) => state.currentMonthCategoryList[categoryName] ?? [],
-//         );
-
-//         return Theme(
-//           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-//           child: ExpansionTile(
-//             key: ValueKey(categoryName),
-//             tilePadding: EdgeInsets.fromLTRB(4, 4, 4, 4),
-//             childrenPadding: EdgeInsets.fromLTRB(4, 0, 4, 8),
-//             title: Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 Text(categoryName),
-//                 Text.rich(
-//                   TextSpan(
-//                     children: [
-//                       TextSpan(
-//                         text: '$amountString ',
-//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
-//                       ),
-//                       TextSpan(
-//                         text: '($percentageString)',
-//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(
-//                           fontSize: 12,
-//                           color: categoryColorScheme.primary,
-//                         ),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//             // leading: categoryEntry.generateRoundedIcon(56, selectedThemeMode),
-//             subtitle: PercentageBar(
-//               height: 8,
-//               color: categoryColorScheme.primaryFixed,
-//               percentage: categoryAmount / maxAmount,
-//             ),
-//             children:
-//                 costItems.map((CostItem costItem) {
-//                   return ListTile(
-//                     contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-//                     visualDensity: VisualDensity(vertical: -3),
-//                     dense: true,
-//                     leading: Container(
-//                       width: MediaQuery.of(context).size.width * 0.12,
-//                       child: Text(
-//                         (costItem.date).displayFormat(),
-//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
-//                       ),
-//                     ),
-//                     title: Flex(
-//                       direction: Axis.horizontal,
-//                       crossAxisAlignment: CrossAxisAlignment.center,
-//                       // mainAxisAlignment: MainAxisAlignment.end,
-//                       spacing: 20,
-//                       children: [
-//                         Flexible(
-//                           flex: 4,
-//                           child: Text(
-//                             costItem.name,
-//                             maxLines: 1,
-//                             overflow: TextOverflow.ellipsis,
-//                           ),
-//                         ),
-//                         Flexible(
-//                           flex: 10,
-//                           fit: FlexFit.tight,
-//                           child: Divider(
-//                             color: Colors.white.withAlpha(80),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     trailing: Container(
-//                       width: MediaQuery.of(context).size.width * 0.12,
-//                       child: Text(
-//                         costItem.getCurrencyValue(currencySymbol, false),
-//                         textAlign: TextAlign.right,
-//                         style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
-//                       ),
-//                     ),
-//                   );
-//                 }).toList(),
-//           ),
-//         );
-//       }).toList();
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final Map<String, CostMetric> categoryData = context.select(
-//       (AppModel state) => state.getcurrentMonthCategoryView(_isSortDescending, CostType.expense),
-//     );
-
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       mainAxisSize: MainAxisSize.min,
-//       children: [
-//         Padding(
-//           padding: const EdgeInsets.all(16.0),
-//           child: Row(
-//             mainAxisSize: MainAxisSize.max,
-//             children: [
-//               Expanded(
-//                 child: ChartTitleBar(
-//                   title: "Expense overview",
-//                   description: "by Category",
-//                 ),
-//               ),
-//               IconButton(
-//                 onPressed: () => setState(() => _isSortDescending = !_isSortDescending),
-//                 icon: Transform.scale(scaleY: _isSortDescending ? 1 : -1, child: Icon(Icons.sort)),
-//               ),
-//             ],
-//           ),
-//         ),
-//         ...categoryListTile(categoryData, context),
-//       ],
-//     );
-//   }
-// }
-
-// class FastCustomScrollPhysics extends ScrollPhysics {
-//   const FastCustomScrollPhysics({super.parent});
-
-//   @override
-//   FastCustomScrollPhysics applyTo(ScrollPhysics? ancestor) {
-//     return FastCustomScrollPhysics(parent: buildParent(ancestor)!);
-//   }
-
-//   @override
-//   SpringDescription get spring => const SpringDescription(
-//     mass: 5,
-//     stiffness: 100,
-//     damping: 50,
-//   );
-// }
-
 class PercentageBar extends StatelessWidget {
   const PercentageBar({
     super.key,
@@ -1747,83 +967,6 @@ class PercentageBar extends StatelessWidget {
   }
 }
 
-// class BudgetBarChart extends StatelessWidget {
-//   const BudgetBarChart({
-//     super.key,
-//     this.current = 0,
-//     this.budget = 0,
-//   });
-
-//   final double current;
-//   final double budget;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return BarChart(
-//       BarChartData(
-//         borderData: FlBorderData(show: false),
-//         maxY: max(current, budget) + 1,
-//         gridData: FlGridData(
-//           horizontalInterval: budget,
-//           getDrawingHorizontalLine: (value) {
-//             if (value == budget.roundToDouble()) return FlLine(color: Colors.white, strokeWidth: 1);
-//             return FlLine(strokeWidth: 0);
-//           },
-//           // show: false
-//         ),
-//         titlesData: FlTitlesData(
-//           bottomTitles: AxisTitles(drawBelowEverything: false),
-//           topTitles: AxisTitles(drawBelowEverything: false),
-//           leftTitles: AxisTitles(drawBelowEverything: false),
-//           rightTitles: AxisTitles(
-//             sideTitles: SideTitles(
-//               interval: budget,
-//               reservedSize: 30,
-//               showTitles: true,
-//               getTitlesWidget: (value, meta) {
-//                 if (value == budget.roundToDouble()) {
-//                   return SideTitleWidget(
-//                     meta: meta,
-//                     fitInside: SideTitleFitInsideData(
-//                       enabled: budget > current,
-//                       axisPosition: 0,
-//                       parentAxisSize: budget > current ? 50 : 0,
-//                       distanceFromEdge: 0,
-//                     ),
-//                     child: Text('Limit'),
-//                   );
-//                 }
-//                 return SizedBox.shrink();
-//               },
-//             ),
-//           ),
-//         ),
-//         barGroups: [
-//           BarChartGroupData(
-//             x: 1,
-//             barsSpace: 0,
-//             barRods: [
-//               BarChartRodData(
-//                 toY: current,
-//                 color: current > budget ? Colors.red : context.read<ThemeModel>().color,
-//                 width: 12,
-//                 backDrawRodData: BackgroundBarChartRodData(
-//                   show: true,
-//                   color: Colors.grey.withAlpha(100),
-//                   fromY: 0,
-//                   toY: budget,
-//                 ),
-//               ),
-//               // BarChartRodData(toY: 40),
-//             ],
-//           ),
-//         ],
-//         rotationQuarterTurns: 1,
-//       ),
-//     );
-//   }
-// }
-
 class NewCumulativeLineChart extends StatelessWidget {
   const NewCumulativeLineChart({super.key, this.titleData});
 
@@ -1844,72 +987,37 @@ class NewCumulativeLineChart extends StatelessWidget {
         LineChartData(
           titlesData: titleData ?? FlTitlesData(),
           borderData: FlBorderData(show: false),
-          lineTouchData: LineTouchData(
-            getTouchedSpotIndicator: (barData, spotIndexes) {
-              return spotIndexes
-                  .map(
-                    (el) => TouchedSpotIndicatorData(
-                      FlLine(strokeWidth: 1, color: barData.color),
-                      FlDotData(),
-                    ),
-                  )
-                  .toList();
-            },
-            touchSpotThreshold: 50,
-            touchTooltipData: LineTouchTooltipData(
-              tooltipHorizontalAlignment: FLHorizontalAlignment.left,
-              getTooltipColor: (touchedSpot) {
-                return context.cs.surface;
-              },
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map(
-                  (spot) {
-                    final isPrev = spot.barIndex == 0;
+          lineTouchData: getCustomLineTouchData(
+            context: context,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map(
+                (spot) {
+                  final isPrev = spot.barIndex == 0;
 
-                    final String curDate =
-                        showMonths
-                            ? curRangeStart.addMonth(spot.x.round()).formatMonth()
-                            : curRangeStart.addDay(spot.x.round()).formatShorter();
-                    final String prevDate =
-                        showMonths
-                            ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
-                            : prevRangeStart.addDay(spot.x.round()).formatShorter();
-                    return LineTooltipItem(
-                      "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
-                      context.tt.bodyMedium!.copyWith(fontSize: 10),
-                      textAlign: TextAlign.right,
-                    );
-                  },
-                ).toList();
-              },
-              tooltipHorizontalOffset: 20,
-              fitInsideVertically: true,
-              fitInsideHorizontally: true,
-            ),
+                  final String curDate =
+                      showMonths
+                          ? curRangeStart.addMonth(spot.x.round()).formatMonth()
+                          : curRangeStart.addDay(spot.x.round()).formatShorter();
+                  final String prevDate =
+                      showMonths
+                          ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
+                          : prevRangeStart.addDay(spot.x.round()).formatShorter();
+                  return LineTooltipItem(
+                    "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
+                    context.tt.bodyMedium!.copyWith(fontSize: 10),
+                    textAlign: TextAlign.right,
+                  );
+                },
+              ).toList();
+            },
           ),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine:
-                (value) => FlLine(strokeWidth: 1, color: context.customCs.fadeColor3),
-          ),
+          gridData: customGrid,
           lineBarsData:
               cumulativeComparison.mapIndexed((i, element) {
                 final bool isPrev = i == 0;
                 final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
-                return LineChartBarData(
+                return getCustomLineChartBarData(
                   dashArray: isPrev ? [2, 8] : null,
-                  barWidth: 1.5,
-                  isStrokeCapRound: true,
-                  isStrokeJoinRound: true,
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [(mainColor.withAlpha(50)), Colors.transparent],
-                    ),
-                  ),
                   color: mainColor,
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) {
@@ -1923,7 +1031,6 @@ class NewCumulativeLineChart extends StatelessWidget {
                     },
                   ),
                   spots: [
-                    // FlSpot(0, 0),
                     ...element.entries.mapIndexed(
                       (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
                     ),
@@ -1957,76 +1064,43 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
         LineChartData(
           titlesData: titleData ?? FlTitlesData(),
           borderData: FlBorderData(show: false),
-          lineTouchData: LineTouchData(
-            getTouchedSpotIndicator: (barData, spotIndexes) {
-              return spotIndexes
-                  .map(
-                    (el) => TouchedSpotIndicatorData(
-                      FlLine(strokeWidth: 1, color: barData.color),
-                      FlDotData(),
-                    ),
-                  )
-                  .toList();
-            },
-            touchSpotThreshold: 50,
-            touchTooltipData: LineTouchTooltipData(
-              tooltipHorizontalAlignment: FLHorizontalAlignment.left,
-              getTooltipColor: (touchedSpot) {
-                return context.cs.surface;
-              },
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map(
-                  (spot) {
-                    final isPrev = spot.barIndex == 0;
+          lineTouchData: getCustomLineTouchData(
+            context: context,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map(
+                (spot) {
+                  final isPrev = spot.barIndex == 0;
 
-                    final String curDate =
-                        showMonths
-                            ? curRangeStart.addMonth(spot.x.round()).formatMonth()
-                            : curRangeStart.addDay(spot.x.round()).formatShorter();
-                    final String prevDate =
-                        showMonths
-                            ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
-                            : prevRangeStart.addDay(spot.x.round()).formatShorter();
-                    return LineTooltipItem(
-                      "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
-                      context.tt.bodyMedium!.copyWith(fontSize: 10),
-                      textAlign: TextAlign.right,
-                    );
-                  },
-                ).toList();
-              },
-              tooltipHorizontalOffset: 20,
-              fitInsideVertically: true,
-              fitInsideHorizontally: true,
-            ),
+                  final String curDate =
+                      showMonths
+                          ? curRangeStart.addMonth(spot.x.round()).formatMonth()
+                          : curRangeStart.addDay(spot.x.round()).formatShorter();
+                  final String prevDate =
+                      showMonths
+                          ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
+                          : prevRangeStart.addDay(spot.x.round()).formatShorter();
+                  return LineTooltipItem(
+                    "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
+                    context.tt.bodyMedium!.copyWith(fontSize: 10),
+                    textAlign: TextAlign.right,
+                  );
+                },
+              ).toList();
+            },
           ),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine:
-                (value) => FlLine(strokeWidth: 1, color: context.customCs.fadeColor3),
-          ),
+          gridData: customGrid,
           lineBarsData:
               cumulativeComparison.mapIndexed((i, element) {
                 final bool isPrev = i == 0;
                 final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
-                return LineChartBarData(
-                  curveSmoothness: 0.5,
-                  isCurved: true,
-                  // preventCurveOverShooting: true,
-                  dashArray: isPrev ? [2, 8] : null,
-                  barWidth: 1.5,
-                  isStrokeCapRound: true,
-                  isStrokeJoinRound: true,
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [(mainColor.withAlpha(50)), Colors.transparent],
+                return getCustomLineChartBarData(
+                  spots: [
+                    ...element.entries.mapIndexed(
+                      (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
                     ),
-                  ),
+                  ],
                   color: mainColor,
+                  dashArray: isPrev ? [2, 8] : null,
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) {
                       if (showMonths) {
@@ -2038,12 +1112,6 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                       }
                     },
                   ),
-                  spots: [
-                    // FlSpot(0, 0),
-                    ...element.entries.mapIndexed(
-                      (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
-                    ),
-                  ],
                 );
               }).toList(),
         ),
