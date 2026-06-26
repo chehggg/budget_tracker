@@ -73,18 +73,19 @@ class HomeScreen extends StatelessWidget {
     final navigationModel = context.watch<NavigationModel>();
     final navKey = navigationModel.navigationKey;
     final currentNavRoute = navigationModel.currentMainScreenRoute;
-    final isFormOpened = navigationModel.isFormOpened;
+    // final isFormOpened = navigationModel.isFormOpened;
+    final showBottomNavBar = context.select((NavigationModel state) => state.showBottomNavBar);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         // debugPrint("popped!, current navigator route : $currentNavRoute");
-        if (didPop) return;
-        if (isFormOpened) {
-          navigationModel.popFormToMain();
-        } else {
-          showPopDialog(context);
-        }
+        // if (didPop) return;
+        // if (isFormOpened) {
+        //   navigationModel.popFormToMain();
+        // } else {
+        //   showPopDialog(context);
+        // }
       },
       child: Scaffold(
         body: Navigator(
@@ -153,9 +154,9 @@ class HomeScreen extends StatelessWidget {
             }
           },
         ),
-        floatingActionButton: isFormOpened ? null : CustomFAB(),
+        floatingActionButton: showBottomNavBar ? CustomFAB() : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: isFormOpened ? null : CustomNavigationBottomBar(),
+        bottomNavigationBar: showBottomNavBar ? CustomNavigationBottomBar() : null,
       ),
     );
   }
@@ -183,7 +184,10 @@ class CustomFAB extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.large(
-      onPressed: () => context.read<NavigationModel>().openForm(FormArgument()),
+      onPressed: () {
+        context.navMod.openForm(FormArgument());
+        HapticFeedback.mediumImpact();
+      },
       shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(30)),
       enableFeedback: true,
       elevation: 0,
@@ -222,7 +226,9 @@ class CustomNavigationBottomBar extends StatelessWidget {
                   Widget iconButton;
                   if (pageIndex == index) {
                     iconButton = IconButton.filled(
+                      
                       style: IconButton.styleFrom(
+                        backgroundColor: context.cs.secondary,
                         fixedSize: Size.square(50),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
@@ -243,7 +249,9 @@ class CustomNavigationBottomBar extends StatelessWidget {
                       ),
                       visualDensity: VisualDensity.comfortable,
                       padding: EdgeInsets.all(8),
-                      onPressed: () => context.read<NavigationModel>().navigateMainScreen(index),
+                      onPressed: () {
+                        context.navMod.navigateMainScreen(index);
+                      },
                       icon: Icon(buttonIcon),
                       iconSize: 28,
                     );

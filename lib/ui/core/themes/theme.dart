@@ -18,7 +18,7 @@ ThemeData get appTheme {
     bodyMedium: TextStyle(fontFamily: 'Inter'),
     // headline
     // titleSmall: TextStyle(fontFamily: 'Inter'),
-    bodyLarge: TextStyle(fontFamily: 'Oranienbaum', fontSize: 26),
+    bodyLarge: TextStyle(fontFamily: 'Oranienbaum', fontSize: 26, color: customColorScheme.primary),
     labelSmall: TextStyle(fontFamily: 'Oranienbaum', fontWeight: FontWeight(600)),
     titleMedium: TextStyle(
       fontFamily: 'Oranienbaum',
@@ -74,6 +74,11 @@ ThemeData get appTheme {
       letterSpacing: 0,
       color: Color(0xffF0EBE0).withAlpha(150),
     ),
+    paragraphTextSmall: customTextTheme.bodyMedium!.copyWith(
+      fontSize: 12,
+      letterSpacing: 0,
+      color: Color(0xffF0EBE0).withAlpha(150),
+    ),
   );
 
   final MyColors customColorExtension = MyColors(
@@ -85,6 +90,11 @@ ThemeData get appTheme {
     fadeColor4: Color(0xffF0EBE0).withAlpha(20),
   );
 
+  final border = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: BorderSide(color: customColorExtension.fadeColor2 ?? Colors.transparent),
+  );
+
   return baseTheme.copyWith(
     extensions: [customColorExtension, customTextExtension],
     textTheme: customTextTheme,
@@ -93,11 +103,13 @@ ThemeData get appTheme {
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity(vertical: -2, horizontal: -2),
         // iconSize: 20,
-        fixedSize: Size.square(20)
-      )
+        fixedSize: Size.square(20),
+      ),
     ),
-    
-    appBarTheme: AppBarTheme(titleTextStyle: customTextExtension.dateLabel,),
+
+    appBarTheme: AppBarTheme(
+      titleTextStyle: customTextExtension.dateLabel,
+    ),
     colorScheme: customColorScheme,
     visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(
@@ -105,17 +117,41 @@ ThemeData get appTheme {
       titleTextStyle: customTextExtension.elegantLabelLarge,
       backgroundColor: customColorScheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadiusGeometry.circular(20),
-        side: BorderSide(color: customColorExtension.fadeColor2!),
+        borderRadius: BorderRadiusGeometry.circular(12),
+        side: BorderSide(color: customColorExtension.fadeColor3!, width: 2),
       ),
+    ),
+    dividerTheme: DividerThemeData(
+      color: customColorExtension.fadeColor2,
+      thickness: 0.5,
+      space: 1,
+    ),
+    checkboxTheme: CheckboxThemeData(
+      visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+      overlayColor: WidgetStateProperty.all(customColorScheme.primary.withAlpha(200)),
+    ),
+    radioTheme: RadioThemeData(
+      visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+      fillColor: WidgetStateProperty.all(customColorScheme.primary.withAlpha(200)),
+      overlayColor: WidgetStateProperty.all(customColorScheme.primary),
+      // innerRadius: WidgetStateProperty.all(4.0),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
       style: SegmentedButton.styleFrom(
         visualDensity: VisualDensity(vertical: 2),
         selectedBackgroundColor: customColorExtension.flipCardColor,
         selectedForegroundColor: customColorExtension.onFlipCard,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12))
-      )
-    )
+        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationThemeData(
+      filled: true,
+      border: border,
+      enabledBorder: border,
+      focusedBorder: border,
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      visualDensity: VisualDensity.comfortable,
+      fillColor: customColorExtension.fadeColor4,
+    ),
   );
 }

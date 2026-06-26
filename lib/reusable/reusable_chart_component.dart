@@ -56,7 +56,7 @@ FlGridData get customGrid {
   return FlGridData(
     show: true,
     drawVerticalLine: false,
-    getDrawingHorizontalLine: (value) => FlLine(strokeWidth: 1, color: Colors.white.withAlpha(100)),
+    getDrawingHorizontalLine: (value) => FlLine(strokeWidth: 0.5, color: Colors.white.withAlpha(50), dashArray: [1,5]),
   );
 }
 

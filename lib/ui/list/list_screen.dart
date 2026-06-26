@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:another_flushbar/flushbar.dart';
@@ -13,6 +14,7 @@ import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -121,12 +123,10 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         actions: [
           IconButton(
             onPressed: () {
-              Flushbar(
-                flushbarPosition: FlushbarPosition.TOP,
-                duration: Duration(seconds: 1),
-                title: "$selectedItemLength items deleted",
-                message: "$selectedItemLength items deleted",
-              ).show(context);
+              context.showSuccessNotification(
+                message:
+                    "$selectedItemLength ${selectedItemLength > 1 ? "items" : "item"} deleted.",
+              );
               context.listMod.deleteSelectedItems();
             },
             icon: Icon(Icons.delete),
@@ -140,7 +140,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
     } else if (isSearchOpened) {
       return AppBar(
         actionsPadding: EdgeInsets.only(right: 10),
-        backgroundColor: context.customCs.fadeColor2,
+        backgroundColor: context.customCs.fadeColor3,
         leading: BackButton(
           onPressed: () {
             context.listMod.toggleSearch(false);
@@ -313,6 +313,7 @@ class CostEntryList extends StatelessWidget {
                       onLongPress: () {
                         context.listMod.toggleSelectionMode(true);
                         context.listMod.updateSelection(costItem, true);
+                        HapticFeedback.selectionClick();
                       },
                       onTap: () {
                         if (selectionMode) {
@@ -629,7 +630,7 @@ class _SummaryChartState extends State<SummaryChart> {
     final income = context.select((ListModel state) => state.outputMonthSummary.income ?? 0);
     final balance = income - expense;
 
-    final double balancePercentage = income > 0 ? balance / income : 0;
+    final double balancePercentage = balance == 0 && income == 0 ? 0.001 : max(0.001, balance / income);
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
     // final expense = context.select(
@@ -674,7 +675,7 @@ class _SummaryChartState extends State<SummaryChart> {
               sections: [
                 PieChartSectionData(
                   showTitle: false,
-                  value: balancePercentage == 0 ? 0.001 : balancePercentage,
+                  value: balancePercentage,
                   radius: 10,
                   color: context.customCs.onFlipCard,
                   // color: Colors.green.shade800,
@@ -986,10 +987,12 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
       autofocus: true,
       textAlignVertical: TextAlignVertical.center,
       decoration: InputDecoration(
-        visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+        // visualDensity: VisualDensity(vertical: -4, horizontal: -4),
         focusedBorder: InputBorder.none,
+        enabledBorder: InputBorder.none,
         border: InputBorder.none,
         isDense: true,
+        filled: false,
         contentPadding: EdgeInsets.all(0),
         suffixIcon: IconButton(
           visualDensity: VisualDensity(vertical: -4, horizontal: -4),

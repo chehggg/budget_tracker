@@ -89,6 +89,8 @@ class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
                             ),
                             Expanded(
                               child: TextFormField(
+                                textCapitalization: TextCapitalization.sentences,
+                                keyboardType: TextInputType.text,
                                 cursorColor: context.cs.surface,
                                 autofocus: !context.savedItemMod.isEditMode,
                                 // canRequestFocus: true,
@@ -259,6 +261,7 @@ class SavedItemField extends StatelessWidget {
           ],
         ),
         TextFormField(
+          textCapitalization: TextCapitalization.sentences,
           enabled: checkboxValue,
           keyboardType: keyboardType,
           onTap: onTap,

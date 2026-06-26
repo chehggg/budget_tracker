@@ -1,8 +1,13 @@
-import 'package:budget_tracker/custom/classes/category_class.dart';
-import 'package:budget_tracker/custom/enums/enum.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
+
+import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/enums/match_type.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 
 class CostItem {
   CostItem(
@@ -220,5 +225,58 @@ class CostMetric {
     }
 
     return CostMetric(expense: expense, income: income);
+  }
+}
+
+class StringFilter {
+  StringFilter({required this.query, required this.matchType});
+
+  final String query;
+  final StringMatchType matchType;
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'query': query,
+      'matchType': matchType.name,
+    };
+  }
+
+  factory StringFilter.initial() => StringFilter(query: "", matchType: StringMatchType.contain);
+
+  factory StringFilter.fromMap(Map<String, dynamic> map) {
+    return StringFilter(
+      query: map['query'] as String,
+      matchType: StringMatchType.values.byName(['matchType'] as String),
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  StringFilter copyWith({StringMatchType? type, String? newQuery}) {
+    return StringFilter(matchType: type ?? this.matchType, query: newQuery ?? this.query);
+  }
+
+  factory StringFilter.fromJson(String source) =>
+      StringFilter.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  bool checkMatch(String text) {
+    switch (matchType) {
+      case StringMatchType.contain:
+        return text.contains(query);
+      case StringMatchType.notContain:
+        return !text.contains(query);
+      case StringMatchType.match:
+        return text == query;
+      case StringMatchType.notMatch:
+        return text != query;
+      case StringMatchType.startWith:
+        return text.startsWith(query);
+      case StringMatchType.notStartWith:
+        return !text.startsWith(query);
+      case StringMatchType.endWith:
+        return text.endsWith(query);
+      case StringMatchType.notEndWith:
+        return !text.endsWith(query);
+    }
   }
 }

@@ -1,8 +1,11 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class Goal {
@@ -15,6 +18,7 @@ class Goal {
     this.endDate,
     this.categories,
     this.filterString,
+    this.matchType,
     this.goalType,
     this.goalTracking,
     this.lastCreated,
@@ -29,6 +33,7 @@ class Goal {
   final DateTime? endDate;
   final List<String>? categories;
   final String? filterString;
+  final StringMatchType? matchType;
   final GoalType? goalType;
   final GoalTrackingPeriod? goalTracking;
   final DateTime? lastCreated;
@@ -44,6 +49,7 @@ class Goal {
     categories:
         json["categories"] != null ? List<String>.from(json["categories"] as Iterable) : null,
     filterString: json["filterString"] as String?,
+    matchType: json["matchType"] != null ? StringMatchType.values.byName(json["matchType"]) : null,
     goalType: GoalType.values.byName(json["goalType"]),
     goalTracking: GoalTrackingPeriod.values.byName(json["goalTracking"]),
     lastCreated: DateTime.tryParse(json["lastCreated"] as String? ?? "") ?? DateTime.now(),
@@ -60,6 +66,7 @@ class Goal {
     "endDate": endDate?.formatFull(),
     "categories": categories != null ? List<dynamic>.from(categories!) : null,
     "filterString": filterString,
+    "matchType": matchType?.name,
     "goalType": goalType?.name,
     "goalTracking": goalTracking?.name,
     "lastCreated": lastCreated?.toString(),
@@ -71,21 +78,25 @@ class Goal {
     final end = endDate ?? DateTime.now().startOfMonth;
 
     if (goalTracking == GoalTrackingPeriod.monthly) {
+      final filteredItems =
+          items.where((item) {
+            final categoryQuery = categories?.contains(item.categoryId) ?? true;
+            final nameQuery = item.name.contains(filterString ?? "");
+            return categoryQuery && nameQuery;
+            // return dateQuery;
+          }).toList();
+
       resultList =
           List.generate(
-                min(1, end.month - startDate!.month),
+                max(1, end.month - startDate!.month),
                 (i) => startDate!.addMonth(i),
               )
               .map(
                 (month) => GoalProgress(
                   date: month,
                   items:
-                      items.where((item) {
-                        final dateQuery = item.date.isInSameYearMonthAs(month);
-                        final categoryQuery = categories?.contains(item.categoryId) ?? true;
-                        final nameQuery = item.name.contains(filterString ?? "");
-                        return dateQuery && categoryQuery && nameQuery;
-                        // return dateQuery;
+                      filteredItems.where((item) {
+                        return item.date.isInSameYearMonthAs(month);
                       }).toList(),
                   goalType: goalType,
                   target: target,
@@ -101,7 +112,8 @@ class Goal {
                 final dateQuery =
                     (item.date.isAtSameMomentAs(startDate!)) ||
                     (item.date.isAtSameMomentAs(end)) ||
-                    (item.date.isAfter(startDate!) && item.date.isBefore(startDate!));
+                    (item.date.isAfter(startDate!) &&
+                        item.date.isBefore(endDate ?? DateTime.now()));
                 final categoryQuery = categories?.contains(item.categoryId) ?? true;
                 final nameQuery = item.name.contains(filterString ?? "");
                 return dateQuery && categoryQuery && nameQuery;
@@ -111,7 +123,51 @@ class Goal {
         ),
       );
     }
+    debugPrint('this get called!');
+    // debugPrint('length of goal progress, ${resultList.length}');
     return resultList;
+  }
+
+  GoalProgress getCurrentGoalProgress(List<CostItem> items, DateTime yearMonth) {
+    if (goalTracking == GoalTrackingPeriod.monthly) {
+      return getGoalProgress(items).firstWhereOrNull(
+        (progress) => progress.date!.isInSameYearMonthAs(DateTime.now()),
+      ) ?? GoalProgress(target: 0);
+    } else {
+      return getGoalProgress(items).firstOrNull ?? GoalProgress(target: 0);
+    }
+  }
+
+  Goal copyWith({
+    String? id,
+    String? title,
+    String? description,
+    double? target,
+    DateTime? startDate,
+    DateTime? endDate,
+    List<String>? categories,
+    String? filterString,
+    StringMatchType? matchType,
+    GoalType? goalType,
+    GoalTrackingPeriod? goalTracking,
+    DateTime? lastCreated,
+    DateTime? lastModified,
+  }) {
+    return Goal(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      target: target ?? this.target,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      categories: categories ?? this.categories,
+      filterString: filterString ?? this.filterString,
+      matchType: matchType ?? this.matchType,
+      goalType: goalType ?? this.goalType,
+      goalTracking: goalTracking ?? this.goalTracking,
+      lastCreated: lastCreated ?? this.lastCreated,
+      lastModified: lastModified ?? this.lastModified,
+    );
   }
 }
 
@@ -159,7 +215,7 @@ class GoalProgress {
   String get status {
     switch (goalType) {
       case GoalType.budget:
-        return achieved ? "Contained" : "Overbudget";
+        return achieved ? "Within Budget" : "Overbudget";
       case GoalType.savings:
         return achieved ? "Achieved" : "Not Achieved";
       case GoalType.payment:

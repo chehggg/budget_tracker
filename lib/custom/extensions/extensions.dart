@@ -32,6 +32,7 @@ extension DayExtension on DateTime {
   String formatShort() => DateFormat('dd-MM-yyyy').format(this);
   String formatShorter() => DateFormat('dd MMM').format(this);
   String formatMonth() => DateFormat('MMM yy').format(this);
+  String formatMonthLonger() => DateFormat('MMMM yyyy').format(this);
   String formatPretty() => DateFormat('E, d MMM').format(this);
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
@@ -46,10 +47,15 @@ extension DayExtension on DateTime {
   DateTime get endOfYear => DateTime(year, 12, 31);
   DateTime get startOfWeek => DateTime(year, month, day - (weekday - 1));
   DateTime get endOfWeek => DateTime(year, month, day - (weekday - 1) + 6);
+  int get dayinCurrentMonth => DateTime(year, month + 1, 0).day;
 
   bool isWithinRange(DateTimeRange range) {
     return (isBefore(range.end) || isAtSameMomentAs(range.end)) && isAfter(range.start) ||
         isAtSameMomentAs(range.start);
+  }
+
+  bool isBeforeOrSameMoment(DateTime newDate) {
+    return (isBefore(newDate) || isAtSameMomentAs(newDate));
   }
 
   List<int> getFullMonthWeekdayList() {
@@ -79,6 +85,22 @@ extension DoubleExtension on double {
     } else {
       return NumberFormat.compact().format(this);
     }
+  }
+
+  String formatRoundedString() {
+    if (this % 1 == 0) {
+      return toStringAsFixed(0);
+    } else {
+      return toStringAsFixed(2);
+    }
+  }
+
+  String formatCompactPercentage() {
+    return NumberFormat.percentPattern().format(this);
+  }
+
+  String formatDecimalPercentage() {
+    return NumberFormat.decimalPercentPattern(decimalDigits: 1).format(this);
   }
 
   String customCurrencyFormat(
@@ -172,8 +194,8 @@ extension BuildContextExtension on BuildContext {
     Flushbar(
       title: title,
       message: message,
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      backgroundColor: Colors.green.shade800,
+      icon: const Icon(Icons.check, color: Colors.white),
+      backgroundColor: Colors.green.shade900,
       duration: const Duration(seconds: 4),
       animationDuration: Duration(milliseconds: 400),
       flushbarPosition: FlushbarPosition.TOP,
@@ -187,7 +209,7 @@ extension BuildContextExtension on BuildContext {
     Flushbar(
       title: title,
       message: message,
-      icon: const Icon(Icons.error, color: Colors.white),
+      icon: const Icon(Icons.error_outline_outlined, color: Colors.white),
       backgroundColor: Colors.red.shade800,
       duration: const Duration(seconds: 4),
       animationDuration: Duration(milliseconds: 400),
@@ -211,6 +233,7 @@ class MyTexts extends ThemeExtension<MyTexts> {
     this.dateLabel,
     this.paragraphTitle,
     this.paragraphText,
+    this.paragraphTextSmall,
   });
 
   final TextStyle? numberFontLarge;
@@ -222,6 +245,7 @@ class MyTexts extends ThemeExtension<MyTexts> {
   final TextStyle? dateLabel;
   final TextStyle? paragraphText;
   final TextStyle? paragraphTitle;
+  final TextStyle? paragraphTextSmall;
   // final TextStyle? numberLabel;
   // final TextStyle? numberLabel;
 
@@ -234,6 +258,7 @@ class MyTexts extends ThemeExtension<MyTexts> {
       numberLabel: numberLabel ?? this.numberLabel,
       dateLabel: dateLabel ?? this.dateLabel,
       paragraphText: paragraphText ?? this.paragraphText,
+      paragraphTextSmall: paragraphTextSmall ?? this.paragraphTextSmall,
       paragraphTitle: paragraphTitle ?? this.paragraphTitle,
     );
   }
@@ -250,6 +275,7 @@ class MyTexts extends ThemeExtension<MyTexts> {
       numberLabel: TextStyle.lerp(numberLabel, other.numberLabel, t),
       dateLabel: TextStyle.lerp(dateLabel, other.dateLabel, t),
       paragraphText: TextStyle.lerp(paragraphText, other.paragraphText, t),
+      paragraphTextSmall: TextStyle.lerp(paragraphTextSmall, other.paragraphTextSmall, t),
       paragraphTitle: TextStyle.lerp(paragraphTitle, other.paragraphTitle, t),
     );
   }

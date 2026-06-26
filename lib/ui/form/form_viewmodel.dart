@@ -33,7 +33,7 @@ class FormModel extends ChangeNotifier {
       name: _itemDesc,
       date: _date,
       costType: _type,
-      category: _selectedCategory!,
+      category: _selectedCategory?? CostItemCategory.error(),
       amount: _amount ?? 0,
     );
   }

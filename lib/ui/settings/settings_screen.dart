@@ -1,4 +1,3 @@
-import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/navigation_model.dart';
 import 'package:budget_tracker/constants/currency.dart';
@@ -9,7 +8,6 @@ import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -18,12 +16,12 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Settings"),
+        title: Text("SETTINGS"),
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-          child: SettingsList(),
+          child: const SettingsList(),
         ),
       ),
     );
@@ -68,31 +66,29 @@ class SettingsList extends StatelessWidget {
           SliverList(
             delegate: SliverChildListDelegate(
               [
-                // SettingsSectionTitle(titleName: "General", icon: Icons.display_settings),
-                // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Theme Mode"),
-                // CustomSettingsTile(trailingWidget: SizedBox.shrink(), title: "Currency"),
-                Text('Display', style: context.customTt.dateLabel),
+                const SettingsSectionTitle(text: "Display"),
                 const HideCostSettingsTile(),
-                Text('Configuration', style: context.customTt.dateLabel),
+                const SettingsDivider(),
+                const SettingsSectionTitle(text: "Configuration"),
                 CurrencySettingsTile(
                   selectedCurrencySymbol: selectedCurrencySymbol,
                 ),
                 const RecurringCostSettingsTile(),
                 // const BudgetSettingsTile(),
-                Divider(),
-                Text('Theme', style: context.customTt.dateLabel),
-                ThemeModeSettingsTile(selectedThemeMode: selectedThemeMode),
-                const ColorSettingsTile(),
-                const VisualDensitySettingsTile(),
-                const FormGridColumnItemSettingsTile(),
-                const FontSizeSettingsTile(),
-                Divider(),
-                Text('Data', style: context.customTt.dateLabel),
+                // Divider(),
+                // const SettingsSectionTitle(text: "Theme"),
+                // ThemeModeSettingsTile(selectedThemeMode: selectedThemeMode),
+                // const ColorSettingsTile(),
+                // const VisualDensitySettingsTile(),
+                // const FormGridColumnItemSettingsTile(),
+                // const FontSizeSettingsTile(),
+                const SettingsDivider(),
+                const SettingsSectionTitle(text: "Data"),
                 const ExportDataSettingsTile(),
                 const LoadDataSettingsTile(),
                 const ClearDataSettingsTile(),
-                Divider(),
-                Text('App', style: context.customTt.dateLabel),
+                const SettingsDivider(),
+                const SettingsSectionTitle(text: "About Nomi"),
                 const AboutSettingsTile(),
                 const ReportBugSettingsTile(),
                 const SupportMeSettingsTile(),
@@ -101,6 +97,36 @@ class SettingsList extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class SettingsDivider extends StatelessWidget {
+  const SettingsDivider({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 0.0, bottom: 0),
+      child: Divider(),
+    );
+  }
+}
+
+class SettingsSectionTitle extends StatelessWidget {
+  const SettingsSectionTitle({
+    super.key,
+    required this.text
+  });
+
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Text(text, style: context.customTt.dateLabel),
     );
   }
 }
@@ -542,8 +568,8 @@ class FontFamilySettingsTile extends StatelessWidget {
   }
 }
 
-class SettingsSectionTitle extends StatelessWidget {
-  const SettingsSectionTitle({
+class SettingsSecTitle extends StatelessWidget {
+  const SettingsSecTitle({
     super.key,
     required this.titleName,
     required this.icon,
@@ -676,8 +702,8 @@ class CustomSettingsTile extends StatelessWidget {
     this.trailingWidget,
     this.subtitle,
     this.titleWidget,
-    this.verticalPadding = 0,
-    this.horizontalPadding = 16,
+    this.verticalPadding = 4,
+    this.horizontalPadding = 12,
     this.leading,
     this.title,
     this.onTap,
@@ -702,9 +728,11 @@ class CustomSettingsTile extends StatelessWidget {
       trailing: trailingWidget,
       leading: leading,
       // leadingAndTrailingTextStyle: Theme.of(context).textTheme.bodyMedium,
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
+      contentPadding: EdgeInsets.only(
+        left: horizontalPadding,
+        right: horizontalPadding,
+        top: 4,
+        bottom: verticalPadding,
       ),
       onTap: onTap,
     );

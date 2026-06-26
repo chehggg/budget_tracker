@@ -141,11 +141,11 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
                     mainAxisSize: MainAxisSize.min,
                     spacing: 4,
                     children: [
-                      Icon(button.value, color: context.cs.onPrimary),
+                      Icon(button.value, color: context.cs.surface, size: 18,),
                       Text(
                         widget.selectedDate.displayFormat(),
                         style: context.customTt.numberFontSmall!.copyWith(
-                          color: context.cs.onPrimary,
+                          color: context.cs.surface,
                         ),
                       ),
                     ],
@@ -497,7 +497,7 @@ class DismissTextButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.nav.pop(false),
+      onTap: onTap ?? () => context.nav.pop(false),
       child: Text(
         text,
         style: context.customTt.numberFontSmall!.copyWith(color: context.customCs.fadeColor1),

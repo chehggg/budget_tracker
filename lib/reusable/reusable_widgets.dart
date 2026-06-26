@@ -13,6 +13,7 @@ class ReusableContainer extends StatelessWidget {
     this.height,
     this.width,
     this.filled = false,
+    this.showBorder = true,
     this.highlight = false,
   });
 
@@ -20,6 +21,8 @@ class ReusableContainer extends StatelessWidget {
   final void Function()? onTap;
   final Widget? child;
   final bool filled;
+  final bool showBorder;
+
   final Color? customColor;
   final bool highlight;
   final double? height;
@@ -29,12 +32,13 @@ class ReusableContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         height: height,
         width: width,
         padding: padding,
         decoration: BoxDecoration(
-          border: BoxBorder.all(color: context.customCs.fadeColor2 ?? Colors.transparent),
+          border: showBorder? BoxBorder.all(color: context.customCs.fadeColor2 ?? Colors.transparent) : null,
           color: customColor ??
               (highlight
                   ? context.customCs.flipCardColor

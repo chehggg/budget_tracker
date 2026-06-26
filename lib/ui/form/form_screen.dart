@@ -8,6 +8,7 @@ import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
@@ -352,10 +353,12 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                     ),
                     TextFormField(
                       controller: descController,
+                      textCapitalization: TextCapitalization.sentences,
                       style: context.tt.bodyMedium!,
                       minLines: 3,
                       maxLines: 3,
                       decoration: InputDecoration(
+                        filled:  false,
                         visualDensity: VisualDensity(vertical: -4),
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(vertical: 20),
@@ -450,46 +453,75 @@ class FormMainSelectionView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: SegmentedButton(
-            style: SegmentedButton.styleFrom(
-              // padding: EdgeInsets.symmetric(vertical: 12),
-              visualDensity: VisualDensity(vertical: 0),
-              selectedBackgroundColor: context.customCs.flipCardColor,
-              selectedForegroundColor: context.customCs.onFlipCard,
-              side: BorderSide(color: context.cs.primary.withAlpha(100)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
+        Row(
+          spacing: 20,
+          children: [
+            Expanded(
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton(
+                  style: SegmentedButton.styleFrom(
+                    // padding: EdgeInsets.symmetric(vertical: 12),
+                    visualDensity: VisualDensity(vertical: 0),
+                    selectedBackgroundColor: context.customCs.flipCardColor,
+                    selectedForegroundColor: context.customCs.onFlipCard,
+                    side: BorderSide(color: context.cs.primary.withAlpha(100)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
+                  ),
+                  segments: [
+                    ...[FormGroup.expense, FormGroup.income].map((formGroup) {
+                      return ButtonSegment(
+                        value: formGroup,
+                        icon: Icon(Icons.attach_money_rounded),
+                        label: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            formGroup.name.capitalize(),
+                            style: context.customTt.numberLabel!.copyWith(
+                              color:
+                                  selectedFormGroup == formGroup
+                                      ? context.customCs.onFlipCard
+                                      : context.cs.primary,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                  selected: {selectedFormGroup},
+                  onSelectionChanged: (newSelection) {
+                    context.formMod.updateFormGroup(newSelection.first);
+                  },
+                ),
+              ),
             ),
-            segments: [
-              ...FormGroup.values.map((formGroup) {
-                return ButtonSegment(
-                  value: formGroup,
-                  icon: Icon(
-                    formGroup == FormGroup.favorite
-                        ? Icons.favorite_rounded
-                        : Icons.attach_money_rounded,
-                  ),
-                  label: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      formGroup.name.capitalize(),
-                      style: context.customTt.numberLabel!.copyWith(
-                        color:
-                            selectedFormGroup == formGroup
-                                ? context.customCs.onFlipCard
-                                : context.cs.primary,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ],
-            selected: {selectedFormGroup},
-            onSelectionChanged: (newSelection) {
-              context.formMod.updateFormGroup(newSelection.first);
-            },
-          ),
+            InkWell(
+              onTap: () => context.formMod.updateFormGroup(FormGroup.favorite),
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: Durations.short4,
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  color:
+                      selectedFormGroup == FormGroup.favorite
+                          ? context.cs.primary
+                          : context.cs.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: BoxBorder.all(width: 1, color: context.cs.primary.withAlpha(100)),
+                ),
+                width: 48,
+                height: 48,
+                child: Icon(
+                  Icons.favorite,
+                  size: 18,
+                  color:
+                      selectedFormGroup == FormGroup.favorite
+                          ? context.cs.surface
+                          : context.cs.primary,
+                ),
+              ),
+            ),
+          ],
         ),
         Expanded(
           child: CustomScrollView(
@@ -527,11 +559,15 @@ class CategorySelectionView extends StatelessWidget {
           ...categories.map((category) {
             final isSelected = category.id == selectedCategory.id;
 
-            final bgColor = context.cs.secondary.withAlpha(isSelected ? 250 : 5);
-            final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
+            // final bgColor = context.cs.primary.withAlpha(isSelected ? 250 : 5);
+            final bgColor = category.color?.withAlpha(isSelected ? 100 : 0);
+            // final fgColor = isSelected ? context.cs.onPrimary : context.cs.primary;
 
             return GestureDetector(
-              onTap: () => context.formMod.selectNewCategory(category),
+              onTap: () {
+                context.formMod.selectNewCategory(category);
+                HapticFeedback.selectionClick();
+              },
               child: AnimatedScale(
                 scale: isSelected ? 1.05 : 1,
                 duration: Durations.short3,
@@ -674,21 +710,6 @@ class SavedItemSelectionView extends StatelessWidget {
                               },
                               icon: Icon(
                                 Icons.edit,
-                                size: 16,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () async {
-                                final response = await showDialog(
-                                  context: context,
-                                  builder: (context) => DeleteItemDialog(),
-                                );
-                                if (response == true) {
-                                  await context.formMod.deleteSavedItem(item);
-                                }
-                              },
-                              icon: Icon(
-                                Icons.delete,
                                 size: 16,
                               ),
                             ),
