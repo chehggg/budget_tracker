@@ -5,30 +5,32 @@ import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
-class ListModel extends ChangeNotifier {
-  ListModel({required CostItemRepository costItemRepo, required CategoryRepository categoryRepo})
-    : _costItemRepo = costItemRepo,
-      _categoryRepo = categoryRepo {
+class ListViewModel extends ChangeNotifier {
+  ListViewModel({
+    required CostItemRepository costItemRepo,
+    required CategoryRepository categoryRepo,
+    required CurrencyRepository currencyRepo,
+  }) : _costItemRepo = costItemRepo,
+       _currencyRepo = currencyRepo,
+       _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
   final CategoryRepository _categoryRepo;
-
+  final CurrencyRepository _currencyRepo;
 
   Future<void> init() async {
-    _isInitialized = false;
-
     await _costItemRepo.ready;
     await _categoryRepo.ready;
+    await _currencyRepo.ready;
 
     _isInitialized = true;
-    debugPrint("list viewmodel done");
     notifyListeners();
   }
-
 
   bool _isInitialized = false;
   bool get ready => _isInitialized;
@@ -124,6 +126,9 @@ class ListModel extends ChangeNotifier {
     } else {
       _isSearchOpened = !_isSearchOpened;
     }
+    if (!_isSearchOpened) {
+      _searchText = "";
+    }
     notifyListeners();
   }
 
@@ -184,4 +189,13 @@ class ListModel extends ChangeNotifier {
       _costItemRepo.costItems.fold(0, (init, item) => max(init, item.signedAmount));
   double get minAmount =>
       _costItemRepo.costItems.fold(0, (init, item) => min(init, item.signedAmount));
+
+  String Function(
+    double value, {
+    bool abbreviated,
+    bool alwaysShowSign,
+    bool compact,
+    int? decimalDigits,
+  })
+  get currencyFormat => _currencyRepo.formatCurrency;
 }

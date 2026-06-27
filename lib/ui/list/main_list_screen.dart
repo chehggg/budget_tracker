@@ -1,13 +1,11 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/ui/goal/goal_view_model.dart';
-import 'package:budget_tracker/ui/list/list_viewmodel.dart';
+import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -17,6 +15,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+class CostListScreenWrapper extends StatelessWidget {
+  const CostListScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create:
+          (context) => ListViewModel(
+            costItemRepo: context.read(),
+            categoryRepo: context.read(),
+            currencyRepo: context.read(),
+          ),
+      child: const CostListScreen(),
+    );
+  }
+}
 
 class CostListScreen extends StatefulWidget {
   const CostListScreen({
@@ -60,15 +75,15 @@ class _CostListScreenState extends State<CostListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ready = context.select((ListModel state) => state.ready);
+    final ready = context.select((ListViewModel state) => state.ready);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: const ListViewAppBar(),
-      body:
-          ready
-              ? SafeArea(
-                minimum: EdgeInsets.only(top: 8),
-                child: Flex(
+      body: SafeArea(
+        minimum: EdgeInsets.only(top: 8),
+        child:
+            ready
+                ? Flex(
                   direction: Axis.vertical,
                   children: [
                     const DateBreadcrumb(),
@@ -84,13 +99,11 @@ class _CostListScreenState extends State<CostListScreen> {
                       ),
                     ),
                   ],
-                ),
-              )
-              : Expanded(
-                child: Center(
+                )
+                : const Center(
                   child: CircularProgressIndicator(),
                 ),
-              ),
+      ),
     );
   }
 }
@@ -105,10 +118,10 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBlurred = context.select((ListModel state) => state.isBlurred);
-    final isSearchOpened = context.select((ListModel state) => state.isSearchOpened);
-    final selectionMode = context.select((ListModel state) => state.selectionMode);
-    final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
+    final isBlurred = context.select((ListViewModel state) => state.isBlurred);
+    final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
+    final selectionMode = context.select((ListViewModel state) => state.selectionMode);
+    final selectedItemLength = context.select((ListViewModel state) => state.selectedItems.length);
 
     if (selectionMode) {
       return AppBar(
@@ -144,6 +157,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         leading: BackButton(
           onPressed: () {
             context.listMod.toggleSearch(false);
+            context.navMod.customHideBottom(false);
           },
         ),
         title: const SearchTabTextField(),
@@ -154,7 +168,10 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: Text("OVERVIEW", style: context.customTt.dateLabel),
         actions: [
           IconButton(
-            onPressed: context.listMod.toggleSearch,
+            onPressed: () {
+              context.listMod.toggleSearch();
+              context.navMod.customHideBottom(true);
+            },
             icon: Icon(Icons.search),
           ),
           IconButton(
@@ -176,7 +193,7 @@ class DateBreadcrumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final curMonth = context.select((ListModel state) => state.currentMonth);
+    final curMonth = context.select((ListViewModel state) => state.currentMonth);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -249,16 +266,13 @@ class CostEntryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final groupedCostItems = context.select((ListModel state) => state.outputCostItems);
-    final dailySummary = context.select((ListModel state) => state.outputDailySummary);
-    final selectionMode = context.select((ListModel state) => state.selectionMode);
-    final selectedItems = context.select((ListModel state) => state.selectedItems);
+    final groupedCostItems = context.select((ListViewModel state) => state.outputCostItems);
+    final dailySummary = context.select((ListViewModel state) => state.outputDailySummary);
+    final selectionMode = context.select((ListViewModel state) => state.selectionMode);
+    final selectedItems = context.select((ListViewModel state) => state.selectedItems);
     // ignore: unused_local_variable
-    final selectedItemLength = context.select((ListModel state) => state.selectedItems.length);
+    final selectedItemLength = context.select((ListViewModel state) => state.selectedItems.length);
 
-    // debugPrint(
-    //   "rebuilt, item count: ${groupedCostItems.entries.isNotEmpty ? groupedCostItems.entries.first.value.length : 0}",
-    // );
     if (groupedCostItems.isEmpty) {
       return SliverToBoxAdapter(
         child: SizedBox(
@@ -294,11 +308,8 @@ class CostEntryList extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(dateString, style: context.customTt.dateLabel!.copyWith()),
-                        // style: context.tt.bodyLarge),
                         HideableText(
-                          (daySummary >= 0 ? "+" : "") +
-                              NumberFormat.currency(symbol: "RM").format(daySummary),
-                          isCurrency: true,
+                          context.listMod.currencyFormat(daySummary, alwaysShowSign: true),
                           textStyle: context.customTt.numberFontMedium!.copyWith(
                             color: daySummary < 0 ? Colors.redAccent : Colors.greenAccent,
                           ),
@@ -319,8 +330,9 @@ class CostEntryList extends StatelessWidget {
                         if (selectionMode) {
                           context.listMod.updateSelection(costItem, !selected);
                         } else {
-                          context.navMod.openForm(
-                            FormArgument(selectedCostItem: costItem),
+                          context.navMod.goToNamed(
+                            '/form',
+                            arguments: FormArgument(selectedCostItem: costItem),
                           );
                         }
                       },
@@ -355,9 +367,11 @@ class CostEntryList extends StatelessWidget {
                               ),
                             ),
                             HideableText(
-                              (!costItem.isExpense ? "+" : "") +
-                                  NumberFormat.currency(symbol: "RM").format(costItem.signedAmount),
-                              isCurrency: true,
+                              context.listMod.currencyFormat(
+                                costItem.signedAmount,
+                                alwaysShowSign: true,
+                                compact: true,
+                              ),
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color:
                                     costItem.isExpense
@@ -387,8 +401,8 @@ class SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final expense = context.select((ListModel state) => state.outputMonthSummary.expense ?? 0);
-    final income = context.select((ListModel state) => state.outputMonthSummary.income ?? 0);
+    final expense = context.select((ListViewModel state) => state.outputMonthSummary.expense ?? 0);
+    final income = context.select((ListViewModel state) => state.outputMonthSummary.income ?? 0);
     final balance = income - expense;
 
     return SliverPersistentHeader(
@@ -499,7 +513,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                       context,
                       labelText: "Summary",
                       progress: progress,
-                      value: NumberFormat.currency(symbol: "RM", decimalDigits: 0).format(balance),
+                      value: context.listMod.currencyFormat(balance, alwaysShowSign: true, compact: true, decimalDigits: 0),
                       isBig: true,
                     ),
                     Opacity(
@@ -512,39 +526,21 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             HideableText(
-                              "-${NumberFormat.compactCurrency(symbol: "RM").format(expense)}",
+                              context.listMod.currencyFormat(-expense, alwaysShowSign: true, compact: true, abbreviated: true),
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color: Colors.red,
                                 height: 1,
                                 fontSize: 18,
                               ),
                             ),
-                            Text(
-                              "+${NumberFormat.compactCurrency(symbol: "RM").format(income)}",
-                              style: context.customTt.numberFontSmall!.copyWith(
+                            HideableText(
+                              context.listMod.currencyFormat(income, alwaysShowSign: true, compact: true, abbreviated: true),
+                              textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color: Colors.green,
                                 height: 1,
                                 fontSize: 18,
                               ),
                             ),
-                            // Expanded(
-                            //   child: expenseMetricCard(
-                            //     context,
-                            //     labelText: "Expense",
-                            //     progress: progress,
-                            //     value: NumberFormat.compactCurrency(symbol: "RM").format(expense),
-                            //     isBig: false,
-                            //   ),
-                            // ),
-                            // Expanded(
-                            //   child: expenseMetricCard(
-                            //     context,
-                            //     labelText: "Income",
-                            //     progress: progress,
-                            //     value: NumberFormat.compactCurrency(symbol: "RM").format(income),
-                            //     isBig: false,
-                            //   ),
-                            // ),
                           ],
                         ),
                       ),
@@ -626,11 +622,12 @@ class _SummaryChartState extends State<SummaryChart> {
 
   @override
   Widget build(BuildContext context) {
-    final expense = context.select((ListModel state) => state.outputMonthSummary.expense ?? 0);
-    final income = context.select((ListModel state) => state.outputMonthSummary.income ?? 0);
+    final expense = context.select((ListViewModel state) => state.outputMonthSummary.expense ?? 0);
+    final income = context.select((ListViewModel state) => state.outputMonthSummary.income ?? 0);
     final balance = income - expense;
 
-    final double balancePercentage = balance == 0 && income == 0 ? 0.001 : max(0.001, balance / income);
+    final double balancePercentage =
+        balance == 0 && income == 0 ? 0.001 : max(0.001, balance / income);
     // get month to update the chart whenever month change
     // ignore: unused_local_variable
     // final expense = context.select(
@@ -656,9 +653,9 @@ class _SummaryChartState extends State<SummaryChart> {
                   fontSize: 12,
                 ),
               ),
-              Text(
+              HideableText(
                 income > 0 ? NumberFormat.percentPattern().format(balancePercentage) : "N/A",
-                style: context.customTt.numberFontMedium!.copyWith(
+                textStyle: context.customTt.numberFontMedium!.copyWith(
                   color: context.cs.surface,
                   fontWeight: FontWeight(700),
                   height: 1,
@@ -1053,7 +1050,7 @@ class _CategoryFilterDialogState extends State<CategoryFilterDialog> {
   @override
   Widget build(BuildContext context) {
     final categories = defaultCostItemCategories;
-    final filteredCategories = context.select((ListModel state) => state.filteredCategories);
+    final filteredCategories = context.select((ListViewModel state) => state.filteredCategories);
     final bool allItemSelected = categories.length == filteredCategories.length;
     return AlertDialog(
       title: Text("Category Filter"),

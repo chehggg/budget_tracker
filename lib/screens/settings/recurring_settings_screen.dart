@@ -4,7 +4,7 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
-import 'package:budget_tracker/models/navigation_model.dart';
+import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -309,7 +309,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [TextButton(onPressed: () {
-                  context.read<NavigationModel>().openForm(FormArgument(oriRoute: "/recurring"));
+                  context.read<NavigatorModel>().openForm(FormArgument(oriRoute: "/recurring"));
                 }, child: Text("Select"),)],
               ),
               Divider(),
@@ -601,7 +601,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
                                   // context.read<AppModel>().saveCostItemFromTemp(_recurringDates);
                                   context.read<AppModel>().removeTempCostItem();
                                   Navigator.pop(context);
-                                  context.read<NavigationModel>().navigateMainScreen(0);
+                                  context.read<NavigatorModel>().navigateMainScreen(0);
                                 }, child: const Text("Save"))
                               ],
                             );

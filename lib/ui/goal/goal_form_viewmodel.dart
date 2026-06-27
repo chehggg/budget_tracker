@@ -39,12 +39,17 @@ class GoalFormViewmodel extends ChangeNotifier {
           title: _goalCategory.title,
           description: _goalCategory.description,
           goalType: _goalCategory.type,
+          startDate: DateTime.now().startOfMonth,
           goalTracking: _goalCategory.trackingPeriod,
         );
       }
     }
-
-    updateStartDate(DateTime.now().startOfMonth);
+    _startDateController.value = _startDateController.value.copyWith(
+      text: _draftedGoal.startDate!.formatMonthLonger(),
+    );
+    _endDateController.value = _endDateController.value.copyWith(
+      text: _draftedGoal.endDate?.formatMonthLonger(),
+    );
 
     await _goalRepository.ready;
     await _categoryRepo.ready;

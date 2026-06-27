@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
-import 'package:budget_tracker/ui/list/list_screen.dart';
+import 'package:budget_tracker/ui/list/main_list_screen.dart';
 
 class ChartScreen extends StatelessWidget {
   const ChartScreen({super.key});
@@ -287,15 +287,17 @@ class ChartSection extends StatelessWidget {
                   ),
                   if (showLabelSubtitle)
                     Row(
-                      spacing: 4,
+                      spacing: 12,
                       children: [
                         LabelIndicator(
                           text: "Current Range",
                           color: context.cs.secondary,
+                          fade: true,
                         ),
                         LabelIndicator(
-                          text: "Prev Range",
+                          text: "Previous Range",
                           color: Colors.blue.shade400,
+                          fade: true,
                         ),
                       ],
                     ),
@@ -1121,10 +1123,11 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
 }
 
 class LabelIndicator extends StatelessWidget {
-  const LabelIndicator({super.key, required this.text, this.color});
+  const LabelIndicator({super.key, required this.text, this.color, this.fade = false});
 
   final String text;
   final Color? color;
+  final bool fade;
 
   @override
   Widget build(BuildContext context) {
@@ -1141,7 +1144,10 @@ class LabelIndicator extends StatelessWidget {
         SizedBox(width: 6),
         Text(
           text,
-          style: context.tt.bodyMedium!.copyWith(fontSize: 12, color: context.cs.primary),
+          style: context.tt.bodyMedium!.copyWith(
+            fontSize: 12,
+            color: fade ? context.customCs.fadeColor1 : context.cs.primary,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

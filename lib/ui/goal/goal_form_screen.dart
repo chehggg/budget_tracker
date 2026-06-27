@@ -2,7 +2,6 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
-import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -37,7 +36,11 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
   Widget build(BuildContext context) {
     final goalCategories = defaultGoalCategories.where((category) => category.type == _goalType);
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () => context.navMod.goToNamedAndRemovePrevious('/goals'),
+        ),
+      ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -48,7 +51,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                   spacing: 8,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text("Page 1 of 3"),
+                    // Text("Page 1 of 2"),
                     Text(
                       "What kind of goal do you want to set?",
                       style: context.customTt.elegantLabelLarge,
@@ -157,12 +160,16 @@ class GoalInfoFormScreen extends StatelessWidget {
               } else {
                 if (context.goalFormMod.isEditMode) {
                   await context.goalFormMod.updateGoal();
-                  context.nav.pushNamedAndRemoveUntil('/goals', (route) => false);
-                  context.showSuccessNotification(message: "Goal updated!");
+                  if (context.mounted) {
+                    context.navMod.goToNamedAndRemovePrevious('/goals');
+                    context.showSuccessNotification(message: "Goal updated!");
+                  }
                 } else {
                   await context.goalFormMod.createGoal();
-                  context.nav.pushNamedAndRemoveUntil('/goals', (route) => false);
-                  context.showSuccessNotification(message: "New goal created!");
+                  if (context.mounted) {
+                    context.navMod.goToNamedAndRemovePrevious('/goals');
+                    context.showSuccessNotification(message: "New goal created!");
+                  }
                 }
               }
             },
@@ -171,8 +178,10 @@ class GoalInfoFormScreen extends StatelessWidget {
           IconButton(
             onPressed: () async {
               await context.goalFormMod.deleteGoal();
-              context.nav.pushNamedAndRemoveUntil('/goals', (route) => false);
-              context.showSuccessNotification(message: "Goal deleted!");
+              if (context.mounted) {
+                context.navMod.goToNamedAndRemovePrevious('/goals');
+                context.showSuccessNotification(message: "Goal deleted!");
+              }
             },
             icon: Icon(Icons.delete),
           ),
@@ -195,8 +204,6 @@ class GoalInfoFormBody extends StatefulWidget {
 
 class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
   bool _openAdvanced = false;
-  // late final TextEditingController _startDateController;
-  // late final TextEditingController _endDateController;
   late final TextEditingController _titleController;
   late final TextEditingController _targetController;
   late final TextEditingController _descController;
@@ -464,7 +471,10 @@ class GoalFormStringFilterFile extends StatelessWidget {
                       ? "Includes all item descriptions."
                       : "Includes where description ${initFilter.matchType.text} ",
               style: context.customTt.paragraphText,
-              children: [TextSpan(text: initFilter?.query, style: context.customTt.paragraphTitle)],
+              children: [
+                TextSpan(text: initFilter?.query, style: context.customTt.paragraphTitle),
+                TextSpan(text: "."),
+              ],
             ),
           ),
         ],
@@ -508,7 +518,7 @@ class GoalFormCategoryFilterTile extends StatelessWidget {
             Text(
               categories == null
                   ? "Includes all categories."
-                  : "Includes ${categories.length} ${categories.length < 2 ? "category" : "categories"}",
+                  : "Includes ${categories.length} ${categories.length < 2 ? "category." : "categories."}",
               style: context.customTt.paragraphText,
             ),
             // Row(
@@ -527,7 +537,7 @@ class GoalFormCategoryFilterTile extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 10.0),
                 child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
+                  // alignment: WrapAlignment.spaceBetween,
                   spacing: 8,
                   runSpacing: 8,
                   children: [
@@ -780,16 +790,6 @@ class GoalsDropDownField extends StatelessWidget {
       borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
     );
 
-    final inputDecoration = InputDecoration(
-      border: border,
-      enabledBorder: border,
-      focusedBorder: border,
-      isDense: false,
-      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      filled: false,
-      fillColor: context.customCs.fadeColor4,
-    );
-
     final inputDecoTheme = InputDecorationTheme(
       border: border,
       enabledBorder: border,
@@ -991,49 +991,6 @@ class _DateDialogState extends State<DateDialog> {
           onTap: () => context.nav.pop(selectedYearMonth),
         ),
       ],
-    );
-  }
-}
-
-class ScrollableSelector extends StatefulWidget {
-  const ScrollableSelector({
-    super.key,
-    required this.values,
-    this.initialValue,
-    this.updateValue,
-  });
-
-  final List<dynamic> values;
-  final dynamic initialValue;
-  final ValueChanged<int>? updateValue;
-  @override
-  State<ScrollableSelector> createState() => _ScrollableSelectorState();
-}
-
-class _ScrollableSelectorState extends State<ScrollableSelector> {
-  dynamic _value;
-
-  @override
-  void initState() {
-    super.initState();
-    _value = widget.initialValue ?? widget.values.first;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CarouselView.builder(
-      scrollDirection: Axis.vertical,
-      itemExtent: 100,
-      itemSnapping: true,
-      itemCount: widget.values.length,
-      infinite: true,
-      onIndexChanged: (index) {
-        setState(() => _value = widget.values.elementAt(index));
-        widget.updateValue?.call(index);
-      },
-      itemBuilder: (context, index) {
-        Text(_value?.toString() ?? "null");
-      },
     );
   }
 }

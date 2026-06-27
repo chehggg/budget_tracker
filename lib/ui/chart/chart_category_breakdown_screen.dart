@@ -2,10 +2,8 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -24,21 +22,21 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity == null) return;
-              if (details.primaryVelocity!.abs() < 1000) return;
-              debugPrint(details.primaryVelocity!.toStringAsFixed(0));
-              context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
-            },
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragEnd: (details) {
+            if (details.primaryVelocity == null) return;
+            if (details.primaryVelocity!.abs() < 1000) return;
+            debugPrint(details.primaryVelocity!.toStringAsFixed(0));
+            context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
+          },
           child: CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 12.0, right: 12, top: 12),
-                  child: const ChartFilterButtons(),
-                ),
-              ),
+              // SliverToBoxAdapter(
+              //   child: Padding(
+              //     padding: const EdgeInsets.only(left: 12.0, right: 12, top: 12),
+              //     child: const ChartFilterButtons(),
+              //   ),
+              // ),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 40.0, bottom: 20),
@@ -56,8 +54,6 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
     );
   }
 }
-
-
 
 class CategoryPieChart extends StatelessWidget {
   const CategoryPieChart({super.key});
@@ -205,7 +201,7 @@ class _CategoryTileState extends State<CategoryTile> {
             children: [
               CategoryIconContainer(
                 category: widget.category,
-                size: 24,
+                size: 20,
               ),
               Expanded(
                 child: Column(

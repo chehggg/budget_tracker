@@ -1,7 +1,7 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
-import 'package:budget_tracker/ui/list/list_viewmodel.dart';
+import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -141,7 +141,11 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
                     mainAxisSize: MainAxisSize.min,
                     spacing: 4,
                     children: [
-                      Icon(button.value, color: context.cs.surface, size: 18,),
+                      Icon(
+                        button.value,
+                        color: context.cs.surface,
+                        size: 18,
+                      ),
                       Text(
                         widget.selectedDate.displayFormat(),
                         style: context.customTt.numberFontSmall!.copyWith(
@@ -252,7 +256,7 @@ class HideableText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBlurred = context.select((ListModel state) => state.isBlurred);
+    final isBlurred = context.select((ListViewModel state) => state.isBlurred);
     // final currency = context.read<AppModel>().currencySymbol;
 
     return LayoutBuilder(
@@ -506,6 +510,4 @@ class DismissTextButton extends StatelessWidget {
   }
 }
 
-class CustomFlushbar {
-  
-} 
+class CustomFlushbar {}

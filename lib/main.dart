@@ -1,15 +1,15 @@
 import 'package:budget_tracker/config/providers.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/classes/page_transition.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/firebase_options.dart';
-import 'package:budget_tracker/models/navigation_model.dart';
+import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
-import 'package:budget_tracker/test.dart';
 import 'package:budget_tracker/ui/core/themes/theme.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
-import 'package:budget_tracker/ui/goal/goal_screen.dart';
+import 'package:budget_tracker/ui/goal/goal_list_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,7 +18,7 @@ import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
-import 'package:budget_tracker/ui/list/list_screen.dart';
+import 'package:budget_tracker/ui/list/main_list_screen.dart';
 import 'package:budget_tracker/screens/report_screen.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 
@@ -70,11 +70,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final navigationModel = context.watch<NavigationModel>();
+    final navigationModel = context.watch<NavigatorModel>();
     final navKey = navigationModel.navigationKey;
-    final currentNavRoute = navigationModel.currentMainScreenRoute;
-    // final isFormOpened = navigationModel.isFormOpened;
-    final showBottomNavBar = context.select((NavigationModel state) => state.showBottomNavBar);
+    final showBottomNavBar = context.select((NavigatorModel state) => state.showBottom);
 
     return PopScope(
       canPop: false,
@@ -95,28 +93,18 @@ class HomeScreen extends StatelessWidget {
             // debugPrint("navigator generate route");
             switch (settings.name) {
               case '/':
-                return MaterialPageRoute(
-                  builder: (context) => CostListScreen(),
-                  settings: RouteSettings(name: settings.name),
-                );
-              case '/test':
-                return MaterialPageRoute(
-                  builder: (context) {
-                    return TestPage();
-                  },
-                  settings: RouteSettings(name: settings.name),
+                return CustomDirectionalTransitionRoute(
+                  child: const CostListScreenWrapper(),
+                  ltr: true,
                 );
               case '/form':
-                return MaterialPageRoute(
-                  builder: (context) {
-                    return CostItemFormScreen(arg: settings.arguments as FormArgument);
-                  },
-                  settings: RouteSettings(name: settings.name),
+                return SlideUpTransitionRoute(
+                  child: CostFormScreenWrapper(arg: (settings.arguments as FormArgument?)),
                 );
               case '/data':
-                return MaterialPageRoute(
-                  builder: (context) => const ChartScreen(),
-                  settings: RouteSettings(name: settings.name),
+                return CustomDirectionalTransitionRoute(
+                  child: const ChartScreen(),
+                  ltr: (settings.arguments as bool?) ?? false,
                 );
               case '/report':
                 return MaterialPageRoute(
@@ -124,9 +112,9 @@ class HomeScreen extends StatelessWidget {
                   settings: RouteSettings(name: settings.name),
                 );
               case '/settings':
-                return MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                  settings: RouteSettings(name: settings.name),
+                return CustomDirectionalTransitionRoute(
+                  child: const SettingsScreenWrapper(),
+                  ltr: (settings.arguments as bool?) ?? false,
                 );
               case '/budgets':
                 return MaterialPageRoute(
@@ -139,9 +127,9 @@ class HomeScreen extends StatelessWidget {
                   // settings: RouteSettings(name: settings.name)
                 );
               case '/goals':
-                return MaterialPageRoute(
-                  builder: (context) => GoalScreen(),
-                  settings: RouteSettings(name: settings.name),
+                return CustomDirectionalTransitionRoute(
+                  child: const GoalScreen(),
+                  ltr: (settings.arguments as bool?) ?? false,
                 );
               case '/goals-form':
                 return MaterialPageRoute(
@@ -156,7 +144,15 @@ class HomeScreen extends StatelessWidget {
         ),
         floatingActionButton: showBottomNavBar ? CustomFAB() : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: showBottomNavBar ? CustomNavigationBottomBar() : null,
+        bottomNavigationBar: IgnorePointer(
+          ignoring: !showBottomNavBar,
+          child: AnimatedContainer(
+            duration: Durations.medium1,
+            curve: Curves.easeOut,
+            height: showBottomNavBar ? 96 : 0,
+            child: CustomNavigationBottomBar(),
+          ),
+        ),
       ),
     );
   }
@@ -183,17 +179,25 @@ class CustomFAB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.large(
-      onPressed: () {
-        context.navMod.openForm(FormArgument());
-        HapticFeedback.mediumImpact();
-      },
-      shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(30)),
-      enableFeedback: true,
-      elevation: 0,
-      foregroundColor: context.cs.surfaceContainer,
-      backgroundColor: context.cs.primary,
-      child: Icon(Icons.add),
+    return SizedBox(
+      width: 80,
+      height: 80,
+      child: FloatingActionButton(
+        onPressed: () {
+          context.navMod.goToNamed('/form');
+          // context.navMod.openForm(FormArgument());
+          HapticFeedback.mediumImpact();
+        },
+        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(24)),
+        enableFeedback: true,
+        elevation: 0,
+        foregroundColor: context.cs.surfaceContainer,
+        backgroundColor: context.cs.primary,
+        child: Icon(
+          Icons.add,
+          size: 40,
+        ),
+      ),
     );
   }
 }
@@ -212,10 +216,13 @@ class CustomNavigationBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pageIndex = context.select((NavigationModel state) => state.currentRouteIndex);
+    final pageIndex = context.select((NavigatorModel state) => state.currentRouteIndex);
     return BottomAppBar(
       notchMargin: 10,
-      shape: CircularNotchedRectangle(),
+      shape: AutomaticNotchedShape(
+        RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
+        RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(24)),
+      ),
       child: Row(
         spacing: 5,
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -226,7 +233,6 @@ class CustomNavigationBottomBar extends StatelessWidget {
                   Widget iconButton;
                   if (pageIndex == index) {
                     iconButton = IconButton.filled(
-                      
                       style: IconButton.styleFrom(
                         backgroundColor: context.cs.secondary,
                         fixedSize: Size.square(50),
@@ -239,7 +245,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
                         buttonIcon,
                         color: context.cs.surface,
                       ),
-                      iconSize: 32,
+                      iconSize: 30,
                     );
                   } else {
                     iconButton = IconButton(
@@ -253,7 +259,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
                         context.navMod.navigateMainScreen(index);
                       },
                       icon: Icon(buttonIcon),
-                      iconSize: 28,
+                      iconSize: 24,
                     );
                   }
                   return MapEntry(index, iconButton);

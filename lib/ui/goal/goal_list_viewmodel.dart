@@ -28,8 +28,13 @@ class GoalModel extends ChangeNotifier {
 
   Map<Goal, GoalProgress> get goalOverview => Map.fromEntries(
     _goalRepository.goals.map(
-      (goal) =>
-          MapEntry(goal, goal.getCurrentGoalProgress(_costItemRepo.costItems, DateTime.now())),
+      (goal) => MapEntry(
+        goal,
+        goal.getGoalProgress(
+          _costItemRepo.costItems,
+          goal.isEnded ? goal.endDate! : DateTime.now(),
+        )!,
+      ),
     ),
   );
 }

@@ -73,68 +73,81 @@ class Goal {
     "lastModified": lastModified?.toString(),
   };
 
-  List<GoalProgress> getGoalProgress(List<CostItem> items) {
-    List<GoalProgress> resultList = [];
-    final end = endDate ?? DateTime.now().startOfMonth;
+  bool get isEnded => endDate?.isBefore(DateTime.now().startOfMonth) ?? false;
+  bool get isStarted => startDate?.isBeforeOrSameMoment(DateTime.now().startOfMonth) ?? true;
 
-    if (goalTracking == GoalTrackingPeriod.monthly) {
-      final filteredItems =
-          items.where((item) {
-            final categoryQuery = categories?.contains(item.categoryId) ?? true;
-            final nameQuery = item.name.contains(filterString ?? "");
-            return categoryQuery && nameQuery;
-            // return dateQuery;
-          }).toList();
-
-      resultList =
-          List.generate(
-                max(1, end.month - startDate!.month),
-                (i) => startDate!.addMonth(i),
-              )
-              .map(
-                (month) => GoalProgress(
-                  date: month,
-                  items:
-                      filteredItems.where((item) {
-                        return item.date.isInSameYearMonthAs(month);
-                      }).toList(),
-                  goalType: goalType,
-                  target: target,
-                ),
-              )
-              .toList();
+  List<GoalProgress> getPastGoalProgress(List<CostItem> items) {
+    debugPrint('get past goal progress');
+    if (!isStarted) return [];
+    final cur = DateTime.now().startOfMonth;
+    DateTime end;
+    if (isEnded) {
+      end = endDate!;
     } else {
-      resultList.add(
-        GoalProgress(
-          date: startDate!,
-          items:
-              items.where((item) {
-                final dateQuery =
-                    (item.date.isAtSameMomentAs(startDate!)) ||
-                    (item.date.isAtSameMomentAs(end)) ||
-                    (item.date.isAfter(startDate!) &&
-                        item.date.isBefore(endDate ?? DateTime.now()));
-                final categoryQuery = categories?.contains(item.categoryId) ?? true;
-                final nameQuery = item.name.contains(filterString ?? "");
-                return dateQuery && categoryQuery && nameQuery;
-              }).toList(),
-          goalType: goalType,
-          target: target,
-        ),
-      );
+      end = cur;
     }
-    debugPrint('this get called!');
-    // debugPrint('length of goal progress, ${resultList.length}');
-    return resultList;
+    debugPrint('get end: ${end.formatMonthLonger()}');
+    // if (endDate?.isBefore(cur) ?? false) {
+    //   end = endDate!;
+    // } else {
+    //   if (cur.addMonth(-1).isBefore(startDate!)) {
+    //     return [];
+    //   } else {
+    //     end = cur.addMonth(-1);
+    //   }
+    // }
+    if (goalTracking == GoalTrackingPeriod.monthly) {
+      return List.generate(
+        max(1, end.month - startDate!.month),
+        (i) => startDate!.addMonth(i),
+      ).map((month) => getGoalProgress(items, month)!).toList();
+    } else {
+      return [];
+    }
   }
 
-  GoalProgress getCurrentGoalProgress(List<CostItem> items, DateTime yearMonth) {
+  StringFilter? get filter =>
+      filterString != null && matchType != null
+          ? StringFilter(matchType: matchType!, query: filterString!)
+          : null;
+
+  GoalProgress? getGoalProgress(List<CostItem> items, DateTime yearMonth) {
+    if (endDate?.isBefore(yearMonth.startOfMonth) ?? false) {
+      return null;
+    }
+    final filteredItems =
+        items.where((item) {
+          final categoryQuery = categories?.contains(item.categoryId) ?? true;
+          final nameQuery = filter?.checkMatch(item.name) ?? true;
+          return categoryQuery && nameQuery;
+        }).toList();
+
     if (goalTracking == GoalTrackingPeriod.monthly) {
-      return getGoalProgress(items).firstWhereOrNull(
-        (progress) => progress.date!.isInSameYearMonthAs(DateTime.now()),
-      ) ?? GoalProgress(target: 0);
+      return GoalProgress(
+        date: yearMonth.startOfMonth,
+        items:
+            filteredItems.where((item) {
+              return item.date.isInSameYearMonthAs(yearMonth);
+            }).toList(),
+        goalType: goalType,
+        target: target,
+      );
+    } else if (goalTracking == GoalTrackingPeriod.overall) {
+      return GoalProgress(
+        date: startDate!,
+        items:
+            filteredItems
+                .where(
+                  (item) =>
+                      (item.date.isAfterOrSameMoment(startDate!)) &&
+                      (item.date.isBeforeOrSameMoment(endDate ?? DateTime.now().standard)),
+                )
+                .toList(),
+        goalType: goalType,
+        target: target,
+      );
     } else {
-      return getGoalProgress(items).firstOrNull ?? GoalProgress(target: 0);
+      return null;
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:money2/money2.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -21,8 +22,8 @@ class LocalServices {
     return prefString;
   }
 
-  Future<void> _writeToSharedPref(String key, String jsonString) async {
-    await pref.setString(key, jsonString);
+  Future<void> _writeStringToSharedPref(String key, String value) async {
+    await pref.setString(key, value);
   }
 
   Future<void> _writeToFile(String fileName, dynamic json) async {
@@ -175,7 +176,7 @@ class LocalServices {
   Future<Result<void>> writeSavedItems(List<SavedItem> items) async {
     try {
       final json = items.map((SavedItem el) => el.toJson()).toList();
-      await _writeToSharedPref("savedItems", jsonEncode(json));
+      await _writeStringToSharedPref("savedItems", jsonEncode(json));
       return Result.ok(null);
     } on Exception catch (e) {
       return Result.error(e);
@@ -217,6 +218,28 @@ class LocalServices {
       );
       await _writeToFile('categories', json);
       return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeCurrency(Currency currency) async {
+    try {
+      await _writeStringToSharedPref("currency", currency.isoCode);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<Currency?>> getCurrency() async {
+    try {
+      final iso = await _loadSharedPref("currency");
+      if (iso != null) {
+        return Result.ok(Currencies().find(iso));
+      } else {
+        return Result.ok(null);
+      }
     } on Exception catch (e) {
       return Result.error(e);
     }

@@ -2,10 +2,9 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_view_model.dart';
+import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,7 +22,7 @@ class GoalScreen extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              context.navMod.goTo("/goals-form");
+              context.navMod.goToNamed("/goals-form");
             },
             icon: Icon(Icons.add),
           ),
@@ -68,9 +67,8 @@ class GoalBody extends StatelessWidget {
                         // customColor:  Colors.green.withAlpha(40),
                         // highlight: true,
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
+                        onTap: () {
+                          context.navMod.goTo(
                             MaterialPageRoute(
                               builder:
                                   (context) => ChangeNotifierProvider(
@@ -152,7 +150,7 @@ class GoalBody extends StatelessWidget {
                               ),
                             ),
                             Stack(
-                              alignment: Alignment(0,1.2),
+                              alignment: Alignment(0, 1.2),
                               clipBehavior: Clip.none,
                               children: [
                                 Column(

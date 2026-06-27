@@ -1,7 +1,5 @@
 import 'dart:math';
 
-import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -25,6 +23,9 @@ class GoalInfoScreen extends StatelessWidget {
     final ready = context.select((GoalInfoViewmodel state) => state.ready);
     return Scaffold(
       appBar: AppBar(
+        leading: BackButton(
+          onPressed: () => context.navMod.goToNamedAndRemovePrevious('/goals'),
+        ),
         title: Text("Goal Details"),
         actions: [
           IconButton(
@@ -54,7 +55,7 @@ class GoalInfoScreen extends StatelessWidget {
                             goalRepository: context.read(),
                             initGoal: goal,
                           ),
-                      child: GoalInfoFormScreen(),
+                      child: const GoalInfoFormScreen(),
                     );
                   },
                 ),
@@ -82,11 +83,11 @@ class GoalInfoBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final goal = context.select((GoalInfoViewmodel state) => state.goal);
+    final goalProgress = context.select((GoalInfoViewmodel state) => state.pastProgress);
     final curProgress = context.select((GoalInfoViewmodel state) => state.currentGoalProgress);
-    // final dayinCurMonth = DateTime.now().dayinCurrentMonth;
-    // final spendPerday = (goal.target ?? 0) / dayinCurMonth;
-
+    final progress = curProgress.progress;
+    final dividerPercentage = progress * 0.008;
+    debugPrint('goal progress: ${goalProgress.length}');
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -94,16 +95,16 @@ class GoalInfoBody extends StatelessWidget {
         ),
         SliverToBoxAdapter(
           child: Stack(
-            alignment: AlignmentDirectional(0, 0.9),
+            alignment: AlignmentDirectional(0, 0.8),
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(
-                    height: 170,
+                    height: 160,
                   ),
                   SizedBox(
-                    height: 10,
+                    height: 0,
                     width: 150,
                     child: PieChart(
                       PieChartData(
@@ -111,19 +112,31 @@ class GoalInfoBody extends StatelessWidget {
                         startDegreeOffset: -180,
                         sections: [
                           PieChartSectionData(
-                            value: min(1, curProgress.progress),
+                            value: min(1, progress),
                             radius: 8,
                             showTitle: false,
-                            color: context.cs.secondary,
+                            color:
+                                curProgress.achieved
+                                    ? Colors.green.shade800
+                                    : Colors.red.shade900.withAlpha(150),
                           ),
                           PieChartSectionData(
-                            value: max(0, 1 - curProgress.progress),
+                            value: dividerPercentage,
+                            radius: 20,
+                            showTitle: false,
+                            color: context.customCs.fadeColor1,
+                          ),
+                          PieChartSectionData(
+                            value: (1 - progress).abs(),
                             radius: 8,
                             showTitle: false,
-                            color: context.customCs.fadeColor2,
+                            color:
+                                curProgress.achieved
+                                    ? context.customCs.fadeColor2
+                                    : Colors.red.shade800,
                           ),
                           PieChartSectionData(
-                            value: 1,
+                            value: max(1, progress) + dividerPercentage,
                             radius: 8,
                             showTitle: false,
                             color: Colors.transparent,
@@ -132,13 +145,16 @@ class GoalInfoBody extends StatelessWidget {
                       ),
                     ),
                   ),
+                  SizedBox(
+                    height: 10,
+                  ),
                 ],
               ),
               Column(
                 children: [
                   Text(
-                    "${curProgress.value.formatRoundedString()} / ${curProgress.target!.formatRoundedString()}",
-                    style: context.customTt.numberFontSmall,
+                    curProgress.date!.formatMonthLonger(),
+                    style: context.customTt.paragraphText,
                   ),
                   SizedBox(
                     height: 8,
@@ -148,8 +164,8 @@ class GoalInfoBody extends StatelessWidget {
                     style: context.customTt.dateLabel!.copyWith(fontSize: 48, height: 1),
                   ),
                   Text(
-                    "Towards the goals",
-                    style: context.customTt.paragraphText,
+                    "${curProgress.value.formatRoundedString()} / ${curProgress.target!.formatRoundedString()}",
+                    style: context.customTt.numberFontSmall,
                   ),
                 ],
               ),
@@ -186,7 +202,7 @@ class GoalInfoBody extends StatelessWidget {
               //           (i) => DateTime.now().startOfMonth.addDay(i),
               //         ).map(
               //           (date) {
-              //             final CostMetric metric =
+              //             final CostMetric metric =Z
               //                 context.goalInfoMod.barChartData[date] ?? CostMetric();
               //             return BarChartGroupData(
               //               x: date.day,
@@ -212,6 +228,12 @@ class GoalInfoBody extends StatelessWidget {
             ],
           ),
         ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          sliver: SliverToBoxAdapter(
+            child: Divider(),
+          ),
+        ),
         // SliverPadding(
         //   padding: const EdgeInsets.symmetric(vertical: 12.0),
         //   sliver: SliverToBoxAdapter(
@@ -230,23 +252,44 @@ class GoalInfoBody extends StatelessWidget {
             child: const GoalInfoHeatmapChart(),
           ),
         ),
-        // SliverList(
-        //   delegate: SliverChildListDelegate([
-
-        //     Padding(
-        //       padding: const EdgeInsets.symmetric(vertical: 4.0),
-        //       child: Text("History", style: context.customTt.dateLabel),
-        //     ),
-        //     ...goalProgress.map(
-        //       (el) => Padding(
-        //         padding: const EdgeInsets.symmetric(vertical: 4.0),
-        //         child: ReusableContainer(
-        //           child: Text(el.date?.formatMonth() ?? "No date"),
-        //         ),
-        //       ),
-        //     ),
-        //   ]),
-        // ),
+        if (context.goalInfoMod.showHistory)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            sliver: SliverToBoxAdapter(
+              child: Divider(),
+            ),
+          ),
+        if (context.goalInfoMod.showHistory)
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text("History", style: context.customTt.dateLabel),
+              ),
+              ...goalProgress.map(
+                (progress) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: ReusableContainer(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12),
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        Container(
+                          height: 10,
+                          width: 10,
+                          decoration: BoxDecoration(
+                            color: progress.achieved ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        Expanded(child: Text(progress.date?.formatMonthLonger() ?? "No date")),
+                        Text(progress.progress.formatCompactPercentage()),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ]),
+          ),
       ],
     );
   }
@@ -337,9 +380,7 @@ class GoalInfoTitleContainer extends StatelessWidget {
             goal.description ?? "",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: context.customTt.paragraphText!.copyWith(
-              // color: context.cs.surface.withAlpha(150),
-            ),
+            style: context.tt.bodyMedium
           ),
         ],
       ),
@@ -378,7 +419,7 @@ class GoalDetailsExpansionTile extends StatelessWidget {
                     Flexible(
                       flex: 1,
                       fit: FlexFit.tight,
-                      child: Text(entry.key, style: context.customTt.paragraphText),
+                      child: Text(entry.key, style: context.customTt.paragraphTextSmall),
                     ),
                     Flexible(
                       flex: 2,
@@ -388,7 +429,7 @@ class GoalDetailsExpansionTile extends StatelessWidget {
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.right,
-                        style: context.customTt.paragraphText,
+                        style: context.customTt.paragraphTextSmall,
                       ),
                     ),
                   ],
@@ -504,11 +545,11 @@ class GoalInfoHeatmapChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dayinCurMonth = context.goalInfoMod.dataCount;
-    // final dayinCurMonth = context.goalInfoMod.dayinCurrentMonth;
-    final spendPerday = (context.goalInfoMod.goal.target ?? 0) / dayinCurMonth;
-    final percentage = context.goalInfoMod.targetReachingPercentage;
-
+    final dailSpendPercent = context.goalInfoMod.targetReachingPercentage;
+    final dailyData = context.goalInfoMod.dailyData.entries;
+    final days = context.goalInfoMod.displayDayTitle;
+    final daysWithData = dailyData.where((entry) => entry.value != null).length;
+    final targetReachingDays = context.goalInfoMod.targetReachingDays;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       // spacing: 4,
@@ -517,7 +558,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                "Spend Heatmap",
+                "Spend Heatmap - $days",
                 style: context.customTt.dateLabel,
               ),
             ),
@@ -538,76 +579,96 @@ class GoalInfoHeatmapChart extends StatelessWidget {
             ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: HeatmapGraph(
-            target: spendPerday,
-            totalCount: dayinCurMonth,
-            getTooltipMessage: (index) {
-              final val = context.goalInfoMod.dailyData.entries.elementAtOrNull(index);
-              if (val == null) {
-                return "No data";
-              } else {
-                final percentage = (val.value?.expense ?? 0) / spendPerday;
-                // ignore: prefer_adjacent_string_concatenation
-                return "${val.key.formatShorter()}: ${val.value == null ? "No Data" : (val.value!.expense ?? 0).customCurrencyFormat("RM")}" +
-                    // ignore: unnecessary_string_interpolations
-                    "${val.value != null ? " (${NumberFormat.percentPattern().format(percentage)})" : ""}";
-              }
-            },
-            data: context.goalInfoMod.indexedDailyData,
-          ),
-        ),
         Align(
-          alignment: Alignment(0.9, 0),
+          alignment: Alignment.centerLeft,
           child: Padding(
-            padding: const EdgeInsets.only(top: 4.0),
+            padding: const EdgeInsets.only(top: 8.0, bottom: 8),
             child: FractionallySizedBox(
               widthFactor: 0.6,
               child: Row(
                 spacing: 6,
                 children: [
-                  Text("0", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
+                  Text("0", style: context.customTt.paragraphTextSmall),
                   Expanded(
                     child: Container(
-                      height: 12,
+                      height: 8,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(2),
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
-                          colors: [Colors.green, context.cs.secondary],
+                          colors: [Colors.green.shade800, context.cs.secondary],
                         ),
                       ),
                     ),
                   ),
-                  Text("Limit", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
+                  Text("Limit", style: context.customTt.paragraphTextSmall),
                   SizedBox(
                     width: 10,
                   ),
                   Container(
-                    height: 12,
-                    width: 12,
+                    height: 8,
+                    width: 8,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(2),
-                      color: Colors.red,
+                      color: Colors.red.shade800,
                     ),
                   ),
-                  Text("Exceed", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
+                  Text("Exceed", style: context.customTt.paragraphTextSmall),
                 ],
               ),
             ),
           ),
         ),
-        Text(
-          percentage.formatCompactPercentage(),
-          style: context.customTt.numberFontLarge,
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: HeatmapGraph(
+            target: context.goalInfoMod.targetSpendPerDay,
+            totalCount: context.goalInfoMod.dataCount,
+            getTooltipMessage: (index) {
+              final dayData = dailyData.elementAtOrNull(index);
+              if (dayData == null) {
+                return "No data";
+              } else {
+                final percentage =
+                    (dayData.value?.expense ?? 0) / context.goalInfoMod.targetSpendPerDay;
+                // ignore: prefer_adjacent_string_concatenation
+                return "${dayData.key.formatShorter()}\n${dayData.value == null ? "No Data" : (dayData.value!.expense ?? 0).customCurrencyFormat("RM")}" +
+                    // ignore: unnecessary_string_interpolations
+                    "${dayData.value != null ? " (${NumberFormat.percentPattern().format(percentage)})" : ""}";
+              }
+            },
+            data: context.goalInfoMod.indexedDailyData,
+          ),
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 12.0),
-          child: Text(
-            "of all days in current month where you reach your daily spend.",
-            style: context.customTt.paragraphText,
+          padding: const EdgeInsets.only(top: 12, right: 12.0),
+          child: Text.rich(
+            TextSpan(
+              text: "You have spent below the daily spend limit for ",
+              style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
+              children: [
+                // ignore: prefer_interpolation_to_compose_strings
+                TextSpan(
+                  text: targetReachingDays.toString() + "/" + daysWithData.toString(),
+                  style: context.customTt.numberFontSmall!.copyWith(
+                    fontSize: 14,
+                    color: context.cs.secondary,
+                  ),
+                ),
+                TextSpan(text: " days ("),
+                TextSpan(
+                  text: dailSpendPercent.formatCompactPercentage(),
+                  style: context.customTt.numberFontSmall!.copyWith(
+                    fontSize: 14,
+                    color: context.cs.secondary,
+                  ),
+                ),
+                TextSpan(text: ") this month."),
+              ],
+            ),
+            // "You have spent below the daily spend limit for ${context.goalInfoMod.targetReachingDays}/${dailyData.where((entry) => entry.value != null).length} days (${dailSpendPercent.formatCompactPercentage()}) this month.",
+            // style: context.customTt.paragraphText!.copyWith(fontSize: 14),
           ),
         ),
       ],
@@ -622,11 +683,13 @@ class GoalInfoLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final target = context.goalInfoMod.goal.target;
-    final achieved = context.goalInfoMod.currentGoalProgress.achieved;
+    final goal = context.goalInfoMod.goal;
+    final target = goal.target;
+    final goalProgress = context.goalInfoMod.currentGoalProgress;
+    final achieved = goalProgress.achieved;
+    final days = context.goalInfoMod.displayDayTitle;
 
     return Column(
-      spacing: 10,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
@@ -636,7 +699,7 @@ class GoalInfoLineChart extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    "Remaining Daily Spend",
+                    "Cumulative - $days",
                     style: context.customTt.dateLabel,
                   ),
                 ),
@@ -656,16 +719,72 @@ class GoalInfoLineChart extends StatelessWidget {
                 ),
               ],
             ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4.0, bottom: 8),
+                child: FractionallySizedBox(
+                  widthFactor: 0.6,
+                  child: Row(
+                    spacing: 6,
+                    children: [
+                      Container(
+                        height: 8,
+                        width: 8,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: Colors.blue.shade800,
+                        ),
+                      ),
+                      Text("Limit", style: context.customTt.paragraphTextSmall),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Container(
+                        height: 8,
+                        width: 8,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(2),
+                          color: context.cs.secondary,
+                        ),
+                      ),
+                      Text("Spend", style: context.customTt.paragraphTextSmall),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
         Container(
           padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
-          height: 140,
+          height: 160,
           child: LineChart(
             LineChartData(
               titlesData: FlTitlesData(show: false),
               lineTouchData: getCustomLineTouchData(
                 context: context,
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map(
+                    (spot) {
+                      final startDate = context.goalInfoMod.chartStartDate.addDay(
+                        spot.x.round() - 1,
+                      );
+                      final label = spot.barIndex == 0 ? "Limit" : startDate.formatShorter();
+                      final color =
+                          spot.barIndex == 0 ? Colors.blue.shade300 : context.cs.secondary;
+                      return LineTooltipItem(
+                        "$label: ${spot.y.customCurrencyFormat("RM", round: true)}",
+                        context.tt.bodyMedium!.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight(500),
+                          color: color,
+                        ),
+                        textAlign: TextAlign.end,
+                      );
+                    },
+                  ).toList();
+                },
               ),
               borderData: FlBorderData(show: false),
               gridData: customGrid,
@@ -685,30 +804,54 @@ class GoalInfoLineChart extends StatelessWidget {
                   ],
                 ),
                 getCustomLineChartBarData(
-                  spots: [
-                    ...context.goalInfoMod.lineChartData.entries.map(
-                      (el) => FlSpot(el.key.day.toDouble(), el.value.expense!),
-                    ),
-                  ],
+                  dotData: FlDotData(
+                    checkToShowDot: (spot, barData) {
+                      final date = context.goalInfoMod.chartStartDate.addDay(spot.x.round() - 1);
+                      return DateTime.now().standard == date;
+                    },
+                  ),
                   isCurved: false,
                   color: context.cs.secondary,
+                  spots: [
+                    ...context.goalInfoMod.lineChartData.entries
+                        .where((entry) => entry.value != null)
+                        .mapIndexed(
+                          (index, el) {
+                            return FlSpot((index + 1).toDouble(), el.value?.expense ?? 0);
+                          },
+                        ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
-        Text(
-          achieved
-              ? "< ${context.goalInfoMod.remainingValueOverDay.customCurrencyFormat("RM")}"
-              : "-",
-          style: context.customTt.numberFontLarge!.copyWith(height: 1),
-        ),
-        Text(
-          "daily spend until the end of the month to achieve this budget goal.",
-          style: context.customTt.paragraphText,
-        ),
-        SizedBox(
-          height: 8,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0, top: 12),
+          child:
+              achieved
+                  ? Text.rich(
+                    TextSpan(
+                      text: "Spend below ",
+                      style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: context.goalInfoMod.remainingValueOverDay.customCurrencyFormat(
+                            "RM",
+                          ),
+                          style: context.customTt.numberFontSmall!.copyWith(
+                            fontSize: 14,
+                            color: context.cs.secondary,
+                          ),
+                        ),
+                        TextSpan(text: " per day to achieve this goal."),
+                      ],
+                    ),
+                  )
+                  : Text.rich(
+                    TextSpan(text: "Your current month expense has exceeds the limit."),
+                    style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
+                  ),
         ),
       ],
     );
@@ -827,7 +970,7 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
       _expandedIndex = index;
     });
     await Future.delayed(Duration(milliseconds: 1500), () {
-      if (_expandedIndex == index) {
+      if (mounted && _expandedIndex == index) {
         setState(() {
           _expandedIndex = -1;
         });
@@ -853,11 +996,11 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
         if (value != null) {
           if (widget.target != null) {
             if (value > widget.target!) {
-              color = Colors.red;
+              color = Colors.red.shade800;
             } else {
               color =
                   Color.lerp(
-                    Colors.green.withAlpha(150),
+                    Colors.green.shade800,
                     context.cs.secondary,
                     (value) / widget.target!,
                   )!;
@@ -870,16 +1013,18 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
         }
         return Tooltip(
           enableTapToDismiss: false,
-          textStyle: context.customTt.numberFontSmall!.copyWith(
+          textStyle: context.tt.bodyMedium!.copyWith(
             fontSize: 12,
-            color: context.cs.primary,
+            color: Color.lerp(color, Colors.white, 0.8),
+            fontWeight: FontWeight(500),
           ),
           decoration: BoxDecoration(
-            color: context.cs.surface.withAlpha(220),
+            color: context.cs.surface,
             borderRadius: BorderRadius.circular(4),
           ),
           onTriggered: () => tapHeatmap(index),
           message: message,
+          textAlign: TextAlign.center,
           triggerMode: TooltipTriggerMode.tap,
           preferBelow: false,
           // waitDuration: Durations.medium1,

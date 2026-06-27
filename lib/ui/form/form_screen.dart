@@ -15,46 +15,47 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 
 // screen for user to input a new cost item
 // or edit a existing cost item
-class CostItemFormScreen extends StatelessWidget {
-  const CostItemFormScreen({
+class CostFormScreenWrapper extends StatelessWidget {
+  const CostFormScreenWrapper({
     super.key,
     required this.arg,
   });
-  final FormArgument arg;
+  final FormArgument? arg;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create:
-          (context) => FormModel(
-            initCostItem: arg.selectedCostItem,
+          (context) => FormViewModel(
+            initCostItem: arg?.selectedCostItem,
             costItemRepo: context.read(),
             savedItemRepo: context.read(),
             categoryRepo: context.read(),
+            currencyRepo: context.read(),
           ),
-      child: CostFormBody(arg: arg),
+      child: CostFormScreen(arg: arg),
     );
   }
 }
 
-class CostFormBody extends StatelessWidget {
-  const CostFormBody({
+class CostFormScreen extends StatelessWidget {
+  const CostFormScreen({
     super.key,
     required this.arg,
   });
 
-  final FormArgument arg;
+  final FormArgument? arg;
 
   @override
   Widget build(BuildContext context) {
-    final ready = context.select((FormModel state) => state.ready);
+    final ready = context.select((FormViewModel state) => state.ready);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text(arg.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
+        title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
         leading: BackButton(
-          onPressed: () => context.navMod.popFormToMain(),
+          onPressed: () => context.navMod.pop(),
         ),
         actions: [
           IconButton(
@@ -72,10 +73,8 @@ class CostFormBody extends StatelessWidget {
         child:
             ready
                 ? const FormMainSelectionView()
-                : Expanded(
-                  child: Center(
-                    child: const CircularProgressIndicator(),
-                  ),
+                : const Center(
+                  child: CircularProgressIndicator(),
                 ),
       ),
       // bottomNavigationBar: bottom,
@@ -98,8 +97,11 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   @override
   void initState() {
     super.initState();
-
     _selectedDate = context.formMod.date;
+    if (context.formMod.editMode) {
+      _isFormOpened = true;
+      _isFormExpanded = true;
+    }
   }
 
   void selectDate() async {
@@ -140,7 +142,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    CostItemCategory? selectedCategory = context.select((FormModel state) {
+    CostItemCategory? selectedCategory = context.select((FormViewModel state) {
       if (state.selectedCategory != null) {
         Future.delayed(
           Duration(microseconds: 10),
@@ -154,10 +156,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
       }
       return state.selectedCategory;
     });
-    String itemDesc = context.select((FormModel state) => state.itemDesc);
-    double? amount = context.select((FormModel state) => state.amount);
-    TextEditingController descController = context.watch<FormModel>().descriptionController;
-    TextEditingController amountController = context.watch<FormModel>().amountController;
+    String itemDesc = context.select((FormViewModel state) => state.itemDesc);
+    double? amount = context.select((FormViewModel state) => state.amount);
+    TextEditingController descController = context.watch<FormViewModel>().descriptionController;
+    TextEditingController amountController = context.watch<FormViewModel>().amountController;
 
     if (selectedCategory == null) {
       return SizedBox.shrink();
@@ -182,7 +184,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
             !_isFormOpened
                 ? 0
                 : _isFormExpanded
-                ? 510
+                ? 480
                 : 120,
         decoration: BoxDecoration(
           color: context.cs.primary,
@@ -220,12 +222,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       children: [
                         Text(
                           [
-                            selectedCategory.name!.capitalize(),
+                            selectedCategory.capName,
                             ...[
                               if (!_isFormExpanded)
-                                (amount ?? 0).customCurrencyFormat(
-                                  "RM",
-                                ),
+                                context.formMod.currencyFormat(amount ?? 0, compact: true),
                             ],
                           ].join(' • '),
                           style: context.customTt.dateLabel!.copyWith(
@@ -318,33 +318,48 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "RM",
-                            style: context.customTt.numberFontLarge!.copyWith(
-                              fontSize: 60,
-                              color: context.cs.primary,
+                          if (!context.formMod.symbolAtBack)
+                            Text(
+                              context.formMod.currencySymbol,
+                              style: context.customTt.numberFontLarge!.copyWith(
+                                fontSize: 60,
+                                color: context.cs.primary,
+                              ),
                             ),
-                          ),
                           Expanded(
                             child:
-                                amount == null
+                                amountController.text.isEmpty
                                     ? Text(
                                       "0.00",
-                                      textAlign: TextAlign.end,
+                                      textAlign:
+                                          context.formMod.symbolAtBack
+                                              ? TextAlign.start
+                                              : TextAlign.end,
                                       style: context.customTt.numberFontLarge!.copyWith(
                                         fontSize: 60,
-                                        color: context.cs.primary.withAlpha(100),
+                                        color: context.customCs.fadeColor2,
                                       ),
                                     )
                                     : Text(
                                       amountController.text,
-                                      textAlign: TextAlign.end,
+                                      textAlign:
+                                          context.formMod.symbolAtBack
+                                              ? TextAlign.start
+                                              : TextAlign.end,
                                       style: context.customTt.numberFontLarge!.copyWith(
                                         fontSize: 60,
                                         color: context.cs.primary,
                                       ),
                                     ),
                           ),
+                          if (context.formMod.symbolAtBack)
+                            Text(
+                              context.formMod.currencySymbol,
+                              style: context.customTt.numberFontLarge!.copyWith(
+                                fontSize: 60,
+                                color: context.cs.primary,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -358,7 +373,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       minLines: 3,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        filled:  false,
+                        filled: false,
                         visualDensity: VisualDensity(vertical: -4),
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(vertical: 20),
@@ -383,7 +398,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             );
                           } else {
                             context.formMod.submitForm();
-                            context.navMod.popFormToMain();
+                            context.navMod.goToNamedAndRemovePrevious('/');
                           }
                         },
                         selectedDate: _selectedDate,
@@ -447,7 +462,7 @@ class FormMainSelectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedFormGroup = context.select((FormModel state) => state.formGroup);
+    final selectedFormGroup = context.select((FormViewModel state) => state.formGroup);
     // final gridSize = context.select((ThemeModel state) => state.gridSize);
 
     return Column(
@@ -542,9 +557,9 @@ class CategorySelectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedCategory = context.select(
-      (FormModel state) => state.selectedCategory ?? CostItemCategory.error(),
+      (FormViewModel state) => state.selectedCategory ?? CostItemCategory.error(),
     );
-    final categories = context.select((FormModel state) => state.categories);
+    final categories = context.select((FormViewModel state) => state.categories);
     return SliverPadding(
       padding: const EdgeInsets.only(top: 20.0, bottom: 120),
       sliver: SliverGrid.list(
@@ -594,7 +609,7 @@ class CategorySelectionView extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      category.name!.capitalize(),
+                      category.capName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.tt.bodyMedium!.copyWith(fontSize: 12),
@@ -631,9 +646,9 @@ class SavedItemSelectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final savedItems = context.watch<FormModel>().savedItems;
+    final savedItems = context.watch<FormViewModel>().savedItems;
     // ignore: unused_local_variable
-    final refresh = context.select((FormModel state) => state.refreshed);
+    final refresh = context.select((FormViewModel state) => state.refreshed);
 
     if (savedItems.isNotEmpty) {
       return SliverPadding(

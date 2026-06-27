@@ -6,10 +6,10 @@ import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_view_model.dart';
+import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
-import 'package:budget_tracker/ui/list/list_viewmodel.dart';
-import 'package:budget_tracker/models/navigation_model.dart';
+import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
+import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:collection/collection.dart';
@@ -56,6 +56,9 @@ extension DayExtension on DateTime {
 
   bool isBeforeOrSameMoment(DateTime newDate) {
     return (isBefore(newDate) || isAtSameMomentAs(newDate));
+  }
+  bool isAfterOrSameMoment(DateTime newDate) {
+    return (isAfter(newDate) || isAtSameMomentAs(newDate));
   }
 
   List<int> getFullMonthWeekdayList() {
@@ -107,6 +110,7 @@ extension DoubleExtension on double {
     String currencySymbol, {
     bool usePositiveSign = false,
     bool useSuffix = false,
+    bool round = false,
   }) {
     final absValue = abs();
     final sign =
@@ -118,7 +122,7 @@ extension DoubleExtension on double {
     if (useSuffix) {
       return sign + currencySymbol + NumberFormat.compact().format(absValue);
     }
-    if (absValue % 1 == 0) {
+    if (absValue % 1 == 0 || round) {
       return NumberFormat("$sign$currencySymbol#,##0").format(absValue);
     } else {
       return NumberFormat("$sign$currencySymbol#,##0.00").format(absValue);
@@ -179,14 +183,14 @@ extension BuildContextExtension on BuildContext {
   MediaQueryData get mq => MediaQuery.of(this);
 
   // AppModel get appMod => read<AppModel>();
-  NavigationModel get navMod => read<NavigationModel>();
-  FormModel get formMod => read<FormModel>();
+  NavigatorModel get navMod => read<NavigatorModel>();
+  FormViewModel get formMod => read<FormViewModel>();
   ThemeModel get themeMod => read<ThemeModel>();
-  ListModel get listMod => read<ListModel>();
+  ListViewModel get listMod => read<ListViewModel>();
   GoalModel get goalMod => read<GoalModel>();
   GoalFormViewmodel get goalFormMod => read<GoalFormViewmodel>();
   GoalInfoViewmodel get goalInfoMod => read<GoalInfoViewmodel>();
-  SettingsModel get settingMod => read<SettingsModel>();
+  SettingsViewModel get settingMod => read<SettingsViewModel>();
   SavedItemModel get savedItemMod => read<SavedItemModel>();
   ChartModel get chartMod => read<ChartModel>();
 

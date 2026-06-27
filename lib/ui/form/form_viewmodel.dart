@@ -5,35 +5,39 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-class FormModel extends ChangeNotifier {
-  FormModel({
+class FormViewModel extends ChangeNotifier {
+  FormViewModel({
     required CostItemRepository costItemRepo,
     required SavedItemRepository savedItemRepo,
     required CategoryRepository categoryRepo,
+    required CurrencyRepository currencyRepo,
     CostItem? initCostItem,
-  }) : _costItemRepository = costItemRepo,
-       _savedItemRepository = savedItemRepo,
+  }) : _costItemRepo = costItemRepo,
+       _savedItemRepo = savedItemRepo,
        _initCostItem = initCostItem,
+       _currencyRepo = currencyRepo,
        _categoryRepo = categoryRepo {
     initialize();
   }
 
   final CostItem? _initCostItem;
-  final CostItemRepository _costItemRepository;
-  final SavedItemRepository _savedItemRepository;
+  final CostItemRepository _costItemRepo;
+  final SavedItemRepository _savedItemRepo;
   final CategoryRepository _categoryRepo;
+  final CurrencyRepository _currencyRepo;
 
   CostItemFormResult get formResult {
     return CostItemFormResult(
       name: _itemDesc,
       date: _date,
       costType: _type,
-      category: _selectedCategory?? CostItemCategory.error(),
+      category: _selectedCategory ?? CostItemCategory.error(),
       amount: _amount ?? 0,
     );
   }
@@ -62,7 +66,7 @@ class FormModel extends ChangeNotifier {
 
   bool get editMode => _initCostItem != null;
 
-  UnmodifiableListView<SavedItem> get savedItems => _savedItemRepository.savedItems;
+  UnmodifiableListView<SavedItem> get savedItems => _savedItemRepo.savedItems;
 
   CostItemCategory getCatById(SavedItem item) {
     return _categoryRepo.categories.firstWhereOrNull((el) => el.id == item.category) ??
@@ -199,22 +203,22 @@ class FormModel extends ChangeNotifier {
 
   Future<void> deleteItem() async {
     if (_initCostItem == null) return;
-    await _costItemRepository.deleteCostItem(_initCostItem);
+    await _costItemRepo.deleteCostItem(_initCostItem);
     notifyListeners();
   }
 
   Future<void> deleteSavedItem(SavedItem item) async {
-    await _savedItemRepository.removeSaved(item);
+    await _savedItemRepo.removeSaved(item);
     notifyListeners();
   }
 
   Future<void> submitForm() async {
     if (_initCostItem != null) {
-      await _costItemRepository.updateCostItem(
+      await _costItemRepo.updateCostItem(
         CostItem.update(_initCostItem, formResult),
       );
     } else {
-      await _costItemRepository.createCostItem(CostItem.fromForm(formResult, id: Uuid().v4()));
+      await _costItemRepo.createCostItem(CostItem.fromForm(formResult, id: Uuid().v4()));
     }
   }
 
@@ -222,4 +226,15 @@ class FormModel extends ChangeNotifier {
     _utilityRefresh = _utilityRefresh;
     notifyListeners();
   }
+
+  String get currencySymbol => _currencyRepo.currency.symbol;
+  bool get symbolAtBack => _currencyRepo.currency.pattern.endsWith("S");
+  String Function(
+    double value, {
+    bool abbreviated,
+    bool alwaysShowSign,
+    bool compact,
+    int? decimalDigits,
+  })
+  get currencyFormat => _currencyRepo.formatCurrency;
 }

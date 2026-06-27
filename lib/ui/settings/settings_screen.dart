@@ -1,14 +1,32 @@
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/models/navigation_model.dart';
+import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/constants/currency.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/screens/settings/currency_screen.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+
+class SettingsScreenWrapper extends StatelessWidget {
+  const SettingsScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create:
+          (context) => SettingsViewModel(
+            costItemRepo: context.read(),
+            categoryRepo: context.read(),
+            currencyRepo: context.read(),
+          ),
+      child: const SettingsScreen(),
+    );
+  }
+}
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -44,22 +62,22 @@ class SettingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedThemeMode = context.select((ThemeModel state) => state.theme);
-    final selectedCurrencySymbol = context.select(
-      (AppModel state) => '${state.currencySymbol} (${state.currencyName})',
-    );
-    final selectedLanguage = context.select((ThemeModel state) {
-      switch (state.appLocale.languageCode) {
-        case "en":
-          return "English";
-        case "zh":
-          return "中文（简体）";
-        case "ja":
-          return "日本語";
-        default:
-          return "Undefined";
-      }
-    });
+    // final selectedThemeMode = context.select((ThemeModel state) => state.theme);
+    // final selectedCurrencySymbol = context.select(
+    //   (AppModel state) => '${state.currencySymbol} (${state.currencyName})',
+    // );
+    // final selectedLanguage = context.select((ThemeModel state) {
+    //   switch (state.appLocale.languageCode) {
+    //     case "en":
+    //       return "English";
+    //     case "zh":
+    //       return "中文（简体）";
+    //     case "ja":
+    //       return "日本語";
+    //     default:
+    //       return "Undefined";
+    //   }
+    // });
     return Material(
       child: CustomScrollView(
         slivers: [
@@ -71,7 +89,7 @@ class SettingsList extends StatelessWidget {
                 const SettingsDivider(),
                 const SettingsSectionTitle(text: "Configuration"),
                 CurrencySettingsTile(
-                  selectedCurrencySymbol: selectedCurrencySymbol,
+                  selectedCurrencySymbol: context.read<SettingsViewModel>().displayedCurrency,
                 ),
                 const RecurringCostSettingsTile(),
                 // const BudgetSettingsTile(),
@@ -116,10 +134,7 @@ class SettingsDivider extends StatelessWidget {
 }
 
 class SettingsSectionTitle extends StatelessWidget {
-  const SettingsSectionTitle({
-    super.key,
-    required this.text
-  });
+  const SettingsSectionTitle({super.key, required this.text});
 
   final String text;
   @override
@@ -678,20 +693,11 @@ class CurrencySettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       title: "Currency",
-      trailingWidget: Text(
-        selectedCurrencySymbol,
-        // style: Theme.of(context).textTheme.labelLarge
-      ),
-      onTap: () => changeCurrencyDialog(context),
-    );
-  }
-
-  Future changeCurrencyDialog(BuildContext context) {
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return const CurrencySettingsDialog();
-      },
+      trailingWidget: Text(selectedCurrencySymbol, style: context.tt.bodyMedium),
+      onTap:
+          () => context.navMod.goTo(
+            MaterialPageRoute(builder: (context) => const CurrencySelectionScreenWrapper()),
+          ),
     );
   }
 }
@@ -966,7 +972,7 @@ class ExportDataSettingsTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () async {
-                await context.read<SettingsModel>().exportCostItemData();
+                await context.read<SettingsViewModel>().exportCostItemData();
                 // if (context.mounted) {
                 //   Navigator.pop(context);
                 //   if (outputPath != null) {
@@ -1042,7 +1048,7 @@ class LoadDataSettingsTile extends StatelessWidget {
                     height: 100,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     onTap: () async {
-                      final result = await context.read<SettingsModel>().loadData();
+                      final result = await context.read<SettingsViewModel>().loadData();
                       // if (result == null) return;
                       // if (result == "success") {
                       //   context.nav.pop();
@@ -1135,7 +1141,7 @@ class ClearDataSettingsTile extends StatelessWidget {
                                     await context.read<AppModel>().clearCostItem();
                                     if (context.mounted) {
                                       Navigator.pop(context);
-                                      context.read<NavigationModel>().backToHomeScreen();
+                                      context.read<NavigatorModel>().backToHomeScreen();
                                     }
                                   },
                                   child: Text("Confirm"),

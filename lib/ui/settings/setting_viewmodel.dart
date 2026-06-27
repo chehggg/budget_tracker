@@ -1,16 +1,34 @@
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:flutter/material.dart';
 
-class SettingsModel extends ChangeNotifier {
-  SettingsModel({
-    required CostItemRepository costItemRepository,
-    required CategoryRepository categoryRepository,
-  }) : _costItemRepository = costItemRepository,
-       _categoryRepository = categoryRepository;
+class SettingsViewModel extends ChangeNotifier {
+  SettingsViewModel({
+    required CostItemRepository costItemRepo,
+    required CategoryRepository categoryRepo,
+    required CurrencyRepository currencyRepo,
+  }) : _costItemRepository = costItemRepo,
+       _currencyRepo = currencyRepo,
+       _categoryRepository = categoryRepo {
+    init();
+  }
 
   final CostItemRepository _costItemRepository;
   final CategoryRepository _categoryRepository;
+  final CurrencyRepository _currencyRepo;
+
+  Future<void> init() async {
+    await _costItemRepository.ready;
+    await _categoryRepository.ready;
+    await _currencyRepo.ready;
+
+    _isInit = true;
+    notifyListeners();
+  }
+
+  bool _isInit = false;
+  bool get ready => _isInit;
 
   Future<void> exportCostItemData() async {
     await _costItemRepository.exportCostItem();
@@ -19,10 +37,6 @@ class SettingsModel extends ChangeNotifier {
   Future<void> loadData() async {
     await _costItemRepository.getCostItem(customFile: true);
   }
-  
-  // Future<void> exportCategoryData() async {
-  //   await _categoryRepository.exportCategory();
-  // }
-  // Future<void> loadFile() async {
-  // }
+
+  String get displayedCurrency => "${_currencyRepo.currency.name} (${_currencyRepo.currency.symbol})";
 }

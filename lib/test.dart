@@ -1,4 +1,4 @@
-import 'package:budget_tracker/ui/list/list_viewmodel.dart';
+import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,7 +7,7 @@ class TestPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = context.select((ListModel state) => state.currentMonth.toIso8601String());
+    final text = context.select((ListViewModel state) => state.currentMonth.toIso8601String());
     return Text(text);
   }
 }
