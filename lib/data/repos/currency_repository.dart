@@ -2,32 +2,26 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:budget_tracker/data/services/api_service.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:money2/money2.dart';
 
 class CurrencyRepository {
-  CurrencyRepository({required LocalServices localServices}) : _localServices = localServices {
+  CurrencyRepository({required LocalServices localServices, required ApiServices apiServices})
+    : _localServices = localServices,
+      _apiServices = apiServices {
     _initFuture = init();
   }
 
   final LocalServices _localServices;
+  final ApiServices _apiServices;
 
   Future<void> init() async {
     final result = await _localServices.getCurrency();
-
-    //update incorrect separators for money2
-    // final malaysiaCurrency = CommonCurrencies().myr.copyWith(
-    //   groupSeparator: ",",
-    //   decimalSeparator: ".",
-    // );
-    // final indonesiaCurrency = CommonCurrencies().idr.copyWith(
-    //   groupSeparator: ".",
-    //   decimalSeparator: ",",
-    // );
-
-    // Currencies().registerList([malaysiaCurrency, indonesiaCurrency]);
 
     switch (result) {
       case Ok():
@@ -42,6 +36,12 @@ class CurrencyRepository {
         await _localServices.writeCurrency(_currency);
     }
   }
+
+  final List<Currency> _recentlyUsedCurrencies = [];
+  List<Currency> get recentCurrencies => _recentlyUsedCurrencies;
+
+  Map<String, double> _exchangeRates = {};
+  Map<String, double> get exchangeRates => _exchangeRates;
 
   final StreamController<String> _currencyStreamController = StreamController<String>.broadcast();
   Stream<String> get valueStream => _currencyStreamController.stream;
@@ -69,10 +69,35 @@ class CurrencyRepository {
     return Currencies().find(code) ?? CommonCurrencies().usd;
   }
 
+  void updateRecentlyUsedCurrencies(Currency currency) {
+    final index = _recentlyUsedCurrencies.indexWhere((el) => el.isoCode == currency.isoCode);
+
+    if (index != -1) {
+      _recentlyUsedCurrencies.removeAt(index);
+    }
+    _recentlyUsedCurrencies.insert(0, currency);
+
+    if (_recentlyUsedCurrencies.length > 10) {
+      _recentlyUsedCurrencies.removeLast();
+    }
+  }
+
   Future<void> changeCurrency(Currency newCurrency) async {
     _currency = newCurrency;
     await _localServices.writeCurrency(_currency);
     // _currencyStreamController.add(_currency.isoCode);
+  }
+
+  Future<void> getExchangeRates() async {
+    final response = await _apiServices.getExchangeRate();
+    switch (response) {
+      case Ok():
+        _exchangeRates = response.value.rates ?? {};
+        debugPrint("get exchange rate value! ${_exchangeRates.length}");
+      case Error():
+        _exchangeRates = {};
+        debugPrint("cannot retrieve exchange rate, ${response.error}");
+    }
   }
 
   String formatCurrency(

@@ -3,8 +3,8 @@ import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:flutter/material.dart';
 
-class GoalModel extends ChangeNotifier {
-  GoalModel({required CostItemRepository costItemRepo, required GoalRepository goalRepository})
+class GoalViewModel extends ChangeNotifier {
+  GoalViewModel({required CostItemRepository costItemRepo, required GoalRepository goalRepository})
     : _costItemRepo = costItemRepo,
       _goalRepository = goalRepository {
     init();

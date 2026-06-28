@@ -1,7 +1,5 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:math';
-
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
@@ -15,6 +13,23 @@ import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
+
+class ChartScreenWrapper extends StatelessWidget {
+  const ChartScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create:
+          (context) => ChartViewModel(
+            costItemRepo: context.read(),
+            currencyRepo: context.read(),
+            categoryRepo: context.read(),
+          ),
+      child: const ChartScreen(),
+    );
+  }
+}
 
 class ChartScreen extends StatelessWidget {
   const ChartScreen({super.key});
@@ -46,9 +61,10 @@ class ChartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ready = context.select((ChartModel state) => state.ready);
-    final type = context.select((ChartModel state) => state.type);
-    final period = context.select((ChartModel state) => state.period);
+    final ready = context.select((ChartViewModel state) => state.ready);
+    final type = context.select((ChartViewModel state) => state.type);
+    final period = context.select((ChartViewModel state) => state.period);
+    final showMonth = context.chartMod.showMonths;
 
     final FlTitlesData chartTitleData = getCustomChartTitleData(
       context: context,
@@ -119,7 +135,7 @@ class ChartScreen extends StatelessWidget {
                       child: CategoryBreakdownChart(),
                     ),
                     ChartSection(
-                      title: "Day by Day Comparison",
+                      title: showMonth ? "Monthly Spend" : "Daily Spend",
                       showLabelSubtitle: true,
                       page: ChartCategoryBreakdownScreen(),
                       child: DayToDayBarChart(
@@ -159,10 +175,10 @@ class ChartFilterButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final period = context.select((ChartModel state) => state.period);
-    final displayPeriod = context.select((ChartModel state) => state.displayPeriodDuration);
+    final period = context.select((ChartViewModel state) => state.period);
+    final displayPeriod = context.select((ChartViewModel state) => state.displayPeriodDuration);
     final displayDetailsPeriod = context.select(
-      (ChartModel state) => state.displayDetailsPeriodDuration,
+      (ChartViewModel state) => state.displayDetailsPeriodDuration,
     );
     debugPrint('rebuild');
     return Column(
@@ -317,8 +333,8 @@ class CategoryBreakdownChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartModel state) => state.simplifiedCurRangeCategorySummary);
-    final total = context.select((ChartModel state) => state.curRangeSummary);
+    final data = context.select((ChartViewModel state) => state.simplifiedCurRangeCategorySummary);
+    final total = context.select((ChartViewModel state) => state.curRangeSummary);
     return Padding(
       padding: const EdgeInsets.only(left: 12.0, right: 12, bottom: 12),
       child: Row(
@@ -380,7 +396,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                           flex: 2,
                           fit: FlexFit.tight,
                           child: LabelIndicator(
-                            text: e.key.name?.capitalize() ?? "",
+                            text: e.key.capName,
                             color: e.key.color ?? Colors.amber,
                           ),
                         ),
@@ -388,7 +404,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                           flex: 2,
                           fit: FlexFit.tight,
                           child: Text(
-                            NumberFormat.compactCurrency(symbol: "RM").format(e.value.expense!),
+                            context.chartMod.currencyFormat(e.value.expense!, abbreviated: true),
                             style: context.tt.bodyMedium!.copyWith(
                               fontSize: 12,
                               color: context.cs.primary,
@@ -425,74 +441,74 @@ class CategoryBreakdownChart extends StatelessWidget {
   }
 }
 
-class CategoryBreakdownList extends StatelessWidget {
-  const CategoryBreakdownList({super.key});
+// class CategoryBreakdownList extends StatelessWidget {
+//   const CategoryBreakdownList({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final summary = context.select((ChartModel state) => state.categoryComparison);
-    return ListView.builder(
-      itemCount: summary.length,
-      itemBuilder: (context, index) {
-        final category = summary.entries.elementAt(index).key;
-        final metrics = summary.entries.elementAt(index).value;
-        final prevRangeValue = metrics.first.expense ?? 0;
-        final curRangeValue = metrics.last.expense ?? 0;
-        final percentageChange = (curRangeValue / prevRangeValue).abs();
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            spacing: 20,
-            children: [
-              CategoryIconContainer(
-                category: category,
-                size: 24,
-              ),
-              Expanded(
-                child: Column(
-                  spacing: 4,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: Text((category.name ?? "").capitalize())),
-                        Text(
-                          "${curRangeValue.customCurrencyFormat("RM")} (${NumberFormat.percentPattern().format(percentageChange)})",
-                        ),
-                      ],
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: context.customCs.fadeColor2,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: FractionallySizedBox(
-                        widthFactor: min(percentageChange, 1),
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: percentageChange > 1 ? Colors.red : context.customCs.fadeColor1,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+//   @override
+//   Widget build(BuildContext context) {
+//     final summary = context.select((ChartViewModel state) => state.categoryComparison);
+//     return ListView.builder(
+//       itemCount: summary.length,
+//       itemBuilder: (context, index) {
+//         final category = summary.entries.elementAt(index).key;
+//         final metrics = summary.entries.elementAt(index).value;
+//         final prevRangeValue = metrics.first.expense ?? 0;
+//         final curRangeValue = metrics.last.expense ?? 0;
+//         final percentageChange = (curRangeValue / prevRangeValue).abs();
+//         return Padding(
+//           padding: const EdgeInsets.symmetric(vertical: 8.0),
+//           child: Row(
+//             spacing: 20,
+//             children: [
+//               CategoryIconContainer(
+//                 category: category,
+//                 size: 24,
+//               ),
+//               Expanded(
+//                 child: Column(
+//                   spacing: 4,
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Row(
+//                       // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                       children: [
+//                         Expanded(child: Text(category.capName)),
+//                         Text(
+//                           "${curRangeValue.customCurrencyFormat("RM")} (${NumberFormat.percentPattern().format(percentageChange)})",
+//                         ),
+//                       ],
+//                     ),
+//                     Container(
+//                       width: double.infinity,
+//                       height: 8,
+//                       decoration: BoxDecoration(
+//                         color: context.customCs.fadeColor2,
+//                         borderRadius: BorderRadius.circular(12),
+//                       ),
+//                       child: FractionallySizedBox(
+//                         widthFactor: min(percentageChange, 1),
+//                         alignment: Alignment.centerLeft,
+//                         child: Container(
+//                           decoration: BoxDecoration(
+//                             color: percentageChange > 1 ? Colors.red : context.customCs.fadeColor1,
+//                             borderRadius: BorderRadius.circular(12),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
 
-              // CategoryIconContainer(category: category),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
+//               // CategoryIconContainer(category: category),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+// }
 
 class DayToDayBarChart extends StatelessWidget {
   const DayToDayBarChart({
@@ -504,8 +520,8 @@ class DayToDayBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartModel state) => state.dayToDayComparison);
-    final showMonths = context.select((ChartModel state) => state.showMonths);
+    final data = context.select((ChartViewModel state) => state.dayToDayComparison);
+    final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final curRangeStart = context.chartMod.rangeStart;
     final prevRangeStart = context.chartMod.prevRangeStart;
     return Container(
@@ -533,8 +549,8 @@ class DayToDayBarChart extends StatelessWidget {
                         ? prevRangeStart.addMonth(group.x).formatMonth()
                         : prevRangeStart.addDay(group.x).formatShorter();
                 return BarTooltipItem(
-                  "$curDate: ${group.barRods.first.toY.customCurrencyFormat("RM")}\n"
-                  "$prevDate: ${group.barRods.last.toY.customCurrencyFormat("RM")}",
+                  "$curDate: ${context.chartMod.currencyFormat(group.barRods.first.toY)}\n"
+                  "$prevDate: ${context.chartMod.currencyFormat(group.barRods.last.toY)}",
                   context.tt.bodyMedium!.copyWith(fontSize: 10),
                   textAlign: TextAlign.end,
                 );
@@ -976,10 +992,12 @@ class NewCumulativeLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cumulativeComparison = context.select((ChartModel state) => state.cumulativeComparison);
-    final curRangeStart = context.select((ChartModel state) => state.rangeStart);
-    final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
-    final showMonths = context.select((ChartModel state) => state.showMonths);
+    final cumulativeComparison = context.select(
+      (ChartViewModel state) => state.cumulativeComparison,
+    );
+    final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
+    final prevRangeStart = context.select((ChartViewModel state) => state.prevRangeStart);
+    final showMonths = context.select((ChartViewModel state) => state.showMonths);
 
     final now = DateTime.now().standard;
     return Container(
@@ -1005,7 +1023,7 @@ class NewCumulativeLineChart extends StatelessWidget {
                           ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
                           : prevRangeStart.addDay(spot.x.round()).formatShorter();
                   return LineTooltipItem(
-                    "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
+                    "${isPrev ? prevDate : curDate}: ${context.chartMod.currencyFormat(spot.y)}",
                     context.tt.bodyMedium!.copyWith(fontSize: 10),
                     textAlign: TextAlign.right,
                   );
@@ -1053,11 +1071,11 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cumulativeComparison = context.select(
-      (ChartModel state) => state.avgCumulativeComparison,
+      (ChartViewModel state) => state.avgCumulativeComparison,
     );
-    final curRangeStart = context.select((ChartModel state) => state.rangeStart);
-    final prevRangeStart = context.select((ChartModel state) => state.prevRangeStart);
-    final showMonths = context.select((ChartModel state) => state.showMonths);
+    final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
+    final prevRangeStart = context.select((ChartViewModel state) => state.prevRangeStart);
+    final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final now = DateTime.now().standard;
     return Container(
       height: 180,
@@ -1082,7 +1100,7 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                           ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
                           : prevRangeStart.addDay(spot.x.round()).formatShorter();
                   return LineTooltipItem(
-                    "${isPrev ? prevDate : curDate}: ${spot.y.customCurrencyFormat("RM")}",
+                    "${isPrev ? prevDate : curDate}: ${context.chartMod.currencyFormat(spot.y)}",
                     context.tt.bodyMedium!.copyWith(fontSize: 10),
                     textAlign: TextAlign.right,
                   );

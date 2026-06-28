@@ -1,4 +1,5 @@
 import 'package:another_flushbar/flushbar.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
@@ -226,6 +227,7 @@ class HideableText extends StatelessWidget {
     this.data, {
     super.key,
     this.overflowText,
+    this.asteriskCount = 3,
     this.isCurrency = true,
     required this.textStyle,
     this.maxLine = 1,
@@ -234,6 +236,7 @@ class HideableText extends StatelessWidget {
   final String data;
   final String? overflowText;
   final bool isCurrency;
+  final int asteriskCount;
   final TextStyle textStyle;
   final int maxLine;
 
@@ -269,7 +272,7 @@ class HideableText extends StatelessWidget {
           maxLines: maxLine,
         )) {
           return Text(
-            isBlurred ? data.replaceAll(RegExp(r'[0-9,.]+[kKMbB]?'), '***') : data,
+            isBlurred ? data.replaceAll(RegExp(r'[0-9,.]+[kKMbB]?'), List.filled(asteriskCount, "*").join("")) : data,
             style: textStyle,
           );
           // } else if (overflowText == null) {

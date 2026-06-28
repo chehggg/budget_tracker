@@ -2,6 +2,7 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -500,6 +501,7 @@ class GoalFormCategoryFilterTile extends StatelessWidget {
             builder:
                 (context) => CategorySelectionScreen(
                   initSelection: categories,
+                  goalType: context.goalFormMod.draftGoal.goalType,
                 ),
           ),
         );

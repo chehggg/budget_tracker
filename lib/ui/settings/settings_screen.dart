@@ -1,3 +1,4 @@
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/constants/currency.dart';
@@ -1141,7 +1142,7 @@ class ClearDataSettingsTile extends StatelessWidget {
                                     await context.read<AppModel>().clearCostItem();
                                     if (context.mounted) {
                                       Navigator.pop(context);
-                                      context.read<NavigatorModel>().backToHomeScreen();
+                                      context.read<NavigatorModel>().popBackToMainScreenAndRefresh();
                                     }
                                   },
                                   child: Text("Confirm"),

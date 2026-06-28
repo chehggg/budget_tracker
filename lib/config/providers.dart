@@ -12,8 +12,6 @@ import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
-import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
-import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -40,7 +38,8 @@ List<SingleChildWidget> get providers => [
     create: (context) => ExchangeRateRepository(apiServices: context.read()),
   ),
   Provider(
-    create: (context) => CurrencyRepository(localServices: context.read()),
+    create:
+        (context) => CurrencyRepository(localServices: context.read(), apiServices: context.read()),
   ),
   ChangeNotifierProvider<ThemeModel>(
     create: (context) => ThemeModel(),
@@ -56,15 +55,15 @@ List<SingleChildWidget> get providers => [
       return AppModel(costItemRepository: context.read());
     },
   ),
-  ChangeNotifierProvider<GoalModel>(
-    // lazy: false,
-    create: (context) {
-      return GoalModel(costItemRepo: context.read(), goalRepository: context.read());
-    },
-  ),
-  ChangeNotifierProvider<ChartModel>(
-    create: (context) => ChartModel(costItemRepo: context.read(), categoryRepo: context.read()),
-  ),
+  // ChangeNotifierProvider<GoalViewModel>(
+  //   // lazy: false,
+  //   create: (context) {
+  //     return GoalViewModel(costItemRepo: context.read(), goalRepository: context.read());
+  //   },
+  // ),
+  // ChangeNotifierProvider<ChartViewModel>(
+  //   create: (context) => ChartViewModel(costItemRepo: context.read(), categoryRepo: context.read()),
+  // ),
   // ChangeNotifierProvider<ListModel>(
   //   create: (context) => ListModel(costItemRepo: context.read(), categoryRepo: context.read()),
   // ),

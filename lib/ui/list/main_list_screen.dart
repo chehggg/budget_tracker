@@ -4,7 +4,9 @@ import 'dart:ui';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
@@ -129,9 +131,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         animateColor: true,
         backgroundColor: context.customCs.fadeColor2,
         leading: BackButton(
-          onPressed: () {
-            context.listMod.toggleSelectionMode(false);
-          },
+          onPressed: () => context.listMod.toggleSelectionMode(false),
         ),
         actions: [
           IconButton(
@@ -160,7 +160,73 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
             context.navMod.customHideBottom(false);
           },
         ),
-        title: const SearchTabTextField(),
+        title: Row(
+          children: [
+            Expanded(child: const SearchTabTextField()),
+            IconButton(
+              onPressed: () async {
+                await showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text(
+                        "Item Filter",
+                        style: context.customTt.dateLabel,
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              final response = await context.nav.push(
+                                MaterialPageRoute(builder: (context) => CategorySelectionScreen()),
+                              );
+                              if (response != null) return;
+                            },
+                            child: Text("Categories"),
+                          ),
+                          Text("Price Range"),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+              icon: Icon(Icons.toll_rounded),
+            ),
+            IconButton(
+              onPressed: () async {
+                final response = await context.nav.push(
+                  MaterialPageRoute(builder: (context) => CategorySelectionScreen()),
+                );
+              },
+              icon: Stack(
+                alignment: Alignment(1.5, 1.5),
+                children: [
+                  Icon(Icons.category_outlined, size: 22),
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: context.cs.secondary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "2",
+                        style: context.tt.bodyMedium!.copyWith(
+                          color: context.cs.surface,
+                          fontSize: 8,
+                          fontWeight: FontWeight(700),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     } else {
       return AppBar(
@@ -465,8 +531,8 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
         Opacity(
           opacity: !isBig ? lerpDouble(1, 0, Interval(0, 0.8).transform(progress))! : 1,
           child: HideableText(
-            maxLine: 1,
             value,
+            maxLine: 1,
             isCurrency: true,
             textStyle:
                 isBig
@@ -513,7 +579,12 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                       context,
                       labelText: "Summary",
                       progress: progress,
-                      value: context.listMod.currencyFormat(balance, alwaysShowSign: true, compact: true, decimalDigits: 0),
+                      value: context.listMod.currencyFormat(
+                        balance,
+                        alwaysShowSign: true,
+                        compact: true,
+                        decimalDigits: 0,
+                      ),
                       isBig: true,
                     ),
                     Opacity(
@@ -526,7 +597,12 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             HideableText(
-                              context.listMod.currencyFormat(-expense, alwaysShowSign: true, compact: true, abbreviated: true),
+                              context.listMod.currencyFormat(
+                                -expense,
+                                alwaysShowSign: true,
+                                compact: true,
+                                abbreviated: true,
+                              ),
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color: Colors.red,
                                 height: 1,
@@ -534,7 +610,12 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                               ),
                             ),
                             HideableText(
-                              context.listMod.currencyFormat(income, alwaysShowSign: true, compact: true, abbreviated: true),
+                              context.listMod.currencyFormat(
+                                income,
+                                alwaysShowSign: true,
+                                compact: true,
+                                abbreviated: true,
+                              ),
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color: Colors.green,
                                 height: 1,
@@ -597,7 +678,7 @@ class SummaryChart extends StatefulWidget {
 
 class _SummaryChartState extends State<SummaryChart> {
   late PageController _controller;
-  int _currentPage = 0;
+  // int _currentPage = 0;
   @override
   void initState() {
     super.initState();
@@ -610,15 +691,15 @@ class _SummaryChartState extends State<SummaryChart> {
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
 
-    // _controller.jumpTo(0);
-    setState(() {
-      _currentPage = 0;
-    });
-  }
+  //   // _controller.jumpTo(0);
+  //   setState(() {
+  //     _currentPage = 0;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -655,6 +736,7 @@ class _SummaryChartState extends State<SummaryChart> {
               ),
               HideableText(
                 income > 0 ? NumberFormat.percentPattern().format(balancePercentage) : "N/A",
+                asteriskCount: 2,
                 textStyle: context.customTt.numberFontMedium!.copyWith(
                   color: context.cs.surface,
                   fontWeight: FontWeight(700),
@@ -831,131 +913,131 @@ class PageIndicator extends StatelessWidget {
   }
 }
 
-class SearchTab extends StatelessWidget {
-  const SearchTab({super.key});
+// class SearchTab extends StatelessWidget {
+//   const SearchTab({super.key});
 
-  Widget createCustomFilterChip(
-    BuildContext context, {
-    IconData? icon,
-    String text = "",
-    Function()? onTap,
-    bool isActive = false,
-  }) {
-    final borderRadius = BorderRadius.circular(12);
-    return Flexible(
-      fit: FlexFit.tight,
-      child: Material(
-        borderRadius: borderRadius,
-        child: InkWell(
-          borderRadius: borderRadius,
-          onTap: onTap,
-          child: Container(
-            // height: toolbarHeight - 16,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.rectangle,
-              border: BoxBorder.all(color: context.cs.primary, width: 0.5),
-              borderRadius: borderRadius,
-              color: isActive ? context.cs.primary.withAlpha(50) : context.cs.primary.withAlpha(10),
-            ),
-            child: Row(
-              spacing: 10,
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isActive ? Icons.check : icon,
-                  color: context.cs.primary,
-                  // size: toolbarHeight / 2 - 10,
-                ),
-                Text(text, style: context.tt.bodyMedium),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+//   Widget createCustomFilterChip(
+//     BuildContext context, {
+//     IconData? icon,
+//     String text = "",
+//     Function()? onTap,
+//     bool isActive = false,
+//   }) {
+//     final borderRadius = BorderRadius.circular(12);
+//     return Flexible(
+//       fit: FlexFit.tight,
+//       child: Material(
+//         borderRadius: borderRadius,
+//         child: InkWell(
+//           borderRadius: borderRadius,
+//           onTap: onTap,
+//           child: Container(
+//             // height: toolbarHeight - 16,
+//             padding: const EdgeInsets.all(10),
+//             decoration: BoxDecoration(
+//               shape: BoxShape.rectangle,
+//               border: BoxBorder.all(color: context.cs.primary, width: 0.5),
+//               borderRadius: borderRadius,
+//               color: isActive ? context.cs.primary.withAlpha(50) : context.cs.primary.withAlpha(10),
+//             ),
+//             child: Row(
+//               spacing: 10,
+//               mainAxisSize: MainAxisSize.min,
+//               mainAxisAlignment: MainAxisAlignment.center,
+//               children: [
+//                 Icon(
+//                   isActive ? Icons.check : icon,
+//                   color: context.cs.primary,
+//                   // size: toolbarHeight / 2 - 10,
+//                 ),
+//                 Text(text, style: context.tt.bodyMedium),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
 
-  Widget bottomFilterAppBar(BuildContext context) {
-    final isCategoryFiltered = context.select(
-      (AppModel state) => state.filteredCategories.length < state.categories.length,
-    );
-    final isDateFiltered = context.select((AppModel state) => state.filterDateRange != null);
-    // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
+//   Widget bottomFilterAppBar(BuildContext context) {
+//     final isCategoryFiltered = context.select(
+//       (AppModel state) => state.filteredCategories.length < state.categories.length,
+//     );
+//     final isDateFiltered = context.select((AppModel state) => state.filterDateRange != null);
+//     // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
 
-    return Padding(
-      padding: EdgeInsets.all(8),
-      child: Flex(
-        direction: Axis.horizontal,
-        spacing: 8,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          createCustomFilterChip(
-            context,
-            icon: Icons.category,
-            text: "Category",
-            onTap: () async {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: Column(
-                      children: [
-                        Text("Filter Category", style: context.customTt.dateLabel),
-                        Text("selected category", style: context.customTt.numberFontMedium),
-                      ],
-                    ),
-                    content: ListView.builder(
-                      itemCount: 2,
-                      itemBuilder: (context, index) {},
-                    ),
-                  );
-                },
-              );
-            },
-            isActive: isCategoryFiltered,
-          ),
-          createCustomFilterChip(
-            context,
-            icon: Icons.date_range,
-            text: "Date",
-            // onTap: () async => showFilterDateDialog(),
-            isActive: isDateFiltered,
-          ),
-          createCustomFilterChip(
-            context,
-            icon: Icons.money,
-            text: "Amount",
-            // onTap: () async => showFilterAmountDialog(),
-            isActive: isDateFiltered,
-          ),
-        ],
-      ),
-    );
-  }
+//     return Padding(
+//       padding: EdgeInsets.all(8),
+//       child: Flex(
+//         direction: Axis.horizontal,
+//         spacing: 8,
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           createCustomFilterChip(
+//             context,
+//             icon: Icons.category,
+//             text: "Category",
+//             onTap: () async {
+//               showDialog(
+//                 context: context,
+//                 builder: (context) {
+//                   return AlertDialog(
+//                     title: Column(
+//                       children: [
+//                         Text("Filter Category", style: context.customTt.dateLabel),
+//                         Text("selected category", style: context.customTt.numberFontMedium),
+//                       ],
+//                     ),
+//                     content: ListView.builder(
+//                       itemCount: 2,
+//                       itemBuilder: (context, index) {},
+//                     ),
+//                   );
+//                 },
+//               );
+//             },
+//             isActive: isCategoryFiltered,
+//           ),
+//           createCustomFilterChip(
+//             context,
+//             icon: Icons.date_range,
+//             text: "Date",
+//             // onTap: () async => showFilterDateDialog(),
+//             isActive: isDateFiltered,
+//           ),
+//           createCustomFilterChip(
+//             context,
+//             icon: Icons.money,
+//             text: "Amount",
+//             // onTap: () async => showFilterAmountDialog(),
+//             isActive: isDateFiltered,
+//           ),
+//         ],
+//       ),
+//     );
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(color: context.cs.surface),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-        child: PopScope(
-          onPopInvokedWithResult: (didPop, result) {},
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SearchTabTextField(),
-              bottomFilterAppBar(context),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: BoxDecoration(color: context.cs.surface),
+//       child: Padding(
+//         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+//         child: PopScope(
+//           onPopInvokedWithResult: (didPop, result) {},
+//           child: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               const SearchTabTextField(),
+//               bottomFilterAppBar(context),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 class SearchTabTextField extends StatefulWidget {
   const SearchTabTextField({
@@ -991,21 +1073,21 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
         isDense: true,
         filled: false,
         contentPadding: EdgeInsets.all(0),
-        suffixIcon: IconButton(
-          visualDensity: VisualDensity(vertical: -4, horizontal: -4),
-          iconSize: 24,
-          onPressed: () {
-            _controller.clear();
-            context.listMod.updateSearch("");
-          },
-          icon: Icon(Icons.clear),
-        ),
+        // suffixIcon: IconButton(
+        //   visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+        //   iconSize: 24,
+        //   onPressed: () {
+        //     _controller.clear();
+        //     context.listMod.updateSearch("");
+        //   },
+        //   icon: Icon(Icons.clear),
+        // ),
         hint: Row(
           spacing: 8,
           children: [
             Icon(Icons.search, color: context.customCs.fadeColor2),
             Text(
-              "Search items via description...",
+              "Search items...",
               style: context.tt.bodyMedium!.copyWith(color: context.customCs.fadeColor2),
             ),
           ],

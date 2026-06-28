@@ -102,7 +102,7 @@ class FormViewModel extends ChangeNotifier {
   final TextEditingController _amountController = TextEditingController();
   TextEditingController get amountController => _amountController;
 
-  void updateControllerValue() {
+  void _updateControllerValue() {
     _descriptionController.value = _descriptionController.value.copyWith(text: _itemDesc);
     if (amount != null) {
       _amountController.value = _amountController.value.copyWith(
@@ -114,8 +114,8 @@ class FormViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     _isLoaded = false;
 
-    populateInitValue();
-    updateControllerValue();
+    _populateInitValue();
+    _updateControllerValue();
 
     _descriptionController.addListener(() => updateDesc(_descriptionController.text));
     _amountController.addListener(() {
@@ -150,7 +150,7 @@ class FormViewModel extends ChangeNotifier {
     _amount = item.amount ?? _amount;
     _itemDesc = item.description ?? _itemDesc;
 
-    updateControllerValue();
+    _updateControllerValue();
 
     notifyListeners();
   }
@@ -166,6 +166,13 @@ class FormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyExchangedValue(double amount) {
+    _amount = amount;
+    _updateControllerValue();
+    notifyListeners();
+  }
+    // _amountController.value = _amountController.value.copyWith(text: _amount!.toStringAsFixed(2));
+
   void updateDesc(String value) {
     _itemDesc = value;
     notifyListeners();
@@ -176,7 +183,7 @@ class FormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void populateInitValue() {
+  void _populateInitValue() {
     debugPrint('initializing form model');
 
     if (_initCostItem != null) {

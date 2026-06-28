@@ -1,17 +1,37 @@
-import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/screens/settings/currency_viewmodel.dart';
+import 'package:budget_tracker/screens/settings/ex_rate_screen.dart';
+import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:money2/money2.dart';
 import 'package:provider/provider.dart';
 
 class CurrencySelectionScreenWrapper extends StatelessWidget {
-  const CurrencySelectionScreenWrapper({super.key});
+  const CurrencySelectionScreenWrapper({
+    super.key,
+    this.currencyExchange = false,
+    this.initialValue,
+  });
 
+  final bool currencyExchange;
+  final double? initialValue;
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => CurrencyViewModel(currencyRepo: context.read()),
-      child: const CurrencySelectionScreen(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        debugPrint("settings screen pop, didPop: ${didPop}");
+        if (didPop) return;
+        // context.navMod.pop();
+      },
+      child: ChangeNotifierProvider(
+        create:
+            (context) => CurrencyViewModel(
+              currencyRepo: context.read(),
+              isCurrencyExchange: currencyExchange,
+            ),
+        child: const CurrencySelectionScreen(),
+      ),
     );
   }
 }
@@ -50,52 +70,98 @@ class CurrencySelectionBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencies = context.select((CurrencyViewModel state) => state.filteredCurrencies);
     final selected = context.select((CurrencyViewModel state) => state.selectedCurrency);
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          sliver: SliverToBoxAdapter(
-            child: const CurrencySelectionField(),
-          ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 20),
+          child: CurrencySelectionField(),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.only(top: 12.0),
-          sliver: SliverList.builder(
-            itemCount: currencies.length,
-            itemBuilder: (context, index) {
-              final Currency currency = currencies.elementAt(index);
-              final isSelected = currency.isoCode == selected.isoCode;
-              return ListTile(
-                contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 12),
-                tileColor: isSelected ? context.customCs.fadeColor3 : null,
-                title: Row(
-                  spacing: 12,
-                  children: [
-                    if (isSelected) Icon(Icons.check, size: 20,),
-                    Expanded(
-                      child: Text(
-                        currency.name,
-                        style: context.tt.bodyMedium!.copyWith(
-                          fontSize: 14,
-                          // color: isSelected ? context.cs.secondary : null,
-                          fontWeight: isSelected ? FontWeight(600) : null,
-                        ),
+        if (context.currencyMod.isCurrencyExchange)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 20.0),
+            child: Row(
+              spacing: 8,
+              children: [
+                Text("Convert To:"),
+                Expanded(child: Text("${selected.name} (${selected.isoCode})")),
+                Text(selected.symbol),
+              ],
+            ),
+          ),
+        Divider(),
+        Expanded(
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.only(top: 12.0),
+                sliver: SliverList.builder(
+                  itemCount: currencies.length,
+                  itemBuilder: (context, index) {
+                    final Currency currency = currencies.elementAt(index);
+                    final isSelected = currency.isoCode == selected.isoCode;
+                    return ListTile(
+                      contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 12),
+                      // tileColor: isSelected ? context.customCs.fadeColor3 : null,
+                      title: Row(
+                        spacing: 12,
+                        children: [
+                          if (isSelected)
+                            Icon(
+                              Icons.check,
+                              size: 20,
+                            ),
+                          Expanded(
+                            child: Text(
+                              "${currency.name} (${currency.symbol})",
+                              style: context.tt.bodyMedium!.copyWith(
+                                fontSize: 14,
+                                // color: isSelected ? context.cs.secondary : null,
+                                fontWeight: isSelected ? FontWeight(600) : null,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            currency.isoCode,
+                            style: context.customTt.numberFontSmall!.copyWith(
+                              fontSize: 14,
+                              // color: isSelected ? context.cs.secondary : null,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    Text(
-                      currency.symbol,
-                      style: context.customTt.numberFontSmall!.copyWith(
-                        // color: isSelected ? context.cs.secondary : null,
-                      ),
-                    ),
-                  ],
+                      onTap: () async {
+                        final currencyMod = context.currencyMod;
+                        if (context.currencyMod.isCurrencyExchange) {
+                          context.currencyMod.selectExchangeCurrency(currency);
+                          final double? value = await context.navMod.goTo(
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => ChangeNotifierProvider(
+                                    create:
+                                        (context) => ExRateViewModel(
+                                          currencyRepo: context.read(),
+                                          baseCurrency: currencyMod.selectedExchangeCurrency,
+                                          targetCurrency: currencyMod.selectedCurrency,
+                                        ),
+                                    child: const CurrencyExchangeScreen(),
+                                  ),
+                            ),
+                          );
+                          if (value == null) return;
+                          if (context.mounted) {
+                            context.navMod.pop(value);
+                          }
+                          // debugPrint(value?.toString() ?? "No value found");
+                        } else {
+                          context.currencyMod.updateCurrency(currency);
+                          context.navMod.popBackToMainScreenAndRefresh();
+                        }
+                      },
+                    );
+                  },
                 ),
-                onTap: () {
-                  context.read<CurrencyViewModel>().updateCurrency(currency);
-                  context.navMod.goToNamedAndRemovePrevious("/settings");
-                },
-              );
-            },
+              ),
+            ],
           ),
         ),
       ],

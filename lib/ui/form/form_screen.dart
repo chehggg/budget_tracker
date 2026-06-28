@@ -1,5 +1,6 @@
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
@@ -55,7 +56,7 @@ class CostFormScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
         leading: BackButton(
-          onPressed: () => context.navMod.pop(),
+          onPressed: () => context.navMod.popBackToMainScreenAndRefresh(),
         ),
         actions: [
           IconButton(
@@ -203,7 +204,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 12,
+                spacing: 4,
                 children: [
                   AnimatedScale(
                     scale: _isFormExpanded ? 0.7 : 1,
@@ -214,6 +215,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       size: 40,
                       category: selectedCategory,
                     ),
+                  ),
+                  SizedBox(
+                    width: 8,
                   ),
                   Expanded(
                     child: Column(
@@ -268,37 +272,56 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               ),
                             );
                             if (response == null) return;
-                            if (response) {
-                              context.formMod.updateFormGroup(FormGroup.favorite);
-                              context.showSuccessNotification(message: "Saved item updated!");
+                            if (context.mounted) {
+                              if (response) {
+                                context.formMod.updateFormGroup(FormGroup.favorite);
+                                context.showSuccessNotification(message: "Saved item updated!");
+                              }
+                              context.formMod.refresh();
                             }
-                            context.formMod.refresh();
                           },
                           icon: Icon(
-                            Icons.favorite,
-                            color: Colors.red.shade500,
+                            Icons.favorite_border_outlined,
+                            color: context.cs.surface,
                             // color: context.cs.error,
                           ),
                         ),
                         IconButton(
                           onPressed: () async {
-                            final bool? deleteResponse = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => const DeleteItemDialog(),
+                            final response = await context.navMod.goToNamed(
+                              '/exchange-rate-currency',
+                              arguments: context.formMod.amount,
                             );
-                            if (deleteResponse == true && context.mounted) {
-                              await context.formMod.deleteItem();
-                              context.navMod.popFormToMain();
-                              context.showSuccessNotification(
-                                message: "Item deleted successfully.",
-                              );
-                            }
+                            if (response == null) return;
+                            context.formMod.applyExchangedValue(response);
                           },
                           icon: Icon(
-                            Icons.delete,
+                            Icons.currency_exchange,
                             color: context.cs.surface,
                           ),
                         ),
+                        if (context.formMod.editMode)
+                          IconButton(
+                            onPressed: () async {
+                              final bool? deleteResponse = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => const DeleteItemDialog(),
+                              );
+                              if (deleteResponse == true && context.mounted) {
+                                await context.formMod.deleteItem();
+                                if (context.mounted) {
+                                  context.navMod.popBackToMainScreenAndRefresh();
+                                  context.showSuccessNotification(
+                                    message: "Item deleted successfully.",
+                                  );
+                                }
+                              }
+                            },
+                            icon: Icon(
+                              Icons.delete,
+                              color: context.cs.surface,
+                            ),
+                          ),
                       ]
                       : [],
                 ],

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
@@ -59,8 +60,8 @@ class CategoryPieChart extends StatelessWidget {
   const CategoryPieChart({super.key});
   @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartModel state) => state.curRangeCategorySummary);
-    final total = context.select((ChartModel state) => state.curRangeSummary);
+    final data = context.select((ChartViewModel state) => state.curRangeCategorySummary);
+    final total = context.select((ChartViewModel state) => state.curRangeSummary);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -135,8 +136,8 @@ class CategorySpendList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = context.select((ChartModel state) => state.getItemsGroupedByCategory());
-    final data = context.select((ChartModel state) => state.curRangeCategorySummary);
+    final items = context.select((ChartViewModel state) => state.getItemsGroupedByCategory());
+    final data = context.select((ChartViewModel state) => state.curRangeCategorySummary);
     final max = data.isEmpty ? 0 : data.entries.first.value.expense;
     return SliverList.builder(
       itemCount: data.length,

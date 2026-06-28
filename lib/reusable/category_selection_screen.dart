@@ -1,5 +1,6 @@
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -7,16 +8,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class CategorySelectionScreen extends StatelessWidget {
-  const CategorySelectionScreen({super.key, this.initSelection, this.goalType = GoalType.budget});
+  const CategorySelectionScreen({super.key, this.initSelection, this.goalType});
 
   final List<CostItemCategory>? initSelection;
-  final GoalType goalType;
+  final GoalType? goalType;
   @override
   Widget build(BuildContext context) {
     final CostType? type = switch (goalType) {
       GoalType.budget => CostType.expense,
       GoalType.savings => null,
       GoalType.payment => null,
+      _ => null,
     };
 
     return ChangeNotifierProvider(

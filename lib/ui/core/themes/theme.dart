@@ -144,6 +144,7 @@ ThemeData get appTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
       ),
     ),
+    
     inputDecorationTheme: InputDecorationThemeData(
       filled: true,
       border: border,

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
@@ -10,12 +11,29 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+class GoalScreenWrapper extends StatelessWidget {
+  const GoalScreenWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: ChangeNotifierProvider(
+        create: (context) {
+          return GoalViewModel(costItemRepo: context.read(), goalRepository: context.read());
+        },
+        child: const GoalScreen(),
+      ),
+    );
+  }
+}
+
 class GoalScreen extends StatelessWidget {
   const GoalScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final ready = context.select((GoalModel state) => state.ready);
+    final ready = context.select((GoalViewModel state) => state.ready);
     return Scaffold(
       appBar: AppBar(
         title: Text("GOALS"),
@@ -38,7 +56,7 @@ class GoalBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goals = context.select((GoalModel state) => state.goalOverview);
+    final goals = context.select((GoalViewModel state) => state.goalOverview);
     final usePlural = goals.length >= 2;
     return CustomScrollView(
       slivers: [

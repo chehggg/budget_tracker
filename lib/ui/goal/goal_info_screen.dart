@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -21,58 +22,64 @@ class GoalInfoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewmodel state) => state.goal);
     final ready = context.select((GoalInfoViewmodel state) => state.ready);
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(
-          onPressed: () => context.navMod.goToNamedAndRemovePrevious('/goals'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        debugPrint('goal info pop, didPop: $didPop');
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: BackButton(
+            onPressed: () => context.navMod.goToNamedAndRemovePrevious('/goals'),
+          ),
+          title: Text("Goal Details"),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                final response = await showDialog(
+                  context: context,
+                  builder: (context) => DeleteItemDialog(),
+                );
+                if (response == null) return;
+                if (response) {
+                  await context.goalInfoMod.deleteGoal();
+                  context.nav.pushNamedAndRemoveUntil('/goals', (route) => false);
+                  context.showSuccessNotification(message: "Goal is deleted");
+                }
+              },
+              icon: Icon(Icons.delete),
+            ),
+            IconButton(
+              onPressed: () {
+                context.nav.push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return ChangeNotifierProvider(
+                        create:
+                            (context) => GoalFormViewmodel(
+                              categoryRepo: context.read(),
+                              goalRepository: context.read(),
+                              initGoal: goal,
+                            ),
+                        child: const GoalInfoFormScreen(),
+                      );
+                    },
+                  ),
+                );
+              },
+              icon: Icon(Icons.edit),
+            ),
+          ],
         ),
-        title: Text("Goal Details"),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final response = await showDialog(
-                context: context,
-                builder: (context) => DeleteItemDialog(),
-              );
-              if (response == null) return;
-              if (response) {
-                await context.goalInfoMod.deleteGoal();
-                context.nav.pushNamedAndRemoveUntil('/goals', (route) => false);
-                context.showSuccessNotification(message: "Goal is deleted");
-              }
-            },
-            icon: Icon(Icons.delete),
-          ),
-          IconButton(
-            onPressed: () {
-              context.nav.push(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return ChangeNotifierProvider(
-                      create:
-                          (context) => GoalFormViewmodel(
-                            categoryRepo: context.read(),
-                            goalRepository: context.read(),
-                            initGoal: goal,
-                          ),
-                      child: const GoalInfoFormScreen(),
-                    );
-                  },
-                ),
-              );
-            },
-            icon: Icon(Icons.edit),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        minimum: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-        child:
-            ready
-                ? const GoalInfoBody()
-                : const Center(
-                  child: CircularProgressIndicator(),
-                ),
+        body: SafeArea(
+          minimum: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+          child:
+              ready
+                  ? const GoalInfoBody()
+                  : const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+        ),
       ),
     );
   }

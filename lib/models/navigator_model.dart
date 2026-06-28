@@ -1,4 +1,5 @@
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/classes/navigator_argument.dart';
 import 'package:flutter/material.dart';
 
 class NavigatorModel extends ChangeNotifier {
@@ -27,6 +28,7 @@ class NavigatorModel extends ChangeNotifier {
   bool get showBottom => _mainRoutes.contains(_paths.lastOrNull ?? "") && !_hideBottom;
 
   List<String> _paths = [];
+  int get pathsCount => _paths.length;
   // String get pathName => _pathName;
 
   String _pathName = "/";
@@ -44,16 +46,16 @@ class NavigatorModel extends ChangeNotifier {
     return currentPath;
   }
 
-  Future<void> goToNamed(String newPath, {Object? arguments}) async {
+  Future<T?> goToNamed<T>(String newPath, {Object? arguments}) async {
     _paths = [..._paths, newPath];
     notifyListeners();
-    await navigationKey.currentState!.pushNamed(newPath, arguments: arguments);
-    // toggleBottom(_mainRoutes.contains(newPath));
+    return await navigationKey.currentState!.pushNamed<T?>(newPath, arguments: arguments);
   }
 
-  void goToNamedAndRemovePrevious(String newPath, {Object? arguments}) {
+  void goToNamedAndRemovePrevious<T>(String newPath, {Object? arguments}) {
     _paths = [newPath];
     notifyListeners();
+
     navigationKey.currentState!.pushNamedAndRemoveUntil(
       newPath,
       (route) => false,
@@ -61,34 +63,33 @@ class NavigatorModel extends ChangeNotifier {
     );
   }
 
-  Future<void> goTo(Route route) async {
+  Future<T?> goTo<T>(Route<T> route) async {
     _paths = [..._paths, ""];
     notifyListeners();
-    await navigationKey.currentState!.push(route);
+    return await navigationKey.currentState!.push(route);
   }
 
   void pop([Object? value]) {
     navigationKey.currentState!.pop(value);
+
     _paths.removeLast();
     notifyListeners();
   }
 
-  void navigateMainScreen(int newIndex) {
+  void navigateBetweenMainScreens(int newIndex) {
     final prevIndex = _currentRouteIndex;
     _currentRouteIndex = newIndex;
     notifyListeners();
 
-    goToNamedAndRemovePrevious(currentMainScreenRoute, arguments: prevIndex > newIndex);
+    goToNamedAndRemovePrevious(
+      currentMainScreenRoute,
+      arguments: NavigatorArgument(ltr: prevIndex > newIndex),
+    );
     // debugPrint("navigator push new page, index: $index ");
   }
 
-  void backToHomeScreen() {
-    navigationKey.currentState!.pushNamedAndRemoveUntil(
-      '/',
-      (route) => false,
-    );
-    _currentRouteIndex = 0;
-
+  void popBackToMainScreenAndRefresh({Object? arguments}) {
+    goToNamedAndRemovePrevious(currentMainScreenRoute, arguments: NavigatorArgument(ltr: false));
     notifyListeners();
   }
 

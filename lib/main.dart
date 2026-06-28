@@ -1,11 +1,14 @@
 import 'package:budget_tracker/config/providers.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/classes/navigator_argument.dart';
 import 'package:budget_tracker/custom/classes/page_transition.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/firebase_options.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
+import 'package:budget_tracker/screens/settings/currency_screen.dart';
 import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:budget_tracker/ui/core/themes/theme.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
@@ -73,16 +76,22 @@ class HomeScreen extends StatelessWidget {
     final navigationModel = context.watch<NavigatorModel>();
     final navKey = navigationModel.navigationKey;
     final showBottomNavBar = context.select((NavigatorModel state) => state.showBottom);
+    final pathsCount = context.select((NavigatorModel state) => state.pathsCount);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         // debugPrint("popped!, current navigator route : $currentNavRoute");
-        // if (didPop) return;
+        debugPrint("main pop, didPop: $didPop");
+        if (didPop) return;
+        if (pathsCount == 1) {
+          showPopDialog(context);
+        } else {
+          context.navMod.pop();
+        }
         // if (isFormOpened) {
         //   navigationModel.popFormToMain();
         // } else {
-        //   showPopDialog(context);
         // }
       },
       child: Scaffold(
@@ -95,26 +104,26 @@ class HomeScreen extends StatelessWidget {
               case '/':
                 return CustomDirectionalTransitionRoute(
                   child: const CostListScreenWrapper(),
-                  ltr: true,
-                );
-              case '/form':
-                return SlideUpTransitionRoute(
-                  child: CostFormScreenWrapper(arg: (settings.arguments as FormArgument?)),
+                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
                 );
               case '/data':
                 return CustomDirectionalTransitionRoute(
-                  child: const ChartScreen(),
-                  ltr: (settings.arguments as bool?) ?? false,
+                  child: const ChartScreenWrapper(),
+                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
                 );
-              case '/report':
-                return MaterialPageRoute(
-                  builder: (context) => const CostReportScreen(),
-                  settings: RouteSettings(name: settings.name),
+              case '/goals':
+                return CustomDirectionalTransitionRoute(
+                  child: const GoalScreenWrapper(),
+                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
                 );
               case '/settings':
                 return CustomDirectionalTransitionRoute(
                   child: const SettingsScreenWrapper(),
-                  ltr: (settings.arguments as bool?) ?? false,
+                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
+                );
+              case '/form':
+                return SlideUpTransitionRoute(
+                  child: CostFormScreenWrapper(arg: (settings.arguments as FormArgument?)),
                 );
               case '/budgets':
                 return MaterialPageRoute(
@@ -126,15 +135,27 @@ class HomeScreen extends StatelessWidget {
                   builder: (context) => const RecurringCostScreen(),
                   // settings: RouteSettings(name: settings.name)
                 );
-              case '/goals':
-                return CustomDirectionalTransitionRoute(
-                  child: const GoalScreen(),
-                  ltr: (settings.arguments as bool?) ?? false,
-                );
               case '/goals-form':
                 return MaterialPageRoute(
                   builder: (context) => const GoalFormScreen(),
                   settings: RouteSettings(name: settings.name),
+                );
+              case '/currency':
+                return CustomDirectionalTransitionRoute(
+                  child: CurrencySelectionScreenWrapper(
+                    currencyExchange: false,
+                  ),
+
+                  // settings: RouteSettings(name: settings.name),
+                );
+              case '/exchange-rate-currency':
+                return CustomDirectionalTransitionRoute(
+                  child: CurrencySelectionScreenWrapper(
+                    currencyExchange: true,
+                    initialValue: (settings.arguments as double?) ?? 0,
+                  ),
+
+                  // settings: RouteSettings(name: settings.name),
                 );
               default:
                 return MaterialPageRoute(builder: (context) => const Placeholder());
@@ -256,7 +277,7 @@ class CustomNavigationBottomBar extends StatelessWidget {
                       visualDensity: VisualDensity.comfortable,
                       padding: EdgeInsets.all(8),
                       onPressed: () {
-                        context.navMod.navigateMainScreen(index);
+                        context.navMod.navigateBetweenMainScreens(index);
                       },
                       icon: Icon(buttonIcon),
                       iconSize: 24,

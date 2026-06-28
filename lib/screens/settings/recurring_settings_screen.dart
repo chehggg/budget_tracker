@@ -243,7 +243,6 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    var bodyMedium2 = Theme.of(context).textTheme.bodyMedium;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Recurring Cost"),
@@ -601,7 +600,7 @@ class _RecurringCostScreenState extends State<RecurringCostScreen> {
                                   // context.read<AppModel>().saveCostItemFromTemp(_recurringDates);
                                   context.read<AppModel>().removeTempCostItem();
                                   Navigator.pop(context);
-                                  context.read<NavigatorModel>().navigateMainScreen(0);
+                                  context.read<NavigatorModel>().navigateBetweenMainScreens(0);
                                 }, child: const Text("Save"))
                               ],
                             );

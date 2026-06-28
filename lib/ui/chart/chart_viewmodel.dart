@@ -7,6 +7,7 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -14,18 +15,24 @@ import 'package:week_number/iso.dart';
 
 enum DateRangeType { thisMonth, thisYear, thisWeek, oneWeek, oneMonth, oneYear, custom }
 
-class ChartModel extends ChangeNotifier {
-  ChartModel({required CostItemRepository costItemRepo, required CategoryRepository categoryRepo})
-    : _costItemRepo = costItemRepo,
-      _categoryRepo = categoryRepo {
+class ChartViewModel extends ChangeNotifier {
+  ChartViewModel({
+    required CostItemRepository costItemRepo,
+    required CurrencyRepository currencyRepo,
+    required CategoryRepository categoryRepo,
+  }) : _costItemRepo = costItemRepo,
+       _currencyRepo = currencyRepo,
+       _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
   final CategoryRepository _categoryRepo;
+  final CurrencyRepository _currencyRepo;
 
   void init() async {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
+    await _currencyRepo.ready;
 
     _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
     _daySummary = _costItemRepo.daySummary;
@@ -110,31 +117,16 @@ class ChartModel extends ChangeNotifier {
       case ChartPeriod.custom:
         return DateTimeRange(start: rangeStart, end: rangeEnd);
     }
-    // switch (_rangeType) {
-    //   case DateRangeType.oneMonth:
-    //     return DateTimeRange(
-    //       start: rangeStart.toSOM(-1),
-    //       end: rangeStart.toEOM(-1),
-    //     );
-    //   case DateRangeType.thisMonth:
-    //     return DateTimeRange(
-    //       start: rangeStart.toSOM(-1),
-    //       end: rangeStart.toEOM(-1),
-    //     );
-    //   case DateRangeType.oneWeek:
-    //     return DateTimeRange(
-    //       start: rangeStart.addDay(-8),
-    //       end: rangeEnd.addDay(-8),
-    //     );
-    //   case DateRangeType.thisWeek:
-    //     return DateTimeRange(
-    //       start: rangeStart.addDay(-8),
-    //       end: rangeEnd.addDay(-8),
-    //     );
-    //   default:
-    //     return _curRange;
-    // }
   }
+
+  String Function(
+    double value, {
+    bool abbreviated,
+    bool alwaysShowSign,
+    bool compact,
+    int? decimalDigits,
+  })
+  get currencyFormat => _currencyRepo.formatCurrency;
 
   Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({bool curRange = true}) {
     final items = _costItems.where(

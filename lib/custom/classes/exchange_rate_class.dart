@@ -5,14 +5,14 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 
 class ExchangeRateResponse {
   ExchangeRateResponse({
-    this.status,
+    this.success,
     this.base,
     this.date,
     this.rates,
     this.error,
   });
 
-  final bool? status;
+  final bool? success;
   final String? base;
   final DateTime? date;
   final Map<String, double>? rates;
@@ -20,7 +20,7 @@ class ExchangeRateResponse {
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
-      'status': status,
+      'success': success,
       'base': base,
       'date': date?.formatStd(),
       'rates': rates,
@@ -30,12 +30,14 @@ class ExchangeRateResponse {
 
   factory ExchangeRateResponse.fromMap(Map<String, dynamic> map) {
     return ExchangeRateResponse(
-      status: map['status'] != null ? map['status'] as bool : null,
+      success: map['success'] != null ? map['success'] as bool : null,
       base: map['base'] != null ? map['base'] as String : null,
       date: map['date'] != null ? (map['date'] as String).dateParseStd() : null,
       rates:
           map['rates'] != null
-              ? Map<String, double>.from((map['rates'] as Map<String, double>))
+              ? (map['rates'] as Map<String, dynamic>).map(
+                (key, value) => MapEntry(key, (value as num).toDouble()),
+              )
               : null,
       error:
           map['error'] != null
