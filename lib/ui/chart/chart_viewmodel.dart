@@ -8,6 +8,7 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -20,14 +21,17 @@ class ChartViewModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required CurrencyRepository currencyRepo,
     required CategoryRepository categoryRepo,
+    required SharedElementRepository sharedRepo,
   }) : _costItemRepo = costItemRepo,
        _currencyRepo = currencyRepo,
+       _sharedRepo = sharedRepo,
        _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
+  final SharedElementRepository _sharedRepo;
 
   void init() async {
     await _costItemRepo.ready;
@@ -38,16 +42,17 @@ class ChartViewModel extends ChangeNotifier {
     _daySummary = _costItemRepo.daySummary;
     _monthSummary = _costItemRepo.monthSummary;
 
-    _subscription = _costItemRepo.valueStream.listen((value) {
-      // debugPrint('stream updated');
-      debugPrint(
-        'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
-      );
-      _costItems = value.items.where((i) => i.costType == _type).toList();
-      _daySummary = value.daySummary;
-      _monthSummary = value.monthSummary;
-      notifyListeners();
-    });
+    _periodStart = _sharedRepo.displayDate; 
+    // _subscription = _costItemRepo.valueStream.listen((value) {
+    //   // debugPrint('stream updated');
+    //   debugPrint(
+    //     'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
+    //   );
+    //   _costItems = value.items.where((i) => i.costType == _type).toList();
+    //   _daySummary = value.daySummary;
+    //   _monthSummary = value.monthSummary;
+    //   notifyListeners();
+    // });
 
     _isInitalized = true;
 
@@ -130,7 +135,7 @@ class ChartViewModel extends ChangeNotifier {
 
   Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({bool curRange = true}) {
     final items = _costItems.where(
-      (item) => item.date.isWithinRange(curRange ? _curRange : _prevRange),
+      (item) => item.date!.isWithinRange(curRange ? _curRange : _prevRange),
     );
     return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
   }
@@ -184,7 +189,7 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   CostMetric get curRangeSummary {
-    final items = _costItems.where((item) => item.date.isWithinRange(_curRange)).toList();
+    final items = _costItems.where((item) => item.date!.isWithinRange(_curRange)).toList();
     return CostMetric.fromCostItemList(items);
   }
 
@@ -272,26 +277,26 @@ class ChartViewModel extends ChangeNotifier {
 
   // void getCu
 
-  void updateDateRange(DateRangeType rangeType) {
-    final now = DateTime.now();
-    _rangeType = rangeType;
-    switch (rangeType) {
-      case DateRangeType.thisMonth:
-        _curRange = DateTimeRange(start: now.startOfMonth, end: now.endOfMonth);
-      case DateRangeType.thisYear:
-        _curRange = DateTimeRange(start: now.startOfYear, end: now.endOfYear);
-      case DateRangeType.thisWeek:
-        _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
-      case DateRangeType.oneWeek:
-        _curRange = DateTimeRange(start: now.standard.addDay(-6), end: now.standard);
-      case DateRangeType.oneMonth:
-        _curRange = DateTimeRange(start: now.standard.addMonth(-1), end: now.standard);
-      case DateRangeType.oneYear:
-        _curRange = DateTimeRange(start: now.standard.addYear(-1), end: now.standard);
-      default:
-        return;
-    }
-  }
+  // void updateDateRange(DateRangeType rangeType) {
+  //   final now = DateTime.now();
+  //   _rangeType = rangeType;
+  //   switch (rangeType) {
+  //     case DateRangeType.thisMonth:
+  //       _curRange = DateTimeRange(start: now.startOfMonth, end: now.endOfMonth);
+  //     case DateRangeType.thisYear:
+  //       _curRange = DateTimeRange(start: now.startOfYear, end: now.endOfYear);
+  //     case DateRangeType.thisWeek:
+  //       _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
+  //     case DateRangeType.oneWeek:
+  //       _curRange = DateTimeRange(start: now.standard.addDay(-6), end: now.standard);
+  //     case DateRangeType.oneMonth:
+  //       _curRange = DateTimeRange(start: now.standard.addMonth(-1), end: now.standard);
+  //     case DateRangeType.oneYear:
+  //       _curRange = DateTimeRange(start: now.standard.addYear(-1), end: now.standard);
+  //     default:
+  //       return;
+  //   }
+  // }
 
   void updatePeriod(ChartPeriod selectedPeriod) {
     _period = selectedPeriod;
@@ -331,6 +336,8 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.custom:
         _periodStart = _periodStart.addYear(increase ? 1 : -1);
     }
+    
+    _sharedRepo.updateDisplayDate(_periodStart);
     updatePeriod(_period);
   }
 

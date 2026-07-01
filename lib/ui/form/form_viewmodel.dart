@@ -23,7 +23,7 @@ class FormViewModel extends ChangeNotifier {
        _initCostItem = initCostItem,
        _currencyRepo = currencyRepo,
        _categoryRepo = categoryRepo {
-    initialize();
+    init();
   }
 
   final CostItem? _initCostItem;
@@ -32,61 +32,76 @@ class FormViewModel extends ChangeNotifier {
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
 
-  CostItemFormResult get formResult {
-    return CostItemFormResult(
-      name: _itemDesc,
-      date: _date,
-      costType: _type,
-      category: _selectedCategory ?? CostItemCategory.error(),
-      amount: _amount ?? 0,
-    );
+  Future<void> init() async {
+    _isLoaded = false;
+    await _categoryRepo.ready;
+    await _costItemRepo.ready;
+    await _savedItemRepo.ready;
+    await _currencyRepo.ready;
+
+    _populateInitValue();
+    _updateControllerValue();
+
+    _descriptionController.addListener(() => updateName(_descriptionController.text));
+    _amountController.addListener(() {
+      updateAmount(double.tryParse(_amountController.text) ?? 0);
+    });
+
+    _isLoaded = true;
+    notifyListeners();
+  }
+
+  void _populateInitValue() {
+    debugPrint('initializing form model');
+
+    if (_initCostItem != null) {
+      _draftedItem = _initCostItem;
+      _formGroup =
+          _initCostItem.costType == CostType.expense ? FormGroup.expense : FormGroup.income;
+    } else {
+      _draftedItem = CostItem(uuid: Uuid().v4(), date: DateTime.now().standard);
+    }
   }
 
   String? validateFormResult() {
-    if (_selectedCategory == null) {
+    if (_draftedItem.categoryId == null) {
       return "No category selected!";
     }
     if (double.tryParse(_amountController.text) == null) {
       return "Amount is invalid!";
     }
-    if (_amount == null || _amount == 0) {
+    if (_draftedItem.amount == 0 || _draftedItem.amount == null) {
       return "Amount cannot be 0!";
     }
     return null;
   }
 
+  CostItem _draftedItem = CostItem();
+  CostItem get draft => _draftedItem;
+
   FormGroup _formGroup = FormGroup.expense;
   FormGroup get formGroup => _formGroup;
 
   List<CostItemCategory> get categories =>
-      _categoryRepo.categories.where((category) => category.costType == _type).toList();
+      _categoryRepo.categories
+          .where((category) => _formGroup.costType == null ? true : (category.costType == _formGroup.costType))
+          .toList();
 
   bool _isLoaded = false;
   bool get ready => _isLoaded;
 
-  bool get editMode => _initCostItem != null;
+  bool get inEditMode => _initCostItem != null;
 
   UnmodifiableListView<SavedItem> get savedItems => _savedItemRepo.savedItems;
 
-  CostItemCategory getCatById(SavedItem item) {
+  CostItemCategory getSavedItemCatById(SavedItem item) {
     return _categoryRepo.categories.firstWhereOrNull((el) => el.id == item.category) ??
         CostItemCategory.error();
   }
 
-  CostItemCategory? _selectedCategory;
-  CostItemCategory? get selectedCategory => _selectedCategory;
 
-  double? _amount;
-  double? get amount => _amount;
-
-  String _itemDesc = "";
-  String get itemDesc => _itemDesc;
-
-  CostType _type = CostType.expense;
-  CostType get type => _type;
-
-  DateTime _date = DateTime.now().standard;
-  DateTime get date => _date;
+  // CostItemCategory? _selectedCategory;
+  CostItemCategory? get selectedCategory => _categoryRepo.categories.firstWhereOrNull((cat) => _draftedItem.categoryId == cat.id);
 
   String _savedTitle = "";
   String get savedTitle => _savedTitle;
@@ -103,52 +118,39 @@ class FormViewModel extends ChangeNotifier {
   TextEditingController get amountController => _amountController;
 
   void _updateControllerValue() {
-    _descriptionController.value = _descriptionController.value.copyWith(text: _itemDesc);
-    if (amount != null) {
+    _descriptionController.value = _descriptionController.value.copyWith(text: _draftedItem.name);
+    if (_draftedItem.amount != null) {
       _amountController.value = _amountController.value.copyWith(
-        text: _amount!.toStringAsFixed(amount! % 1 == 0 ? 0 : 2),
+        text: _draftedItem.amount!.formatRoundedString(),
       );
     }
   }
 
-  Future<void> initialize() async {
-    _isLoaded = false;
+  // Future<void> reloadCategory() async {
+  //   await _categoryRepo.getCategory(revertToDefault: true);
+  // }
 
-    _populateInitValue();
-    _updateControllerValue();
-
-    _descriptionController.addListener(() => updateDesc(_descriptionController.text));
-    _amountController.addListener(() {
-      updateAmount(double.tryParse(_amountController.text) ?? 0);
-    });
-
-    await _categoryRepo.ready;
-
-    _isLoaded = true;
-    notifyListeners();
-  }
-
-  Future<void> reloadCategory() async {
-    await _categoryRepo.getCategory(revertToDefault: true);
-  }
-
-  void selectNewCategory(CostItemCategory category) {
-    _selectedCategory = category;
-    _type = category.costType!;
+  void updateCategory(CostItemCategory newCategory) {
+    _draftedItem = _draftedItem.copyWith(
+      categoryId: newCategory.id,
+      costType: newCategory.costType
+    );
     notifyListeners();
   }
 
   void updateFormGroup(FormGroup group) {
     _formGroup = group;
-    _type = group.costType ?? CostType.expense;
     notifyListeners();
   }
 
   void selectSavedItem(SavedItem item) {
-    _selectedCategory = getCatById(item);
-    _type = item.costType!;
-    _amount = item.amount ?? _amount;
-    _itemDesc = item.description ?? _itemDesc;
+    _draftedItem = _draftedItem.copyWith(
+      name: item.description,
+      categoryId: item.category,
+      costType: item.costType,
+      date: item.date,
+      amount: item.amount,
+    );
 
     _updateControllerValue();
 
@@ -156,55 +158,28 @@ class FormViewModel extends ChangeNotifier {
   }
 
   void updateDate(DateTime newDate) {
-    debugPrint("date updated");
-    _date = newDate;
+    _draftedItem = _draftedItem.copyWith(date: newDate);
     notifyListeners();
   }
 
-  void updateAmount(double amount) {
-    _amount = amount;
+  void updateAmount(double newAmount) {
+    _draftedItem = _draftedItem.copyWith(amount: newAmount);
     notifyListeners();
   }
 
-  void applyExchangedValue(double amount) {
-    _amount = amount;
+  void applyExchangedValue(double newAmount) {
+    _draftedItem = _draftedItem.copyWith(amount: newAmount);
     _updateControllerValue();
     notifyListeners();
   }
-    // _amountController.value = _amountController.value.copyWith(text: _amount!.toStringAsFixed(2));
 
-  void updateDesc(String value) {
-    _itemDesc = value;
+  void updateName(String newName) {
+    _draftedItem = _draftedItem.copyWith(name: newName);
     notifyListeners();
   }
 
   void updateSavedItemTitle(String value) {
     _savedTitle = value;
-    notifyListeners();
-  }
-
-  void _populateInitValue() {
-    debugPrint('initializing form model');
-
-    if (_initCostItem != null) {
-      debugPrint('found cost item');
-      _selectedCategory =
-          categories.firstWhereOrNull(
-            (cat) => cat.id == _initCostItem.categoryId,
-          ) ??
-          CostItemCategory(
-            id: "0",
-            name: "Category 404",
-            costType: _initCostItem.costType,
-            imagePath: "assets/images/warning.svg",
-            color: Colors.white,
-          );
-      _amount = _initCostItem.amount;
-      _itemDesc = _initCostItem.name;
-      _date = _initCostItem.date;
-      _type = _initCostItem.costType;
-      _formGroup = _type == CostType.expense ? FormGroup.expense : FormGroup.income;
-    }
     notifyListeners();
   }
 
@@ -220,12 +195,14 @@ class FormViewModel extends ChangeNotifier {
   }
 
   Future<void> submitForm() async {
-    if (_initCostItem != null) {
-      await _costItemRepo.updateCostItem(
-        CostItem.update(_initCostItem, formResult),
-      );
+    final finalItem = _draftedItem.copyWith(
+      lastModified: DateTime.now(),
+      lastCreated: inEditMode ? null : DateTime.now(),
+    );
+    if (inEditMode) {
+      await _costItemRepo.updateCostItem(finalItem);
     } else {
-      await _costItemRepo.createCostItem(CostItem.fromForm(formResult, id: Uuid().v4()));
+      await _costItemRepo.createCostItem(finalItem);
     }
   }
 
@@ -235,7 +212,7 @@ class FormViewModel extends ChangeNotifier {
   }
 
   String get currencySymbol => _currencyRepo.currency.symbol;
-  bool get symbolAtBack => _currencyRepo.currency.pattern.endsWith("S");
+  bool get symbolOnLeft => _currencyRepo.currency.symbolOnLeft;
   String Function(
     double value, {
     bool abbreviated,
@@ -244,4 +221,11 @@ class FormViewModel extends ChangeNotifier {
     int? decimalDigits,
   })
   get currencyFormat => _currencyRepo.formatCurrency;
+
+  @override
+  void dispose() {
+    super.dispose();
+    _amountController.dispose();
+    _descriptionController.dispose();
+  }
 }

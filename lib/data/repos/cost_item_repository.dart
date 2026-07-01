@@ -17,7 +17,6 @@ class CostItemRepository {
 
   Future<void> _init() async {
     await getCostItem();
-
   }
 
   final LocalServices _localServices;
@@ -70,9 +69,9 @@ class CostItemRepository {
         final Map<DateTime, List<CostItem>> gbYearCostItems = {};
 
         for (CostItem item in _costItems) {
-          (_gbDateCostItems[item.date] ??= []).add(item);
-          (gbMonthCostItems[item.date.startOfMonth] ??= []).add(item);
-          (gbYearCostItems[item.date.startOfYear] ??= []).add(item);
+          (_gbDateCostItems[item.date!.standard] ??= []).add(item);
+          (gbMonthCostItems[item.date!.startOfMonth] ??= []).add(item);
+          (gbYearCostItems[item.date!.startOfYear] ??= []).add(item);
         }
 
         _daySummary = _gbDateCostItems.map(
@@ -99,34 +98,35 @@ class CostItemRepository {
   Future<Result<void>> deleteCostItem(CostItem deletedItem) async {
     _costItems.removeWhere((item) => item.uuid == deletedItem.uuid);
     _gbDateCostItems[deletedItem.date]!.removeWhere((item) => item.uuid == deletedItem.uuid);
-    (_daySummary[deletedItem.date] ??= CostMetric()).minusFromMetric(deletedItem);
-    (_monthSummary[deletedItem.date.startOfMonth] ??= CostMetric()).minusFromMetric(deletedItem);
-    (_yearSummary[deletedItem.date.startOfYear] ??= CostMetric()).minusFromMetric(deletedItem);
+    (_daySummary[deletedItem.date!] ??= CostMetric()).minusFromMetric(deletedItem);
+    (_monthSummary[deletedItem.date!.startOfMonth] ??= CostMetric()).minusFromMetric(deletedItem);
+    (_yearSummary[deletedItem.date!.startOfYear] ??= CostMetric()).minusFromMetric(deletedItem);
 
     if (_gbDateCostItems[deletedItem.date]!.isEmpty) {
       debugPrint('remove item');
       _gbDateCostItems.remove(deletedItem.date);
     }
 
-    _dataStreamController.add(dataStream);
+    _dataStreamController.add(dataStream.copyWith(date: deletedItem.date));
     return await _localServices.writeCostItemFile(_costItems);
   }
 
   Future<Result<void>> updateCostItem(CostItem newItem) async {
     await deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));
     await createCostItem(newItem);
+    _dataStreamController.add(dataStream.copyWith(date: newItem.date));
 
     return await _localServices.writeCostItemFile(_costItems);
   }
 
   Future<Result<void>> createCostItem(CostItem item) async {
     _costItems.add(item);
-    (_gbDateCostItems[item.date] ??= []).insert(0, item);
-    (_daySummary[item.date] ??= CostMetric()).addToMetric(item);
-    (_monthSummary[item.date.startOfMonth] ??= CostMetric()).addToMetric(item);
-    (_yearSummary[item.date.startOfYear] ??= CostMetric()).addToMetric(item);
-    
-    _dataStreamController.add(dataStream);
+    (_gbDateCostItems[item.date!] ??= []).insert(0, item);
+    (_daySummary[item.date!] ??= CostMetric()).addToMetric(item);
+    (_monthSummary[item.date!.startOfMonth] ??= CostMetric()).addToMetric(item);
+    (_yearSummary[item.date!.startOfYear] ??= CostMetric()).addToMetric(item);
+
+    _dataStreamController.add(dataStream.copyWith(date: item.date));
     return await _localServices.writeCostItemFile(_costItems);
   }
 
@@ -139,7 +139,7 @@ class CostItemRepository {
     _daySummary = {};
     _monthSummary = {};
     _yearSummary = {};
-    _dataStreamController.add(dataStream);
+    _dataStreamController.add(dataStream.copyWith(date: DateTime.now()));
     _localServices.writeCostItemFile(_costItems);
   }
 
@@ -150,12 +150,28 @@ class CostItemRepository {
 
 class CostItemRepoDataStream {
   CostItemRepoDataStream({
+    this.date,
     required this.items,
     required this.daySummary,
     required this.monthSummary,
   });
 
-  List<CostItem> items;
-  Map<DateTime, CostMetric> daySummary;
-  Map<DateTime, CostMetric> monthSummary;
+  final DateTime? date;
+  final List<CostItem> items;
+  final Map<DateTime, CostMetric> daySummary;
+  final Map<DateTime, CostMetric> monthSummary;
+
+  CostItemRepoDataStream copyWith({
+    DateTime? date,
+    List<CostItem>? items,
+    Map<DateTime, CostMetric>? daySummary,
+    Map<DateTime, CostMetric>? monthSummary,
+  }) {
+    return CostItemRepoDataStream(
+      date: date ?? this.date,
+      items: items ?? this.items,
+      daySummary: daySummary ?? this.daySummary,
+      monthSummary: monthSummary ?? this.monthSummary,
+    );
+  }
 }

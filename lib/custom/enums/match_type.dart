@@ -11,6 +11,15 @@ enum StringMatchType {
   final String text;
 
   const StringMatchType(this.text);
+}
 
-  
+enum NumRangeMatchType {
+  lt("larger than"),
+  st("smaller than"),
+  lte("larger than or equal"),
+  ste("smaller than or equal"),
+  btn("between");
+
+  final String text;
+  const NumRangeMatchType(this.text);
 }

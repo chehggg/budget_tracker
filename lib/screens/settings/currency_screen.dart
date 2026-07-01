@@ -2,7 +2,9 @@ import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/screens/settings/currency_viewmodel.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_screen.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:money2/money2.dart';
 import 'package:provider/provider.dart';
 
@@ -17,21 +19,13 @@ class CurrencySelectionScreenWrapper extends StatelessWidget {
   final double? initialValue;
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        debugPrint("settings screen pop, didPop: ${didPop}");
-        if (didPop) return;
-        // context.navMod.pop();
-      },
-      child: ChangeNotifierProvider(
-        create:
-            (context) => CurrencyViewModel(
-              currencyRepo: context.read(),
-              isCurrencyExchange: currencyExchange,
-            ),
-        child: const CurrencySelectionScreen(),
-      ),
+    return ChangeNotifierProvider(
+      create:
+          (context) => CurrencyViewModel(
+            currencyRepo: context.read(),
+            isCurrencyExchange: currencyExchange,
+          ),
+      child: const CurrencySelectionScreen(),
     );
   }
 }
@@ -45,9 +39,9 @@ class CurrencySelectionScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text("Select Currency"),
-        leading: BackButton(
-          onPressed: context.navMod.pop,
-        ),
+        // leading: BackButton(
+        //   onPressed: context.navMod.pop,
+        // ),
       ),
       body: SafeArea(
         child:
@@ -133,28 +127,19 @@ class CurrencySelectionBody extends StatelessWidget {
                         final currencyMod = context.currencyMod;
                         if (context.currencyMod.isCurrencyExchange) {
                           context.currencyMod.selectExchangeCurrency(currency);
-                          final double? value = await context.navMod.goTo(
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => ChangeNotifierProvider(
-                                    create:
-                                        (context) => ExRateViewModel(
-                                          currencyRepo: context.read(),
-                                          baseCurrency: currencyMod.selectedExchangeCurrency,
-                                          targetCurrency: currencyMod.selectedCurrency,
-                                        ),
-                                    child: const CurrencyExchangeScreen(),
-                                  ),
-                            ),
+                          final double? value = await context.push(
+                            '/form/exchange',
+                            extra: {
+                              'base': currencyMod.selectedExchangeCurrency,
+                              'target': currencyMod.selectedCurrency
+                            }
                           );
                           if (value == null) return;
                           if (context.mounted) {
-                            context.navMod.pop(value);
+                            context.pop(value);
                           }
-                          // debugPrint(value?.toString() ?? "No value found");
                         } else {
-                          context.currencyMod.updateCurrency(currency);
-                          context.navMod.popBackToMainScreenAndRefresh();
+                          context.pop(currency);
                         }
                       },
                     );

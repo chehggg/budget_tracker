@@ -148,7 +148,7 @@ class CategorySpendList extends StatelessWidget {
         final matchedItems = items.entries
             .firstWhere((entry) => entry.key == category)
             .value
-            .sorted((a, b) => b.amount.compareTo(a.amount));
+            .sorted((a, b) => b.amount!.compareTo(a.amount!));
         return CategoryTile(
           category: category,
           value: value,
@@ -265,7 +265,7 @@ class _CategoryTileState extends State<CategoryTile> {
                         flex: 2,
                         fit: FlexFit.tight,
                         child: Text(
-                          DateFormat('d MMM').format(item.date),
+                          DateFormat('d MMM').format(item.date!),
                           textAlign: TextAlign.right,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -275,7 +275,7 @@ class _CategoryTileState extends State<CategoryTile> {
                         flex: 11,
                         fit: FlexFit.tight,
                         child: Text(
-                          item.name,
+                          item.name!,
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -284,7 +284,7 @@ class _CategoryTileState extends State<CategoryTile> {
                         flex: 3,
                         fit: FlexFit.tight,
                         child: Text(
-                          item.amount.customCurrencyFormat(""),
+                          item.amount!.customCurrencyFormat(""),
                           textAlign: TextAlign.right,
                         ),
                       ),

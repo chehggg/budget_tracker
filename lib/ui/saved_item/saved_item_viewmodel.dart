@@ -1,75 +1,59 @@
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-class SavedItemModel extends ChangeNotifier {
-  SavedItemModel({
-    CostItemFormResult? formData,
+class SavedItemViewModel extends ChangeNotifier {
+  SavedItemViewModel({
+    CostItem? initCostData,
     SavedItem? initItem,
-    required CostItemCategory category,
-    required SavedItemRepository savedItemRepository,
-  }) : _savedItemRepository = savedItemRepository,
+    required CategoryRepository categoryRepo,
+    required SavedItemRepository savedItemRepo,
+  }) : _savedItemRepo = savedItemRepo,
+       _categoryRepo = categoryRepo,
        _initItem = initItem,
-       _formData = formData,
-       _category = category {
+       _initCostItem = initCostData {
     init();
   }
 
   final SavedItem? _initItem;
-  final CostItemFormResult? _formData;
-  final SavedItemRepository _savedItemRepository;
-  final CostItemCategory _category;
+  final CostItem? _initCostItem;
+  final SavedItemRepository _savedItemRepo;
+  final CategoryRepository _categoryRepo;
 
   void init() async {
     _isLoaded = false;
+    await _savedItemRepo.ready;
+    await _categoryRepo.ready;
 
     // edit existing item
-    if (isEditMode) {
-      _id = _initItem!.id!;
-      _title = _initItem.title ?? "Untitled";
-      _description = _initItem.description;
-      _amount = _initItem.amount;
-      _date = _initItem.date;
-      _keepDesc = _description != null;
-      _keepAmount = _amount != null;
-      _keepDate = _date != null;
+    if (inEditMode) {
+      _draftedItem = _initItem!;
     } else {
-      _id = Uuid().v4();
-      _description = _formData?.name;
-      _amount = _formData?.amount;
-      _date = _formData?.date;
+      _draftedItem = SavedItem(
+        id: Uuid().v4(),
+        costType: _initCostItem?.costType,
+        category: _initCostItem?.categoryId,
+        description: _initCostItem?.name,
+        amount: _initCostItem?.amount,
+        date: _initCostItem?.date,
+      );
     }
-
-    await _savedItemRepository.ready;
-
     _isLoaded = true;
     notifyListeners();
   }
 
-  bool get isEditMode => _initItem != null;
+  SavedItem _draftedItem = SavedItem();
+  SavedItem get draft => _draftedItem;
 
-  CostItemCategory get selectedCategory => _category;
+  bool get inEditMode => _initItem != null;
 
   bool _isLoaded = false;
   bool get ready => _isLoaded;
-
-  String _title = "";
-  String get title => _title;
-
-  late String _id;
-
-  String? _description;
-  String? get description => _description;
-
-  double? _amount = 0;
-  double? get amount => _amount;
-
-  DateTime? _date = DateTime.now().standard;
-  DateTime? get date => _date;
 
   bool _keepDesc = true;
   bool get keepDesc => _keepDesc;
@@ -79,6 +63,8 @@ class SavedItemModel extends ChangeNotifier {
 
   bool _keepDate = false;
   bool get keepDate => _keepDate;
+
+  CostItemCategory get curCategory => _categoryRepo.getCategoryById(_draftedItem.category ?? "1");
 
   void toggleKeepValue(bool? value, String metric) {
     if (value == null) return;
@@ -93,53 +79,44 @@ class SavedItemModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateAmount(String value) {
-    _amount = double.tryParse(value) ?? 0;
+  void updateAmount(String newAmount) {
+    _draftedItem = _draftedItem.copyWith(amount: () => double.tryParse(newAmount) ?? 0);
     notifyListeners();
   }
 
-  void updateDate(DateTime newDate) {
-    _date = newDate;
+  void updateDate(String newDateString) {
+    _draftedItem = _draftedItem.copyWith(date: () => newDateString.dateParseFull());
     notifyListeners();
   }
 
   void updateDesc(String desc) {
-    _description = desc;
+    _draftedItem = _draftedItem.copyWith(description: () => desc);
     notifyListeners();
   }
 
-  void updateTitle(String value) {
-    _title = value;
+  void updateTitle(String newTitle) {
+    _draftedItem = _draftedItem.copyWith(title: newTitle);
     notifyListeners();
   }
 
-  SavedItem get curSavedItem => SavedItem(
-    id: _id,
-    title: _title.isNotEmpty ? _title : "Untitled",
-    category: _category.id,
-    costType: _category.costType,
-    description: _keepDesc ? _description : null,
-    date: _keepDate ? _date : null,
-    amount: _keepAmount ? _amount : null,
-    lastModified: DateTime.now(),
-  );
-
-  Future<void> updateSavedItem() async {
-    if (_initItem != null) {
-      await _savedItemRepository.updateSaved(curSavedItem);
-      notifyListeners();
+  Future<void> submitSavedItem() async {
+    _draftedItem = _draftedItem.copyWith(
+      lastModified: DateTime.now(),
+      description: !keepDesc ? () => null : null,
+      date: !keepDate ? () => null : null,
+      amount: !keepAmount ? () => null : null,
+    );
+    if (inEditMode) {
+      await _savedItemRepo.updateSaved(_draftedItem);
+    } else {
+      await _savedItemRepo.addToSaved(_draftedItem);
     }
   }
 
   Future<void> deleteSavedItem() async {
-    if (_initItem != null) {
-      await _savedItemRepository.removeSaved(_initItem);
+    if (inEditMode) {
+      await _savedItemRepo.removeSaved(_draftedItem);
       notifyListeners();
     }
-  }
-
-  Future<void> saveItem() async {
-    await _savedItemRepository.addToSaved(curSavedItem);
-    notifyListeners();
   }
 }

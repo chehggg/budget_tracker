@@ -244,4 +244,29 @@ class LocalServices {
       return Result.error(e);
     }
   }
+
+  Future<Result<void>> writeRecentlyUsedCurrency(List<Currency> currency) async {
+    try {
+      await _writeStringToSharedPref(
+        "recentCurrencies",
+        currency.map((currency) => currency.isoCode).join(','),
+      );
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<Currency>?>> getRecentlyUsedCurrency() async {
+    try {
+      final result = await _loadSharedPref("recentCurrencies");
+      if (result != null) {
+        return Result.ok(result.split(",").map((isoCode) => Currencies().find(isoCode)!).toList());
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
 }

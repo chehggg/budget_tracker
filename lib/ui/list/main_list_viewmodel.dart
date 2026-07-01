@@ -1,42 +1,69 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:money2/money2.dart';
 
 class ListViewModel extends ChangeNotifier {
   ListViewModel({
     required CostItemRepository costItemRepo,
     required CategoryRepository categoryRepo,
     required CurrencyRepository currencyRepo,
+    required SharedElementRepository sharedRepo,
   }) : _costItemRepo = costItemRepo,
        _currencyRepo = currencyRepo,
+       _sharedRepo = sharedRepo,
        _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
+  final SharedElementRepository _sharedRepo;
 
   Future<void> init() async {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
     await _currencyRepo.ready;
 
+    // _curYearMonth = _sharedRepo.displayDate;
+
     _isInitialized = true;
+
+    _itemSubscription = _costItemRepo.valueStream.listen((value) {
+      debugPrint("subscription trigger refresh for cost items.");
+      _curYearMonth = value.date ?? DateTime.now().startOfMonth;
+      notifyListeners();
+    });
+
+    _currencySubscription = _currencyRepo.currencyStream.listen((value) {
+      debugPrint("currency trigger refresh.");
+      notifyListeners();
+    });
+
     notifyListeners();
   }
+
+  StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
+  StreamSubscription<Currency>? _currencySubscription;
 
   bool _isInitialized = false;
   bool get ready => _isInitialized;
 
   bool _selectionMode = false;
   bool get selectionMode => _selectionMode;
+
+  NumRangeMatchType? _rangeMatch;
+  NumRangeMatchType? get numberRange => _rangeMatch;
 
   final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
@@ -50,8 +77,9 @@ class ListViewModel extends ChangeNotifier {
   bool _isBlurred = false;
   bool get isBlurred => _isBlurred;
 
-  List<String> _filteredCategories = [];
-  UnmodifiableListView<String> get filteredCategories => UnmodifiableListView(_filteredCategories);
+  List<CostItemCategory> _filteredCategories = [];
+  UnmodifiableListView<CostItemCategory> get filteredCategories =>
+      UnmodifiableListView(_filteredCategories);
 
   String _searchText = "";
 
@@ -65,9 +93,12 @@ class ListViewModel extends ChangeNotifier {
       (key, value) => MapEntry(
         key,
         value.where((item) {
-          final bool searchQuery = _searchText.isNotEmpty ? item.name.contains(_searchText) : true;
+          final bool searchQuery =
+              (_searchText.isNotEmpty ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) : true) ?? true;
           final bool categoryQuery =
-              _filteredCategories.isNotEmpty ? _filteredCategories.contains(item.category) : true;
+              _filteredCategories.isNotEmpty
+                  ? _filteredCategories.map((cat) => cat.id).contains(item.categoryId)
+                  : true;
           return searchQuery && categoryQuery;
         }).toList(),
       ),
@@ -117,6 +148,7 @@ class ListViewModel extends ChangeNotifier {
 
   void changeYearMonth(DateTime newYearMonth) {
     _curYearMonth = newYearMonth;
+    _sharedRepo.updateDisplayDate(newYearMonth);
     notifyListeners();
   }
 
@@ -128,6 +160,8 @@ class ListViewModel extends ChangeNotifier {
     }
     if (!_isSearchOpened) {
       _searchText = "";
+      _filteredCategories.clear();
+      _rangeMatch = null;
     }
     notifyListeners();
   }
@@ -141,23 +175,28 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleCategoryFilter(String id, bool selected) {
-    if (selected) {
-      _filteredCategories.add(id);
-    } else {
-      _filteredCategories.remove(id);
-    }
+  void updateCategoryFilter(List<CostItemCategory> categories) {
+    _filteredCategories = categories;
     notifyListeners();
   }
 
-  void toggleAllCategoryFilter(bool selected) {
-    if (selected) {
-      _filteredCategories.addAll(_categoryRepo.categories.map((el) => el.id!));
-    } else {
-      _filteredCategories.clear();
-    }
-    notifyListeners();
-  }
+  // void toggleCategoryFilter(String id, bool selected) {
+  //   if (selected) {
+  //     _filteredCategories.add(id);
+  //   } else {
+  //     _filteredCategories.remove(id);
+  //   }
+  //   notifyListeners();
+  // }
+
+  // void toggleAllCategoryFilter(bool selected) {
+  //   if (selected) {
+  //     _filteredCategories.addAll(_categoryRepo.categories.map((el) => el.id!));
+  //   } else {
+  //     _filteredCategories.clear();
+  //   }
+  //   notifyListeners();
+  // }
 
   void toggleSelectionMode(bool value) {
     _selectionMode = value;
@@ -186,9 +225,9 @@ class ListViewModel extends ChangeNotifier {
   }
 
   double get maxAmount =>
-      _costItemRepo.costItems.fold(0, (init, item) => max(init, item.signedAmount));
+      _costItemRepo.costItems.fold(0, (init, item) => max(init, item.absoluteAmount));
   double get minAmount =>
-      _costItemRepo.costItems.fold(0, (init, item) => min(init, item.signedAmount));
+      _costItemRepo.costItems.fold(0, (init, item) => min(init, item.absoluteAmount));
 
   String Function(
     double value, {

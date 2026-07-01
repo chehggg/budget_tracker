@@ -1,7 +1,6 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -104,7 +103,7 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
 
   void checkCalculating() {
     // regex check for a add or subtraction of two numbers
-    if (widget.controller.text.contains(RegExp(r'\d+[\+\-]+\d?'))) {
+    if (mounted && widget.controller.text.contains(RegExp(r'\d+[\+\-]+\d?'))) {
       setState(() {
         _isCalculating = true;
       });
@@ -272,7 +271,12 @@ class HideableText extends StatelessWidget {
           maxLines: maxLine,
         )) {
           return Text(
-            isBlurred ? data.replaceAll(RegExp(r'[0-9,.]+[kKMbB]?'), List.filled(asteriskCount, "*").join("")) : data,
+            isBlurred
+                ? data.replaceAll(
+                  RegExp(r'[0-9,.]+[kKMbB]?'),
+                  List.filled(asteriskCount, "*").join(""),
+                )
+                : data,
             style: textStyle,
           );
           // } else if (overflowText == null) {
@@ -422,43 +426,6 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
   }
 }
 
-class ExpenseCalendarView extends StatelessWidget {
-  const ExpenseCalendarView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    const List<String> weekdayName = [
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat",
-      "Sun",
-    ];
-    final List<int> weekdayList =
-        context.select((AppModel state) => state.selectedYearMonth).getFullMonthWeekdayList();
-
-    return SizedBox(
-      height: 500,
-      child: Column(
-        children: [
-          calendarRow(weekdayName),
-        ],
-      ),
-    );
-  }
-
-  Row calendarRow(List children) {
-    return Row(
-      children:
-          children.map((child) {
-            return Text(child);
-          }).toList(),
-    );
-  }
-}
-
 class AffirmativeTextButton extends StatelessWidget {
   const AffirmativeTextButton({super.key, this.onTap, this.text = 'Confirm'});
 
@@ -469,9 +436,12 @@ class AffirmativeTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Text(
-        text,
-        style: context.customTt.numberFontSmall!.copyWith(color: context.cs.onSurface),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Text(
+          text,
+          style: context.customTt.numberFontSmall!.copyWith(color: context.cs.onSurface),
+        ),
       ),
     );
   }
@@ -487,9 +457,12 @@ class PrimaryNegativeTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Text(
-        text,
-        style: context.customTt.numberFontSmall!.copyWith(color: Colors.red.shade600),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Text(
+          text,
+          style: context.customTt.numberFontSmall!.copyWith(color: Colors.red.shade600),
+        ),
       ),
     );
   }
@@ -505,12 +478,24 @@ class DismissTextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap ?? () => context.nav.pop(false),
-      child: Text(
-        text,
-        style: context.customTt.numberFontSmall!.copyWith(color: context.customCs.fadeColor1),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Text(
+          text,
+          style: context.customTt.numberFontSmall!.copyWith(color: context.customCs.fadeColor1),
+        ),
       ),
     );
   }
 }
 
-class CustomFlushbar {}
+class ScreenWrapper extends StatelessWidget {
+  const ScreenWrapper({super.key, required this.child, this.canPop, this.popAction});
+  final Widget child;
+  final bool? canPop;
+  final void Function(bool, dynamic)? popAction;
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(canPop: canPop ?? false, onPopInvokedWithResult: popAction, child: child);
+  }
+}

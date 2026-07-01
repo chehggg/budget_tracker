@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:money2/money2.dart';
 
 class SettingsViewModel extends ChangeNotifier {
   SettingsViewModel({
@@ -23,15 +26,23 @@ class SettingsViewModel extends ChangeNotifier {
     await _categoryRepository.ready;
     await _currencyRepo.ready;
 
+    _currencySubscription  =  _currencyRepo.currencyStream.listen((value) => notifyListeners());
+    
     _isInit = true;
     notifyListeners();
   }
+
+  StreamSubscription<Currency>? _currencySubscription;
 
   bool _isInit = false;
   bool get ready => _isInit;
 
   Future<void> exportCostItemData() async {
     await _costItemRepository.exportCostItem();
+  }
+
+  Future<void> updateCurrency(Currency currency) async {
+    await _currencyRepo.changeCurrency(currency);
   }
 
   Future<void> loadData() async {

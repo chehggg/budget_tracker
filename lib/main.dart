@@ -1,18 +1,20 @@
 import 'package:budget_tracker/config/providers.dart';
+import 'package:budget_tracker/config/router.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/navigator_argument.dart';
 import 'package:budget_tracker/custom/classes/page_transition.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/firebase_options.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
-import 'package:budget_tracker/screens/settings/budget_settings_screen.dart';
 import 'package:budget_tracker/screens/settings/currency_screen.dart';
-import 'package:budget_tracker/screens/settings/recurring_settings_screen.dart';
 import 'package:budget_tracker/ui/core/themes/theme.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_list_screen.dart';
+import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,7 +24,6 @@ import 'package:provider/provider.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
-import 'package:budget_tracker/screens/report_screen.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 
 void main() async {
@@ -45,12 +46,13 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // debugPrint("main rebuild");
 
-    return MaterialApp(
+    return MaterialApp.router(
+      routerConfig: goRouter,
       locale: context.select((ThemeModel state) => state.appLocale),
       theme: appTheme,
       themeMode: context.select((ThemeModel state) => state.theme),
       darkTheme: appTheme,
-      home: const HomeScreen(),
+      // home: const HomeScreen(),
     );
   }
 }
@@ -78,101 +80,95 @@ class HomeScreen extends StatelessWidget {
     final showBottomNavBar = context.select((NavigatorModel state) => state.showBottom);
     final pathsCount = context.select((NavigatorModel state) => state.pathsCount);
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        // debugPrint("popped!, current navigator route : $currentNavRoute");
-        debugPrint("main pop, didPop: $didPop");
-        if (didPop) return;
-        if (pathsCount == 1) {
-          showPopDialog(context);
-        } else {
-          context.navMod.pop();
-        }
-        // if (isFormOpened) {
-        //   navigationModel.popFormToMain();
-        // } else {
-        // }
-      },
-      child: Scaffold(
-        body: Navigator(
-          key: navKey,
-          initialRoute: "/",
-          onGenerateRoute: (settings) {
-            // debugPrint("navigator generate route");
-            switch (settings.name) {
-              case '/':
-                return CustomDirectionalTransitionRoute(
+    return Scaffold(
+      body: Navigator(
+        key: navKey,
+        initialRoute: "/",
+        onGenerateRoute: (settings) {
+          // debugPrint("navigator generate route");
+          switch (settings.name) {
+            case '/':
+              return CustomDirectionalTransitionRoute(
+                child: ChangeNotifierProvider(
+                  create:
+                      (context) => ListViewModel(
+                        costItemRepo: context.read(),
+                        categoryRepo: context.read(),
+                        currencyRepo: context.read(),
+                        sharedRepo: context.read(),
+                      ),
                   child: const CostListScreenWrapper(),
-                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
-                );
-              case '/data':
-                return CustomDirectionalTransitionRoute(
-                  child: const ChartScreenWrapper(),
-                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
-                );
-              case '/goals':
-                return CustomDirectionalTransitionRoute(
-                  child: const GoalScreenWrapper(),
-                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
-                );
-              case '/settings':
-                return CustomDirectionalTransitionRoute(
-                  child: const SettingsScreenWrapper(),
-                  ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
-                );
-              case '/form':
-                return SlideUpTransitionRoute(
-                  child: CostFormScreenWrapper(arg: (settings.arguments as FormArgument?)),
-                );
-              case '/budgets':
-                return MaterialPageRoute(
-                  builder: (context) => const SetBudgetScreen(),
-                  // settings: RouteSettings(name: settings.name)
-                );
-              case '/recurring':
-                return MaterialPageRoute(
-                  builder: (context) => const RecurringCostScreen(),
-                  // settings: RouteSettings(name: settings.name)
-                );
-              case '/goals-form':
-                return MaterialPageRoute(
-                  builder: (context) => const GoalFormScreen(),
-                  settings: RouteSettings(name: settings.name),
-                );
-              case '/currency':
-                return CustomDirectionalTransitionRoute(
-                  child: CurrencySelectionScreenWrapper(
-                    currencyExchange: false,
-                  ),
-
-                  // settings: RouteSettings(name: settings.name),
-                );
-              case '/exchange-rate-currency':
-                return CustomDirectionalTransitionRoute(
-                  child: CurrencySelectionScreenWrapper(
-                    currencyExchange: true,
-                    initialValue: (settings.arguments as double?) ?? 0,
-                  ),
-
-                  // settings: RouteSettings(name: settings.name),
-                );
-              default:
-                return MaterialPageRoute(builder: (context) => const Placeholder());
-              // throw UnimplementedError();
-            }
-          },
-        ),
-        floatingActionButton: showBottomNavBar ? CustomFAB() : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: IgnorePointer(
-          ignoring: !showBottomNavBar,
-          child: AnimatedContainer(
-            duration: Durations.medium1,
-            curve: Curves.easeOut,
-            height: showBottomNavBar ? 96 : 0,
-            child: CustomNavigationBottomBar(),
-          ),
+                ),
+                ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
+              );
+            case '/data':
+              return CustomDirectionalTransitionRoute(
+                child: const ChartScreenWrapper(),
+                ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
+              );
+            case '/goals':
+              return CustomDirectionalTransitionRoute(
+                child: const GoalScreenWrapper(),
+                ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
+              );
+            case '/settings':
+              return CustomDirectionalTransitionRoute(
+                child: const SettingsScreenWrapper(),
+                ltr: (settings.arguments as NavigatorArgument?)?.ltr ?? false,
+              );
+            case '/form':
+              return SlideUpTransitionRoute(
+                child: CostFormScreenWrapper(arg: (settings.arguments as FormArgument?)),
+              );
+            case '/create-saved-item':
+              return CustomDirectionalTransitionRoute(
+                child: EditSavedItemScreenWrapper(
+                  initCostItem: (settings.arguments) as CostItem?,
+                ),
+              );
+            case '/edit-saved-item':
+              return CustomDirectionalTransitionRoute(
+                child: EditSavedItemScreenWrapper(
+                  initSavedItem: (settings.arguments) as SavedItem?,
+                ),
+              );
+            case '/goals-form':
+              return MaterialPageRoute(
+                builder: (context) => const GoalTypeSelectionScreenState(),
+                settings: RouteSettings(name: settings.name),
+              );
+            case '/currency':
+              return CustomDirectionalTransitionRoute(
+                child: CurrencySelectionScreenWrapper(
+                  currencyExchange: false,
+                ),
+    
+                // settings: RouteSettings(name: settings.name),
+              );
+            case '/exchange-rate-currency':
+              return CustomDirectionalTransitionRoute(
+                child: CurrencySelectionScreenWrapper(
+                  currencyExchange: true,
+                  initialValue: (settings.arguments as double?) ?? 0,
+                ),
+    
+                // settings: RouteSettings(name: settings.name),
+              );
+            default:
+              return MaterialPageRoute(builder: (context) => const Placeholder());
+            // throw UnimplementedError();
+          }
+        },
+      ),
+      floatingActionButton: showBottomNavBar ? CustomFAB() : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: IgnorePointer(
+        ignoring: !showBottomNavBar,
+        child: AnimatedContainer(
+          duration: Durations.medium1,
+          curve: Curves.easeOut,
+          height: showBottomNavBar ? 96 : 0,
+          child: CustomNavigationBottomBar(),
         ),
       ),
     );
@@ -183,10 +179,10 @@ class HomeScreen extends StatelessWidget {
     builder: (context) {
       return AlertDialog(
         title: Text("Exit app?"),
-        content: Text("Exit app"),
+        content: Text("Press exist to close the app."),
         actions: [
-          TextButton(onPressed: null, child: Text("Exit")),
-          TextButton(onPressed: null, child: Text("Cancel")),
+          DismissTextButton(onTap: context.nav.pop, text: "Cancel"),
+          AffirmativeTextButton(onTap: SystemNavigator.pop, text: "Exit"),
         ],
       );
     },

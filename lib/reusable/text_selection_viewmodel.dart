@@ -40,7 +40,7 @@ class TextSelectionViewmodel extends ChangeNotifier {
   List<CostItem> _items = [];
   UnmodifiableListView<CostItem> get displayedItems => UnmodifiableListView(
     _items.where(
-      (item) => _filter.checkMatch(item.name.toLowerCase()),
+      (item) => _filter.checkMatch(item.name?.toLowerCase() ?? ""),
     ),
   );
 

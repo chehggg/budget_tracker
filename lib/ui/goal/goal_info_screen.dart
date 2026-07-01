@@ -12,26 +12,20 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class GoalInfoScreen extends StatelessWidget {
-  const GoalInfoScreen({super.key});
+class GoalDetailsScreen extends StatelessWidget {
+  const GoalDetailsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewmodel state) => state.goal);
     final ready = context.select((GoalInfoViewmodel state) => state.ready);
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        debugPrint('goal info pop, didPop: $didPop');
-      },
+    return ScreenWrapper(
       child: Scaffold(
         appBar: AppBar(
-          leading: BackButton(
-            onPressed: () => context.navMod.goToNamedAndRemovePrevious('/goals'),
-          ),
           title: Text("Goal Details"),
           actions: [
             IconButton(
@@ -41,10 +35,10 @@ class GoalInfoScreen extends StatelessWidget {
                   builder: (context) => DeleteItemDialog(),
                 );
                 if (response == null) return;
-                if (response) {
+                if (response && context.mounted) {
                   await context.goalInfoMod.deleteGoal();
-                  context.nav.pushNamedAndRemoveUntil('/goals', (route) => false);
-                  context.showSuccessNotification(message: "Goal is deleted");
+                  context.pop();
+                  // context.showSuccessNotification(message: "Goal is deleted");
                 }
               },
               icon: Icon(Icons.delete),
@@ -61,7 +55,7 @@ class GoalInfoScreen extends StatelessWidget {
                               goalRepository: context.read(),
                               initGoal: goal,
                             ),
-                        child: const GoalInfoFormScreen(),
+                        child: const GoalFormInfoScreen(),
                       );
                     },
                   ),

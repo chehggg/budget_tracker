@@ -153,7 +153,7 @@ class _TextSelectionBodyState extends State<TextSelectionBody> {
                                 category: readTextMod.getItemCategory(item),
                                 size: 18,
                               ),
-                              Expanded(child: Text(item.name.capitalize())),
+                              Expanded(child: Text(item.name?.capitalize() ?? "")),
                             ],
                           ),
                         );

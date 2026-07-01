@@ -137,9 +137,14 @@ class GoalFormViewmodel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createGoal() async {
-    _draftedGoal = _draftedGoal.copyWith(lastCreated: DateTime.now(), lastModified: DateTime.now());
-    await _goalRepository.addGoal(_draftedGoal);
+  Future<void> submitGoal() async {
+    _draftedGoal = _draftedGoal.copyWith(
+      lastCreated: DateTime.now(),
+      lastModified: isEditMode ? DateTime.now() : null,
+    );
+    return isEditMode
+        ? await _goalRepository.addGoal(_draftedGoal)
+        : await _goalRepository.updateGoal(_draftedGoal);
   }
 
   Future<void> deleteGoal() async {

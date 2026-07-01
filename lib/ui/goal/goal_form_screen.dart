@@ -12,11 +12,12 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class GoalFormScreen extends StatelessWidget {
-  const GoalFormScreen({super.key});
+class GoalTypeSelectionScreenState extends StatelessWidget {
+  const GoalTypeSelectionScreenState({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +39,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
     final goalCategories = defaultGoalCategories.where((category) => category.type == _goalType);
     return Scaffold(
       appBar: AppBar(
-        leading: BackButton(
-          onPressed: () => context.navMod.goToNamedAndRemovePrevious('/goals'),
-        ),
+        title: Text("New Goal"),
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -101,21 +100,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ReusableContainer(
-                    onTap:
-                        () => context.nav.push(
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ChangeNotifierProvider(
-                                  create:
-                                      (context) => GoalFormViewmodel(
-                                        categoryRepo: context.read(),
-                                        goalRepository: context.read(),
-                                        goalCategory: category,
-                                      ),
-                                  child: const GoalInfoFormScreen(),
-                                ),
-                          ),
-                        ),
+                    onTap: () => context.push('/goals/form', extra: category),
                     padding: EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,8 +129,8 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
   }
 }
 
-class GoalInfoFormScreen extends StatelessWidget {
-  const GoalInfoFormScreen({super.key});
+class GoalFormInfoScreen extends StatelessWidget {
+  const GoalFormInfoScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -159,19 +144,18 @@ class GoalInfoFormScreen extends StatelessWidget {
               if (error != null) {
                 context.showErrorNotification(message: error);
               } else {
-                if (context.goalFormMod.isEditMode) {
-                  await context.goalFormMod.updateGoal();
-                  if (context.mounted) {
-                    context.navMod.goToNamedAndRemovePrevious('/goals');
-                    context.showSuccessNotification(message: "Goal updated!");
-                  }
-                } else {
-                  await context.goalFormMod.createGoal();
-                  if (context.mounted) {
-                    context.navMod.goToNamedAndRemovePrevious('/goals');
-                    context.showSuccessNotification(message: "New goal created!");
-                  }
+                await context.goalFormMod.submitGoal();
+                
+                if (context.mounted) {
+                  context.go('/goals');
                 }
+                // if (context.goalFormMod.isEditMode) {
+                //   context.showSuccessNotification(message: "Goal updated!");
+                // } else {
+                //   if (context.mounted) {
+                //     context.showSuccessNotification(message: "New goal created!");
+                //   }
+                // }
               }
             },
             icon: Icon(Icons.check),
@@ -180,8 +164,8 @@ class GoalInfoFormScreen extends StatelessWidget {
             onPressed: () async {
               await context.goalFormMod.deleteGoal();
               if (context.mounted) {
-                context.navMod.goToNamedAndRemovePrevious('/goals');
-                context.showSuccessNotification(message: "Goal deleted!");
+                context.go('/goals');
+                // context.showSuccessNotification(message: "Goal deleted!");
               }
             },
             icon: Icon(Icons.delete),

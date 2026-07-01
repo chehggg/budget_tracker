@@ -88,7 +88,7 @@ class GoalInfoViewmodel extends ChangeNotifier {
       (date) {
         final CostMetric? metric;
         final items =
-            currentGoalProgress.items?.where((item) => item.date.isAtSameMomentAs(date)) ?? [];
+            currentGoalProgress.items?.where((item) => item.date!.isAtSameMomentAs(date)) ?? [];
         if (date.isAfter(DateTime.now().standard) && items.isEmpty) {
           metric = null;
         } else {

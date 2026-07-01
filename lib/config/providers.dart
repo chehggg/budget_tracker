@@ -4,14 +4,12 @@ import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/exchange_rate_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/data/services/api_service.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/models/currency_model.dart';
-import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
-import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -41,40 +39,13 @@ List<SingleChildWidget> get providers => [
     create:
         (context) => CurrencyRepository(localServices: context.read(), apiServices: context.read()),
   ),
+  Provider(
+    create: (context) => SharedElementRepository(),
+  ),
   ChangeNotifierProvider<ThemeModel>(
     create: (context) => ThemeModel(),
-  ),
-  ChangeNotifierProvider<CurrencyModel>(
-    create: (context) => CurrencyModel(),
   ),
   ChangeNotifierProvider<NavigatorModel>(
     create: (context) => NavigatorModel(),
   ),
-  ChangeNotifierProvider<AppModel>(
-    create: (context) {
-      return AppModel(costItemRepository: context.read());
-    },
-  ),
-  // ChangeNotifierProvider<GoalViewModel>(
-  //   // lazy: false,
-  //   create: (context) {
-  //     return GoalViewModel(costItemRepo: context.read(), goalRepository: context.read());
-  //   },
-  // ),
-  // ChangeNotifierProvider<ChartViewModel>(
-  //   create: (context) => ChartViewModel(costItemRepo: context.read(), categoryRepo: context.read()),
-  // ),
-  // ChangeNotifierProvider<ListModel>(
-  //   create: (context) => ListModel(costItemRepo: context.read(), categoryRepo: context.read()),
-  // ),
-  // ChangeNotifierProvider<SettingsModel>(
-  //   create:
-  //       (context) => SettingsModel(
-  //         costItemRepository: context.read(),
-  //         categoryRepository: context.read(),
-  //       ),
-  // ),
-  //  ChangeNotifierProvider(
-  //     create: (context) => ListModel(costItemRepo: context.read()),
-  // )
 ];

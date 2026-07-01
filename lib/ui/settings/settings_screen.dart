@@ -1,14 +1,12 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
-import 'package:budget_tracker/constants/currency.dart';
-import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/screens/settings/currency_screen.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:go_router/go_router.dart';
+import 'package:money2/money2.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -90,7 +88,9 @@ class SettingsList extends StatelessWidget {
                 const SettingsDivider(),
                 const SettingsSectionTitle(text: "Configuration"),
                 CurrencySettingsTile(
-                  selectedCurrencySymbol: context.read<SettingsViewModel>().displayedCurrency,
+                  selectedCurrencySymbol: context.select(
+                    (SettingsViewModel state) => state.displayedCurrency,
+                  ),
                 ),
                 const RecurringCostSettingsTile(),
                 // const BudgetSettingsTile(),
@@ -695,10 +695,14 @@ class CurrencySettingsTile extends StatelessWidget {
     return CustomSettingsTile(
       title: "Currency",
       trailingWidget: Text(selectedCurrencySymbol, style: context.tt.bodyMedium),
-      onTap:
-          () => context.navMod.goTo(
-            MaterialPageRoute(builder: (context) => const CurrencySelectionScreenWrapper()),
-          ),
+      onTap: () async {
+        final response = await context.push<Currency>('/settings/currencies');
+        if (response != null) {
+          if (context.mounted) {
+            context.settingMod.updateCurrency(response);
+          }
+        }
+      },
     );
   }
 }
@@ -793,158 +797,6 @@ class ThemeModeSettingsTile extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class CurrencySettingsDialog extends StatefulWidget {
-  const CurrencySettingsDialog({super.key});
-
-  @override
-  State<CurrencySettingsDialog> createState() => _CurrencySettingsDialogState();
-}
-
-class _CurrencySettingsDialogState extends State<CurrencySettingsDialog> {
-  List<Map<String, dynamic>> _displayedCurrencies = [];
-  String _selectedCurrencySymbol = "";
-  String _selectedCurrencyName = "";
-  final _controller = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    resetCurrencies();
-    // _displayedCurrencies = currencies;
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _controller.dispose();
-  }
-
-  void resetCurrencies() {
-    _selectedCurrencySymbol = context.read<AppModel>().currencySymbol;
-    _selectedCurrencyName = context.read<AppModel>().currencyName;
-
-    final defaultCurrency = [...currencies];
-    final selectedCurrencyIndex = currencies.indexWhere(
-      (currency) =>
-          currency['symbol'] == _selectedCurrencySymbol &&
-          currency['name'] == _selectedCurrencyName,
-    );
-    debugPrint(selectedCurrencyIndex.toString());
-    if (selectedCurrencyIndex != -1) {
-      defaultCurrency.removeRange(
-        selectedCurrencyIndex,
-        selectedCurrencyIndex + 1,
-      );
-
-      setState(() {
-        _displayedCurrencies = [
-          currencies[selectedCurrencyIndex],
-          // ...defaultCurrency
-          ...defaultCurrency,
-        ];
-      });
-    } else {
-      setState(() {
-        _displayedCurrencies = currencies;
-      });
-    }
-  }
-
-  void searchCurrency(String query) {
-    if (query == "") {
-      resetCurrencies();
-    } else {
-      final defaultCurrency = [...currencies];
-      final selectedCurrencyIndex = currencies.indexWhere(
-        (currency) =>
-            currency['symbol'] == _selectedCurrencySymbol &&
-            currency['name'] == _selectedCurrencyName,
-      );
-      debugPrint(selectedCurrencyIndex.toString());
-      if (selectedCurrencyIndex != -1) {
-        defaultCurrency.removeRange(
-          selectedCurrencyIndex,
-          selectedCurrencyIndex + 1,
-        );
-        setState(() {
-          _displayedCurrencies = [
-            currencies[selectedCurrencyIndex],
-            ...defaultCurrency.where(
-              (currency) =>
-                  (currency['name'] as String).toLowerCase().contains(query) ||
-                  (currency['symbol'] as String).toLowerCase().contains(query),
-            ),
-          ];
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text("Change currency"),
-      content: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.5,
-        width: MediaQuery.of(context).size.width * 0.7,
-        child: Column(
-          spacing: 10,
-          children: [
-            TextFormField(
-              controller: _controller,
-              onChanged: searchCurrency,
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(100),
-                  borderSide: BorderSide.none,
-                ),
-                prefixIcon: Icon(Icons.search),
-                // hintText: AppLocalizations.of(context)!.searchCurrency,
-                hintText: "Search currency",
-                hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
-                ),
-                fillColor: Theme.of(context).colorScheme.surfaceDim,
-              ),
-            ),
-            Expanded(
-              child: Scrollbar(
-                child: ListView.builder(
-                  itemCount: _displayedCurrencies.length,
-                  itemBuilder: (context, index) {
-                    final Map<String, dynamic> currency = _displayedCurrencies.elementAt(index);
-                    final Icon? icon;
-                    if (_selectedCurrencySymbol == currency['symbol'] &&
-                        _selectedCurrencyName == currency['name']) {
-                      icon = Icon(Icons.check);
-                    } else {
-                      icon = null;
-                    }
-                    return DialogListTile(
-                      title: '${currency['symbol'] as String} (${currency['name'] as String})',
-                      trailing: icon,
-                      onTap: () {
-                        setState(() {
-                          _selectedCurrencySymbol =
-                              _displayedCurrencies.elementAt(index)['symbol'] as String;
-                        });
-                        context.read<AppModel>().changeCurrency(currency);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1139,10 +991,12 @@ class ClearDataSettingsTile extends StatelessWidget {
                               actions: [
                                 TextButton(
                                   onPressed: () async {
-                                    await context.read<AppModel>().clearCostItem();
+                                    // await context.read<AppModel>().clearCostItem();
                                     if (context.mounted) {
                                       Navigator.pop(context);
-                                      context.read<NavigatorModel>().popBackToMainScreenAndRefresh();
+                                      context
+                                          .read<NavigatorModel>()
+                                          .popBackToMainScreenAndRefresh();
                                     }
                                   },
                                   child: Text("Confirm"),
@@ -1160,18 +1014,6 @@ class ClearDataSettingsTile extends StatelessWidget {
               );
             },
           ),
-    );
-  }
-}
-
-class TestingSettings extends StatelessWidget {
-  const TestingSettings({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: const Text("Test sending data to firebase"),
-      onTap: () => context.read<AppModel>().writeDataToFirebase(),
     );
   }
 }

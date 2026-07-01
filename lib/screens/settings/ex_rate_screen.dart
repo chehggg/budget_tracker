@@ -4,6 +4,7 @@ import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class CurrencyExchangeScreen extends StatelessWidget {
@@ -19,7 +20,7 @@ class CurrencyExchangeScreen extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              context.navMod.pop(context.exRateMod.convertedValue);
+              context.pop(context.exRateMod.convertedValue);
             },
             icon: Icon(Icons.check),
           ),

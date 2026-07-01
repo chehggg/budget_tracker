@@ -11,7 +11,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
 
 class ChartScreenWrapper extends StatelessWidget {
@@ -22,6 +21,7 @@ class ChartScreenWrapper extends StatelessWidget {
     return ChangeNotifierProvider(
       create:
           (context) => ChartViewModel(
+            sharedRepo: context.read(),
             costItemRepo: context.read(),
             currencyRepo: context.read(),
             categoryRepo: context.read(),
@@ -804,106 +804,6 @@ class ChartLegendItem extends StatelessWidget {
   }
 }
 
-class DateBreakdownChart extends StatelessWidget {
-  const DateBreakdownChart({super.key, required this.selectedCostType});
-
-  final CostType selectedCostType;
-
-  @override
-  Widget build(BuildContext context) {
-    final dateData = context.select(
-      (AppModel state) => state.summarizedDateGroupDataForCustomCostType(selectedCostType),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ChartTitleBar(
-          description: "by Date",
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Row(
-              spacing: 20,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: PieChart(
-                    duration: Durations.medium1,
-                    curve: Curves.fastOutSlowIn,
-                    PieChartData(
-                      startDegreeOffset: -90,
-                      centerSpaceRadius: 48,
-                      pieTouchData: PieTouchData(
-                        enabled: true,
-                        touchCallback: (touchEvent, response) {
-                          if (touchEvent is FlTapDownEvent) {
-                            if (response?.touchedSection?.touchedSection != null) {
-                              debugPrint("Touched!");
-                              // final categoryTitle = response!.touchedSection!.touchedSection!.title;
-                              // updateCategory(categoryTitle);
-                            }
-                          }
-                        },
-                      ),
-                      sections:
-                          dateData.map((data) {
-                            return PieChartSectionData(
-                              value: data['amount'],
-                              radius: 20,
-                              showTitle: false,
-                            );
-                          }).toList(),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children:
-                        dateData.map((data) {
-                          return SizedBox(
-                            height: 28,
-                            child: ListTile(
-                              leading: Container(
-                                height: 12,
-                                width: 12,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.amber,
-                                ),
-                              ),
-                              title: Text(
-                                data['date'] as String,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium!.copyWith(fontSize: 13),
-                              ),
-                              visualDensity: VisualDensity(vertical: -4),
-                              dense: true,
-                              contentPadding: EdgeInsets.only(right: 16),
-                              trailing: Text(
-                                NumberFormat('#0%').format(data['percentage']),
-                                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                                  fontSize: 13,
-                                  // color: Theme.of(context).colorScheme.primary
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class ChartTitleBar extends StatelessWidget {
   const ChartTitleBar({super.key, this.title, this.description});

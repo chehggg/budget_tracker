@@ -3,13 +3,12 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
-import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
@@ -55,15 +54,12 @@ class CostFormScreen extends StatelessWidget {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
-        leading: BackButton(
-          onPressed: () => context.navMod.popBackToMainScreenAndRefresh(),
-        ),
         actions: [
           IconButton(
             onPressed: () {
-              context.formMod.reloadCategory();
+              // context.formMod.reloadCategory();
             },
-            icon: Icon(Icons.refresh),
+            icon: Icon(Icons.edit),
           ),
         ],
       ),
@@ -98,8 +94,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = context.formMod.date;
-    if (context.formMod.editMode) {
+    _selectedDate = context.formMod.draft.date ?? DateTime.now().standard;
+    if (context.formMod.inEditMode) {
       _isFormOpened = true;
       _isFormExpanded = true;
     }
@@ -157,8 +153,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
       }
       return state.selectedCategory;
     });
-    String itemDesc = context.select((FormViewModel state) => state.itemDesc);
-    double? amount = context.select((FormViewModel state) => state.amount);
+    String itemDesc = context.select((FormViewModel state) => state.draft.name ?? "");
+    double? amount = context.select((FormViewModel state) => state.draft.amount);
     TextEditingController descController = context.watch<FormViewModel>().descriptionController;
     TextEditingController amountController = context.watch<FormViewModel>().amountController;
 
@@ -257,19 +253,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ? [
                         IconButton(
                           onPressed: () async {
-                            final bool? response = await context.nav.push(
-                              MaterialPageRoute(
-                                builder:
-                                    (buildContext) => ChangeNotifierProvider(
-                                      create:
-                                          (_) => SavedItemModel(
-                                            formData: context.formMod.formResult,
-                                            category: selectedCategory,
-                                            savedItemRepository: context.read(),
-                                          ),
-                                      child: const EditSavedItemScreen(),
-                                    ),
-                              ),
+                            final response = await context.push<bool?>(
+                              '/form/edit-saved-item',
+                              // arguments: context.formMod.draft,
                             );
                             if (response == null) return;
                             if (context.mounted) {
@@ -288,19 +274,21 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                         ),
                         IconButton(
                           onPressed: () async {
-                            final response = await context.navMod.goToNamed(
-                              '/exchange-rate-currency',
-                              arguments: context.formMod.amount,
+                            final response = await context.push<double?>(
+                              '/form/currencies',
+                              // arguments: context.formMod.draft.amount,
                             );
                             if (response == null) return;
-                            context.formMod.applyExchangedValue(response);
+                            if (context.mounted) {
+                              context.formMod.applyExchangedValue(response);
+                            }
                           },
                           icon: Icon(
                             Icons.currency_exchange,
                             color: context.cs.surface,
                           ),
                         ),
-                        if (context.formMod.editMode)
+                        if (context.formMod.inEditMode)
                           IconButton(
                             onPressed: () async {
                               final bool? deleteResponse = await showDialog<bool>(
@@ -309,11 +297,15 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               );
                               if (deleteResponse == true && context.mounted) {
                                 await context.formMod.deleteItem();
+
                                 if (context.mounted) {
-                                  context.navMod.popBackToMainScreenAndRefresh();
-                                  context.showSuccessNotification(
-                                    message: "Item deleted successfully.",
-                                  );
+                                  context.go('/', extra: DateTime.now().millisecondsSinceEpoch);
+                                  // await Future.delayed(Duration.zero);
+                                  // WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  //   context.showSuccessNotification(
+                                  //     message: "Item deleted successfully.",
+                                  //   );
+                                  // });
                                 }
                               }
                             },
@@ -341,7 +333,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (!context.formMod.symbolAtBack)
+                          if (context.formMod.symbolOnLeft)
                             Text(
                               context.formMod.currencySymbol,
                               style: context.customTt.numberFontLarge!.copyWith(
@@ -350,32 +342,20 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               ),
                             ),
                           Expanded(
-                            child:
-                                amountController.text.isEmpty
-                                    ? Text(
-                                      "0.00",
-                                      textAlign:
-                                          context.formMod.symbolAtBack
-                                              ? TextAlign.start
-                                              : TextAlign.end,
-                                      style: context.customTt.numberFontLarge!.copyWith(
-                                        fontSize: 60,
-                                        color: context.customCs.fadeColor2,
-                                      ),
-                                    )
-                                    : Text(
-                                      amountController.text,
-                                      textAlign:
-                                          context.formMod.symbolAtBack
-                                              ? TextAlign.start
-                                              : TextAlign.end,
-                                      style: context.customTt.numberFontLarge!.copyWith(
-                                        fontSize: 60,
-                                        color: context.cs.primary,
-                                      ),
-                                    ),
+                            child: Text(
+                              amountController.text.isEmpty ? "0.00" : amountController.text,
+                              textAlign:
+                                  !context.formMod.symbolOnLeft ? TextAlign.start : TextAlign.end,
+                              style: context.customTt.numberFontLarge!.copyWith(
+                                fontSize: 60,
+                                color:
+                                    amountController.text.isEmpty
+                                        ? context.customCs.fadeColor2
+                                        : context.cs.primary,
+                              ),
+                            ),
                           ),
-                          if (context.formMod.symbolAtBack)
+                          if (!context.formMod.symbolOnLeft)
                             Text(
                               context.formMod.currencySymbol,
                               style: context.customTt.numberFontLarge!.copyWith(
@@ -412,7 +392,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                     Expanded(
                       child: CustomKeyboard(
                         controller: amountController,
-                        onDone: () {
+                        onDone: () async {
                           final error = context.formMod.validateFormResult();
                           if (error != null) {
                             context.showErrorNotification(
@@ -420,8 +400,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               message: error,
                             );
                           } else {
-                            context.formMod.submitForm();
-                            context.navMod.goToNamedAndRemovePrevious('/');
+                            await context.formMod.submitForm();
+                            context.go('/', extra: DateTime.now().millisecondsSinceEpoch);
                           }
                         },
                         selectedDate: _selectedDate,
@@ -547,8 +527,8 @@ class FormMainSelectionView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: BoxBorder.all(width: 1, color: context.cs.primary.withAlpha(100)),
                 ),
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 child: Icon(
                   Icons.favorite,
                   size: 18,
@@ -580,7 +560,7 @@ class CategorySelectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedCategory = context.select(
-      (FormViewModel state) => state.selectedCategory ?? CostItemCategory.error(),
+      (FormViewModel state) => state.draft.categoryId,
     );
     final categories = context.select((FormViewModel state) => state.categories);
     return SliverPadding(
@@ -595,7 +575,7 @@ class CategorySelectionView extends StatelessWidget {
         ),
         children: [
           ...categories.map((category) {
-            final isSelected = category.id == selectedCategory.id;
+            final isSelected = category.id == selectedCategory;
 
             // final bgColor = context.cs.primary.withAlpha(isSelected ? 250 : 5);
             final bgColor = category.color?.withAlpha(isSelected ? 100 : 0);
@@ -603,7 +583,7 @@ class CategorySelectionView extends StatelessWidget {
 
             return GestureDetector(
               onTap: () {
-                context.formMod.selectNewCategory(category);
+                context.formMod.updateCategory(category);
                 HapticFeedback.selectionClick();
               },
               child: AnimatedScale(
@@ -681,106 +661,85 @@ class SavedItemSelectionView extends StatelessWidget {
             crossAxisCount: 1,
             mainAxisSpacing: 0,
             crossAxisSpacing: 12,
-            mainAxisExtent: 100,
+            mainAxisExtent: 92,
           ),
           itemCount: savedItems.length,
           itemBuilder: (context, index) {
             final SavedItem item = savedItems.elementAt(index);
-            final CostItemCategory cat = context.formMod.getCatById(item);
+            final CostItemCategory cat = context.formMod.getSavedItemCatById(item);
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: BoxBorder.all(color: context.customCs.fadeColor2 ?? Colors.transparent),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => context.formMod.selectSavedItem(item),
-                  child: Padding(
-                    // filled: false,
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 4,
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: ReusableContainer(
+                onTap: () => context.formMod.selectSavedItem(item),
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 4,
+                  children: [
+                    Row(
+                      spacing: 20,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          spacing: 12,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            CategoryIconContainer(
-                              category: cat,
-                              size: 20,
-                              inContainer: false,
-                            ),
-                            Expanded(
-                              child: Text(
-                                item.title ?? "Untitled",
-                                style: context.customTt.dateLabel!.copyWith(fontSize: 18),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () async {
-                                final response = await context.nav.push(
-                                  MaterialPageRoute(
-                                    builder:
-                                        (buildContext) => ChangeNotifierProvider(
-                                          create:
-                                              (_) => SavedItemModel(
-                                                initItem: item,
-                                                category: cat,
-                                                formData: context.formMod.formResult,
-                                                savedItemRepository: context.read(),
-                                              ),
-                                          child: const EditSavedItemScreen(),
-                                        ),
-                                  ),
-                                );
-                                if (response == null) return;
-                                if (response) {
-                                  context.showSuccessNotification(message: "Saved item updated!");
-                                  context.formMod.updateFormGroup(FormGroup.favorite);
-                                }
-                                context.formMod.refresh();
-                              },
-                              icon: Icon(
-                                Icons.edit,
-                                size: 16,
-                              ),
-                            ),
-                          ],
+                        CategoryIconContainer(
+                          category: cat,
+                          size: 20,
+                          inContainer: false,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0, top: 4),
-                          child: Row(
-                            spacing: 10,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                "${item.description ?? "[Default Desc]"} | ${item.amount != null ? NumberFormat.currency(symbol: "RM").format(item.amount) : "[Default Amount]"} | ${item.date != null ? item.date!.formatShort() : "[Default Date]"}",
-                                maxLines: 2,
-                                style: context.tt.bodyMedium!.copyWith(
-                                  color: context.customCs.fadeColor1,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                        Expanded(
+                          child: Text(
+                            item.title ?? "Untitled",
+                            style: context.customTt.dateLabel!.copyWith(fontSize: 18),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Row(
-                        //   children: [
-                        //     Expanded(
-                        //       child:
-                        //     ),
-                        //   ],
-                        // ),
+                        IconButton(
+                          onPressed: () async {
+                            final response = await context.push<bool?>(
+                              '/form/edit-saved-item',
+                              // arguments: item,
+                            );
+                            if (response == null) return;
+                            if (response) {
+                              context.showSuccessNotification(message: "Saved item updated!");
+                              context.formMod.updateFormGroup(FormGroup.favorite);
+                            }
+                            context.formMod.refresh();
+                          },
+                          icon: Icon(
+                            Icons.edit,
+                            size: 16,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0, top: 0),
+                      child: Row(
+                        spacing: 10,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            "${item.description ?? "[Default Desc]"} | ${item.amount != null ? NumberFormat.currency(symbol: "RM").format(item.amount) : "[Default Amount]"} | ${item.date != null ? item.date!.formatShort() : "[Default Date]"}",
+                            maxLines: 2,
+                            style: context.tt.bodyMedium!.copyWith(
+                              color: context.customCs.fadeColor1,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Row(
+                    //   children: [
+                    //     Expanded(
+                    //       child:
+                    //     ),
+                    //   ],
+                    // ),
+                  ],
                 ),
               ),
             );

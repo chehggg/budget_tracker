@@ -1,13 +1,12 @@
 import 'dart:math';
 
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
-import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -16,8 +15,7 @@ class GoalScreenWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
+    return ScreenWrapper(
       child: ChangeNotifierProvider(
         create: (context) {
           return GoalViewModel(costItemRepo: context.read(), goalRepository: context.read());
@@ -40,7 +38,7 @@ class GoalScreen extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              context.navMod.goToNamed("/goals-form");
+              context.push("/goals/new-goal");
             },
             icon: Icon(Icons.add),
           ),
@@ -77,7 +75,7 @@ class GoalBody extends StatelessWidget {
           delegate: SliverChildListDelegate(
             goals.entries
                 .map(
-                  (e) => Column(
+                  (goalEntry) => Column(
                     children: [
                       ReusableContainer(
                         filled: false,
@@ -86,21 +84,7 @@ class GoalBody extends StatelessWidget {
                         // highlight: true,
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
                         onTap: () {
-                          context.navMod.goTo(
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => ChangeNotifierProvider(
-                                    create:
-                                        (context) => GoalInfoViewmodel(
-                                          goalRepos: context.read(),
-                                          costItemRepo: context.read(),
-                                          categoryRepo: context.read(),
-                                          goal: e.key,
-                                        ),
-                                    child: const GoalInfoScreen(),
-                                  ),
-                            ),
-                          );
+                          context.push('/goals/details', extra: goalEntry.key);
                         },
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,7 +102,7 @@ class GoalBody extends StatelessWidget {
                                         // Icon(Icons.fire_hydrant_alt, size: 20, color: Colors.deepOrange.shade300,),
                                         Expanded(
                                           child: Text(
-                                            e.key.title ?? "Untitled Goal",
+                                            goalEntry.key.title ?? "Untitled Goal",
                                             style: context.customTt.numberFontMedium!.copyWith(
                                               fontSize: 14,
                                             ),
@@ -142,12 +126,12 @@ class GoalBody extends StatelessWidget {
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(4),
                                             color:
-                                                e.value.achieved
+                                                goalEntry.value.achieved
                                                     ? Colors.green.shade800.withAlpha(120)
                                                     : Colors.red.shade800.withAlpha(120),
                                           ),
                                           child: Text(
-                                            e.value.status,
+                                            goalEntry.value.status,
                                             style: context.customTt.numberFontSmall!.copyWith(
                                               fontSize: 14,
                                               color: Colors.white,
@@ -155,7 +139,7 @@ class GoalBody extends StatelessWidget {
                                           ),
                                         ),
                                         Text(
-                                          "${NumberFormat.compact().format(e.value.value)} / ${NumberFormat.compact().format(e.value.target)}",
+                                          "${NumberFormat.compact().format(goalEntry.value.value)} / ${NumberFormat.compact().format(goalEntry.value.target)}",
                                           style: context.customTt.paragraphText,
                                         ),
                                         // ReusableContainer(
@@ -189,16 +173,16 @@ class GoalBody extends StatelessWidget {
                                             startDegreeOffset: -180,
                                             sections: [
                                               PieChartSectionData(
-                                                value: min(e.value.progress, 1),
+                                                value: min(goalEntry.value.progress, 1),
                                                 radius: 6,
                                                 color:
-                                                    e.value.achieved
+                                                    goalEntry.value.achieved
                                                         ? Colors.green.shade800
                                                         : Colors.red.shade800,
                                                 showTitle: false,
                                               ),
                                               PieChartSectionData(
-                                                value: 1 - min(e.value.progress, 1),
+                                                value: 1 - min(goalEntry.value.progress, 1),
                                                 radius: 6,
                                                 color: context.customCs.fadeColor2,
                                                 showTitle: false,
@@ -217,7 +201,7 @@ class GoalBody extends StatelessWidget {
                                   ],
                                 ),
                                 Text(
-                                  NumberFormat.percentPattern().format(e.value.progress),
+                                  NumberFormat.percentPattern().format(goalEntry.value.progress),
                                   style: context.customTt.dateLabel,
                                 ),
                               ],

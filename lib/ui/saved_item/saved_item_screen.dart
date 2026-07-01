@@ -1,191 +1,192 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-class EditSavedItemScreen extends StatefulWidget {
+class EditSavedItemScreenWrapper extends StatelessWidget {
+  const EditSavedItemScreenWrapper({
+    super.key,
+    this.initSavedItem,
+    this.initCostItem,
+  });
+
+  final SavedItem? initSavedItem;
+  final CostItem? initCostItem;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create:
+          (_) => SavedItemViewModel(
+            initItem: initSavedItem,
+            initCostData: initCostItem,
+            categoryRepo: context.read(),
+            savedItemRepo: context.read(),
+          ),
+      child: const EditSavedItemScreen(),
+    );
+  }
+}
+
+class EditSavedItemScreen extends StatelessWidget {
   const EditSavedItemScreen({
     super.key,
   });
 
-  @override
-  State<EditSavedItemScreen> createState() => _EditSavedItemScreenState();
-}
-
-class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _descController;
-  late final TextEditingController _amountController;
-  late final TextEditingController _dateController;
-  // List _options = [];
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController(text: context.savedItemMod.title);
-    _descController = TextEditingController(text: context.savedItemMod.description);
-    _amountController = TextEditingController(text: context.savedItemMod.amount?.toString());
-    _dateController = TextEditingController(text: context.savedItemMod.date?.formatFull());
-
-    debugPrint("controller value: ${_descController.text}");
-    _titleController.addListener(() => context.savedItemMod.updateTitle(_titleController.text));
-    _descController.addListener(() => context.savedItemMod.updateDesc(_descController.text));
-    _amountController.addListener(
-      () => context.savedItemMod.updateAmount(_amountController.text),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    final ready = context.select((SavedItemViewModel state) => state.ready);
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.savedItemMod.inEditMode ? "Edit Saved Item" : "New Saved Item"),
+      ),
+      body: SafeArea(
+        minimum: EdgeInsets.fromLTRB(12, 20, 12, 0),
+        child: ready ? const EditSavedItemBody() : const Center(child: CircularProgressIndicator(),),
+      ),
+    );
+  }
+}
+
+class EditSavedItemBody extends StatelessWidget {
+  const EditSavedItemBody({
+    super.key,
+  });
+
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = context.select((SavedItemViewModel state) => state.draft);
     final inputDecoration = InputDecoration(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
-      ),
       hintText: "Title your saved",
       filled: false,
       fillColor: context.customCs.fadeColor4,
     );
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.savedItemMod.isEditMode ? "Edit Saved Item" : "New Saved Item"),
-      ),
-      body: SafeArea(
-        minimum: EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Column(
-                spacing: 30,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.cs.primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Flex(
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            spacing: 30,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.cs.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Flex(
+                  spacing: 8,
+                  direction: Axis.vertical,
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       spacing: 8,
-                      direction: Axis.vertical,
-                      mainAxisSize: MainAxisSize.max,
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          spacing: 8,
-                          children: [
-                            CategoryIconContainer(
-                              category: context.savedItemMod.selectedCategory,
-                              inverse: true,
+                        CategoryIconContainer(
+                          category: context.savedItemMod.curCategory,
+                          inverse: true,
+                        ),
+                        Expanded(
+                          child: TextFormField(
+                            textCapitalization: TextCapitalization.sentences,
+                            keyboardType: TextInputType.text,
+                            cursorColor: context.cs.surface,
+                            initialValue: draft.title,
+                            onChanged: context.savedItemMod.updateTitle,
+                            autofocus: !context.savedItemMod.inEditMode,
+                            style: context.customTt.dateLabel!.copyWith(
+                              fontSize: 30,
+                              color: context.cs.surface,
                             ),
-                            Expanded(
-                              child: TextFormField(
-                                textCapitalization: TextCapitalization.sentences,
-                                keyboardType: TextInputType.text,
-                                cursorColor: context.cs.surface,
-                                autofocus: !context.savedItemMod.isEditMode,
-                                // canRequestFocus: true,
-                                style: context.customTt.dateLabel!.copyWith(
-                                  fontSize: 30,
-                                  color: context.cs.surface,
-                                ),
-                                decoration: inputDecoration,
-                                controller: _titleController,
-                              ),
-                            ),
-                          ],
+                            decoration: inputDecoration,
+                          ),
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+              Flex(
+                spacing: 4,
+                direction: Axis.vertical,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Divider(),
+                  Text(
+                    "Optional Fields",
+                    style: context.customTt.dateLabel!.copyWith(
+                      fontSize: 20,
+                    ),
                   ),
-                  Flex(
-                    spacing: 4,
-                    direction: Axis.vertical,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Divider(),
-                      Text(
-                        "Optional Fields",
-                        style: context.customTt.dateLabel!.copyWith(
-                          fontSize: 20,
-                        ),
-                      ),
-                      Text(
-                        'If checkbox is on, value is preserved for saved item. By default, date is not preserved since this is mainly used as a shortcut to create similar cost item at current date.',
-                        style: context.tt.bodyMedium!.copyWith(
-                          fontSize: 12,
-                          color: context.customCs.fadeColor1 ?? Colors.transparent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SavedItemField(
-                    controller: _descController,
-                    title: 'Description',
-                    checkboxValue: context.select((SavedItemModel state) => state.keepDesc),
-                    onToggleCheckbox:
-                        (value) => context.savedItemMod.toggleKeepValue(value, "description"),
-                  ),
-                  SavedItemField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    title: 'Amount',
-                    prefix: Text("RM"),
-                    textAlign: TextAlign.right,
-
-                    checkboxValue: context.select((SavedItemModel state) => state.keepAmount),
-                    onToggleCheckbox:
-                        (value) => context.savedItemMod.toggleKeepValue(value, "amount"),
-                  ),
-                  SavedItemField(
-                    controller: _dateController,
-                    textAlign: TextAlign.right,
-                    title: 'Date',
-                    checkboxValue: context.select((SavedItemModel state) => state.keepDate),
-                    onToggleCheckbox:
-                        (value) => context.savedItemMod.toggleKeepValue(value, "date"),
-                  ),
-                  Row(
-                    spacing: 20,
-                    children: [
-                      Expanded(child: SizedBox()),
-                      DismissTextButton(
-                        onTap: () => context.nav.pop(false),
-                      ),
-                      if (!context.savedItemMod.isEditMode)
-                        AffirmativeTextButton(
-                          text: "Save",
-                          onTap: () async {
-                            await context.savedItemMod.saveItem();
-                            context.nav.pop(true);
-                          },
-                        ),
-                      if (context.savedItemMod.isEditMode)
-                        AffirmativeTextButton(
-                          text: "Update",
-                          onTap: () async {
-                            await context.savedItemMod.updateSavedItem();
-                            context.nav.pop(true);
-                          },
-                        ),
-                    ],
+                  Text(
+                    'If checkbox is on, value is preserved for saved item. By default, date is not preserved since this is mainly used as a shortcut to create similar cost item at current date.',
+                    style: context.tt.bodyMedium!.copyWith(
+                      fontSize: 12,
+                      color: context.customCs.fadeColor1 ?? Colors.transparent,
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+              SavedItemField(
+                initialValue: draft.description,
+                onChanged: context.savedItemMod.updateDesc,
+                title: 'Description',
+                checkboxValue: context.select((SavedItemViewModel state) => state.keepDesc),
+                onToggleCheckbox:
+                    (value) => context.savedItemMod.toggleKeepValue(value, "description"),
+              ),
+              SavedItemField(
+                initialValue: draft.amount?.formatRoundedString(),
+                onChanged: context.savedItemMod.updateAmount,
+                keyboardType: TextInputType.number,
+                title: 'Amount',
+                prefix: Text("RM"),
+                textAlign: TextAlign.right,
+    
+                checkboxValue: context.select((SavedItemViewModel state) => state.keepAmount),
+                onToggleCheckbox:
+                    (value) => context.savedItemMod.toggleKeepValue(value, "amount"),
+              ),
+              SavedItemField(
+                initialValue: draft.date?.formatFull(),
+                onChanged: context.savedItemMod.updateDate,
+                textAlign: TextAlign.right,
+                title: 'Date',
+                checkboxValue: context.select((SavedItemViewModel state) => state.keepDate),
+                onToggleCheckbox:
+                    (value) => context.savedItemMod.toggleKeepValue(value, "date"),
+              ),
+              Row(
+                spacing: 20,
+                children: [
+                  Expanded(child: SizedBox()),
+                  DismissTextButton(
+                    onTap: () => context.nav.pop(false),
+                  ),
+                  AffirmativeTextButton(
+                    text: "Save",
+                    onTap: () async {
+                      await context.savedItemMod.submitSavedItem();
+                      context.nav.pop(true);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -193,7 +194,6 @@ class _EditSavedItemScreenState extends State<EditSavedItemScreen> {
 class SavedItemField extends StatelessWidget {
   const SavedItemField({
     super.key,
-    required this.controller,
     required this.title,
     required this.checkboxValue,
     this.keyboardType,
@@ -201,9 +201,10 @@ class SavedItemField extends StatelessWidget {
     this.onToggleCheckbox,
     this.textAlign = TextAlign.left,
     this.prefix,
+    this.initialValue,
+    this.onChanged,
   });
 
-  final TextEditingController controller;
   final String title;
   final bool checkboxValue;
   final void Function(bool?)? onToggleCheckbox;
@@ -213,21 +214,15 @@ class SavedItemField extends StatelessWidget {
   final GestureTapCallback? onTap;
   final TextInputType? keyboardType;
 
+  final String? initialValue;
+
+  final ValueChanged<String>? onChanged;
+
   @override
-  Widget build(BuildContext context, ) {
+  Widget build(
+    BuildContext context,
+  ) {
     final inputDecoration = InputDecoration(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.customCs.fadeColor2 ?? Colors.transparent),
-      ),
       prefix: prefix,
       isDense: false,
       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -262,6 +257,8 @@ class SavedItemField extends StatelessWidget {
           ],
         ),
         TextFormField(
+          onChanged: onChanged,
+          initialValue: initialValue,
           textCapitalization: TextCapitalization.sentences,
           enabled: checkboxValue,
           keyboardType: keyboardType,
@@ -269,7 +266,6 @@ class SavedItemField extends StatelessWidget {
           textAlign: textAlign,
           style: context.tt.bodyMedium!.copyWith(fontSize: 14),
           decoration: inputDecoration,
-          controller: controller,
         ),
       ],
     );

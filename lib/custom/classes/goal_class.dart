@@ -118,7 +118,7 @@ class Goal {
     final filteredItems =
         items.where((item) {
           final categoryQuery = categories?.contains(item.categoryId) ?? true;
-          final nameQuery = filter?.checkMatch(item.name) ?? true;
+          final nameQuery = filter?.checkMatch(item.name!) ?? true;
           return categoryQuery && nameQuery;
         }).toList();
 
@@ -127,7 +127,7 @@ class Goal {
         date: yearMonth.startOfMonth,
         items:
             filteredItems.where((item) {
-              return item.date.isInSameYearMonthAs(yearMonth);
+              return item.date!.isInSameYearMonthAs(yearMonth);
             }).toList(),
         goalType: goalType,
         target: target,
@@ -139,8 +139,8 @@ class Goal {
             filteredItems
                 .where(
                   (item) =>
-                      (item.date.isAfterOrSameMoment(startDate!)) &&
-                      (item.date.isBeforeOrSameMoment(endDate ?? DateTime.now().standard)),
+                      (item.date!.isAfterOrSameMoment(startDate!)) &&
+                      (item.date!.isBeforeOrSameMoment(endDate ?? DateTime.now().standard)),
                 )
                 .toList(),
         goalType: goalType,

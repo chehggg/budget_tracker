@@ -5,7 +5,6 @@ import 'dart:ui';
 import 'package:budget_tracker/data/services/api_service.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:money2/money2.dart';
@@ -35,16 +34,31 @@ class CurrencyRepository {
         _currency = getDefaultCurrency();
         await _localServices.writeCurrency(_currency);
     }
+
+    final recentResult = await _localServices.getRecentlyUsedCurrency();
+    switch (recentResult) {
+      case Ok():
+        if (recentResult.value != null) {
+          _recentlyUsedCurrencies = recentResult.value!;
+        } else {
+          _recentlyUsedCurrencies = [];
+        }
+      case Error():
+        _recentlyUsedCurrencies = [];
+    }
   }
 
-  final List<Currency> _recentlyUsedCurrencies = [];
+  final StreamController<Currency> _currencyController = StreamController.broadcast();
+  Stream<Currency> get currencyStream => _currencyController.stream;
+
+  List<Currency> _recentlyUsedCurrencies = [];
   List<Currency> get recentCurrencies => _recentlyUsedCurrencies;
 
   Map<String, double> _exchangeRates = {};
   Map<String, double> get exchangeRates => _exchangeRates;
 
-  final StreamController<String> _currencyStreamController = StreamController<String>.broadcast();
-  Stream<String> get valueStream => _currencyStreamController.stream;
+  // final StreamController<String> _currencyStreamController = StreamController<String>.broadcast();
+  // Stream<String> get valueStream => _currencyStreamController.stream;
 
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
@@ -85,7 +99,9 @@ class CurrencyRepository {
   Future<void> changeCurrency(Currency newCurrency) async {
     _currency = newCurrency;
     await _localServices.writeCurrency(_currency);
-    // _currencyStreamController.add(_currency.isoCode);
+    updateRecentlyUsedCurrencies(_currency);
+    
+    _currencyController.add(_currency);
   }
 
   Future<void> getExchangeRates() async {
@@ -128,17 +144,20 @@ class CurrencyRepository {
       pattern = pattern.endsWith("S") ? pattern.replaceAll(r"S", "${suffix}S") : "$pattern$suffix";
     }
 
-    final money = Money.fromNumWithCurrency(transformedValue, _currency);
-
     if (alwaysShowSign) {
       pattern = "+$pattern";
     }
 
     if (compact && transformedValue % 1 == 0) {
-      pattern = pattern.replaceAll(r'.00', '');
+      pattern = pattern.replaceAll(RegExp(r'\.0{2,}'), '');
     } else if (decimalDigits != null) {
-      pattern = pattern.replaceAll(r'.00', '.${List.generate(decimalDigits, (i) => "0").join()}');
+      transformedValue = double.parse(transformedValue.toStringAsFixed(decimalDigits));
+      pattern = pattern.replaceAll(
+        RegExp(r'0(.0{1,}|$|(?=[S;]))'),
+        '0.${List.filled(decimalDigits, '0').join()}',
+      );
     }
+    final money = Money.fromNumWithCurrency(transformedValue, _currency);
 
     return money.format(pattern);
   }

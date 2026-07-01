@@ -1,6 +1,7 @@
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
+
 ThemeData get appTheme {
   final brightness = Brightness.dark;
   final baseTheme = ThemeData(brightness: brightness);
@@ -81,6 +82,7 @@ ThemeData get appTheme {
     ),
   );
 
+  // GoRouter
   final MyColors customColorExtension = MyColors(
     flipCardColor: Color(0xffF0EBE0),
     onFlipCard: Color(0xff0A0A0C),
@@ -113,7 +115,7 @@ ThemeData get appTheme {
     colorScheme: customColorScheme,
     visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(
-      // actionsPadding: EdgeInsets.only(bottom: 8, right: 4),
+      actionsPadding: EdgeInsets.only(bottom: 30, right: 20, top: 20),
       titleTextStyle: customTextExtension.elegantLabelLarge,
       backgroundColor: customColorScheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(

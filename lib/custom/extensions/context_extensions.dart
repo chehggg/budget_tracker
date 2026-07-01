@@ -34,7 +34,7 @@ extension BuildContextExtension on BuildContext {
   GoalFormViewmodel get goalFormMod => read<GoalFormViewmodel>();
   GoalInfoViewmodel get goalInfoMod => read<GoalInfoViewmodel>();
   SettingsViewModel get settingMod => read<SettingsViewModel>();
-  SavedItemModel get savedItemMod => read<SavedItemModel>();
+  SavedItemViewModel get savedItemMod => read<SavedItemViewModel>();
   ChartViewModel get chartMod => read<ChartViewModel>();
   CurrencyViewModel get currencyMod => read<CurrencyViewModel>();
   ExRateViewModel get exRateMod => read<ExRateViewModel>();

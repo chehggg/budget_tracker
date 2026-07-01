@@ -1,20 +1,19 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
-import 'package:budget_tracker/models/model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -23,13 +22,15 @@ class CostListScreenWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create:
-          (context) => ListViewModel(
-            costItemRepo: context.read(),
-            categoryRepo: context.read(),
-            currencyRepo: context.read(),
-          ),
+    final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
+    return ScreenWrapper(
+      canPop: false,
+      popAction: (didPop, result) {
+        debugPrint("didPop, ${didPop}");
+        if (isSearchOpened) {
+          context.listMod.toggleSearch(false);
+        }
+      },
       child: const CostListScreen(),
     );
   }
@@ -70,13 +71,14 @@ class _CostListScreenState extends State<CostListScreen> {
         } else {
           expanded = false;
         }
-        debugPrint(expanded.toString());
+        // debugPrint(expanded.toString());
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
     final ready = context.select((ListViewModel state) => state.ready);
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -88,7 +90,7 @@ class _CostListScreenState extends State<CostListScreen> {
                 ? Flex(
                   direction: Axis.vertical,
                   children: [
-                    const DateBreadcrumb(),
+                    isSearchOpened ? const ItemFilterChips() : const DateBreadcrumb(),
                     Expanded(
                       child: CustomScrollView(
                         controller: _controller,
@@ -133,6 +135,8 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         leading: BackButton(
           onPressed: () => context.listMod.toggleSelectionMode(false),
         ),
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             onPressed: () {
@@ -152,6 +156,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
       );
     } else if (isSearchOpened) {
       return AppBar(
+        scrolledUnderElevation: 0,
         actionsPadding: EdgeInsets.only(right: 10),
         backgroundColor: context.customCs.fadeColor3,
         leading: BackButton(
@@ -178,10 +183,19 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
                         children: [
                           TextButton(
                             onPressed: () async {
+                              final init = context.listMod.filteredCategories;
                               final response = await context.nav.push(
-                                MaterialPageRoute(builder: (context) => CategorySelectionScreen()),
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => CategorySelectionScreen(
+                                        initSelection: init,
+                                      ),
+                                ),
                               );
                               if (response != null) return;
+                              if (context.mounted) {
+                                context.listMod.updateCategoryFilter(response);
+                              }
                             },
                             child: Text("Categories"),
                           ),
@@ -196,9 +210,19 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             IconButton(
               onPressed: () async {
-                final response = await context.nav.push(
-                  MaterialPageRoute(builder: (context) => CategorySelectionScreen()),
+                final init = context.listMod.filteredCategories;
+                final List<CostItemCategory>? response = await context.nav.push(
+                  MaterialPageRoute(
+                    builder:
+                        (context) => CategorySelectionScreen(
+                          initSelection: init,
+                        ),
+                  ),
                 );
+                if (response != null) return;
+                if (context.mounted) {
+                  context.listMod.updateCategoryFilter(response!);
+                }
               },
               icon: Stack(
                 alignment: Alignment(1.5, 1.5),
@@ -230,6 +254,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
       );
     } else {
       return AppBar(
+        scrolledUnderElevation: 0,
         actionsPadding: EdgeInsets.only(right: 10),
         title: Text("OVERVIEW", style: context.customTt.dateLabel),
         actions: [
@@ -265,11 +290,14 @@ class DateBreadcrumb extends StatelessWidget {
       onTap: () {
         showDialog(
           context: context,
-          builder: (context) => const MonthSelectorDialog(),
+          builder:
+              (_) => ChangeNotifierProvider.value(
+                value: context.listMod,
+                child: const MonthSelectorDialog(),
+              ),
         );
       },
       onHorizontalDragEnd: (details) {
-        debugPrint(details.primaryVelocity.toString());
         if (details.primaryVelocity == null) return;
         if (details.primaryVelocity! > 500) {
           // swipe right
@@ -280,15 +308,14 @@ class DateBreadcrumb extends StatelessWidget {
         }
       },
       child: Container(
+        height: 44,
         padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-        // decoration: BoxDecoration(
-        //   color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        // ),
         child: Row(
           children: [
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.25,
               child: IconButton(
+                iconSize: 24,
                 style: ElevatedButton.styleFrom(
                   splashFactory: NoSplash.splashFactory,
                 ),
@@ -304,13 +331,14 @@ class DateBreadcrumb extends StatelessWidget {
                   DateFormat(
                     "yMMMM",
                   ).format(curMonth),
-                  style: context.customTt.dateLabel!.copyWith(fontSize: 30),
+                  style: context.customTt.dateLabel!.copyWith(fontSize: 28),
                 ),
               ),
             ),
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.25,
               child: IconButton(
+                iconSize: 24,
                 style: ElevatedButton.styleFrom(
                   splashFactory: NoSplash.splashFactory,
                 ),
@@ -322,6 +350,65 @@ class DateBreadcrumb extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ItemFilterChips extends StatelessWidget {
+  const ItemFilterChips({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final curMonth = context.select((ListViewModel state) => state.currentMonth);
+    return Container(
+      height: 44,
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+      child: Row(
+        spacing: 4,
+        children: [
+          ActionChip(label: Text("Category"), onPressed: () {}),
+          ActionChip(label: Text("Price Range"), onPressed: () {}),
+          ActionChip(label: Text("This Month"), onPressed: () {}),
+          // IconButton(onPressed: (){}, icon: Icon(Icons.abc)),
+          // IconButton(onPressed: (){}, icon: Icon(Icons.abc)),
+          // SizedBox(
+          //   width: MediaQuery.of(context).size.width * 0.25,
+          //   child: IconButton(
+          //     iconSize: 24,
+          //     style: ElevatedButton.styleFrom(
+          //       splashFactory: NoSplash.splashFactory,
+          //     ),
+          //     onPressed: () {
+          //       context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
+          //     },
+          //     icon: Icon(Icons.arrow_back_ios),
+          //   ),
+          // ),
+          // Expanded(
+          //   child: Center(
+          //     child: Text(
+          //       DateFormat(
+          //         "yMMMM",
+          //       ).format(curMonth),
+          //       style: context.customTt.dateLabel!.copyWith(fontSize: 28),
+          //     ),
+          //   ),
+          // ),
+          // SizedBox(
+          //   width: MediaQuery.of(context).size.width * 0.25,
+          //   child: IconButton(
+          //     iconSize: 24,
+          //     style: ElevatedButton.styleFrom(
+          //       splashFactory: NoSplash.splashFactory,
+          //     ),
+          //     onPressed: () {
+          //       context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
+          //     },
+          //     icon: Icon(Icons.arrow_forward_ios),
+          //   ),
+          // ),
+        ],
       ),
     );
   }
@@ -375,7 +462,11 @@ class CostEntryList extends StatelessWidget {
                       children: [
                         Text(dateString, style: context.customTt.dateLabel!.copyWith()),
                         HideableText(
-                          context.listMod.currencyFormat(daySummary, alwaysShowSign: true),
+                          context.listMod.currencyFormat(
+                            daySummary,
+                            alwaysShowSign: true,
+                            compact: true,
+                          ),
                           textStyle: context.customTt.numberFontMedium!.copyWith(
                             color: daySummary < 0 ? Colors.redAccent : Colors.greenAccent,
                           ),
@@ -396,9 +487,9 @@ class CostEntryList extends StatelessWidget {
                         if (selectionMode) {
                           context.listMod.updateSelection(costItem, !selected);
                         } else {
-                          context.navMod.goToNamed(
+                          context.push(
                             '/form',
-                            arguments: FormArgument(selectedCostItem: costItem),
+                            extra: FormArgument(selectedCostItem: costItem),
                           );
                         }
                       },
@@ -434,7 +525,7 @@ class CostEntryList extends StatelessWidget {
                             ),
                             HideableText(
                               context.listMod.currencyFormat(
-                                costItem.signedAmount,
+                                costItem.absoluteAmount,
                                 alwaysShowSign: true,
                                 compact: true,
                               ),
@@ -467,6 +558,8 @@ class SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
+    final listen = context.watch<ListViewModel>();
     final expense = context.select((ListViewModel state) => state.outputMonthSummary.expense ?? 0);
     final income = context.select((ListViewModel state) => state.outputMonthSummary.income ?? 0);
     final balance = income - expense;
@@ -516,7 +609,8 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
               opacity: lerpDouble(1, !isBig ? 0 : 1, Interval(0, 0.6).transform(progress))!,
               child: Text(
                 labelText,
-                style: context.customTt.numberLabel!.copyWith(
+                style: context.customTt.numberFontSmall!.copyWith(
+                  fontSize: 14,
                   height: lerpDouble(
                     1.5,
                     !isBig ? 0.01 : 1.5,
@@ -748,14 +842,14 @@ class _SummaryChartState extends State<SummaryChart> {
           PieChart(
             PieChartData(
               sectionsSpace: 0,
-              centerSpaceRadius: 40,
+              centerSpaceRadius: 38,
               startDegreeOffset: -90,
               centerSpaceColor: Colors.transparent,
               sections: [
                 PieChartSectionData(
                   showTitle: false,
                   value: balancePercentage,
-                  radius: 10,
+                  radius: 8,
                   color: context.customCs.onFlipCard,
                   // color: Colors.green.shade800,
                   // cornerRadius: 10,
@@ -763,7 +857,7 @@ class _SummaryChartState extends State<SummaryChart> {
                 PieChartSectionData(
                   showTitle: false,
                   value: 1 - balancePercentage,
-                  radius: 10,
+                  radius: 8,
                   color: context.cs.surface.withAlpha(20),
                 ),
               ],
@@ -1121,65 +1215,65 @@ class FilterAmountDialogState extends State<FilterAmountDialog> {
   }
 }
 
-class CategoryFilterDialog extends StatefulWidget {
-  const CategoryFilterDialog({super.key});
+// class CategoryFilterDialog extends StatefulWidget {
+//   const CategoryFilterDialog({super.key});
 
-  @override
-  State<CategoryFilterDialog> createState() => _CategoryFilterDialogState();
-}
+//   @override
+//   State<CategoryFilterDialog> createState() => _CategoryFilterDialogState();
+// }
 
-class _CategoryFilterDialogState extends State<CategoryFilterDialog> {
-  @override
-  Widget build(BuildContext context) {
-    final categories = defaultCostItemCategories;
-    final filteredCategories = context.select((ListViewModel state) => state.filteredCategories);
-    final bool allItemSelected = categories.length == filteredCategories.length;
-    return AlertDialog(
-      title: Text("Category Filter"),
-      content: CustomScrollView(
-        slivers: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(allItemSelected ? "Unselect All" : "Select All"),
-              ),
-              Checkbox(
-                value: allItemSelected,
-                onChanged: (value) {
-                  if (value != null) {
-                    context.listMod.toggleAllCategoryFilter(value);
-                  }
-                },
-              ),
-            ],
-          ),
-          SliverList.builder(
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final category = categories.elementAt(index);
-              return Row(
-                spacing: 12,
-                children: [
-                  CategoryIconContainer(category: category),
-                  Expanded(child: Text(category.name!)),
-                  Checkbox(
-                    value: filteredCategories.contains(category.id!),
-                    onChanged: (value) {
-                      if (value != null) {
-                        context.listMod.toggleCategoryFilter(category.id!, value);
-                      }
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-      actions: [
-        const DismissTextButton(text: "Cancel"),
-        const AffirmativeTextButton(text: "Save"),
-      ],
-    );
-  }
-}
+// class _CategoryFilterDialogState extends State<CategoryFilterDialog> {
+//   @override
+//   Widget build(BuildContext context) {
+//     final categories = defaultCostItemCategories;
+//     final filteredCategories = context.select((ListViewModel state) => state.filteredCategories);
+//     final bool allItemSelected = categories.length == filteredCategories.length;
+//     return AlertDialog(
+//       title: Text("Category Filter"),
+//       content: CustomScrollView(
+//         slivers: [
+//           Row(
+//             children: [
+//               Expanded(
+//                 child: Text(allItemSelected ? "Unselect All" : "Select All"),
+//               ),
+//               Checkbox(
+//                 value: allItemSelected,
+//                 onChanged: (value) {
+//                   if (value != null) {
+//                     context.listMod.toggleAllCategoryFilter(value);
+//                   }
+//                 },
+//               ),
+//             ],
+//           ),
+//           SliverList.builder(
+//             itemCount: categories.length,
+//             itemBuilder: (context, index) {
+//               final category = categories.elementAt(index);
+//               return Row(
+//                 spacing: 12,
+//                 children: [
+//                   CategoryIconContainer(category: category),
+//                   Expanded(child: Text(category.name!)),
+//                   Checkbox(
+//                     value: filteredCategories.contains(category.id!),
+//                     onChanged: (value) {
+//                       if (value != null) {
+//                         context.listMod.toggleCategoryFilter(category.id!, value);
+//                       }
+//                     },
+//                   ),
+//                 ],
+//               );
+//             },
+//           ),
+//         ],
+//       ),
+//       actions: [
+//         const DismissTextButton(text: "Cancel"),
+//         const AffirmativeTextButton(text: "Save"),
+//       ],
+//     );
+//   }
+// }

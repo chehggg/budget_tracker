@@ -1,24 +1,10 @@
 import 'dart:math';
-import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/constants/categories.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
-import 'package:budget_tracker/screens/settings/currency_viewmodel.dart';
-import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
-import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
-import 'package:budget_tracker/ui/form/form_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
-import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
-import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
-import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
-import 'package:budget_tracker/models/navigator_model.dart';
-import 'package:budget_tracker/models/theme_model.dart';
-import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:money2/money2.dart';
-import 'package:provider/provider.dart';
 
 extension DayExtension on DateTime {
   int getTotalDayInMonth({int pastMonth = 0}) {
@@ -137,7 +123,7 @@ extension DoubleExtension on double {
 
 extension StringExtension on String {
   DateTime dateParseStd() => DateFormat("yyyy-MM-dd").parse(this);
-  DateTime dateParseFull() => DateFormat('MMMM dd, yyyy').parse(this);
+  DateTime? dateParseFull() => DateFormat('MMMM dd, yyyy').tryParse(this);
   DateTime dateParseShort() => DateFormat('dd-MM-yyyy').parse(this);
 
   String capitalize() {
