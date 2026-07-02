@@ -499,3 +499,25 @@ class ScreenWrapper extends StatelessWidget {
     return PopScope(canPop: canPop ?? false, onPopInvokedWithResult: popAction, child: child);
   }
 }
+
+class CustomActionChip extends StatelessWidget {
+  const CustomActionChip({super.key, this.onPressed, this.isActive, this.label, this.icon});
+
+  final VoidCallback? onPressed;
+  final bool? isActive;
+  final Widget? label;
+
+  final Widget? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      avatar: icon,
+      backgroundColor: isActive == true ? context.cs.primary.withAlpha(20) : null,
+      label: label ?? SizedBox.shrink(),
+      onPressed: onPressed,
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      labelPadding: EdgeInsets.symmetric(vertical: 4),
+    );
+  }
+}

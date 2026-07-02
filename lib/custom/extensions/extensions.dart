@@ -19,9 +19,13 @@ extension DayExtension on DateTime {
   String displayFormat() => DateFormat("d MMM").format(this);
   String formatFull() => DateFormat('MMMM dd, yyyy').format(this);
   String formatShort() => DateFormat('dd-MM-yyyy').format(this);
+  /// format datetime in "dd MMM" format
   String formatShorter() => DateFormat('dd MMM').format(this);
-  String formatMonth() => DateFormat('MMM yy').format(this);
-  String formatMonthLonger() => DateFormat('MMMM yyyy').format(this);
+  /// format datetime in "MMM yyyy" format
+  String formatMonth() => DateFormat('MMM yyyy').format(this);
+  /// format datetime in "MMMM yyyy" format
+  String formatMonthLonger() => DateFormat('MMMM yyyy').format(this); 
+  /// format datetime in "E, d MMM" format
   String formatPretty() => DateFormat('E, d MMM').format(this);
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);

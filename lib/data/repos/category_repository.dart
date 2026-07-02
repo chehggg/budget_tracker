@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:budget_tracker/custom/classes/category_class.dart';
-import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:collection/collection.dart';
@@ -21,6 +22,11 @@ class CategoryRepository {
   Future<void> _init() async {
     await getCategory();
   }
+
+  final StreamController<List<CostItemCategory>> _streamController =
+      StreamController<List<CostItemCategory>>.broadcast();
+
+  Stream<List<CostItemCategory>> get categoryStream => _streamController.stream;
 
   Future<void> getCategory({bool customFile = false, bool revertToDefault = false}) async {
     Result<List<CostItemCategory>> result;
@@ -44,20 +50,23 @@ class CategoryRepository {
     return categories.firstWhereOrNull((el) => el.id == id) ?? CostItemCategory.error();
   }
 
-  Future<void> addCategory({
-    required String name,
-    required Color color,
-    required String path,
-    required CostType type,
-  }) async {
-    _categories.add(
-      CostItemCategory(
-        id: (_categories.length + 1).toString(),
-        name: name,
-        color: color,
-        imagePath: path,
-        costType: type,
-      ),
-    );
+  Future<void> addCategory(CostItemCategory item) async {
+    _categories.add(item);
+    await _localServices.writeCategoriesFile(_categories);
+    _streamController.add(_categories);
+  }
+
+  Future<void> deleteCategory(CostItemCategory deletedItem) async {
+    _categories.removeWhere((el) => el.id == deletedItem.id);
+    await _localServices.writeCategoriesFile(_categories);
+    _streamController.add(_categories);
+  }
+
+  Future<void> updateCategory(CostItemCategory updatedItem) async {
+    final index = _categories.indexWhere((el) => el.id == updatedItem.id);
+    _categories.removeAt(index);
+    _categories.insert(index, updatedItem);
+    await _localServices.writeCategoriesFile(_categories);
+    _streamController.add(_categories);
   }
 }

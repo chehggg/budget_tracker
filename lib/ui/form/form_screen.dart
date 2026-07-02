@@ -49,17 +49,30 @@ class CostFormScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((FormViewModel state) => state.ready);
+    final editMode = context.select((FormViewModel state) => state.editCategory);
+    final selectedCategory = context.select((FormViewModel state) => state.selectedCategory);
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      // resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
         actions: [
           IconButton(
-            onPressed: () {
-              // context.formMod.reloadCategory();
+            onPressed: () async {
+              final response = await context.push('/form/edit-category');
             },
-            icon: Icon(Icons.edit),
+            icon: Icon(Icons.add),
+          ),
+          IconButton(
+            onPressed: () async {
+              if (selectedCategory != null) {
+                final response = await context.push('/form/edit-category', extra: selectedCategory);
+                // context.formMod.toggleEditCategory(false);
+              } else if (selectedCategory == null) {
+                context.formMod.toggleEditCategory();
+              }
+            },
+            icon: Icon(editMode ? Icons.cancel : Icons.edit),
           ),
         ],
       ),
@@ -140,19 +153,31 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   @override
   Widget build(BuildContext context) {
     CostItemCategory? selectedCategory = context.select((FormViewModel state) {
-      if (state.selectedCategory != null) {
-        Future.delayed(
-          Duration(microseconds: 10),
-          () => setState(() {
-            if (!_isFormOpened) {
-              _isFormOpened = true;
-              _isFormExpanded = true;
-            }
-          }),
-        );
-      }
+      // debugPrint("selectedcategory: ${state.selectedCategory?.name}");
       return state.selectedCategory;
     });
+
+    debugPrint("rebuild, formOpen = ${_isFormOpened}, selected: ${selectedCategory?.name}");
+    // animate bottom sheet moving up/down
+    if (selectedCategory != null && !_isFormOpened) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _isFormOpened = true;
+          _isFormExpanded = true;
+        });
+        debugPrint("called show postframe, formOpen = ${_isFormOpened}");
+      });
+    }
+    // else if (selectedCategory == null && _isFormOpened) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     setState(() {
+    //       // _isFormExpanded = false;
+    //       _isFormOpened = false;
+    //     });
+    //     debugPrint("called hide postframe, formOpen = ${_isFormOpened}");
+    //   });
+    // }
+
     String itemDesc = context.select((FormViewModel state) => state.draft.name ?? "");
     double? amount = context.select((FormViewModel state) => state.draft.amount);
     TextEditingController descController = context.watch<FormViewModel>().descriptionController;
@@ -175,7 +200,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
       },
       child: AnimatedContainer(
         duration: Durations.medium1,
-        curve: Curves.easeInOutExpo,
+        curve: Curves.easeOutCubic,
         width: context.mq.size.width,
         height:
             !_isFormOpened
@@ -466,6 +491,7 @@ class FormMainSelectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedFormGroup = context.select((FormViewModel state) => state.formGroup);
+
     // final gridSize = context.select((ThemeModel state) => state.gridSize);
 
     return Column(
@@ -527,8 +553,8 @@ class FormMainSelectionView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: BoxBorder.all(width: 1, color: context.cs.primary.withAlpha(100)),
                 ),
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 child: Icon(
                   Icons.favorite,
                   size: 18,
@@ -563,6 +589,10 @@ class CategorySelectionView extends StatelessWidget {
       (FormViewModel state) => state.draft.categoryId,
     );
     final categories = context.select((FormViewModel state) => state.categories);
+    final editMode = context.select((FormViewModel state) => state.editCategory);
+    // ignore: unused_local_variable
+    final contextWatch = context.watch<FormViewModel>();
+    debugPrint('from grid triggered and rebuilt');
     return SliverPadding(
       padding: const EdgeInsets.only(top: 20.0, bottom: 120),
       sliver: SliverGrid.list(
@@ -583,7 +613,11 @@ class CategorySelectionView extends StatelessWidget {
 
             return GestureDetector(
               onTap: () {
-                context.formMod.updateCategory(category);
+                if (editMode) {
+                  context.push('/form/edit-category', extra: category);
+                } else {
+                  context.formMod.updateCategory(category);
+                }
                 HapticFeedback.selectionClick();
               },
               child: AnimatedScale(
@@ -622,22 +656,24 @@ class CategorySelectionView extends StatelessWidget {
               ),
             );
           }),
-          Column(
-            spacing: 4,
-            children: [
-              ReusableContainer(
-                padding: EdgeInsets.all(16),
-                highlight: true,
-                filled: true,
-                onTap: () => debugPrint("create new category"),
-                child: Icon(
-                  Icons.add,
-                  size: 30,
+          if (editMode)
+            Column(
+              spacing: 4,
+              children: [
+                ReusableContainer(
+                  padding: EdgeInsets.all(16),
+                  // highlight: true,
+                  customColor: context.cs.secondary,
+                  filled: true,
+                  onTap: () => context.push('/form/edit-category'),
+                  child: Icon(
+                    Icons.add,
+                    size: 30,
+                  ),
                 ),
-              ),
-              Text("Add New", style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
-            ],
-          ),
+                Text("Add New", style: context.tt.bodyMedium!.copyWith(fontSize: 12)),
+              ],
+            ),
         ],
       ),
     );

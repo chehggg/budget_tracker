@@ -1,8 +1,10 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:ui';
+
+import 'package:flutter/material.dart';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:flutter/material.dart';
 
 class CostItemCategory {
   const CostItemCategory({this.id, this.name, this.color, this.imagePath, this.costType});
@@ -68,4 +70,20 @@ class CostItemCategory {
   
   @override
   int get hashCode => Object.hash(id, name);
+
+  CostItemCategory copyWith({
+    String? id,
+    String? name,
+    Color? color,
+    String? imagePath,
+    CostType? costType,
+  }) {
+    return CostItemCategory(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      color: color ?? this.color,
+      imagePath: imagePath ?? this.imagePath,
+      costType: costType ?? this.costType,
+    );
+  }
 }

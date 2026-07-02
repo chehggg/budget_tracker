@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
@@ -47,9 +49,15 @@ class FormViewModel extends ChangeNotifier {
       updateAmount(double.tryParse(_amountController.text) ?? 0);
     });
 
+    _subscription = _categoryRepo.categoryStream.listen((value) {
+      debugPrint('category repo trigger form change');
+      notifyListeners();
+    });
     _isLoaded = true;
     notifyListeners();
   }
+
+  StreamSubscription<List<CostItemCategory>>? _subscription;
 
   void _populateInitValue() {
     debugPrint('initializing form model');
@@ -84,7 +92,10 @@ class FormViewModel extends ChangeNotifier {
 
   List<CostItemCategory> get categories =>
       _categoryRepo.categories
-          .where((category) => _formGroup.costType == null ? true : (category.costType == _formGroup.costType))
+          .where(
+            (category) =>
+                _formGroup.costType == null ? true : (category.costType == _formGroup.costType),
+          )
           .toList();
 
   bool _isLoaded = false;
@@ -99,15 +110,18 @@ class FormViewModel extends ChangeNotifier {
         CostItemCategory.error();
   }
 
-
   // CostItemCategory? _selectedCategory;
-  CostItemCategory? get selectedCategory => _categoryRepo.categories.firstWhereOrNull((cat) => _draftedItem.categoryId == cat.id);
+  CostItemCategory? get selectedCategory =>
+      _categoryRepo.categories.firstWhereOrNull((cat) => _draftedItem.categoryId == cat.id);
 
   String _savedTitle = "";
   String get savedTitle => _savedTitle;
 
   bool _utilityRefresh = false;
   bool get refreshed => _utilityRefresh;
+
+  bool _editCategory = false;
+  bool get editCategory => _editCategory;
 
   // description controller to be used in form
   // need to be here because the saved item need to be able to update this
@@ -126,15 +140,22 @@ class FormViewModel extends ChangeNotifier {
     }
   }
 
-  // Future<void> reloadCategory() async {
-  //   await _categoryRepo.getCategory(revertToDefault: true);
-  // }
+  void toggleEditCategory([bool? value]) {
+    _editCategory = value ?? !_editCategory;
+
+    // if (_editCategory) {
+    //   _draftedItem = _draftedItem.copyWith(categoryId: null);
+    //   notifyListeners();
+    // }
+    notifyListeners();
+  }
 
   void updateCategory(CostItemCategory newCategory) {
     _draftedItem = _draftedItem.copyWith(
       categoryId: newCategory.id,
-      costType: newCategory.costType
+      costType: newCategory.costType,
     );
+    _editCategory = false;
     notifyListeners();
   }
 
@@ -227,5 +248,6 @@ class FormViewModel extends ChangeNotifier {
     super.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
+    _subscription?.cancel();
   }
 }

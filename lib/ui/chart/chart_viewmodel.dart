@@ -38,25 +38,31 @@ class ChartViewModel extends ChangeNotifier {
     await _categoryRepo.ready;
     await _currencyRepo.ready;
 
-    _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
-    _daySummary = _costItemRepo.daySummary;
-    _monthSummary = _costItemRepo.monthSummary;
+    getInitValue();
 
     _periodStart = _sharedRepo.displayDate; 
-    // _subscription = _costItemRepo.valueStream.listen((value) {
-    //   // debugPrint('stream updated');
-    //   debugPrint(
-    //     'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
-    //   );
-    //   _costItems = value.items.where((i) => i.costType == _type).toList();
-    //   _daySummary = value.daySummary;
-    //   _monthSummary = value.monthSummary;
-    //   notifyListeners();
-    // });
+    
+    _subscription = _costItemRepo.valueStream.listen((value) {
+      // debugPrint('stream updated');
+      // debugPrint(
+      //   'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
+      // );
+      getInitValue();
+      // _costItems = value.items.where((i) => i.costType == _type).toList();
+      // _daySummary = _costItemRepo.daySummary;
+      // _monthSummary = _costItemRepo.monthSummary;
+      notifyListeners();
+    });
 
     _isInitalized = true;
 
     notifyListeners();
+  }
+
+  void getInitValue() {
+    _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
+    _daySummary = _costItemRepo.daySummary;
+    _monthSummary = _costItemRepo.monthSummary;
   }
 
   bool _isInitalized = false;

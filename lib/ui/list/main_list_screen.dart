@@ -84,7 +84,7 @@ class _CostListScreenState extends State<CostListScreen> {
       resizeToAvoidBottomInset: false,
       appBar: const ListViewAppBar(),
       body: SafeArea(
-        minimum: EdgeInsets.only(top: 8),
+        // minimum: EdgeInsets.only(top: 8),
         child:
             ready
                 ? Flex(
@@ -131,7 +131,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
       return AppBar(
         actionsPadding: EdgeInsets.only(right: 10),
         animateColor: true,
-        backgroundColor: context.customCs.fadeColor2,
+        // backgroundColor: context.customCs.fadeColor2,
         leading: BackButton(
           onPressed: () => context.listMod.toggleSelectionMode(false),
         ),
@@ -158,7 +158,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
       return AppBar(
         scrolledUnderElevation: 0,
         actionsPadding: EdgeInsets.only(right: 10),
-        backgroundColor: context.customCs.fadeColor3,
+        // backgroundColor: context.customCs.fadeColor3,
         leading: BackButton(
           onPressed: () {
             context.listMod.toggleSearch(false);
@@ -168,87 +168,87 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: Row(
           children: [
             Expanded(child: const SearchTabTextField()),
-            IconButton(
-              onPressed: () async {
-                await showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text(
-                        "Item Filter",
-                        style: context.customTt.dateLabel,
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextButton(
-                            onPressed: () async {
-                              final init = context.listMod.filteredCategories;
-                              final response = await context.nav.push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => CategorySelectionScreen(
-                                        initSelection: init,
-                                      ),
-                                ),
-                              );
-                              if (response != null) return;
-                              if (context.mounted) {
-                                context.listMod.updateCategoryFilter(response);
-                              }
-                            },
-                            child: Text("Categories"),
-                          ),
-                          Text("Price Range"),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-              icon: Icon(Icons.toll_rounded),
-            ),
-            IconButton(
-              onPressed: () async {
-                final init = context.listMod.filteredCategories;
-                final List<CostItemCategory>? response = await context.nav.push(
-                  MaterialPageRoute(
-                    builder:
-                        (context) => CategorySelectionScreen(
-                          initSelection: init,
-                        ),
-                  ),
-                );
-                if (response != null) return;
-                if (context.mounted) {
-                  context.listMod.updateCategoryFilter(response!);
-                }
-              },
-              icon: Stack(
-                alignment: Alignment(1.5, 1.5),
-                children: [
-                  Icon(Icons.category_outlined, size: 22),
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: context.cs.secondary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "2",
-                        style: context.tt.bodyMedium!.copyWith(
-                          color: context.cs.surface,
-                          fontSize: 8,
-                          fontWeight: FontWeight(700),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // IconButton(
+            //   onPressed: () async {
+            //     await showDialog(
+            //       context: context,
+            //       builder: (context) {
+            //         return AlertDialog(
+            //           title: Text(
+            //             "Item Filter",
+            //             style: context.customTt.dateLabel,
+            //           ),
+            //           content: Column(
+            //             mainAxisSize: MainAxisSize.min,
+            //             children: [
+            //               TextButton(
+            //                 onPressed: () async {
+            //                   final init = context.listMod.filteredCategories;
+            //                   final response = await context.nav.push(
+            //                     MaterialPageRoute(
+            //                       builder:
+            //                           (context) => CategorySelectionScreen(
+            //                             initSelection: init,
+            //                           ),
+            //                     ),
+            //                   );
+            //                   if (response != null) return;
+            //                   if (context.mounted) {
+            //                     context.listMod.updateCategoryFilter(response);
+            //                   }
+            //                 },
+            //                 child: Text("Categories"),
+            //               ),
+            //               Text("Price Range"),
+            //             ],
+            //           ),
+            //         );
+            //       },
+            //     );
+            //   },
+            //   icon: Icon(Icons.toll_rounded),
+            // ),
+            // IconButton(
+            //   onPressed: () async {
+            //     final init = context.listMod.filteredCategories;
+            //     final List<CostItemCategory>? response = await context.nav.push(
+            //       MaterialPageRoute(
+            //         builder:
+            //             (context) => CategorySelectionScreen(
+            //               initSelection: init,
+            //             ),
+            //       ),
+            //     );
+            //     if (response != null) return;
+            //     if (context.mounted) {
+            //       context.listMod.updateCategoryFilter(response!);
+            //     }
+            //   },
+            //   icon: Stack(
+            //     alignment: Alignment(1.5, 1.5),
+            //     children: [
+            //       Icon(Icons.category_outlined, size: 22),
+            //       Container(
+            //         width: 12,
+            //         height: 12,
+            //         decoration: BoxDecoration(
+            //           color: context.cs.secondary,
+            //           borderRadius: BorderRadius.circular(20),
+            //         ),
+            //         child: Center(
+            //           child: Text(
+            //             "2",
+            //             style: context.tt.bodyMedium!.copyWith(
+            //               color: context.cs.surface,
+            //               fontSize: 8,
+            //               fontWeight: FontWeight(700),
+            //             ),
+            //           ),
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
           ],
         ),
       );
@@ -309,6 +309,7 @@ class DateBreadcrumb extends StatelessWidget {
       },
       child: Container(
         height: 44,
+        decoration: BoxDecoration(color: context.cs.surface),
         padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
         child: Row(
           children: [
@@ -360,54 +361,131 @@ class ItemFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // final curMonth = context.select((ListViewModel state) => state.currentMonth);
+    final categories = context.select((ListViewModel state) => state.filteredCategories);
     final curMonth = context.select((ListViewModel state) => state.currentMonth);
+    final hasValue = categories != null;
     return Container(
       height: 44,
-      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+      decoration: BoxDecoration(color: context.cs.surface),
+      padding: EdgeInsets.only(left: 12, right: 12),
       child: Row(
-        spacing: 4,
+        spacing: 12,
         children: [
-          ActionChip(label: Text("Category"), onPressed: () {}),
-          ActionChip(label: Text("Price Range"), onPressed: () {}),
-          ActionChip(label: Text("This Month"), onPressed: () {}),
-          // IconButton(onPressed: (){}, icon: Icon(Icons.abc)),
-          // IconButton(onPressed: (){}, icon: Icon(Icons.abc)),
-          // SizedBox(
-          //   width: MediaQuery.of(context).size.width * 0.25,
-          //   child: IconButton(
-          //     iconSize: 24,
-          //     style: ElevatedButton.styleFrom(
-          //       splashFactory: NoSplash.splashFactory,
-          //     ),
-          //     onPressed: () {
-          //       context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
-          //     },
-          //     icon: Icon(Icons.arrow_back_ios),
-          //   ),
-          // ),
-          // Expanded(
-          //   child: Center(
-          //     child: Text(
-          //       DateFormat(
-          //         "yMMMM",
-          //       ).format(curMonth),
-          //       style: context.customTt.dateLabel!.copyWith(fontSize: 28),
-          //     ),
-          //   ),
-          // ),
-          // SizedBox(
-          //   width: MediaQuery.of(context).size.width * 0.25,
-          //   child: IconButton(
-          //     iconSize: 24,
-          //     style: ElevatedButton.styleFrom(
-          //       splashFactory: NoSplash.splashFactory,
-          //     ),
-          //     onPressed: () {
-          //       context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
-          //     },
-          //     icon: Icon(Icons.arrow_forward_ios),
-          //   ),
-          // ),
+          Expanded(
+            child: CustomActionChip(
+              icon: Icon(Icons.category),
+              isActive: hasValue,
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 12,
+                children: [
+                  Text(
+                    "Category",
+                    style: context.tt.bodyMedium!.copyWith(
+                      color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+                    ),
+                  ),
+                  if (hasValue)
+                    Container(
+                      height: 18,
+                      width: 20,
+                      decoration: BoxDecoration(
+                        color: context.cs.secondary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Center(
+                        child: Text(
+                          categories.length.toString() ?? "",
+                          style: TextStyle(color: Colors.black, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: () async {
+                final response = await context.push<List<CostItemCategory>? Function()>(
+                  '/categories',
+                  extra: categories,
+                );
+                if (response == null) return;
+                if (context.mounted) {
+                  context.listMod.updateCategoryFilter(response());
+                }
+              },
+            ),
+          ),
+          Expanded(
+            child: CustomActionChip(
+              icon: Icon(Icons.rectangle),
+              isActive: hasValue,
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 12,
+                children: [
+                  Text(
+                    "Range",
+                    style: context.tt.bodyMedium!.copyWith(
+                      color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+                    ),
+                  ),
+                  if (hasValue)
+                    Container(
+                      height: 18,
+                      width: 20,
+                      decoration: BoxDecoration(
+                        color: context.cs.secondary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Center(
+                        child: Text(
+                          categories.length.toString() ?? "",
+                          style: TextStyle(color: Colors.black, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: () async {
+                final response = await context.push<List<CostItemCategory>>(
+                  '/categories',
+                  extra: categories,
+                );
+                if (response == null) return;
+                if (context.mounted) {
+                  context.listMod.updateCategoryFilter(response);
+                }
+              },
+            ),
+          ),
+          Expanded(
+            child: CustomActionChip(
+              icon: Icon(Icons.date_range),
+              isActive: hasValue,
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 12,
+                children: [
+                  Text(
+                    curMonth.formatMonth(),
+                    style: context.tt.bodyMedium!.copyWith(
+                      color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+                    ),
+                  ),
+                ],
+              ),
+              onPressed: () async {
+                await showDialog(
+                  context: context,
+                  builder:
+                      (_) => ChangeNotifierProvider.value(
+                        value: context.listMod,
+                        child: const MonthSelectorDialog(),
+                      ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -419,10 +497,16 @@ class CostEntryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('cost list rebuild');
+
+    // ignore: unused_local_variable
+    final contextWatch = context.watch<ListViewModel>();
     final groupedCostItems = context.select((ListViewModel state) => state.outputCostItems);
     final dailySummary = context.select((ListViewModel state) => state.outputDailySummary);
     final selectionMode = context.select((ListViewModel state) => state.selectionMode);
     final selectedItems = context.select((ListViewModel state) => state.selectedItems);
+    // ignore: unused_local_variable
+    final itemLength = context.select((ListViewModel state) => state.outputCostItems.length);
     // ignore: unused_local_variable
     final selectedItemLength = context.select((ListViewModel state) => state.selectedItems.length);
 
@@ -436,6 +520,7 @@ class CostEntryList extends StatelessWidget {
         ),
       );
     } else {
+      debugPrint('grouped cost item length: $itemLength');
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 12),
         sliver: SliverList.builder(
@@ -1053,86 +1138,6 @@ class PageIndicator extends StatelessWidget {
 //     );
 //   }
 
-//   Widget bottomFilterAppBar(BuildContext context) {
-//     final isCategoryFiltered = context.select(
-//       (AppModel state) => state.filteredCategories.length < state.categories.length,
-//     );
-//     final isDateFiltered = context.select((AppModel state) => state.filterDateRange != null);
-//     // final toolbarHeight = MediaQuery.of(context).size.height * 0.05;
-
-//     return Padding(
-//       padding: EdgeInsets.all(8),
-//       child: Flex(
-//         direction: Axis.horizontal,
-//         spacing: 8,
-//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//         children: [
-//           createCustomFilterChip(
-//             context,
-//             icon: Icons.category,
-//             text: "Category",
-//             onTap: () async {
-//               showDialog(
-//                 context: context,
-//                 builder: (context) {
-//                   return AlertDialog(
-//                     title: Column(
-//                       children: [
-//                         Text("Filter Category", style: context.customTt.dateLabel),
-//                         Text("selected category", style: context.customTt.numberFontMedium),
-//                       ],
-//                     ),
-//                     content: ListView.builder(
-//                       itemCount: 2,
-//                       itemBuilder: (context, index) {},
-//                     ),
-//                   );
-//                 },
-//               );
-//             },
-//             isActive: isCategoryFiltered,
-//           ),
-//           createCustomFilterChip(
-//             context,
-//             icon: Icons.date_range,
-//             text: "Date",
-//             // onTap: () async => showFilterDateDialog(),
-//             isActive: isDateFiltered,
-//           ),
-//           createCustomFilterChip(
-//             context,
-//             icon: Icons.money,
-//             text: "Amount",
-//             // onTap: () async => showFilterAmountDialog(),
-//             isActive: isDateFiltered,
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       decoration: BoxDecoration(color: context.cs.surface),
-//       child: Padding(
-//         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-//         child: PopScope(
-//           onPopInvokedWithResult: (didPop, result) {},
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               const SearchTabTextField(),
-//               bottomFilterAppBar(context),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 class SearchTabTextField extends StatefulWidget {
   const SearchTabTextField({
     super.key,
@@ -1215,65 +1220,3 @@ class FilterAmountDialogState extends State<FilterAmountDialog> {
   }
 }
 
-// class CategoryFilterDialog extends StatefulWidget {
-//   const CategoryFilterDialog({super.key});
-
-//   @override
-//   State<CategoryFilterDialog> createState() => _CategoryFilterDialogState();
-// }
-
-// class _CategoryFilterDialogState extends State<CategoryFilterDialog> {
-//   @override
-//   Widget build(BuildContext context) {
-//     final categories = defaultCostItemCategories;
-//     final filteredCategories = context.select((ListViewModel state) => state.filteredCategories);
-//     final bool allItemSelected = categories.length == filteredCategories.length;
-//     return AlertDialog(
-//       title: Text("Category Filter"),
-//       content: CustomScrollView(
-//         slivers: [
-//           Row(
-//             children: [
-//               Expanded(
-//                 child: Text(allItemSelected ? "Unselect All" : "Select All"),
-//               ),
-//               Checkbox(
-//                 value: allItemSelected,
-//                 onChanged: (value) {
-//                   if (value != null) {
-//                     context.listMod.toggleAllCategoryFilter(value);
-//                   }
-//                 },
-//               ),
-//             ],
-//           ),
-//           SliverList.builder(
-//             itemCount: categories.length,
-//             itemBuilder: (context, index) {
-//               final category = categories.elementAt(index);
-//               return Row(
-//                 spacing: 12,
-//                 children: [
-//                   CategoryIconContainer(category: category),
-//                   Expanded(child: Text(category.name!)),
-//                   Checkbox(
-//                     value: filteredCategories.contains(category.id!),
-//                     onChanged: (value) {
-//                       if (value != null) {
-//                         context.listMod.toggleCategoryFilter(category.id!, value);
-//                       }
-//                     },
-//                   ),
-//                 ],
-//               );
-//             },
-//           ),
-//         ],
-//       ),
-//       actions: [
-//         const DismissTextButton(text: "Cancel"),
-//         const AffirmativeTextButton(text: "Save"),
-//       ],
-//     );
-//   }
-// }

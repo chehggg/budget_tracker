@@ -1,11 +1,17 @@
 import 'package:budget_tracker/config/router_component.dart';
+import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
 import 'package:budget_tracker/custom/classes/goal_class.dart';
+import 'package:budget_tracker/reusable/category_selection_screen.dart';
+import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 // import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/screens/settings/currency_screen.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_screen.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
+import 'package:budget_tracker/ui/category_form/category_form_screen.dart';
+import 'package:budget_tracker/ui/category_form/category_form_viewmodel.dart';
+import 'package:budget_tracker/ui/category_form/category_icon_selection_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
@@ -56,6 +62,21 @@ final goRouter = GoRouter(
                   ),
                 );
               },
+              routes: [
+                GoRoute(
+                  parentNavigatorKey: _rootNavigator,
+                  path: '/categories',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => CategorySelectionViewModel(
+                              categoryRepo: context.read(),
+                              initSelection: state.extra as List<CostItemCategory>?,
+                            ),
+                        child: const CategorySelectionScreen(),
+                      ),
+                ),
+              ],
             ),
           ],
         ),
@@ -88,6 +109,7 @@ final goRouter = GoRouter(
                 ),
                 GoRoute(
                   path: '/new-goal',
+                  parentNavigatorKey: _rootNavigator,
                   builder: (context, state) => const GoalTypeSelectionScreenState(),
                 ),
                 GoRoute(
@@ -137,6 +159,25 @@ final goRouter = GoRouter(
               (context, state) => const CurrencySelectionScreenWrapper(
                 currencyExchange: true,
               ),
+        ),
+        GoRoute(
+          path: '/edit-category',
+          builder:
+              (context, state) => ChangeNotifierProvider(
+                create:
+                    (context) => CategoryFormViewModel(
+                      initCategory: state.extra as CostItemCategory?,
+                      categoryRepo: context.read(),
+                      costItemRepo: context.read(),
+                      currencyRepo: context.read()
+                    ),
+                child: const CategoryFormScreen(),
+              ),
+          routes: [
+            GoRoute(path: '/category-icon', builder: (context, state) {
+              return const CategoryIconSelectionScreen();
+            },)
+          ]
         ),
         GoRoute(
           path: '/exchange',

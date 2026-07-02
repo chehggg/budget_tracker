@@ -17,6 +17,7 @@ class CustomMainScaffold extends StatelessWidget {
         currentIndex: shell.currentIndex,
         onTap: shell.goBranch,
       ),
+      resizeToAvoidBottomInset: true,
       floatingActionButton: CustomFAB(),
     );
   }

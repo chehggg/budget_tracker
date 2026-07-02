@@ -23,57 +23,55 @@ class GoalDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewmodel state) => state.goal);
     final ready = context.select((GoalInfoViewmodel state) => state.ready);
-    return ScreenWrapper(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text("Goal Details"),
-          actions: [
-            IconButton(
-              onPressed: () async {
-                final response = await showDialog(
-                  context: context,
-                  builder: (context) => DeleteItemDialog(),
-                );
-                if (response == null) return;
-                if (response && context.mounted) {
-                  await context.goalInfoMod.deleteGoal();
-                  context.pop();
-                  // context.showSuccessNotification(message: "Goal is deleted");
-                }
-              },
-              icon: Icon(Icons.delete),
-            ),
-            IconButton(
-              onPressed: () {
-                context.nav.push(
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return ChangeNotifierProvider(
-                        create:
-                            (context) => GoalFormViewmodel(
-                              categoryRepo: context.read(),
-                              goalRepository: context.read(),
-                              initGoal: goal,
-                            ),
-                        child: const GoalFormInfoScreen(),
-                      );
-                    },
-                  ),
-                );
-              },
-              icon: Icon(Icons.edit),
-            ),
-          ],
-        ),
-        body: SafeArea(
-          minimum: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-          child:
-              ready
-                  ? const GoalInfoBody()
-                  : const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Goal Details"),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              final response = await showDialog(
+                context: context,
+                builder: (context) => DeleteItemDialog(),
+              );
+              if (response == null) return;
+              if (response && context.mounted) {
+                await context.goalInfoMod.deleteGoal();
+                context.pop();
+                // context.showSuccessNotification(message: "Goal is deleted");
+              }
+            },
+            icon: Icon(Icons.delete),
+          ),
+          IconButton(
+            onPressed: () {
+              context.nav.push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ChangeNotifierProvider(
+                      create:
+                          (context) => GoalFormViewmodel(
+                            categoryRepo: context.read(),
+                            goalRepository: context.read(),
+                            initGoal: goal,
+                          ),
+                      child: const GoalFormInfoScreen(),
+                    );
+                  },
+                ),
+              );
+            },
+            icon: Icon(Icons.edit),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        minimum: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+        child:
+            ready
+                ? const GoalInfoBody()
+                : const Center(
+                  child: CircularProgressIndicator(),
+                ),
       ),
     );
   }

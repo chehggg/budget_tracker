@@ -1,8 +1,5 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/screens/settings/currency_viewmodel.dart';
-import 'package:budget_tracker/screens/settings/ex_rate_screen.dart';
-import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
-import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:money2/money2.dart';

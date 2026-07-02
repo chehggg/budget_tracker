@@ -5,6 +5,7 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class CategorySelectionScreen extends StatelessWidget {
@@ -14,22 +15,14 @@ class CategorySelectionScreen extends StatelessWidget {
   final GoalType? goalType;
   @override
   Widget build(BuildContext context) {
-    final CostType? type = switch (goalType) {
-      GoalType.budget => CostType.expense,
-      GoalType.savings => null,
-      GoalType.payment => null,
-      _ => null,
-    };
+    // final CostType? type = switch (goalType) {
+    //   GoalType.budget => CostType.expense,
+    //   GoalType.savings => null,
+    //   GoalType.payment => null,
+    //   _ => null,
+    // };
 
-    return ChangeNotifierProvider(
-      create:
-          (context) => CategorySelectionViewmodel(
-            categoryRepo: context.read(),
-            initSelection: initSelection,
-            costType: type,
-          ),
-      child: const CategorySelectionBody(),
-    );
+    return const CategorySelectionBody();
   }
 }
 
@@ -47,8 +40,9 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
   void initState() {
     super.initState();
     _controller =
-        TextEditingController()..addListener(
-          () => context.read<CategorySelectionViewmodel>().updateFilterString(
+        TextEditingController()
+        ..addListener(
+          () => context.read<CategorySelectionViewModel>().updateFilterString(
             _controller.text,
           ),
         );
@@ -56,18 +50,21 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
 
   @override
   Widget build(BuildContext context) {
-    final readCatMod = context.read<CategorySelectionViewmodel>();
+    final readCatMod = context.read<CategorySelectionViewModel>();
     final displayCat = context.select(
-      (CategorySelectionViewmodel state) => state.displayedCategories,
+      (CategorySelectionViewModel state) => state.displayedCategories,
+    );
+    final areAllSelected = context.select(
+      (CategorySelectionViewModel state) => state.areAllSelected,
     );
     final selectedCategories = context.select(
-      (CategorySelectionViewmodel state) => state.selectedCategories,
+      (CategorySelectionViewModel state) => state.selectedCategories,
     );
 
-    final ready = context.select((CategorySelectionViewmodel state) => state.ready);
+    final ready = context.select((CategorySelectionViewModel state) => state.ready);
     // ignore: unused_local_variable
     final length = context.select(
-      (CategorySelectionViewmodel state) => state.selectedCategories.length,
+      (CategorySelectionViewModel state) => state.selectedCategories.length,
     );
     // final length2 = context.select(
     //   (CategorySelectionViewmodel state) => state.displayedCategories.length,
@@ -78,7 +75,8 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
         actions: [
           IconButton(
             onPressed: () {
-              context.nav.pop(selectedCategories);
+              debugPrint('are all selected :${areAllSelected}');
+              context.pop(areAllSelected ? () => null : () => selectedCategories);
             },
             icon: Icon(Icons.check),
           ),

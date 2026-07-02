@@ -78,7 +78,6 @@ class HomeScreen extends StatelessWidget {
     final navigationModel = context.watch<NavigatorModel>();
     final navKey = navigationModel.navigationKey;
     final showBottomNavBar = context.select((NavigatorModel state) => state.showBottom);
-    final pathsCount = context.select((NavigatorModel state) => state.pathsCount);
 
     return Scaffold(
       body: Navigator(

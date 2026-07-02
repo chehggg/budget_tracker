@@ -4,8 +4,8 @@ import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
-class CategorySelectionViewmodel extends ChangeNotifier {
-  CategorySelectionViewmodel({
+class CategorySelectionViewModel extends ChangeNotifier {
+  CategorySelectionViewModel({
     required CategoryRepository categoryRepo,
     List<CostItemCategory>? initSelection,
     this.costType,

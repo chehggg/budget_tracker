@@ -4,6 +4,7 @@ import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/screens/settings/currency_viewmodel.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
+import 'package:budget_tracker/ui/category_form/category_form_viewmodel.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
@@ -38,6 +39,7 @@ extension BuildContextExtension on BuildContext {
   ChartViewModel get chartMod => read<ChartViewModel>();
   CurrencyViewModel get currencyMod => read<CurrencyViewModel>();
   ExRateViewModel get exRateMod => read<ExRateViewModel>();
+  CategoryFormViewModel get catFormMod => read<CategoryFormViewModel>();
 
   void showSuccessNotification({required String message, String? title}) {
     Flushbar(

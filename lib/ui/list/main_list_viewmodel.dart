@@ -50,11 +50,17 @@ class ListViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    _categorySubscription = _categoryRepo.categoryStream.listen((value) {
+      // debugPrint("currency trigger refresh.");
+      notifyListeners();
+    });
+
     notifyListeners();
   }
 
   StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
   StreamSubscription<Currency>? _currencySubscription;
+  StreamSubscription<List<CostItemCategory>>? _categorySubscription;
 
   bool _isInitialized = false;
   bool get ready => _isInitialized;
@@ -77,9 +83,9 @@ class ListViewModel extends ChangeNotifier {
   bool _isBlurred = false;
   bool get isBlurred => _isBlurred;
 
-  List<CostItemCategory> _filteredCategories = [];
-  UnmodifiableListView<CostItemCategory> get filteredCategories =>
-      UnmodifiableListView(_filteredCategories);
+  List<CostItemCategory>? _filteredCategories;
+  UnmodifiableListView<CostItemCategory>? get filteredCategories =>
+      _filteredCategories != null ? UnmodifiableListView(_filteredCategories!) : null;
 
   String _searchText = "";
 
@@ -88,16 +94,18 @@ class ListViewModel extends ChangeNotifier {
       (key, value) =>
           MapEntry(key, value.sorted((a, b) => b.lastModified!.compareTo(a.lastModified!))),
     );
-    if (_searchText == "") return sorted;
+    // if (_searchText == "") return sorted;
     final filteredItems = sorted.map(
       (key, value) => MapEntry(
         key,
         value.where((item) {
           final bool searchQuery =
-              (_searchText.isNotEmpty ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) : true) ?? true;
+              (_searchText.isNotEmpty
+                  ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) ?? false
+                  : true);
           final bool categoryQuery =
-              _filteredCategories.isNotEmpty
-                  ? _filteredCategories.map((cat) => cat.id).contains(item.categoryId)
+              _filteredCategories != null
+                  ? _filteredCategories!.map((cat) => cat.id).contains(item.categoryId)
                   : true;
           return searchQuery && categoryQuery;
         }).toList(),
@@ -160,7 +168,7 @@ class ListViewModel extends ChangeNotifier {
     }
     if (!_isSearchOpened) {
       _searchText = "";
-      _filteredCategories.clear();
+      _filteredCategories = null;
       _rangeMatch = null;
     }
     notifyListeners();
@@ -175,8 +183,9 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateCategoryFilter(List<CostItemCategory> categories) {
+  void updateCategoryFilter(List<CostItemCategory>? categories) {
     _filteredCategories = categories;
+    // debugPrint("category list: ${categories.length}");
     notifyListeners();
   }
 
