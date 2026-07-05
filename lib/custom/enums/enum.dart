@@ -39,3 +39,7 @@ enum GoalTrackingPeriod {
 enum ChartPeriod {
   week, month, year, custom
 }
+
+enum KeyboardButtonType {
+  char, delete, done, date
+}

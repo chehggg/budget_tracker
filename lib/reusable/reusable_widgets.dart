@@ -70,18 +70,20 @@ class CategoryIconContainer extends StatelessWidget {
     required this.category,
     this.inContainer = true,
     this.inverse = false,
+    this.fade,
   });
 
   final double size;
   final bool inContainer;
   final bool inverse;
   final CostItemCategory category;
+  final int? fade;
 
   @override
   Widget build(BuildContext context) {
     if (inContainer) {
       return ReusableContainer(
-        customColor: category.color?.withAlpha(50),
+        customColor: category.color?.withAlpha(fade ?? 50),
         filled: true,
         highlight: inverse,
         child: SvgPicture.asset(

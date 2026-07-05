@@ -3,8 +3,12 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
 import 'package:budget_tracker/custom/classes/goal_class.dart';
+import 'package:budget_tracker/custom/classes/saved_item_class.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
+import 'package:budget_tracker/reusable/text_selection_screen.dart';
+import 'package:budget_tracker/reusable/text_selection_viewmodel.dart';
 // import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/screens/settings/currency_screen.dart';
 import 'package:budget_tracker/screens/settings/ex_rate_screen.dart';
@@ -12,7 +16,9 @@ import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_form_screen.dart';
 import 'package:budget_tracker/ui/category_form/category_form_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_icon_selection_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
@@ -21,6 +27,10 @@ import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_list_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
+import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
+import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +94,27 @@ final goRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/chart',
-              builder: (context, state) => const ChartScreenWrapper(),
+              builder:
+                  (context, state) => ChangeNotifierProvider(
+                    create:
+                        (context) => ChartViewModel(
+                          sharedRepo: context.read(),
+                          costItemRepo: context.read(),
+                          currencyRepo: context.read(),
+                          categoryRepo: context.read(),
+                        ),
+                    child: const ChartScreen(),
+                  ),
+              routes: [
+                GoRoute(
+                  path: '/category-breakdown',
+                  builder:
+                      (context, state) => ChangeNotifierProvider.value(
+                        value: state.extra as ChartViewModel,
+                        child: ChartCategoryBreakdownScreen(),
+                      ),
+                ),
+              ],
             ),
           ],
         ),
@@ -95,14 +125,58 @@ final goRouter = GoRouter(
               builder: (context, state) => const GoalScreenWrapper(),
               routes: [
                 GoRoute(
-                  path: '/form',
+                  parentNavigatorKey: _rootNavigator,
+                  path: '/new-goal-detail',
                   builder:
                       (context, state) => ChangeNotifierProvider(
                         create:
-                            (context) => GoalFormViewmodel(
+                            (context) => GoalFormViewModel(
                               categoryRepo: context.read(),
-                              goalRepository: context.read(),
+                              goalRepo: context.read(),
                               goalCategory: state.extra as GoalCategory,
+                              initGoal: null,
+                            ),
+                        child: const GoalFormInfoScreen(),
+                      ),
+                ),
+                GoRoute(
+                  parentNavigatorKey: _rootNavigator,
+                  path: '/category',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => CategorySelectionViewModel(
+                              categoryRepo: context.read(),
+                              initSelection: state.extra as List<CostItemCategory>?,
+                            ),
+                        child: const CategorySelectionScreen(),
+                      ),
+                ),
+                GoRoute(
+                  parentNavigatorKey: _rootNavigator,
+                  path: '/text-filter',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => TextSelectionViewmodel(
+                              itemRepo: context.read(),
+                              categoryRepo: context.read(),
+                              initFilter: state.extra as StringFilter?,
+                            ),
+                        child: const TextSelectionBody(),
+                      ),
+                ),
+                GoRoute(
+                  parentNavigatorKey: _rootNavigator,
+                  path: '/edit-goal',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => GoalFormViewModel(
+                              categoryRepo: context.read(),
+                              goalRepo: context.read(),
+                              goalCategory: null,
+                              initGoal: state.extra as Goal,
                             ),
                         child: const GoalFormInfoScreen(),
                       ),
@@ -110,14 +184,15 @@ final goRouter = GoRouter(
                 GoRoute(
                   path: '/new-goal',
                   parentNavigatorKey: _rootNavigator,
-                  builder: (context, state) => const GoalTypeSelectionScreenState(),
+                  builder: (context, state) => const GoalTypeSelectionScreen(),
                 ),
                 GoRoute(
+                  // parentNavigatorKey: _rootNavigator,
                   path: '/details',
                   builder:
                       (context, state) => ChangeNotifierProvider(
                         create:
-                            (context) => GoalInfoViewmodel(
+                            (context) => GoalInfoViewModel(
                               goalRepos: context.read(),
                               costItemRepo: context.read(),
                               categoryRepo: context.read(),
@@ -141,6 +216,16 @@ final goRouter = GoRouter(
                   builder:
                       (context, state) => const CurrencySelectionScreenWrapper(
                         currencyExchange: false,
+                      ),
+                ),
+                GoRoute(
+                  path: '/currency-setting',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) =>
+                                AdditionalCurrencySettingsViewModel(currencyRepo: context.read()),
+                        child: const AdditionalCurrencySettingScreen(),
                       ),
                 ),
               ],
@@ -169,15 +254,18 @@ final goRouter = GoRouter(
                       initCategory: state.extra as CostItemCategory?,
                       categoryRepo: context.read(),
                       costItemRepo: context.read(),
-                      currencyRepo: context.read()
+                      currencyRepo: context.read(),
                     ),
                 child: const CategoryFormScreen(),
               ),
           routes: [
-            GoRoute(path: '/category-icon', builder: (context, state) {
-              return const CategoryIconSelectionScreen();
-            },)
-          ]
+            GoRoute(
+              path: '/category-icon',
+              builder: (context, state) {
+                return const CategoryIconSelectionScreen();
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/exchange',
@@ -205,8 +293,15 @@ final goRouter = GoRouter(
           //   ),
           // ],
           builder:
-              (context, state) => CostFormScreenWrapper(
-                arg: state.extra as FormArgument?,
+              (context, state) => ChangeNotifierProvider(
+                create:
+                    (_) => SavedItemViewModel(
+                      initItem: (state.extra as Map?)?['initSavedItem'] as SavedItem?,
+                      initCostData: (state.extra as Map?)?['initCostItem'] as CostItem?,
+                      categoryRepo: context.read(),
+                      savedItemRepo: context.read(),
+                    ),
+                child: const EditSavedItemScreen(),
               ),
         ),
       ],

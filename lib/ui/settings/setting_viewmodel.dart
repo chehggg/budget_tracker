@@ -26,8 +26,8 @@ class SettingsViewModel extends ChangeNotifier {
     await _categoryRepository.ready;
     await _currencyRepo.ready;
 
-    _currencySubscription  =  _currencyRepo.currencyStream.listen((value) => notifyListeners());
-    
+    _currencySubscription = _currencyRepo.currencyStream.listen((value) => notifyListeners());
+
     _isInit = true;
     notifyListeners();
   }
@@ -49,5 +49,6 @@ class SettingsViewModel extends ChangeNotifier {
     await _costItemRepository.getCostItem(customFile: true);
   }
 
-  String get displayedCurrency => "${_currencyRepo.currency.name} (${_currencyRepo.currency.symbol})";
+  String get displayedCurrency =>
+      "${_currencyRepo.currency.name.isEmpty ? "Custom" : _currencyRepo.currency.name} (${_currencyRepo.currency.symbol})";
 }

@@ -79,4 +79,8 @@ class CurrencyViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearRecentlyUsed() {
+    _currencyRepo.clearRecentlyUsedCurrency();
+  }
+
 }

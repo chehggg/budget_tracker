@@ -18,7 +18,7 @@ class GoalScreenWrapper extends StatelessWidget {
     return ScreenWrapper(
       child: ChangeNotifierProvider(
         create: (context) {
-          return GoalViewModel(costItemRepo: context.read(), goalRepository: context.read());
+          return GoalViewModel(costItemRepo: context.read(), goalRepo: context.read());
         },
         child: const GoalScreen(),
       ),

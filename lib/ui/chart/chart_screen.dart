@@ -7,29 +7,12 @@ import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
-
-class ChartScreenWrapper extends StatelessWidget {
-  const ChartScreenWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create:
-          (context) => ChartViewModel(
-            sharedRepo: context.read(),
-            costItemRepo: context.read(),
-            currencyRepo: context.read(),
-            categoryRepo: context.read(),
-          ),
-      child: const ChartScreen(),
-    );
-  }
-}
 
 class ChartScreen extends StatelessWidget {
   const ChartScreen({super.key});
@@ -61,6 +44,8 @@ class ChartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
+    final contextWatch = context.watch<ChartViewModel>();
     final ready = context.select((ChartViewModel state) => state.ready);
     final type = context.select((ChartViewModel state) => state.type);
     final period = context.select((ChartViewModel state) => state.period);
@@ -102,26 +87,26 @@ class ChartScreen extends StatelessWidget {
         title: Text(
           "Visualize".toUpperCase(),
         ),
-        actions: [
-          SizedBox(
-            height: 40,
-            child: DropdownMenu(
-              inputDecorationTheme: InputDecorationThemeData(),
-              onSelected: (value) {
-                if (value == null) return;
-                context.chartMod.updateCostType(value);
-              },
-              initialSelection: type,
-              dropdownMenuEntries:
-                  CostType.values
-                      .map((type) => DropdownMenuEntry(value: type, label: type.name))
-                      .toList(),
-            ),
-          ),
-        ],
+        // actions: [
+        //   SizedBox(
+        //     height: 40,
+        //     child: DropdownMenu(
+        //       inputDecorationTheme: InputDecorationThemeData(),
+        //       onSelected: (value) {
+        //         if (value == null) return;
+        //         context.chartMod.updateCostType(value);
+        //       },
+        //       initialSelection: type,
+        //       dropdownMenuEntries:
+        //           CostType.values
+        //               .map((type) => DropdownMenuEntry(value: type, label: type.name))
+        //               .toList(),
+        //     ),
+        //   ),
+        // ],
       ),
       body: SafeArea(
-        minimum: EdgeInsets.fromLTRB(12, 12, 12, 0),
+        minimum: EdgeInsets.fromLTRB(0, 0, 0, 0),
         child:
             ready
                 ? CustomScrollView(
@@ -129,23 +114,30 @@ class ChartScreen extends StatelessWidget {
                     SliverToBoxAdapter(
                       child: const ChartFilterButtons(),
                     ),
+                    ChartSection(
+                      title: showMonth ? "YTM Overview" : "MTD Overview",
+                      showLabelSubtitle: true,
+                      // pathName: '/chart/category-breakdown',
+                      child: SummaryData(),
+                    ),
+                    // SliverToBoxAdapter(
+                    //   child: const SummaryData(),
+                    // ),
                     const ChartSection(
                       title: "Category Breakdown",
-                      page: ChartCategoryBreakdownScreen(),
+                      pathName: '/chart/category-breakdown',
                       child: CategoryBreakdownChart(),
                     ),
                     ChartSection(
                       title: showMonth ? "Monthly Spend" : "Daily Spend",
                       showLabelSubtitle: true,
-                      page: ChartCategoryBreakdownScreen(),
-                      child: DayToDayBarChart(
+                      child: DailyBarChart(
                         titleData: chartTitleData,
                       ),
                     ),
                     ChartSection(
                       title: "Cumulative Spend",
                       showLabelSubtitle: true,
-                      page: ChartCategoryBreakdownScreen(),
                       child: NewCumulativeLineChart(
                         titleData: chartTitleData,
                       ),
@@ -153,7 +145,6 @@ class ChartScreen extends StatelessWidget {
                     ChartSection(
                       title: "Cumulative Average Spend",
                       showLabelSubtitle: true,
-                      page: ChartCategoryBreakdownScreen(),
                       child: NewAverageCumulativeLineChart(
                         titleData: chartTitleData,
                       ),
@@ -182,9 +173,12 @@ class ChartFilterButtons extends StatelessWidget {
     );
     debugPrint('rebuild');
     return Column(
-      spacing: 12,
+      spacing: 8,
       children: [
-        SizedBox(
+        Container(
+          padding: EdgeInsetsDirectional.symmetric(horizontal: 12),
+          decoration: BoxDecoration(color: context.cs.surface),
+          height: 46,
           width: double.infinity,
           child: SegmentedButton(
             style: SegmentedButton.styleFrom(
@@ -207,49 +201,62 @@ class ChartFilterButtons extends StatelessWidget {
             selected: {period},
           ),
         ),
-        GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onHorizontalDragEnd: (details) {
-            if (details.primaryVelocity == null) return;
-            if (details.primaryVelocity!.abs() < 100) return;
-            debugPrint(details.primaryVelocity!.toStringAsFixed(0));
-            context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
-          },
-          child: ReusableContainer(
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            width: double.infinity,
-            filled: true,
-            highlight: true,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.arrow_left_outlined,
-                  color: context.cs.surface,
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Your charts for",
-                        style: context.customTt.paragraphText?.copyWith(color: context.cs.surface),
-                      ),
-                      Text(
-                        displayPeriod,
-                        style: context.customTt.elegantLabelLarge?.copyWith(
-                          color: context.cs.surface,
-                          fontSize: 40,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragEnd: (details) {
+              if (details.primaryVelocity == null) return;
+              if (details.primaryVelocity!.abs() < 100) return;
+              debugPrint(details.primaryVelocity!.toStringAsFixed(0));
+              context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
+            },
+            child: ReusableContainer(
+              height: 120,
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              width: double.infinity,
+              filled: true,
+              highlight: true,
+              child: Row(
+                children: [
+                  // Icon(
+                  //   Icons.keyboard_arrow_left_rounded,
+                  //   color: context.cs.surface,
+                  //   size: 40,
+                  // ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Current View",
+                          style: context.customTt.numberFontSmall?.copyWith(
+                            color: context.cs.onSecondary.withAlpha(200),
+                            fontSize: 14,
+                            fontWeight: FontWeight(600)
+                          ),
                         ),
-                      ),
-                      Text(
-                        displayDetailsPeriod,
-                        style: context.customTt.paragraphText?.copyWith(color: context.cs.surface),
-                      ),
-                    ],
+                        Text(
+                          displayPeriod,
+                          style: context.customTt.numberFontLarge?.copyWith(
+                            color: context.cs.surface,
+                            fontSize: 48,
+                            height: 1.4,
+                          ),
+                        ),
+                        Text(
+                          displayDetailsPeriod,
+                          style: context.customTt.paragraphText?.copyWith(
+                            color: context.cs.surface,
+                            fontSize: 14
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Icon(Icons.arrow_right_outlined, color: context.cs.surface),
-              ],
+                  Icon(Icons.arrow_right_outlined, color: context.cs.surface),
+                ],
+              ),
             ),
           ),
         ),
@@ -264,13 +271,13 @@ class ChartSection extends StatelessWidget {
     this.showLabelSubtitle = false,
     required this.title,
     required this.child,
-    this.page,
+    this.pathName,
   });
 
   final String title;
   final Widget child;
   final bool showLabelSubtitle;
-  final Widget? page;
+  final String? pathName;
 
   @override
   Widget build(BuildContext context) {
@@ -279,9 +286,7 @@ class ChartSection extends StatelessWidget {
       sliver: SliverToBoxAdapter(
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTap:
-              () =>
-                  context.nav.push(MaterialPageRoute(builder: (context) => page ?? Placeholder())),
+          onTap: () => pathName != null ? context.push(pathName!, extra: context.chartMod) : null,
           child: Column(
             spacing: 12,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -404,7 +409,11 @@ class CategoryBreakdownChart extends StatelessWidget {
                           flex: 2,
                           fit: FlexFit.tight,
                           child: Text(
-                            context.chartMod.currencyFormat(e.value.expense!, abbreviated: true),
+                            context.chartMod.currencyFormat(
+                              e.value.expense!,
+                              abbreviated: true,
+                              compact: true,
+                            ),
                             style: context.tt.bodyMedium!.copyWith(
                               fontSize: 12,
                               color: context.cs.primary,
@@ -510,8 +519,8 @@ class CategoryBreakdownChart extends StatelessWidget {
 //   }
 // }
 
-class DayToDayBarChart extends StatelessWidget {
-  const DayToDayBarChart({
+class DailyBarChart extends StatelessWidget {
+  const DailyBarChart({
     super.key,
     this.titleData,
   });
@@ -578,6 +587,146 @@ class DayToDayBarChart extends StatelessWidget {
                           );
                         },
                       ).toList(),
+                );
+              }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class SummaryData extends StatelessWidget {
+  const SummaryData({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = context.select((ChartViewModel state) => state.balanceOverview);
+    return Container(
+      height: 200,
+      padding: EdgeInsets.only(bottom: 8),
+      child: BarChart(
+        BarChartData(
+          maxY: context.chartMod.chartMax,
+          alignment: BarChartAlignment.spaceAround,
+          gridData: customGrid,
+          extraLinesData: ExtraLinesData(
+            horizontalLines: [
+              HorizontalLine(y: 0, color: context.customCs.fadeColor2, dashArray: [2, 5]),
+            ],
+          ),
+          barTouchData: BarTouchData(
+            enabled: false,
+            touchTooltipData: BarTouchTooltipData(
+              tooltipPadding: EdgeInsets.only(top: 20),
+              direction: TooltipDirection.top,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final int largerIndex =
+                    group.barRods.first.toY.abs() > group.barRods.last.toY.abs() ? 0 : 1;
+                final curValue = group.barRods.last.toY;
+                final prevValue = group.barRods.first.toY;
+                final diff =
+                    (groupIndex == 0 ? -1 : 1) * ((curValue - prevValue) / prevValue.abs());
+                final largerBetter = groupIndex != 0;
+                final isGood = (largerBetter && diff >= 0) || (!largerBetter && diff < 0);
+                final color =
+                    (diff.isInfinite || diff.isNaN)
+                        ? context.customCs.fadeColor1
+                        : isGood
+                        ? Colors.green.shade400
+                        : Colors.red.shade400;
+                final label = switch (groupIndex) {
+                  0 => "Expense",
+                  1 => "Income",
+                  2 => "Balance",
+                  _ => "",
+                };
+
+                String padText(String text, {int padding = 5}) {
+                  return largerIndex == 0
+                      ? text.padLeft(text.length + padding)
+                      : "${text.padRight(text.length + padding)}\u200B";
+                }
+
+                String padRightTextSpan(String text, {int padding = 5}) {
+                  return largerIndex == 0 ? text : "${text.padRight(text.length + padding)}\u200B";
+                }
+
+                String padLeftTextSpan(String text, {int padding = 5}) {
+                  return largerIndex == 0 ? text.padLeft(text.length + padding) : text;
+                }
+
+                return BarTooltipItem(
+                  "${padText(label)}\n",
+                  context.customTt.paragraphTitle!.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight(700),
+                    color: color,
+                  ),
+                  textAlign: TextAlign.center,
+                  children: [
+                    TextSpan(
+                      text: padLeftTextSpan(
+                        (diff.isNaN || diff.isInfinite) ? "" : (diff >= 0 ? "▲ " : "▼ "),
+                      ),
+                      style: TextStyle(fontSize: 10),
+                    ),
+                    TextSpan(
+                      text: padRightTextSpan(
+                        (diff.isNaN || diff.isInfinite)
+                            ? "N/A"
+                            : diff.formatCompactPercentage().replaceAll("-", ""),
+                        padding: 4,
+                      ),
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
+                );
+              },
+              getTooltipColor: (group) {
+                return Colors.transparent;
+              },
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          titlesData: getCustomChartTitleData(
+            context: context,
+          ),
+          barGroups:
+              data.entries.mapIndexed((index, dataEntry) {
+                final int largerIndex =
+                    dataEntry.value.entries.first.value.abs() >
+                            dataEntry.value.entries.last.value.abs()
+                        ? 0
+                        : 1;
+                return BarChartGroupData(
+                  // groupVertically: true,
+                  barsSpace: 4,
+                  showingTooltipIndicators: [largerIndex],
+                  x: index,
+                  barRods:
+                      dataEntry.value.entries.map((entry) {
+                        return BarChartRodData(
+                          borderRadius: BorderRadius.circular(2),
+                          toY: entry.value,
+                          label: BarChartRodLabel(
+                            offset: Offset(entry.key == "current" ? 34 : -34, -16),
+                            text:
+                                entry.value != 0
+                                    ? context.chartMod.currencyFormat(
+                                      entry.value,
+                                      abbreviated: true,
+                                      compact: true,
+                                      alwaysShowSign: true,
+                                    )
+                                    : "",
+                            style: context.customTt.paragraphText!.copyWith(fontSize: 10),
+                          ),
+                          color:
+                              entry.key == "current"
+                                  ? context.cs.secondary
+                                  : Colors.blue.shade700.withAlpha(200),
+                        );
+                      }).toList(),
                 );
               }).toList(),
         ),
@@ -804,7 +953,6 @@ class ChartLegendItem extends StatelessWidget {
   }
 }
 
-
 class ChartTitleBar extends StatelessWidget {
   const ChartTitleBar({super.key, this.title, this.description});
 
@@ -951,8 +1099,16 @@ class NewCumulativeLineChart extends StatelessWidget {
                     },
                   ),
                   spots: [
-                    ...element.entries.mapIndexed(
-                      (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
+                    ...element.entries.map(
+                      (entry) {
+                        int index;
+                        if (showMonths) {
+                          index = entry.key.month - element.keys.first.month;
+                        } else {
+                          index = entry.key.difference(element.keys.first).inDays;
+                        }
+                        return FlSpot(index.toDouble(), entry.value);
+                      },
                     ),
                   ],
                 );
@@ -1015,8 +1171,16 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                 final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
                 return getCustomLineChartBarData(
                   spots: [
-                    ...element.entries.mapIndexed(
-                      (dateIndex, entry) => FlSpot(dateIndex.toDouble(), entry.value),
+                    ...element.entries.map(
+                      (entry) {
+                        int index;
+                        if (showMonths) {
+                          index = entry.key.month - element.keys.first.month;
+                        } else {
+                          index = entry.key.difference(element.keys.first).inDays;
+                        }
+                        return FlSpot(index.toDouble(), entry.value);
+                      },
                     ),
                   ],
                   color: mainColor,

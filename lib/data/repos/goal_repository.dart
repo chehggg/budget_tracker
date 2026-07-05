@@ -15,6 +15,9 @@ class GoalRepository {
     await loadGoals();
   }
 
+  final StreamController<bool> _controller = StreamController<bool>.broadcast();
+  Stream<bool> get streamValue => _controller.stream;
+
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
 
@@ -24,6 +27,7 @@ class GoalRepository {
   Future<void> addGoal(Goal goal) async {
     _goals.add(goal);
     await _localServices.writeGoalsFile(_goals);
+    _controller.add(true);
   }
 
   Future<void> loadGoals() async {
@@ -39,11 +43,13 @@ class GoalRepository {
   Future<void> deleteGoal(Goal deletedGoal) async {
     _goals.removeWhere((goal) => goal.id == deletedGoal.id);
     await _localServices.writeGoalsFile(_goals);
+    _controller.add(true);
   }
 
   Future<void> updateGoal(Goal updatedGoal) async {
     _goals.removeWhere((goal) => goal.id == updatedGoal.id);
     _goals.add(updatedGoal);
     await _localServices.writeGoalsFile(_goals);
+    _controller.add(true);
   }
 }

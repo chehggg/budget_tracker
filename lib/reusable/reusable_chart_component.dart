@@ -4,10 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-FlTitlesData getCustomChartTitleData({required BuildContext context, AxisTitles? bottomTitle}) =>
+FlTitlesData getCustomChartTitleData({required BuildContext context, AxisTitles? bottomTitle, AxisTitles? topTitle}) =>
     FlTitlesData(
       rightTitles: AxisTitles(drawBelowEverything: false),
-      topTitles: AxisTitles(drawBelowEverything: false),
+      topTitles: topTitle ?? AxisTitles(drawBelowEverything: false),
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           getTitlesWidget:

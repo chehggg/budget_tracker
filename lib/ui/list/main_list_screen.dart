@@ -5,7 +5,7 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/reusable/category_selection_screen.dart';
+import 'package:budget_tracker/languages.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
@@ -13,6 +13,7 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -256,7 +257,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
       return AppBar(
         scrolledUnderElevation: 0,
         actionsPadding: EdgeInsets.only(right: 10),
-        title: Text("OVERVIEW", style: context.customTt.dateLabel),
+        title: Text(AppLocale.overview.getString(context), style: context.customTt.dateLabel),
         actions: [
           IconButton(
             onPressed: () {
@@ -330,7 +331,7 @@ class DateBreadcrumb extends StatelessWidget {
               child: Center(
                 child: Text(
                   DateFormat(
-                    "yMMMM",
+                    "yMMMM", FlutterLocalization.instance.currentLocale.toString()
                   ).format(curMonth),
                   style: context.customTt.dateLabel!.copyWith(fontSize: 28),
                 ),
@@ -509,7 +510,7 @@ class CostEntryList extends StatelessWidget {
     final itemLength = context.select((ListViewModel state) => state.outputCostItems.length);
     // ignore: unused_local_variable
     final selectedItemLength = context.select((ListViewModel state) => state.selectedItems.length);
-
+    final locale = FlutterLocalization.instance.currentLocale;
     if (groupedCostItems.isEmpty) {
       return SliverToBoxAdapter(
         child: SizedBox(
@@ -531,7 +532,7 @@ class CostEntryList extends StatelessWidget {
             final DateTime date = groupedCostItems.keys.elementAt(index);
             final List<CostItem> costItems = groupedCostItems.values.elementAt(index);
 
-            final String dateString = date.formatPretty();
+            final String dateString = date.formatPretty(locale: locale);
             final double daySummary = dailySummary[date]!.balance;
 
             return Padding(
@@ -717,12 +718,12 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                 isBig
                     ? context.customTt.numberFontLarge!.copyWith(
                       height: 1.2,
-                      fontSize: lerpDouble(50, 30, progress),
+                      fontSize: lerpDouble(50, 36, progress),
                       color: context.customCs.onFlipCard,
                     )
                     : context.customTt.numberFontSmall!.copyWith(
                       height: lerpDouble(1.2, 0.01, Interval(0.2, 0.8).transform(progress)),
-                      fontSize: lerpDouble(22, 12, progress),
+                      fontSize: lerpDouble(22, 1, progress),
                       color: context.customCs.onFlipCard,
                     ),
           ),
@@ -738,9 +739,9 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
       width: context.mq.size.width,
       color: context.cs.surface,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
             color: context.customCs.flipCardColor,
             borderRadius: BorderRadius.circular(12),
@@ -818,7 +819,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                 ),
                 clipBehavior: Clip.hardEdge,
                 child: AnimatedScale(
-                  scale: lerpDouble(1, 0.5, Interval(0.1, 1).transform(progress))!,
+                  scale: lerpDouble(1, 0.5, Interval(0, 1).transform(progress))!,
                   duration: Durations.short1,
                   child: Opacity(
                     opacity: lerpDouble(1, 0, Interval(0, 0.7).transform(progress))!,
@@ -837,10 +838,10 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 157;
+  double get maxExtent => 140;
 
   @override
-  double get minExtent => 105;
+  double get minExtent => 100;
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => true;
@@ -927,7 +928,7 @@ class _SummaryChartState extends State<SummaryChart> {
           PieChart(
             PieChartData(
               sectionsSpace: 0,
-              centerSpaceRadius: 38,
+              centerSpaceRadius: 36,
               startDegreeOffset: -90,
               centerSpaceColor: Colors.transparent,
               sections: [

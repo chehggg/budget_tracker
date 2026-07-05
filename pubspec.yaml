@@ -28,6 +28,7 @@ dependencies:
   google_fonts: ^8.1.0
   http: ^1.4.0
   intl: ^0.20.2
+  material_symbols_icons: ^4.2951.0
   math_expressions: ^3.1.0
   money2: ^6.3.0
   path: ^1.9.1
@@ -49,20 +50,30 @@ flutter:
   assets:
     - assets/images/
     - assets/currencies.json
+    - assets/i18n/
   fonts:
     - family: DMSerifDisplay
       fonts:
-        - asset: fonts/DMSerifDisplay-Regular.ttf
-        - asset: fonts/DMSerifDisplay-Italic.ttf
+        - asset: assets/fonts/DMSerifDisplay-Regular.ttf
+        - asset: assets/fonts/DMSerifDisplay-Italic.ttf
           style: italic
     - family: Inter
       fonts:
-        - asset: fonts/Inter-VariableFont.ttf
-        - asset: fonts/Inter-Italic-VariableFont.ttf
+        - asset: assets/fonts/Inter-VariableFont.ttf
+        - asset: assets/fonts/Inter-Italic-VariableFont.ttf
           style: italic
     - family: Oranienbaum
       fonts:
-        - asset: fonts/Oranienbaum-Regular.ttf
+        - asset: assets/fonts/Oranienbaum-Regular.ttf
+    - family: ZenAntique
+      fonts:
+        - asset: assets/fonts/ZenAntique-Regular.ttf
+    - family: ShipporiMincho
+      fonts:
+        - asset: assets/fonts/ShipporiMincho-Regular.ttf
+    - family: ZenKakuGothicNew
+      fonts:
+        - asset: assets/fonts/ZenKakuGothicNew-Regular.ttf
 
 # dependency_overrides:
 #   intl: any

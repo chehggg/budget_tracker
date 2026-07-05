@@ -1,10 +1,12 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
+import 'package:budget_tracker/languages.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:money2/money2.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("SETTINGS"),
+        title: Text(AppLocale.settings.getString(context)),
       ),
       body: SafeArea(
         child: Padding(
@@ -92,7 +94,9 @@ class SettingsList extends StatelessWidget {
                     (SettingsViewModel state) => state.displayedCurrency,
                   ),
                 ),
-                const RecurringCostSettingsTile(),
+                CurrencyAdditionalSettingsTile(),
+                KeyboardSettingsTile(),
+                ChangeLanguageSettingsTile(),
                 // const BudgetSettingsTile(),
                 // Divider(),
                 // const SettingsSectionTitle(text: "Theme"),
@@ -102,12 +106,12 @@ class SettingsList extends StatelessWidget {
                 // const FormGridColumnItemSettingsTile(),
                 // const FontSizeSettingsTile(),
                 const SettingsDivider(),
-                const SettingsSectionTitle(text: "Data"),
+                SettingsSectionTitle(text: AppLocale.data.getString(context)),
                 const ExportDataSettingsTile(),
                 const LoadDataSettingsTile(),
                 const ClearDataSettingsTile(),
                 const SettingsDivider(),
-                const SettingsSectionTitle(text: "About Nomi"),
+                SettingsSectionTitle(text: AppLocale.aboutTitle.getString(context)),
                 const AboutSettingsTile(),
                 const ReportBugSettingsTile(),
                 const SupportMeSettingsTile(),
@@ -171,7 +175,17 @@ class ReportBugSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
-      title: "Report issue",
+      titleWidget: Row(
+        spacing: 4,
+        children: [
+          Text("Report issue"),
+          Icon(
+            Icons.open_in_new,
+            size: 16,
+          ),
+        ],
+      ),
+      // title: "Report issue",
       onTap: () async {
         await launchUrlString("https://github.com/chehggg/budget_tracker/issues/new");
       },
@@ -186,6 +200,10 @@ class SupportMeSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       title: "Support Me",
+      titleWidget: Row(
+        spacing: 4,
+        children: [Text("Support Me"), Icon(Icons.open_in_new, size: 16)],
+      ),
       onTap: () async {
         await launchUrlString("https://github.com/chehggg/");
       },
@@ -308,17 +326,17 @@ class VisualDensitySettingsTile extends StatelessWidget {
   }
 }
 
-class RecurringCostSettingsTile extends StatelessWidget {
-  const RecurringCostSettingsTile({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return CustomSettingsTile(
-      trailingWidget: SizedBox.shrink(),
-      title: "Add Recurring Item",
-      onTap: () => Navigator.of(context).pushNamed('/recurring'),
-    );
-  }
-}
+// class RecurringCostSettingsTile extends StatelessWidget {
+//   const RecurringCostSettingsTile({super.key});
+//   @override
+//   Widget build(BuildContext context) {
+//     return CustomSettingsTile(
+//       trailingWidget: SizedBox.shrink(),
+//       title: "Add Recurring Item",
+//       onTap: () => Navigator.of(context).pushNamed('/recurring'),
+//     );
+//   }
+// }
 
 class BudgetSettingsTile extends StatelessWidget {
   const BudgetSettingsTile({super.key});
@@ -992,12 +1010,12 @@ class ClearDataSettingsTile extends StatelessWidget {
                                 TextButton(
                                   onPressed: () async {
                                     // await context.read<AppModel>().clearCostItem();
-                                    if (context.mounted) {
-                                      Navigator.pop(context);
-                                      context
-                                          .read<NavigatorModel>()
-                                          .popBackToMainScreenAndRefresh();
-                                    }
+                                    // if (context.mounted) {
+                                    //   Navigator.pop(context);
+                                    //   context
+                                    //       .read<NavigatorModel>()
+                                    //       .popBackToMainScreenAndRefresh();
+                                    // }
                                   },
                                   child: Text("Confirm"),
                                 ),
@@ -1051,6 +1069,53 @@ class DialogListTile extends StatelessWidget {
       trailing: trailing,
       leading: leading,
       onTap: onTap,
+    );
+  }
+}
+
+class CurrencyAdditionalSettingsTile extends StatelessWidget {
+  const CurrencyAdditionalSettingsTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSettingsTile(
+      title: "Additional Currency Settings",
+      onTap: () {
+        context.push("/settings/currency-setting");
+      },
+    );
+  }
+}
+
+class KeyboardSettingsTile extends StatelessWidget {
+  const KeyboardSettingsTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSettingsTile(
+      title: "Keyboard Settings",
+      onTap: () {},
+    );
+  }
+}
+
+class ChangeLanguageSettingsTile extends StatelessWidget {
+  const ChangeLanguageSettingsTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSettingsTile(
+      title: AppLocale.changeLanguage.getString(context),
+      trailingWidget: Text(AppLocale.title.getString(context), style: context.tt.bodyMedium),
+      onTap: () {
+        final FlutterLocalization localization = FlutterLocalization.instance;
+        if (localization.currentLocale?.languageCode == "en") {
+          localization.translate('ja');
+        } else {
+          localization.translate('en');
+        }
+        ;
+      },
     );
   }
 }

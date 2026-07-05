@@ -26,7 +26,13 @@ extension DayExtension on DateTime {
   /// format datetime in "MMMM yyyy" format
   String formatMonthLonger() => DateFormat('MMMM yyyy').format(this); 
   /// format datetime in "E, d MMM" format
-  String formatPretty() => DateFormat('E, d MMM').format(this);
+  String formatPretty({Locale? locale}) {
+    if (locale?.languageCode == "ja") {
+      return DateFormat('MMMd日 (E)', locale.toString()).format(this);
+    }
+    return DateFormat('E, d MMM', locale.toString()).format(this);
+  } 
+  // String formatPretty({Locale? locale}) => DateFormat('E, d MMM', locale.toString()).format(this); 
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
   DateTime toEOM(int addMonth) => DateTime(year, month + addMonth + 1, 0);
@@ -93,6 +99,9 @@ extension DoubleExtension on double {
 
   String formatCompactPercentage() {
     return NumberFormat.percentPattern().format(this);
+  }
+  String formatSignedCompactPercentage() {
+    return NumberFormat('+#0%;-#0%').format(this);
   }
 
   String formatDecimalPercentage() {

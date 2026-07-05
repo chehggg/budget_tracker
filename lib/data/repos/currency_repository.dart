@@ -83,8 +83,8 @@ class CurrencyRepository {
     return Currencies().find(code) ?? CommonCurrencies().usd;
   }
 
-  void updateRecentlyUsedCurrencies(Currency currency) {
-    final index = _recentlyUsedCurrencies.indexWhere((el) => el.isoCode == currency.isoCode);
+  Future<void> updateRecentlyUsedCurrencies(Currency currency) async {
+    final index = _recentlyUsedCurrencies.indexWhere((el) => el.name == currency.name);
 
     if (index != -1) {
       _recentlyUsedCurrencies.removeAt(index);
@@ -94,13 +94,14 @@ class CurrencyRepository {
     if (_recentlyUsedCurrencies.length > 10) {
       _recentlyUsedCurrencies.removeLast();
     }
+    await _localServices.writeRecentlyUsedCurrency(_recentlyUsedCurrencies);
   }
 
   Future<void> changeCurrency(Currency newCurrency) async {
     _currency = newCurrency;
     await _localServices.writeCurrency(_currency);
     updateRecentlyUsedCurrencies(_currency);
-    
+
     _currencyController.add(_currency);
   }
 
@@ -120,6 +121,7 @@ class CurrencyRepository {
     double value, {
     bool abbreviated = false,
     bool alwaysShowSign = false,
+    bool showSymbol = true,
     bool compact = false,
     int? decimalDigits,
   }) {
@@ -157,8 +159,32 @@ class CurrencyRepository {
         '0.${List.filled(decimalDigits, '0').join()}',
       );
     }
+    if (!showSymbol) {
+      pattern = pattern.replaceAll(r"S", "");
+    }
     final money = Money.fromNumWithCurrency(transformedValue, _currency);
 
     return money.format(pattern);
+  }
+
+  Future<void> updateCurrencyFormat(Currency newCurrency) async {
+    _currency = Currency.create(
+      _currency.isoCode.contains("- C") ? _currency.isoCode : "${_currency.isoCode} - C",
+      newCurrency.decimalDigits,
+      pattern: newCurrency.pattern,
+      symbol: newCurrency.symbol,
+      groupSeparator: newCurrency.groupSeparator,
+      decimalSeparator: newCurrency.decimalSeparator,
+      name: _currency.name.contains("Custom") ? currency.name : "${currency.name} (Custom)",
+    );
+    Currencies().register(_currency);
+    await updateRecentlyUsedCurrencies(_currency);
+    await _localServices.writeCurrency(_currency);
+    _currencyController.add(_currency);
+  }
+
+  Future<void> clearRecentlyUsedCurrency() async {
+    _recentlyUsedCurrencies = [];
+    await _localServices.writeRecentlyUsedCurrency(_recentlyUsedCurrencies);
   }
 }

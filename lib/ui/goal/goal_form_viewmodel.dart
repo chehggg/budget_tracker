@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
@@ -9,20 +11,20 @@ import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-class GoalFormViewmodel extends ChangeNotifier {
-  GoalFormViewmodel({
-    required GoalRepository goalRepository,
+class GoalFormViewModel extends ChangeNotifier {
+  GoalFormViewModel({
+    required GoalRepository goalRepo,
     required CategoryRepository categoryRepo,
     Goal? initGoal,
     GoalCategory? goalCategory,
   }) : _initGoal = initGoal,
-       _goalRepository = goalRepository,
+       _goalRepo = goalRepo,
        _categoryRepo = categoryRepo,
        _goalCategory = goalCategory {
     init();
   }
 
-  final GoalRepository _goalRepository;
+  final GoalRepository _goalRepo;
   final CategoryRepository _categoryRepo;
   final Goal? _initGoal;
   final GoalCategory? _goalCategory;
@@ -51,12 +53,18 @@ class GoalFormViewmodel extends ChangeNotifier {
       text: _draftedGoal.endDate?.formatMonthLonger(),
     );
 
-    await _goalRepository.ready;
+    _subscription = _goalRepo.streamValue.listen((_) {
+      notifyListeners();
+    });
+
+    await _goalRepo.ready;
     await _categoryRepo.ready;
 
     _isInitialized = true;
     notifyListeners();
   }
+
+  StreamSubscription<bool>? _subscription;
 
   TextEditingController _startDateController = TextEditingController();
   TextEditingController get startDateController => _startDateController;
@@ -127,8 +135,8 @@ class GoalFormViewmodel extends ChangeNotifier {
     }
   }
 
-  void updateCategories(List<CostItemCategory> newCategories) {
-    _draftedGoal = _draftedGoal.copyWith(categories: newCategories.map((cat) => cat.id!).toList());
+  void updateCategories(List<CostItemCategory>? newCategories) {
+    _draftedGoal = _draftedGoal.copyWith(categories: newCategories?.map((cat) => cat.id!).toList());
     notifyListeners();
   }
 
@@ -139,21 +147,21 @@ class GoalFormViewmodel extends ChangeNotifier {
 
   Future<void> submitGoal() async {
     _draftedGoal = _draftedGoal.copyWith(
-      lastCreated: DateTime.now(),
-      lastModified: isEditMode ? DateTime.now() : null,
+      lastCreated: isEditMode ? null : DateTime.now(),
+      lastModified: DateTime.now(),
     );
     return isEditMode
-        ? await _goalRepository.addGoal(_draftedGoal)
-        : await _goalRepository.updateGoal(_draftedGoal);
+        ? await _goalRepo.updateGoal(_draftedGoal)
+        : await _goalRepo.addGoal(_draftedGoal);
   }
 
   Future<void> deleteGoal() async {
-    await _goalRepository.deleteGoal(_draftedGoal);
+    await _goalRepo.deleteGoal(_draftedGoal);
   }
 
   Future<void> updateGoal() async {
     _draftedGoal = _draftedGoal.copyWith(lastModified: DateTime.now());
-    await _goalRepository.updateGoal(_draftedGoal);
+    await _goalRepo.updateGoal(_draftedGoal);
   }
 
   String? validateForm() {
@@ -180,5 +188,11 @@ class GoalFormViewmodel extends ChangeNotifier {
     notifyListeners();
     // _endDate = newDate;
     // notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _subscription?.cancel();
   }
 }

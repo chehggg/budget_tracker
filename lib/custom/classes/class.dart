@@ -26,7 +26,6 @@ class CostItem {
   final DateTime? lastCreated;
   final DateTime? lastModified;
 
-
   // create cost item into json
   Map<String, dynamic> toJson() => {
     'uuid': uuid,
@@ -102,7 +101,6 @@ class CostItem {
     );
   }
 }
-
 
 class NoteHistory {
   const NoteHistory({required this.categoryName, required this.note});
@@ -189,6 +187,15 @@ class CostMetric {
 
     return CostMetric(expense: expense, income: income);
   }
+
+  CostMetric combineWith(CostMetric otherMetric) {
+    return CostMetric(
+      expense: (this.expense ?? 0) + (otherMetric.expense ?? 0),
+      income: (this.income ?? 0) + (otherMetric.income ?? 0),
+    );
+  }
+
+  bool get isEmpty => income == 0 && expense == 0; 
 }
 
 class StringFilter {

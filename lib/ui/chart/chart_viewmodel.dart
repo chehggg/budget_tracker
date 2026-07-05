@@ -40,9 +40,9 @@ class ChartViewModel extends ChangeNotifier {
 
     getInitValue();
 
-    _periodStart = _sharedRepo.displayDate; 
-    
-    _subscription = _costItemRepo.valueStream.listen((value) {
+    _periodStart = _sharedRepo.displayDate;
+
+    _itemSubscription = _costItemRepo.valueStream.listen((value) {
       // debugPrint('stream updated');
       // debugPrint(
       //   'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
@@ -53,6 +53,7 @@ class ChartViewModel extends ChangeNotifier {
       // _monthSummary = _costItemRepo.monthSummary;
       notifyListeners();
     });
+    _categorySubscription = _categoryRepo.categoryStream.listen((value) => notifyListeners());
 
     _isInitalized = true;
 
@@ -60,7 +61,8 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   void getInitValue() {
-    _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
+    // _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
+    _costItems = _costItemRepo.costItems.toList();
     _daySummary = _costItemRepo.daySummary;
     _monthSummary = _costItemRepo.monthSummary;
   }
@@ -80,7 +82,8 @@ class ChartViewModel extends ChangeNotifier {
   DateTime _periodStart = DateTime.now().standard;
 
   // ignore: unused_field
-  StreamSubscription<CostItemRepoDataStream>? _subscription;
+  StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
+  StreamSubscription<List<CostItemCategory>>? _categorySubscription;
 
   List<CostItem> _costItems = [];
   Map<DateTime, CostMetric> _daySummary = {};
@@ -99,6 +102,19 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
+  String get prevDisplayPeriod {
+    switch (_period) {
+      case ChartPeriod.month:
+        return DateFormat('MMMM yyyy').format(_prevRange.start);
+      case ChartPeriod.week:
+        return "${_curRange.end.year}, Week ${_prevRange.start.weekNumber}";
+      case ChartPeriod.year:
+        return DateFormat('yyyy').format(_prevRange.start);
+      case ChartPeriod.custom:
+        return "Custom";
+    }
+  }
+
   String get displayDetailsPeriodDuration {
     return '${DateFormat("dd MMM yyyy").format(_curRange.start)} - ${DateFormat("dd MMM yyyy").format(_curRange.end)}';
   }
@@ -108,7 +124,7 @@ class ChartViewModel extends ChangeNotifier {
 
   DateTimeRange _curRange = DateTimeRange(
     start: DateTime.now().startOfMonth,
-    end: DateTime.now().standard,
+    end: DateTime.now().endOfMonth,
   );
   DateTime get rangeStart => _curRange.start;
   DateTime get rangeEnd => _curRange.end;
@@ -150,6 +166,7 @@ class ChartViewModel extends ChangeNotifier {
     bool curRange = true,
     bool simplified = false,
   }) {
+    debugPrint("get category summary called");
     final items = getItemsGroupedByCategory(curRange: curRange);
     Map<CostItemCategory, CostMetric> result = items.map(
       (id, list) => MapEntry(id, CostMetric.fromCostItemList(list)),
@@ -178,6 +195,43 @@ class ChartViewModel extends ChangeNotifier {
       getCategorySummary(curRange: true, simplified: true);
   Map<CostItemCategory, CostMetric> get _prevRangeCategorySummary =>
       getCategorySummary(curRange: false, simplified: false);
+
+  List<CostItemCategory>? _hiddenCategories;
+  List<CostItemCategory>? get hiddenCategories => _hiddenCategories;
+
+  Map<CostItemCategory, CostMetric> get filteredCurRangeCategorySummary {
+    final filteredEntries = curRangeCategorySummary.entries.where((entry) {
+      if (_hiddenCategories == null) return true;
+      return !_hiddenCategories!.contains(entry.key);
+    });
+    return Map.fromEntries(filteredEntries);
+  }
+
+  void toggleHideCategory(CostItemCategory category) {
+    if (_hiddenCategories == null) {
+      _hiddenCategories = [category];
+    } else if (_hiddenCategories!.contains(category)) {
+      _hiddenCategories!.remove(category);
+      if (_hiddenCategories!.isEmpty) {
+        _hiddenCategories = null;
+      }
+    } else {
+      _hiddenCategories!.add(category);
+    }
+
+    notifyListeners();
+  }
+
+  CostMetric get filteredCurRangeSummary {
+    debugPrint("get filtered summary");
+    CostMetric base = CostMetric(expense: 0, income: 0);
+    return filteredCurRangeCategorySummary.entries.fold<CostMetric>(base, (
+      CostMetric metric,
+      MapEntry<CostItemCategory, CostMetric> entry,
+    ) {
+      return metric.combineWith(entry.value);
+    });
+  }
 
   Map<CostItemCategory, List<CostMetric>> get categoryComparison {
     final categories = {
@@ -241,15 +295,39 @@ class ChartViewModel extends ChangeNotifier {
     return result;
   }
 
-  Map<DateTime, double> calculateCumulative({bool isCurrent = true}) {
-    double total = 0;
-    List<MapEntry<DateTime, double>> result = [];
+  Map<DateTime, CostMetric> calculateCumulativeMetric({bool isCurrent = true}) {
+    CostMetric totalMetric = CostMetric();
+    List<MapEntry<DateTime, CostMetric>> result = [];
     final rangeMap = isCurrent ? curRangeOverview : prevRangeOverview;
     rangeMap.forEach((key, metric) {
-      total += (_type == CostType.expense ? (metric.expense ?? 0) : (metric.income ?? 0));
-      result.add(MapEntry(key, total));
+      totalMetric = totalMetric.combineWith(metric);
+      if (key.isAfter(DateTime.now().standard) && metric.isEmpty) {
+      } else {
+        result.add(MapEntry(key, totalMetric));
+      }
     });
     return Map.fromEntries(result);
+  }
+
+  Map<DateTime, double> calculateCumulative({bool isCurrent = true, CostType? type}) {
+    return calculateCumulativeMetric(isCurrent: isCurrent).map(
+      (key, value) => MapEntry(
+        key,
+        type == null
+            ? value.balance
+            : type == CostType.expense
+            ? value.expense ?? 0
+            : value.income ?? 0,
+      ),
+    );
+    // double total = 0;
+    // List<MapEntry<DateTime, double>> result = [];
+    // final rangeMap = isCurrent ? curRangeOverview : prevRangeOverview;
+    // rangeMap.forEach((key, metric) {
+    //   total += (_type == CostType.expense ? (metric.expense ?? 0) : (metric.income ?? 0));
+    //   result.add(MapEntry(key, total));
+    // });
+    // return Map.fromEntries(result);
   }
 
   Map<DateTime, double> calculateAverageCumulative({bool isCurrent = true}) {
@@ -263,14 +341,27 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   List<Map<DateTime, double>> get cumulativeComparison => [
-    calculateCumulative(isCurrent: false),
-    calculateCumulative(isCurrent: true),
+    calculateCumulative(isCurrent: false, type: CostType.expense),
+    calculateCumulative(isCurrent: true, type: CostType.expense),
   ];
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
     calculateAverageCumulative(isCurrent: false),
     calculateAverageCumulative(isCurrent: true),
   ];
+
+  CostMetric get prevRangeToDayCumulative {
+    final cumulative = calculateCumulativeMetric(isCurrent: false);
+    final index = cumulativeComparison.last.entries.toList().indexWhere(
+      (entry) => entry.key.isAtSameMomentAs(DateTime.now().standard),
+    );
+    if (index == -1) return cumulative.values.lastOrNull ?? CostMetric();
+    return cumulative.values.elementAt(index);
+  }
+
+  double get balancePercentageDifference {
+    return (curRangeSummary.balance - prevRangeToDayCumulative.balance) / (curRangeSummary.balance);
+  }
 
   double dailyRangePercentile(double percent) {
     return 0;
@@ -281,27 +372,34 @@ class ChartViewModel extends ChangeNotifier {
     // return maxValue * percent / 100;
   }
 
-  // void getCu
+  Map<String, Map<String, double>> get balanceOverview => {
+    "expense": {
+      "previous": (prevRangeToDayCumulative.expense ?? 0) * -1,
+      "current": (curRangeSummary.expense ?? 0) * -1,
+    },
+    "income": {
+      "previous": prevRangeToDayCumulative.income ?? 0,
+      "current": curRangeSummary.income ?? 0,
+    },
+    "balance": {
+      "previous": prevRangeToDayCumulative.balance,
+      "current": curRangeSummary.balance,
+    },
+  };
 
-  // void updateDateRange(DateRangeType rangeType) {
-  //   final now = DateTime.now();
-  //   _rangeType = rangeType;
-  //   switch (rangeType) {
-  //     case DateRangeType.thisMonth:
-  //       _curRange = DateTimeRange(start: now.startOfMonth, end: now.endOfMonth);
-  //     case DateRangeType.thisYear:
-  //       _curRange = DateTimeRange(start: now.startOfYear, end: now.endOfYear);
-  //     case DateRangeType.thisWeek:
-  //       _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
-  //     case DateRangeType.oneWeek:
-  //       _curRange = DateTimeRange(start: now.standard.addDay(-6), end: now.standard);
-  //     case DateRangeType.oneMonth:
-  //       _curRange = DateTimeRange(start: now.standard.addMonth(-1), end: now.standard);
-  //     case DateRangeType.oneYear:
-  //       _curRange = DateTimeRange(start: now.standard.addYear(-1), end: now.standard);
-  //     default:
-  //       return;
-  //   }
+  double get chartMax {
+    final maxIncome = [
+      curRangeSummary.income ?? 0,
+      prevRangeToDayCumulative.income ?? 0,
+      curRangeSummary.expense ?? 0,
+      prevRangeToDayCumulative.expense ?? 0,
+    ].fold(0.0, (prev, value) => max(prev, value));
+
+    return maxIncome * 1.6;
+  }
+
+  // double get chartMin {
+  //   return [curRangeSummary.expense ?? 0, prevRangeToDayCumulative.expense ?? 0].fold(0.0, (prev, value) => max(prev,value)) * -1.2;
   // }
 
   void updatePeriod(ChartPeriod selectedPeriod) {
@@ -342,7 +440,7 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.custom:
         _periodStart = _periodStart.addYear(increase ? 1 : -1);
     }
-    
+
     _sharedRepo.updateDisplayDate(_periodStart);
     updatePeriod(_period);
   }

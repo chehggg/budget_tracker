@@ -1,10 +1,12 @@
 import 'package:another_flushbar/flushbar.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'dart:ui' as ui;
 
@@ -14,13 +16,17 @@ class CustomKeyboard extends StatefulWidget {
   const CustomKeyboard({
     super.key,
     required this.controller,
+    this.customButton = ".",
     required this.onDone,
     required this.selectedDate,
     required this.onDateTapped,
+    this.onTap,
   });
 
   final TextEditingController controller;
+  final String customButton;
   final void Function() onDone;
+  final void Function(KeyboardButtonType type, String value)? onTap;
   final DateTime selectedDate;
   final void Function() onDateTapped;
 
@@ -31,23 +37,26 @@ class CustomKeyboard extends StatefulWidget {
 class _CustomKeyboardState extends State<CustomKeyboard> {
   bool _isCalculating = false;
 
-  List<KeyboardButton> buttons(BuildContext context) => [
-    KeyboardButton(type: "num", value: "7"),
-    KeyboardButton(type: "num", value: "8"),
-    KeyboardButton(type: "num", value: "9"),
-    KeyboardButton(type: "date", value: Icons.date_range),
-    KeyboardButton(type: "num", value: "4"),
-    KeyboardButton(type: "num", value: "5"),
-    KeyboardButton(type: "num", value: "6"),
-    KeyboardButton(type: "num", value: "+"),
-    KeyboardButton(type: "num", value: "1"),
-    KeyboardButton(type: "num", value: "2"),
-    KeyboardButton(type: "num", value: "3"),
-    KeyboardButton(type: "num", value: "-"),
-    KeyboardButton(type: "num", value: "."),
-    KeyboardButton(type: "num", value: "0"),
-    KeyboardButton(type: "delete", value: Icons.backspace_rounded),
-    KeyboardButton(type: "done", value: _isCalculating ? Icons.calculate : Icons.check),
+  List<KeyboardButton> get buttons => [
+    KeyboardButton(type: KeyboardButtonType.char, value: "1"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "2"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "3"),
+    KeyboardButton(type: KeyboardButtonType.date, widget: Icon(Icons.date_range)),
+    KeyboardButton(type: KeyboardButtonType.char, value: "4"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "5"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "6"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "+"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "7"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "8"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "9"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "-"),
+    KeyboardButton(type: KeyboardButtonType.char, value: widget.customButton),
+    KeyboardButton(type: KeyboardButtonType.char, value: "0"),
+    KeyboardButton(type: KeyboardButtonType.delete, widget: Icon(Icons.backspace_rounded)),
+    KeyboardButton(
+      type: KeyboardButtonType.done,
+      widget: Icon(_isCalculating ? Symbols.equal : Icons.check),
+    ),
   ];
 
   Widget customTextButton(String text, BuildContext context) {
@@ -70,11 +79,41 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
     );
   }
 
-  void updateText(String newText) {
+  void updateText(String input) {
+    // final newText = "${widget.controller.text}$input".replaceAll(r',', '');
+    // if (input == "+" || input == "-") {
+    //   widget.controller.value = widget.controller.value.copyWith(
+    //     text: '${widget.controller.text}$input',
+    //   );
+    // }
+    // final latestText = newText.split(RegExp(r'[\+-]')).last;
+    // final formatted = [];
+    // for (final subStr in subStrings) {
+    //   RegExp(r'^\d+(\.\d+)?$').hasMatch(input);
+    // }
+    // if (newText.length > 4 && RegExp(r'\d{4}$').hasMatch(newText)) {}
+    // // if (!validateText(newText)) return;
     widget.controller.value = widget.controller.value.copyWith(
-      text: '${widget.controller.text}$newText',
+      text: '${widget.controller.text}$input',
     );
   }
+
+  // bool validateText(String text) {
+  //   bool validated = true;
+  //   if (text.contains(RegExp(r'[\+-]'))) {
+  //     // this is calculating
+  //     final substrings = text.split(RegExp(r'\+-'));
+  //     for (String substr in substrings) {
+  //       if (substr.isEmpty) continue;
+  //       final regex = RegExp(r'^\d{1,3}(,\d{3})*(\.\d{,4})?$');
+  //       if (!regex.hasMatch(substr)) {
+  //         validated = false;
+  //         break;
+  //       }
+  //     }
+  //   }
+  //   return validated;
+  // }
 
   void deleteText() {
     if (widget.controller.text.isEmpty) return;
@@ -87,9 +126,9 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
   void calculateAmount() async {
     debugPrint("try to calculate");
     try {
-      final Parser p = Parser();
+      final ShuntingYardParser p = ShuntingYardParser();
       Expression expression = p.parse(widget.controller.text);
-      double value = expression.evaluate(EvaluationType.REAL, ContextModel());
+      num value = RealEvaluator().evaluate(expression);
 
       widget.controller.value = widget.controller.value.copyWith(
         text: value.toStringAsFixed(value % 1 == 0 ? 0 : 2),
@@ -118,7 +157,7 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
   Widget build(BuildContext context) {
     widget.controller.addListener(checkCalculating);
     return Container(
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
+      decoration: BoxDecoration(color: context.cs.surface),
       // height: 230,
       width: context.mq.size.width,
       child: GridView(
@@ -131,18 +170,19 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
           // childAspectRatio: 1.5
         ),
         children:
-            buttons(context).map((KeyboardButton button) {
+            buttons.map((KeyboardButton button) {
               final Widget child;
               switch (button.type) {
-                case 'num':
+                case KeyboardButtonType.char:
+                  // child = button.display;
                   child = customTextButton(button.value as String, context);
-                case 'date':
+                case KeyboardButtonType.date:
                   child = Row(
                     mainAxisSize: MainAxisSize.min,
                     spacing: 4,
                     children: [
                       Icon(
-                        button.value,
+                        Icons.date_range,
                         color: context.cs.surface,
                         size: 18,
                       ),
@@ -155,15 +195,16 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
                     ],
                   );
                 default:
-                  child = Icon(button.value as IconData);
+                  child = button.display;
+                  // child = Icon(button.value as IconData);
               }
               return Container(
                 height: 20,
                 decoration: BoxDecoration(
                   color:
-                      button.type == "date"
+                      button.type == KeyboardButtonType.date
                           ? context.cs.primary
-                          : button.type == "done"
+                          : button.type == KeyboardButtonType.done
                           ? context.cs.secondary
                           : context.cs.primary.withAlpha(10),
                   borderRadius: BorderRadius.circular(12),
@@ -173,14 +214,15 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
                   child: InkWell(
                     customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     onTap: () {
+                      // widget.onTap?.call(button.type, button.value);
                       switch (button.type) {
-                        case 'num':
-                          updateText(button.value);
-                        case 'date':
+                        case KeyboardButtonType.char:
+                          updateText(button.value ?? "");
+                        case KeyboardButtonType.date:
                           widget.onDateTapped();
-                        case 'delete':
+                        case KeyboardButtonType.delete:
                           deleteText();
-                        case 'done':
+                        case KeyboardButtonType.done:
                           // if + and - is present, button switch to calculation mode
                           if (_isCalculating) {
                             calculateAmount();
@@ -215,10 +257,14 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
 }
 
 class KeyboardButton {
-  const KeyboardButton({required this.type, required this.value});
+  const KeyboardButton({required this.type, this.value, this.widget, this.textStyle});
 
-  final String type;
-  final dynamic value;
+  final KeyboardButtonType type;
+  final Widget? widget;
+  final String? value;
+  final TextStyle? textStyle;
+
+  Widget get display => widget ?? Text(value ?? "", style: textStyle);
 }
 
 class HideableText extends StatelessWidget {

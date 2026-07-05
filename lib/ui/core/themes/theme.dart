@@ -1,10 +1,30 @@
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
+class FontPairing {
+  FontPairing({required this.base, required this.parent});
+  final String base;
+  final String parent;
+}
 
-ThemeData get appTheme {
+FontPairing getFontPairingForLocale(Locale locale) {
+  switch (locale.languageCode) {
+    case 'en':
+      return FontPairing(base: 'Inter', parent: 'Oranienbaum');
+    case 'ja':
+      return FontPairing(base: 'ZenKakuGothicNew', parent: 'ShipporiMincho');
+    case 'zh':
+      return FontPairing(base: 'Inter', parent: 'ShipporiMincho');
+    default:
+      return FontPairing(base: 'Inter', parent: 'Oranienbaum');
+  }
+}
+
+ThemeData getAppTheme(Locale locale) {
   final brightness = Brightness.dark;
   final baseTheme = ThemeData(brightness: brightness);
+
+  final pairing = getFontPairingForLocale(locale);
 
   final customColorScheme = baseTheme.colorScheme.copyWith(
     surface: Color(0xff0A0A0C),
@@ -15,20 +35,33 @@ ThemeData get appTheme {
   );
 
   final customTextTheme = baseTheme.textTheme.copyWith(
-    bodySmall: TextStyle(fontFamily: 'Inter', color: Color(0xffF0EBE0).withAlpha(150)),
-    bodyMedium: TextStyle(fontFamily: 'Inter'),
+    bodySmall: TextStyle(
+      fontFamily: pairing.base,
+      color: Color(0xffF0EBE0).withAlpha(150),
+    ),
+    bodyMedium: TextStyle(fontFamily: pairing.base),
     // headline
     // titleSmall: TextStyle(fontFamily: 'Inter'),
-    bodyLarge: TextStyle(fontFamily: 'Oranienbaum', fontSize: 26, color: customColorScheme.primary),
-    labelSmall: TextStyle(fontFamily: 'Oranienbaum', fontWeight: FontWeight(600)),
+    bodyLarge: TextStyle(
+      fontFamily: pairing.parent,
+      fontSize: 26,
+      color: customColorScheme.primary,
+    ),
+    labelSmall: TextStyle(
+      fontFamily: pairing.parent,
+      fontWeight: FontWeight(600),
+    ),
     titleMedium: TextStyle(
-      fontFamily: 'Oranienbaum',
+      fontFamily: pairing.parent,
       color: customColorScheme.onSurface.withAlpha(200),
       fontSize: 18,
     ),
-    titleLarge: TextStyle(fontFamily: 'Oranienbaum'),
-    headlineMedium: TextStyle(fontFamily: 'Oranienbaum'),
-    titleSmall: TextStyle(fontFamily: 'Oranienbaum', color: customColorScheme.onSurface),
+    titleLarge: TextStyle(fontFamily: pairing.parent),
+    headlineMedium: TextStyle(fontFamily: pairing.parent),
+    titleSmall: TextStyle(
+      fontFamily: pairing.parent,
+      color: customColorScheme.onSurface,
+    ),
   );
 
   final MyTexts customTextExtension = MyTexts(
@@ -146,7 +179,7 @@ ThemeData get appTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
       ),
     ),
-    
+
     inputDecorationTheme: InputDecorationThemeData(
       filled: true,
       border: border,

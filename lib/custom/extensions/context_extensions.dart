@@ -12,6 +12,7 @@ import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
+import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -32,14 +33,15 @@ extension BuildContextExtension on BuildContext {
   ThemeModel get themeMod => read<ThemeModel>();
   ListViewModel get listMod => read<ListViewModel>();
   GoalViewModel get goalMod => read<GoalViewModel>();
-  GoalFormViewmodel get goalFormMod => read<GoalFormViewmodel>();
-  GoalInfoViewmodel get goalInfoMod => read<GoalInfoViewmodel>();
+  GoalFormViewModel get goalFormMod => read<GoalFormViewModel>();
+  GoalInfoViewModel get goalInfoMod => read<GoalInfoViewModel>();
   SettingsViewModel get settingMod => read<SettingsViewModel>();
   SavedItemViewModel get savedItemMod => read<SavedItemViewModel>();
   ChartViewModel get chartMod => read<ChartViewModel>();
   CurrencyViewModel get currencyMod => read<CurrencyViewModel>();
   ExRateViewModel get exRateMod => read<ExRateViewModel>();
   CategoryFormViewModel get catFormMod => read<CategoryFormViewModel>();
+  AdditionalCurrencySettingsViewModel get currencySetMod => read<AdditionalCurrencySettingsViewModel>();
 
   void showSuccessNotification({required String message, String? title}) {
     Flushbar(

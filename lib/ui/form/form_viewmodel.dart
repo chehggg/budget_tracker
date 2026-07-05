@@ -36,12 +36,13 @@ class FormViewModel extends ChangeNotifier {
 
   Future<void> init() async {
     _isLoaded = false;
+    _populateInitValue();
+
     await _categoryRepo.ready;
     await _costItemRepo.ready;
     await _savedItemRepo.ready;
     await _currencyRepo.ready;
 
-    _populateInitValue();
     _updateControllerValue();
 
     _descriptionController.addListener(() => updateName(_descriptionController.text));
@@ -135,7 +136,7 @@ class FormViewModel extends ChangeNotifier {
     _descriptionController.value = _descriptionController.value.copyWith(text: _draftedItem.name);
     if (_draftedItem.amount != null) {
       _amountController.value = _amountController.value.copyWith(
-        text: _draftedItem.amount!.formatRoundedString(),
+        text: _draftedItem.amount?.formatRoundedString(),
       );
     }
   }
@@ -186,6 +187,11 @@ class FormViewModel extends ChangeNotifier {
   void updateAmount(double newAmount) {
     _draftedItem = _draftedItem.copyWith(amount: newAmount);
     notifyListeners();
+  }
+
+  void updateAmountFromString(String amountText) {
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null) {}
   }
 
   void applyExchangedValue(double newAmount) {

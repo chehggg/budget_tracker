@@ -5,8 +5,6 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
-import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
-import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
@@ -21,8 +19,8 @@ class GoalDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goal = context.select((GoalInfoViewmodel state) => state.goal);
-    final ready = context.select((GoalInfoViewmodel state) => state.ready);
+    final goal = context.select((GoalInfoViewModel state) => state.goal);
+    final ready = context.select((GoalInfoViewModel state) => state.ready);
     return Scaffold(
       appBar: AppBar(
         title: Text("Goal Details"),
@@ -36,7 +34,9 @@ class GoalDetailsScreen extends StatelessWidget {
               if (response == null) return;
               if (response && context.mounted) {
                 await context.goalInfoMod.deleteGoal();
-                context.pop();
+                if (context.mounted) {
+                  context.pop();
+                }
                 // context.showSuccessNotification(message: "Goal is deleted");
               }
             },
@@ -44,21 +44,7 @@ class GoalDetailsScreen extends StatelessWidget {
           ),
           IconButton(
             onPressed: () {
-              context.nav.push(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return ChangeNotifierProvider(
-                      create:
-                          (context) => GoalFormViewmodel(
-                            categoryRepo: context.read(),
-                            goalRepository: context.read(),
-                            initGoal: goal,
-                          ),
-                      child: const GoalFormInfoScreen(),
-                    );
-                  },
-                ),
-              );
+              context.push('/goals/edit-goal', extra: goal);
             },
             icon: Icon(Icons.edit),
           ),
@@ -82,8 +68,8 @@ class GoalInfoBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goalProgress = context.select((GoalInfoViewmodel state) => state.pastProgress);
-    final curProgress = context.select((GoalInfoViewmodel state) => state.currentGoalProgress);
+    final goalProgress = context.select((GoalInfoViewModel state) => state.pastProgress);
+    final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
     final progress = curProgress.progress;
     final dividerPercentage = progress * 0.008;
     debugPrint('goal progress: ${goalProgress.length}');
@@ -301,8 +287,8 @@ class GoalInfoTitleContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goal = context.select((GoalInfoViewmodel state) => state.goal);
-    final curProgress = context.select((GoalInfoViewmodel state) => state.currentGoalProgress);
+    final goal = context.select((GoalInfoViewModel state) => state.goal);
+    final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
     return Container(
       // padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
       // padding: EdgeInsets.fromLTRB(0, 16, 0, 0),

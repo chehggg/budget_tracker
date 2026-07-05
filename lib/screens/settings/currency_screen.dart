@@ -36,6 +36,14 @@ class CurrencySelectionScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text("Select Currency"),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.currencyMod.clearRecentlyUsed();
+            },
+            icon: Icon(Icons.restore),
+          ),
+        ],
         // leading: BackButton(
         //   onPressed: context.navMod.pop,
         // ),
@@ -128,8 +136,8 @@ class CurrencySelectionBody extends StatelessWidget {
                             '/form/exchange',
                             extra: {
                               'base': currencyMod.selectedExchangeCurrency,
-                              'target': currencyMod.selectedCurrency
-                            }
+                              'target': currencyMod.selectedCurrency,
+                            },
                           );
                           if (value == null) return;
                           if (context.mounted) {

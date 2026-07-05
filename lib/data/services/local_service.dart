@@ -225,7 +225,7 @@ class LocalServices {
 
   Future<Result<void>> writeCurrency(Currency currency) async {
     try {
-      await _writeStringToSharedPref("currency", currency.isoCode);
+      await _writeStringToSharedPref("currency", jsonEncode(currency.toJson()));
       return Result.ok(null);
     } on Exception catch (e) {
       return Result.error(e);
@@ -234,9 +234,9 @@ class LocalServices {
 
   Future<Result<Currency?>> getCurrency() async {
     try {
-      final iso = await _loadSharedPref("currency");
-      if (iso != null) {
-        return Result.ok(Currencies().find(iso));
+      final jsonString = await _loadSharedPref("currency");
+      if (jsonString != null) {
+        return Result.ok(Currency.fromJson(jsonDecode(jsonString)));
       } else {
         return Result.ok(null);
       }
@@ -261,7 +261,7 @@ class LocalServices {
     try {
       final result = await _loadSharedPref("recentCurrencies");
       if (result != null) {
-        return Result.ok(result.split(",").map((isoCode) => Currencies().find(isoCode)!).toList());
+        return Result.ok(result.split(",").map((isoCode) => Currencies().find(isoCode)?? CommonCurrencies().usd).toList());
       } else {
         return Result.ok(null);
       }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
@@ -7,8 +9,8 @@ import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:flutter/material.dart';
 
-class GoalInfoViewmodel extends ChangeNotifier {
-  GoalInfoViewmodel({
+class GoalInfoViewModel extends ChangeNotifier {
+  GoalInfoViewModel({
     required CostItemRepository costItemRepo,
     required GoalRepository goalRepos,
     required CategoryRepository categoryRepo,
@@ -37,8 +39,14 @@ class GoalInfoViewmodel extends ChangeNotifier {
         )!;
     _isInit = true;
 
+    _subscription = _goalRepo.streamValue.listen((_) {
+      notifyListeners();
+    });
+
     notifyListeners();
   }
+
+  StreamSubscription<bool>? _subscription;
 
   final int dayinCurrentMonth = DateTime.now().dayinCurrentMonth;
 
@@ -78,8 +86,11 @@ class GoalInfoViewmodel extends ChangeNotifier {
   int get dataCount =>
       _goal.goalTracking == GoalTrackingPeriod.monthly ? DateTime.now().dayinCurrentMonth : 49;
 
-  String get displayDayTitle => goal.goalTracking == GoalTrackingPeriod.monthly ? chartStartDate.formatMonthLonger() : "Last 7 weeks"; 
-  
+  String get displayDayTitle =>
+      goal.goalTracking == GoalTrackingPeriod.monthly
+          ? chartStartDate.formatMonthLonger()
+          : "Last 7 weeks";
+
   Map<DateTime, CostMetric?> get dailyData => Map.fromEntries(
     List.generate(
       dataCount,
@@ -147,14 +158,20 @@ class GoalInfoViewmodel extends ChangeNotifier {
     "Period":
         "${_goal.startDate!.formatMonthLonger()} - ${_goal.endDate?.formatMonthLonger() ?? "cont."}",
     "Target": _goal.target!.formatRoundedString(),
-    "Categories":
-        _goal.categories?.length.toString() ?? "All",
-    "Filter": _goal.filter == null ? 'NA' : '${_goal.filter?.matchType.name} ${_goal.filter?.query}',
+    "Categories": _goal.categories?.length.toString() ?? "All",
+    "Filter":
+        _goal.filter == null ? 'NA' : '${_goal.filter?.matchType.name} ${_goal.filter?.query}',
     "Created": _goal.lastCreated!.formatShort(),
-    "Last Modified": _goal.lastModified!.formatShort(),
+    "Last Modified": _goal.lastModified?.formatShort() ?? "",
   };
 
   Future<void> deleteGoal() async {
     await _goalRepo.deleteGoal(_goal);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _subscription?.cancel();
   }
 }

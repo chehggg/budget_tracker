@@ -16,15 +16,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class GoalTypeSelectionScreenState extends StatelessWidget {
-  const GoalTypeSelectionScreenState({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const GoalTypeSelectionScreen();
-  }
-}
-
 class GoalTypeSelectionScreen extends StatefulWidget {
   const GoalTypeSelectionScreen({super.key});
 
@@ -100,7 +91,8 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ReusableContainer(
-                    onTap: () => context.push('/goals/form', extra: category),
+                    onTap: () => context.go('/goals/new-goal-detail', extra: category),
+                    // onTap: () => context.go('/'),
                     padding: EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -145,7 +137,7 @@ class GoalFormInfoScreen extends StatelessWidget {
                 context.showErrorNotification(message: error);
               } else {
                 await context.goalFormMod.submitGoal();
-                
+
                 if (context.mounted) {
                   context.go('/goals');
                 }
@@ -218,12 +210,12 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
 
   @override
   Widget build(BuildContext context) {
-    final draftedGoal = context.select((GoalFormViewmodel state) => state.draftGoal);
-    final endDateCheck = context.select((GoalFormViewmodel state) => state.isEndChecked);
+    final draftedGoal = context.select((GoalFormViewModel state) => state.draftGoal);
+    final endDateCheck = context.select((GoalFormViewModel state) => state.isEndChecked);
     final startDateController = context.select(
-      (GoalFormViewmodel state) => state.startDateController,
+      (GoalFormViewModel state) => state.startDateController,
     );
-    final endDateController = context.select((GoalFormViewmodel state) => state.endDateController);
+    final endDateController = context.select((GoalFormViewModel state) => state.endDateController);
 
     final mainSubtitle = switch (draftedGoal.goalType!) {
       GoalType.budget => "I want to keep my spend below",
@@ -428,17 +420,10 @@ class GoalFormStringFilterFile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initFilter = context.select((GoalFormViewmodel state) => state.draftedFilter);
+    final initFilter = context.select((GoalFormViewModel state) => state.draftedFilter);
     return InkWell(
       onTap: () async {
-        final StringFilter? response = await context.nav.push(
-          MaterialPageRoute(
-            builder:
-                (context) => TextSelectionScreen(
-                  initFilter: initFilter,
-                ),
-          ),
-        );
+        final StringFilter? response = await context.push('/goals/text-filter', extra: initFilter);
         if (response == null) return;
         context.goalFormMod.updateFilterString(response);
       },
@@ -476,21 +461,17 @@ class GoalFormCategoryFilterTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<CostItemCategory>? categories = context.select(
-      (GoalFormViewmodel state) => state.categories,
+      (GoalFormViewModel state) => state.categories,
     );
     return InkWell(
       onTap: () async {
-        final List<CostItemCategory>? response = await context.nav.push(
-          MaterialPageRoute(
-            builder:
-                (context) => CategorySelectionScreen(
-                  initSelection: categories,
-                  goalType: context.goalFormMod.draftGoal.goalType,
-                ),
-          ),
+        final List<CostItemCategory>? Function()? response = await context.push(
+          '/goals/category',
+          extra: categories,
         );
+
         if (response == null) return;
-        context.goalFormMod.updateCategories(response);
+        context.goalFormMod.updateCategories(response());
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -551,7 +532,7 @@ class GoalFormTrackingSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trackingPeriod = context.select(
-      (GoalFormViewmodel state) => state.draftGoal.goalTracking,
+      (GoalFormViewModel state) => state.draftGoal.goalTracking,
     );
     return RadioGroup<GoalTrackingPeriod>(
       groupValue: trackingPeriod,
@@ -970,11 +951,11 @@ class _DateDialogState extends State<DateDialog> {
       actions: [
         DismissTextButton(
           text: "Cancel",
-          onTap: context.nav.pop,
+          onTap: context.pop,
         ),
         AffirmativeTextButton(
           text: "Confirm",
-          onTap: () => context.nav.pop(selectedYearMonth),
+          onTap: () => context.pop(selectedYearMonth),
         ),
       ],
     );

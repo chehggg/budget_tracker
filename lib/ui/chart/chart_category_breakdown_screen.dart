@@ -17,9 +17,15 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayPeriodDuration = context.select(
+      (ChartViewModel state) => state.displayPeriodDuration,
+    );
+    final range = context.select(
+      (ChartViewModel state) => state.displayDetailsPeriodDuration,
+    );
     return Scaffold(
       appBar: AppBar(
-        title: Text('Category Breakdown'),
+        title: Text('Details'),
       ),
       body: SafeArea(
         child: GestureDetector(
@@ -32,15 +38,47 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
           },
           child: CustomScrollView(
             slivers: [
-              // SliverToBoxAdapter(
-              //   child: Padding(
-              //     padding: const EdgeInsets.only(left: 12.0, right: 12, top: 12),
-              //     child: const ChartFilterButtons(),
-              //   ),
-              // ),
+              SliverPadding(
+                padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 12),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    spacing: 12,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        "Category Breakdown",
+                        style: context.customTt.numberFontLarge?.copyWith(
+                          fontSize: 36,
+                          height: 1.2,
+                        ),
+                      ),
+                      Row(
+                        spacing: 12,
+                        children: [
+                          Text(
+                            "View: ${displayPeriodDuration}",
+                            style: context.customTt.paragraphTitle,
+                          ),
+                          Text(
+                            "(${range})",
+                            style: context.customTt.paragraphText,
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          "Change view",
+                          textAlign: TextAlign.left,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 40.0, bottom: 20),
+                  padding: const EdgeInsets.only(top: 20.0, bottom: 20),
                   child: SizedBox(
                     height: 220,
                     child: const CategoryPieChart(),
@@ -60,8 +98,8 @@ class CategoryPieChart extends StatelessWidget {
   const CategoryPieChart({super.key});
   @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartViewModel state) => state.curRangeCategorySummary);
-    final total = context.select((ChartViewModel state) => state.curRangeSummary);
+    final data = context.select((ChartViewModel state) => state.filteredCurRangeCategorySummary);
+    final total = context.select((ChartViewModel state) => state.filteredCurRangeSummary);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -182,11 +220,15 @@ class _CategoryTileState extends State<CategoryTile> {
   bool _expanded = false;
   @override
   Widget build(BuildContext context) {
+    final bool isHidden = context.select(
+      (ChartViewModel state) => state.hiddenCategories?.contains(widget.category) ?? false,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          key: ValueKey((widget.category.name ?? "") + context.chartMod.rangeStart.formatShort()),
           dense: true,
           onExpansionChanged:
               (value) => setState(() {
@@ -202,6 +244,7 @@ class _CategoryTileState extends State<CategoryTile> {
             children: [
               CategoryIconContainer(
                 category: widget.category,
+                fade: isHidden ? 0 : null,
                 size: 20,
               ),
               Expanded(
@@ -215,19 +258,40 @@ class _CategoryTileState extends State<CategoryTile> {
                       children: [
                         Text(
                           (widget.category.name ?? "").capitalize(),
-                          style: context.tt.bodyMedium!.copyWith(fontSize: 16),
+                          style: context.tt.bodyMedium!.copyWith(
+                            fontSize: 16,
+                            color: isHidden ? context.customCs.fadeColor1 : null,
+                          ),
                         ),
-                        Row(
-                          children: [
-                            Text(
-                              widget.value!.customCurrencyFormat("RM"),
-                              style: context.customTt.numberFontSmall,
-                            ),
-                            Icon(
-                              _expanded ? Icons.expand_less : Icons.expand_more,
-                              size: 20,
-                            ),
-                          ],
+                        SizedBox(
+                          height: 16,
+                          child: IconButton(
+                            iconSize: 14,
+                            padding: EdgeInsets.zero,
+                            splashColor: Colors.transparent,
+                            visualDensity: VisualDensity(vertical: -4),
+                            onPressed: () {
+                              context.chartMod.toggleHideCategory(widget.category);
+                            },
+                            icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility),
+                          ),
+                        ),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                widget.value!.customCurrencyFormat("RM"),
+                                style: context.customTt.numberFontSmall?.copyWith(
+                                  color: isHidden ? context.customCs.fadeColor1 : null,
+                                ),
+                              ),
+                              Icon(
+                                _expanded ? Icons.expand_less : Icons.expand_more,
+                                size: 20,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -243,7 +307,7 @@ class _CategoryTileState extends State<CategoryTile> {
                         widthFactor: min(widget.percentage, 1),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: widget.category.color,
+                            color: widget.category.color?.withAlpha(isHidden ? 50 : 255),
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),

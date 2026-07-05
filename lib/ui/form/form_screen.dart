@@ -51,29 +51,35 @@ class CostFormScreen extends StatelessWidget {
     final ready = context.select((FormViewModel state) => state.ready);
     final editMode = context.select((FormViewModel state) => state.editCategory);
     final selectedCategory = context.select((FormViewModel state) => state.selectedCategory);
+    final formGroup = context.select((FormViewModel state) => state.formGroup);
 
     return Scaffold(
       // resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
         actions: [
-          IconButton(
-            onPressed: () async {
-              final response = await context.push('/form/edit-category');
-            },
-            icon: Icon(Icons.add),
-          ),
-          IconButton(
-            onPressed: () async {
-              if (selectedCategory != null) {
-                final response = await context.push('/form/edit-category', extra: selectedCategory);
-                // context.formMod.toggleEditCategory(false);
-              } else if (selectedCategory == null) {
-                context.formMod.toggleEditCategory();
-              }
-            },
-            icon: Icon(editMode ? Icons.cancel : Icons.edit),
-          ),
+          if (formGroup != FormGroup.favorite)
+            IconButton(
+              onPressed: () async {
+                final response = await context.push('/form/edit-category');
+              },
+              icon: Icon(Icons.add),
+            ),
+          if (formGroup != FormGroup.favorite)
+            IconButton(
+              onPressed: () async {
+                if (selectedCategory != null) {
+                  final response = await context.push(
+                    '/form/edit-category',
+                    extra: selectedCategory,
+                  );
+                  // context.formMod.toggleEditCategory(false);
+                } else if (selectedCategory == null) {
+                  context.formMod.toggleEditCategory();
+                }
+              },
+              icon: Icon(editMode ? Icons.cancel : Icons.edit),
+            ),
         ],
       ),
       bottomSheet: const FormBottomSheet(),
@@ -152,8 +158,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
     CostItemCategory? selectedCategory = context.select((FormViewModel state) {
-      // debugPrint("selectedcategory: ${state.selectedCategory?.name}");
       return state.selectedCategory;
     });
 
@@ -168,15 +174,6 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
         debugPrint("called show postframe, formOpen = ${_isFormOpened}");
       });
     }
-    // else if (selectedCategory == null && _isFormOpened) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     setState(() {
-    //       // _isFormExpanded = false;
-    //       _isFormOpened = false;
-    //     });
-    //     debugPrint("called hide postframe, formOpen = ${_isFormOpened}");
-    //   });
-    // }
 
     String itemDesc = context.select((FormViewModel state) => state.draft.name ?? "");
     double? amount = context.select((FormViewModel state) => state.draft.amount);
@@ -280,7 +277,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                           onPressed: () async {
                             final response = await context.push<bool?>(
                               '/form/edit-saved-item',
-                              // arguments: context.formMod.draft,
+                              extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
                             );
                             if (response == null) return;
                             if (context.mounted) {
@@ -429,6 +426,12 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             context.go('/', extra: DateTime.now().millisecondsSinceEpoch);
                           }
                         },
+                        onTap: (KeyboardButtonType type, String value) {
+                          // if (type == KeyboardButtonType.char) {
+                          amountController.value = amountController.value.copyWith(text: value);
+                          // }
+                          return null;
+                        } ,
                         selectedDate: _selectedDate,
                         onDateTapped: selectDate,
                       ),
@@ -734,6 +737,7 @@ class SavedItemSelectionView extends StatelessWidget {
                           onPressed: () async {
                             final response = await context.push<bool?>(
                               '/form/edit-saved-item',
+                              extra: {'initSavedItem': item, 'initCostItem': null},
                               // arguments: item,
                             );
                             if (response == null) return;
