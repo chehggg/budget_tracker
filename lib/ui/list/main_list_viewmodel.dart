@@ -34,10 +34,8 @@ class ListViewModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
     await _currencyRepo.ready;
+    await _sharedRepo.ready;
 
-    // _curYearMonth = _sharedRepo.displayDate;
-
-    _isInitialized = true;
 
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
       debugPrint("subscription trigger refresh for cost items.");
@@ -51,13 +49,20 @@ class ListViewModel extends ChangeNotifier {
     });
 
     _categorySubscription = _categoryRepo.categoryStream.listen((value) {
-      // debugPrint("currency trigger refresh.");
       notifyListeners();
     });
 
+    _sharedElSubscription = _sharedRepo.sharedStream.listen((value) {
+      notifyListeners();
+    });
+
+    _isBlurred = displayConfig.hideAmountOnStart;
+
+    _isInitialized = true;
     notifyListeners();
   }
 
+  StreamSubscription<bool>? _sharedElSubscription;
   StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
   StreamSubscription<Currency>? _currencySubscription;
   StreamSubscription<List<CostItemCategory>>? _categorySubscription;
@@ -88,6 +93,10 @@ class ListViewModel extends ChangeNotifier {
       _filteredCategories != null ? UnmodifiableListView(_filteredCategories!) : null;
 
   String _searchText = "";
+
+  ListDisplayConfig get displayConfig => _sharedRepo.listScreenConfig;
+  
+  AccentColor get accentColors => _sharedRepo.accentColors;
 
   Map<DateTime, List<CostItem>> get outputCostItems {
     final sorted = curMonthGbDateCostItems.map(
@@ -132,6 +141,7 @@ class ListViewModel extends ChangeNotifier {
   }
 
   Map<DateTime, CostMetric> get monthlyOverview => _costItemRepo.monthSummary;
+
 
   Map<DateTime, List<CostItem>> get curMonthGbDateCostItems => Map.fromEntries(
     _costItemRepo.gbDateCostItems.entries
@@ -188,6 +198,7 @@ class ListViewModel extends ChangeNotifier {
     // debugPrint("category list: ${categories.length}");
     notifyListeners();
   }
+
 
   // void toggleCategoryFilter(String id, bool selected) {
   //   if (selected) {
@@ -246,4 +257,13 @@ class ListViewModel extends ChangeNotifier {
     int? decimalDigits,
   })
   get currencyFormat => _currencyRepo.formatCurrency;
+
+  @override
+  void dispose() {
+    _itemSubscription?.cancel();
+    _sharedElSubscription?.cancel();
+    _categorySubscription?.cancel();
+    _currencySubscription?.cancel();
+    super.dispose();
+  }
 }

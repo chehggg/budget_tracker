@@ -40,7 +40,7 @@ List<SingleChildWidget> get providers => [
         (context) => CurrencyRepository(localServices: context.read(), apiServices: context.read()),
   ),
   Provider(
-    create: (context) => SharedElementRepository(),
+    create: (context) => SharedElementRepository(localServices: context.read()),
   ),
   ChangeNotifierProvider<ThemeModel>(
     create: (context) => ThemeModel(),

@@ -33,13 +33,33 @@ enum GoalTrackingPeriod {
   final String description;
 
   const GoalTrackingPeriod(this.title, this.description);
-
 }
 
-enum ChartPeriod {
-  week, month, year, custom
+enum ChartPeriod { week, month, year, custom }
+
+enum KeyboardButtonType { char, delete, done, date }
+
+enum KeyboardLayout { simple, complex }
+
+enum SimpleKeyboardButtonType { decimal, doubleZero }
+
+enum NumberSeparator {
+  stop("."),
+  comma(","),
+  space(" ", applicableToDecimal: false),
+  underscore("_", applicableToDecimal: false);
+
+  final String symbol;
+  final bool applicableToDecimal;
+  final bool applicableToThousand;
+
+  const NumberSeparator(
+    this.symbol, {
+    this.applicableToDecimal = true,
+    this.applicableToThousand = true,
+  });
 }
 
-enum KeyboardButtonType {
-  char, delete, done, date
+enum SymbolPosition {
+  front,back,none
 }

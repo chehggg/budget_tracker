@@ -9,6 +9,7 @@ import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -19,11 +20,13 @@ class FormViewModel extends ChangeNotifier {
     required SavedItemRepository savedItemRepo,
     required CategoryRepository categoryRepo,
     required CurrencyRepository currencyRepo,
+    required SharedElementRepository sharedElRepo,
     CostItem? initCostItem,
   }) : _costItemRepo = costItemRepo,
        _savedItemRepo = savedItemRepo,
        _initCostItem = initCostItem,
        _currencyRepo = currencyRepo,
+       _sharedElRepo = sharedElRepo,
        _categoryRepo = categoryRepo {
     init();
   }
@@ -33,6 +36,7 @@ class FormViewModel extends ChangeNotifier {
   final SavedItemRepository _savedItemRepo;
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
+  final SharedElementRepository _sharedElRepo;
 
   Future<void> init() async {
     _isLoaded = false;
@@ -248,6 +252,13 @@ class FormViewModel extends ChangeNotifier {
     int? decimalDigits,
   })
   get currencyFormat => _currencyRepo.formatCurrency;
+
+  KeyboardLayout get layout => _sharedElRepo.keyboardLayout;
+  String get customButtonText =>
+      _sharedElRepo.keyboardLayout == KeyboardLayout.simple &&
+              _sharedElRepo.keyboardButton == SimpleKeyboardButtonType.doubleZero
+          ? "00"
+          : _currencyRepo.currency.decimalSeparator;
 
   @override
   void dispose() {

@@ -1,3 +1,4 @@
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:money2/money2.dart';
@@ -14,11 +15,11 @@ class AdditionalCurrencySettingsViewModel extends ChangeNotifier {
     await _currencyRepo.ready;
     _currency = _currencyRepo.currency;
     if (_currency.pattern.startsWith("S")) {
-      _symbolPosition = "Front";
+      _symbolPosition = SymbolPosition.front;
     } else if (_currency.pattern.endsWith("S")) {
-      _symbolPosition = "Back";
+      _symbolPosition = SymbolPosition.back;
     } else {
-      _symbolPosition = "None";
+      _symbolPosition = SymbolPosition.none;
     }
     _symbolSpace = _currency.pattern.contains(RegExp(r'S | S'));
 
@@ -29,8 +30,8 @@ class AdditionalCurrencySettingsViewModel extends ChangeNotifier {
   Currency _currency = CommonCurrencies().usd;
   Currency get currency => _currency;
 
-  String _symbolPosition = "None";
-  String get symbolPosition => _symbolPosition;
+  SymbolPosition _symbolPosition = SymbolPosition.front;
+  SymbolPosition get symbolPosition => _symbolPosition;
 
   bool _symbolSpace = false;
   bool get symbolSpace => _symbolSpace;
@@ -45,17 +46,27 @@ class AdditionalCurrencySettingsViewModel extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  void updateSeparator(String? separator, {bool isDecimal = false}) {
+  void updateSeparator(NumberSeparator? separator, {bool isDecimal = false}) {
     if (separator == null) return;
+    String switchSymbol(String symbol) {
+      return symbol == "." ? "," : ".";
+    }
+
     if (isDecimal) {
       _currency = _currency.copyWith(
-        decimalSeparator: separator,
-        groupSeparator: separator == "." ? "," : ".",
+        decimalSeparator: separator.symbol,
+        groupSeparator:
+            _currency.groupSeparator == separator.symbol
+                ? switchSymbol(separator.symbol)
+                : _currency.groupSeparator,
       );
     } else {
       _currency = _currency.copyWith(
-        groupSeparator: separator,
-        decimalSeparator: separator == "." ? "," : ".",
+        groupSeparator: separator.symbol,
+        decimalSeparator:
+            _currency.decimalSeparator == separator.symbol
+                ? switchSymbol(separator.symbol)
+                : _currency.decimalSeparator,
       );
     }
     _currencyRepo.updateCurrencyFormat(_currency);
@@ -83,13 +94,13 @@ class AdditionalCurrencySettingsViewModel extends ChangeNotifier {
       _currency = _currency.copyWith(
         pattern: _currency.pattern.replaceAll(
           'S',
-          _symbolPosition == "Front" ? spaceBehind : spaceFront,
+          _symbolPosition == SymbolPosition.front ? spaceBehind : spaceFront,
         ),
       );
     } else {
       _currency = _currency.copyWith(
         pattern: _currency.pattern.replaceAll(
-          _symbolPosition == "Front" ? spaceBehind : spaceFront,
+          RegExp(r'\ *S\ *'),
           "S",
         ),
       );
@@ -98,28 +109,26 @@ class AdditionalCurrencySettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateSymbolPosition(String? position) {
+  void updateSymbolPosition(SymbolPosition? position) {
     if (position == null) return;
+    _symbolPosition = position;
     final initPattern = _currency.pattern;
     final String newPattern;
     switch (position) {
-      case "Front":
+      case SymbolPosition.front:
         newPattern = initPattern
             .replaceAll("S", "")
             .split(";")
             .map((substr) => "S$substr")
             .join(";");
-      case "Back":
+      case SymbolPosition.back:
         newPattern = initPattern
             .replaceAll("S", "")
             .split(";")
             .map((substr) => "${substr}S")
             .join(";");
-      case "None":
+      case SymbolPosition.none:
         newPattern = initPattern.replaceAll("S", "");
-      default:
-        newPattern = initPattern;
-      // _currency = _currency.copyWith(pattern: _currency.pattern.repla);
     }
     _currency = _currency.copyWith(pattern: newPattern);
     _currencyRepo.updateCurrencyFormat(_currency);

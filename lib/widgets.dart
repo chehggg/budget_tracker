@@ -1,34 +1,38 @@
+import 'dart:ui' as ui;
+
 import 'package:another_flushbar/flushbar.dart';
-import 'package:budget_tracker/custom/enums/enum.dart';
-import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:math_expressions/math_expressions.dart';
-import 'dart:ui' as ui;
-
 import 'package:provider/provider.dart';
+
+import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 
 class CustomKeyboard extends StatefulWidget {
   const CustomKeyboard({
     super.key,
-    required this.controller,
+    this.layout = KeyboardLayout.simple,
     this.customButton = ".",
-    required this.onDone,
+    required this.controller,
     required this.selectedDate,
-    required this.onDateTapped,
+    this.onDone,
+    this.onDateTapped,
     this.onTap,
   });
 
   final TextEditingController controller;
   final String customButton;
-  final void Function() onDone;
+  final KeyboardLayout layout;
+  final void Function()? onDone;
   final void Function(KeyboardButtonType type, String value)? onTap;
   final DateTime selectedDate;
-  final void Function() onDateTapped;
+  final void Function()? onDateTapped;
 
   @override
   State<CustomKeyboard> createState() => _CustomKeyboardState();
@@ -37,21 +41,46 @@ class CustomKeyboard extends StatefulWidget {
 class _CustomKeyboardState extends State<CustomKeyboard> {
   bool _isCalculating = false;
 
-  List<KeyboardButton> get buttons => [
+  List<KeyboardButton> get simpleButtons => [
     KeyboardButton(type: KeyboardButtonType.char, value: "1"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "2"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "3"),
-    KeyboardButton(type: KeyboardButtonType.date, widget: Icon(Icons.date_range)),
     KeyboardButton(type: KeyboardButtonType.char, value: "4"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "5"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "6"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "+"),
     KeyboardButton(type: KeyboardButtonType.char, value: "7"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "8"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "9"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "-"),
     KeyboardButton(type: KeyboardButtonType.char, value: widget.customButton),
+    KeyboardButton(type: KeyboardButtonType.char, value: "2"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "5"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "8"),
     KeyboardButton(type: KeyboardButtonType.char, value: "0"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "3"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "6"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "9"),
+    KeyboardButton(type: KeyboardButtonType.delete, widget: Icon(Icons.backspace_rounded)),
+    KeyboardButton(type: KeyboardButtonType.date, widget: Icon(Icons.date_range)),
+    KeyboardButton(type: KeyboardButtonType.char, value: "+"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "-"),
+    KeyboardButton(
+      type: KeyboardButtonType.done,
+      widget: Icon(_isCalculating ? Symbols.equal : Icons.check),
+    ),
+  ];
+
+  List<KeyboardButton> get complexButtons => [
+    KeyboardButton(type: KeyboardButtonType.char, value: "+"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "-"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "×", widget: Icon(Icons.close)),
+    KeyboardButton(type: KeyboardButtonType.char, value: "÷"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "1"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "4"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "7"),
+    KeyboardButton(type: KeyboardButtonType.char, value: widget.customButton),
+    KeyboardButton(type: KeyboardButtonType.char, value: "2"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "5"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "8"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "0"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "3"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "6"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "9"),
+    KeyboardButton(type: KeyboardButtonType.char, value: "00"),
+    KeyboardButton(type: KeyboardButtonType.date, widget: Icon(Icons.date_range)),
     KeyboardButton(type: KeyboardButtonType.delete, widget: Icon(Icons.backspace_rounded)),
     KeyboardButton(
       type: KeyboardButtonType.done,
@@ -98,22 +127,11 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
     );
   }
 
-  // bool validateText(String text) {
-  //   bool validated = true;
-  //   if (text.contains(RegExp(r'[\+-]'))) {
-  //     // this is calculating
-  //     final substrings = text.split(RegExp(r'\+-'));
-  //     for (String substr in substrings) {
-  //       if (substr.isEmpty) continue;
-  //       final regex = RegExp(r'^\d{1,3}(,\d{3})*(\.\d{,4})?$');
-  //       if (!regex.hasMatch(substr)) {
-  //         validated = false;
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   return validated;
-  // }
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(checkCalculating);
+  }
 
   void deleteText() {
     if (widget.controller.text.isEmpty) return;
@@ -124,10 +142,10 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
   }
 
   void calculateAmount() async {
-    debugPrint("try to calculate");
     try {
       final ShuntingYardParser p = ShuntingYardParser();
-      Expression expression = p.parse(widget.controller.text);
+      final text = widget.controller.text.replaceAll("×", "*").replaceAll("÷", "/");
+      Expression expression = p.parse(text);
       num value = RealEvaluator().evaluate(expression);
 
       widget.controller.value = widget.controller.value.copyWith(
@@ -136,13 +154,15 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
     } catch (e) {
       // using sign without value throw error, do not allow calculation
       widget.controller.value = widget.controller.value.copyWith(text: widget.controller.text);
-      saveErrorFlushbar("Invalid operation, make sure the formula is correct").show(context);
+      context.showErrorNotification(
+        message: "Error in performing operation, make sure the formula is correct.",
+      );
     }
   }
 
   void checkCalculating() {
     // regex check for a add or subtraction of two numbers
-    if (mounted && widget.controller.text.contains(RegExp(r'\d+[\+\-]+\d?'))) {
+    if (mounted && widget.controller.text.contains(RegExp(r'\d+[\+\-×÷]+\d?'))) {
       setState(() {
         _isCalculating = true;
       });
@@ -155,89 +175,201 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
 
   @override
   Widget build(BuildContext context) {
-    widget.controller.addListener(checkCalculating);
-    return Container(
-      decoration: BoxDecoration(color: context.cs.surface),
-      // height: 230,
-      width: context.mq.size.width,
-      child: GridView(
-        physics: NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          mainAxisExtent: 50,
-          // childAspectRatio: 1.5
+    final isComplex = widget.layout == KeyboardLayout.complex;
+
+    Widget buttonContent(KeyboardButton button) => InkWell(
+      child: switch (button.type) {
+        KeyboardButtonType.char => Text(
+          button.value ?? "",
+          style: context.customTt.numberFontSmall,
         ),
-        children:
-            buttons.map((KeyboardButton button) {
-              final Widget child;
-              switch (button.type) {
-                case KeyboardButtonType.char:
-                  // child = button.display;
-                  child = customTextButton(button.value as String, context);
-                case KeyboardButtonType.date:
-                  child = Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 4,
-                    children: [
-                      Icon(
-                        Icons.date_range,
-                        color: context.cs.surface,
-                        size: 18,
-                      ),
-                      Text(
-                        widget.selectedDate.displayFormat(),
-                        style: context.customTt.numberFontSmall!.copyWith(
-                          color: context.cs.surface,
+        KeyboardButtonType.date => Flex(
+          mainAxisSize: MainAxisSize.min,
+          direction: isComplex ? Axis.vertical : Axis.horizontal,
+          children: [
+            Icon(
+              Icons.date_range,
+              color: context.cs.surface,
+              size: 18,
+            ),
+            Text(
+              widget.selectedDate.formatShorter(),
+              style: context.customTt.numberFontSmall!.copyWith(
+                color: context.cs.surface,
+              ),
+            ),
+          ],
+        ),
+        _ => button.display,
+      },
+    );
+
+    Color buttonColor(KeyboardButton button) {
+      switch (button.type) {
+        case KeyboardButtonType.date:
+          return Colors.white;
+        case KeyboardButtonType.done:
+          return context.cs.secondary;
+        default:
+          return context.customCs.fadeColor3 ?? Colors.transparent;
+      }
+    }
+
+    void buttonOnTap(KeyboardButton button) {
+      switch (button.type) {
+        case KeyboardButtonType.char:
+          updateText(button.value ?? "");
+        case KeyboardButtonType.delete:
+          deleteText();
+        case KeyboardButtonType.date:
+          widget.onDateTapped?.call();
+        case KeyboardButtonType.done:
+          if (_isCalculating) {
+            calculateAmount();
+          } else {
+            widget.onDone?.call();
+          }
+      }
+    }
+
+    int flexSize(KeyboardButton button) {
+      if (button.type == KeyboardButtonType.date && isComplex) {
+        return 2;
+      }
+      return 1;
+    }
+
+    final layout = isComplex ? complexButtons.slices(4).toList() : simpleButtons.slices(4).toList();
+
+    return Container(
+      padding: EdgeInsets.only(bottom: 30),
+      decoration: BoxDecoration(
+        // color: context.cs.surface,
+        // border: BoxBorder.all(color: Colors.white),
+      ),
+      width: context.mq.size.width,
+      child: Flex(
+        spacing: 8,
+        direction: Axis.horizontal,
+        children: [
+          ...layout.mapIndexed(
+            (index, column) => Flexible(
+              flex: (isComplex && index == 0) ? 2 : 3,
+              fit: FlexFit.tight,
+              child: Flex(
+                spacing: 8,
+                direction: Axis.vertical,
+                children: [
+                  ...column.map((button) {
+                    return Flexible(
+                      fit: FlexFit.tight,
+                      flex: flexSize(button),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: buttonColor(button),
+                        ),
+                        height: 20,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            // radius: 10,
+                            // overlayColor: WidgetStatePropertyAll(Colors.transparent),
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () {
+                              buttonOnTap(button);
+                              HapticFeedback.lightImpact();
+                            },
+                            child: Center(child: buttonContent(button)),
+                          ),
                         ),
                       ),
-                    ],
-                  );
-                default:
-                  child = button.display;
-                  // child = Icon(button.value as IconData);
-              }
-              return Container(
-                height: 20,
-                decoration: BoxDecoration(
-                  color:
-                      button.type == KeyboardButtonType.date
-                          ? context.cs.primary
-                          : button.type == KeyboardButtonType.done
-                          ? context.cs.secondary
-                          : context.cs.primary.withAlpha(10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    onTap: () {
-                      // widget.onTap?.call(button.type, button.value);
-                      switch (button.type) {
-                        case KeyboardButtonType.char:
-                          updateText(button.value ?? "");
-                        case KeyboardButtonType.date:
-                          widget.onDateTapped();
-                        case KeyboardButtonType.delete:
-                          deleteText();
-                        case KeyboardButtonType.done:
-                          // if + and - is present, button switch to calculation mode
-                          if (_isCalculating) {
-                            calculateAmount();
-                          } else {
-                            widget.onDone();
-                          }
-                      }
-                      HapticFeedback.lightImpact();
-                    },
-                    child: Center(child: child),
-                  ),
-                ),
-              );
-            }).toList(),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+      // child: GridView(
+      //   physics: NeverScrollableScrollPhysics(),
+      //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      //     crossAxisCount: 4,
+      //     mainAxisSpacing: 8,
+      //     crossAxisSpacing: 8,
+      //     mainAxisExtent: 50,
+      //     // childAspectRatio: 1.5
+      //   ),
+      //   children:
+      //       buttons.map((KeyboardButton button) {
+      //         final Widget child;
+      //         switch (button.type) {
+      //           case KeyboardButtonType.char:
+      //             // child = button.display;
+      //             child = customTextButton(button.value as String, context);
+      //           case KeyboardButtonType.date:
+      //             child = Row(
+      //               mainAxisSize: MainAxisSize.min,
+      //               spacing: 4,
+      //               children: [
+      //                 Icon(
+      //                   Icons.date_range,
+      //                   color: context.cs.surface,
+      //                   size: 18,
+      //                 ),
+      //                 Text(
+      //                   widget.selectedDate.displayFormat(),
+      //                   style: context.customTt.numberFontSmall!.copyWith(
+      //                     color: context.cs.surface,
+      //                   ),
+      //                 ),
+      //               ],
+      //             );
+      //           default:
+      //             child = button.display;
+      //             // child = Icon(button.value as IconData);
+      //         }
+      //         return Container(
+      //           height: 20,
+      //           decoration: BoxDecoration(
+      //             color:
+      //                 button.type == KeyboardButtonType.date
+      //                     ? context.cs.primary
+      //                     : button.type == KeyboardButtonType.done
+      //                     ? context.cs.secondary
+      //                     : context.cs.primary.withAlpha(10),
+      //             borderRadius: BorderRadius.circular(12),
+      //           ),
+      //           child: Material(
+      //             color: Colors.transparent,
+      //             child: InkWell(
+      //               customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      //               onTap: () {
+      //                 // widget.onTap?.call(button.type, button.value);
+      //                 switch (button.type) {
+      //                   case KeyboardButtonType.char:
+      //                     updateText(button.value ?? "");
+      //                   case KeyboardButtonType.date:
+      //                     widget.onDateTapped();
+      //                   case KeyboardButtonType.delete:
+      //                     deleteText();
+      //                   case KeyboardButtonType.done:
+      //                     // if + and - is present, button switch to calculation mode
+      //                     if (_isCalculating) {
+      //                       calculateAmount();
+      //                     } else {
+      //                       widget.onDone();
+      //                     }
+      //                 }
+      //                 HapticFeedback.lightImpact();
+      //               },
+      //               child: Center(child: child),
+      //             ),
+      //           ),
+      //         );
+      //       }).toList(),
+      // ),
     );
   }
 
@@ -271,7 +403,8 @@ class HideableText extends StatelessWidget {
   const HideableText(
     this.data, {
     super.key,
-    this.overflowText,
+    this.overflowText = "",
+    this.blurredText,
     this.asteriskCount = 3,
     this.isCurrency = true,
     required this.textStyle,
@@ -279,9 +412,10 @@ class HideableText extends StatelessWidget {
   });
 
   final String data;
-  final String? overflowText;
+  final String overflowText;
   final bool isCurrency;
   final int asteriskCount;
+  final String? blurredText;
   final TextStyle textStyle;
   final int maxLine;
 
@@ -313,26 +447,22 @@ class HideableText extends StatelessWidget {
           data,
           textStyle,
           MediaQuery.textScalerOf(context),
-          maxWidth: constraints.maxWidth,
+          maxWidth: constraints.maxWidth * 0.9,
           maxLines: maxLine,
         )) {
           return Text(
             isBlurred
-                ? data.replaceAll(
-                  RegExp(r'[0-9,.]+[kKMbB]?'),
-                  List.filled(asteriskCount, "*").join(""),
-                )
+                ? blurredText ??
+                    data.replaceAll(
+                      RegExp(r'[0-9,.]+[kKMbB]?'),
+                      List.filled(asteriskCount, "*").join(""),
+                    )
                 : data,
             style: textStyle,
           );
-          // } else if (overflowText == null) {
-          //   return Text(
-          //     isBlurred ? '${isCurrency == true ? '$currency ' : ''}***' : data,
-          //     style: textStyle,
-          //   );
         } else {
           return Text(
-            isBlurred ? "***" : overflowText!,
+            isBlurred ? blurredText ?? "***" : overflowText,
             style: textStyle,
           );
         }
@@ -564,6 +694,113 @@ class CustomActionChip extends StatelessWidget {
       onPressed: onPressed,
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       labelPadding: EdgeInsets.symmetric(vertical: 4),
+    );
+  }
+}
+
+class CustomDropDownMenu<T> extends StatelessWidget {
+  const CustomDropDownMenu({
+    super.key,
+    required this.entries,
+    this.onSelected,
+    this.initSelection,
+  });
+
+  final List<DropdownMenuEntry<T>> entries;
+  final ValueChanged<T?>? onSelected;
+  final T? initSelection;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownMenu(
+      initialSelection: initSelection,
+      onSelected: onSelected,
+      expandedInsets: EdgeInsets.zero,
+      dropdownMenuEntries: entries,
+      textStyle: context.tt.bodyMedium,
+      inputDecorationTheme: InputDecorationThemeData(
+        visualDensity: VisualDensity(vertical: -4),
+        constraints: BoxConstraints(maxHeight: 40),
+      ),
+      menuStyle: MenuStyle(
+        padding: WidgetStatePropertyAll(EdgeInsets.zero),
+        visualDensity: VisualDensity.comfortable,
+        backgroundColor: WidgetStatePropertyAll(
+          context.cs.surfaceContainer,
+        ),
+      ),
+    );
+  }
+}
+
+class CustomDropdownListTile<T> extends StatelessWidget {
+  const CustomDropdownListTile({
+    super.key,
+    required this.entries,
+    required this.title,
+    this.onSelected,
+    this.initSelection,
+    this.width = 160,
+  });
+
+  final List<DropdownMenuEntry<T>> entries;
+  final ValueChanged<T?>? onSelected;
+  final T? initSelection;
+  final String title;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      title: Text(
+        title,
+        style: context.tt.bodyMedium,
+      ),
+      trailing: SizedBox(
+        width: width,
+        child: CustomDropDownMenu(
+          entries: entries,
+          initSelection: initSelection,
+          onSelected: onSelected,
+        ),
+      ),
+    );
+  }
+}
+
+class CustomSwitchListTile extends StatelessWidget {
+  const CustomSwitchListTile({
+    super.key,
+    required this.title,
+    required this.value,
+    this.onSelected,
+  });
+
+  final ValueChanged<bool>? onSelected;
+  final bool value;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: () {
+        onSelected?.call(!value);
+      },
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      title: Text(
+        title,
+        style: context.tt.bodyMedium,
+      ),
+      trailing: Transform.scale(
+        scale: 0.8,
+        // width: width,
+        child: Switch(
+          padding: EdgeInsets.zero,
+          value: value,
+          onChanged: onSelected,
+        ),
+      ),
     );
   }
 }

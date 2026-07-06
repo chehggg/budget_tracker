@@ -1,6 +1,10 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
@@ -195,7 +199,7 @@ class CostMetric {
     );
   }
 
-  bool get isEmpty => income == 0 && expense == 0; 
+  bool get isEmpty => income == 0 && expense == 0;
 }
 
 class StringFilter {
@@ -271,5 +275,112 @@ class PriceRangeFilter {
       case NumRangeMatchType.btn:
         return amount >= firstValue && amount <= secondValue!;
     }
+  }
+}
+
+class CategoryIconResult {
+  CategoryIconResult({this.path, this.iconName});
+
+  final String? path;
+  final String? iconName;
+}
+
+class FontAwesomeIcon {
+  FontAwesomeIcon({required this.icon, required this.name});
+
+  final FaIconData icon;
+  final String name;
+}
+
+class AccentColor {
+  AccentColor({
+    required this.positive,
+    required this.negative,
+    required this.previous,
+    required this.current,
+  });
+
+  final Color positive;
+  final Color negative;
+  final Color previous;
+  final Color current;
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'positive': positive.toHexString(),
+      'negative': negative.toHexString(),
+      'previous': previous.toHexString(),
+      'current': current.toHexString(),
+    };
+  }
+
+  factory AccentColor.fromMap(Map<String, dynamic> map) {
+    return AccentColor(
+      positive:
+          map['positive'] != null
+              ? ((map['positive'] as String).toColor() ?? Colors.green)
+              : Colors.green,
+      negative:
+          map['negative'] != null
+              ? ((map['negative'] as String).toColor() ?? Colors.red)
+              : Colors.red,
+      previous:
+          map['previous'] != null
+              ? ((map['previous'] as String).toColor() ?? Colors.blue)
+              : Colors.blue,
+      current:
+          map['previous'] != null
+              ? ((map['previous'] as String).toColor() ?? Colors.amber)
+              : Colors.amber,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory AccentColor.fromJson(String source) =>
+      AccentColor.fromMap(json.decode(source) as Map<String, dynamic>);
+}
+
+class ListDisplayConfig {
+  ListDisplayConfig({
+    this.showAmountColor = true,
+    this.showTotalColor = true,
+    this.hideAmountOnStart = false,
+  });
+
+  final bool showAmountColor;
+  final bool showTotalColor;
+  final bool hideAmountOnStart;
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'showAmountColor': showAmountColor,
+      'showTotalColor': showTotalColor,
+      'hideAmountOnStart': hideAmountOnStart,
+    };
+  }
+
+  factory ListDisplayConfig.fromMap(Map<String, dynamic> map) {
+    return ListDisplayConfig(
+      showAmountColor: map['showAmountColor'] as bool,
+      showTotalColor: map['showTotalColor'] as bool,
+      hideAmountOnStart: map['hideAmountOnStart'] as bool,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory ListDisplayConfig.fromJson(String source) => ListDisplayConfig.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  ListDisplayConfig copyWith({
+    bool? showAmountColor,
+    bool? showTotalColor,
+    bool? hideAmountOnStart,
+  }) {
+    return ListDisplayConfig(
+      showAmountColor: showAmountColor ?? this.showAmountColor,
+      showTotalColor: showTotalColor ?? this.showTotalColor,
+      hideAmountOnStart: hideAmountOnStart ?? this.hideAmountOnStart,
+    );
   }
 }

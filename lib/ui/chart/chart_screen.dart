@@ -182,6 +182,7 @@ class ChartFilterButtons extends StatelessWidget {
           width: double.infinity,
           child: SegmentedButton(
             style: SegmentedButton.styleFrom(
+              side: BorderSide(color: context.customCs.fadeColor1!.withAlpha(120) ?? Colors.white),
               visualDensity: VisualDensity(vertical: 0),
               textStyle: context.customTt.dateLabel?.copyWith(fontSize: 20),
             ),
@@ -213,7 +214,7 @@ class ChartFilterButtons extends StatelessWidget {
             },
             child: ReusableContainer(
               height: 120,
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
               width: double.infinity,
               filled: true,
               highlight: true,
@@ -240,15 +241,17 @@ class ChartFilterButtons extends StatelessWidget {
                           displayPeriod,
                           style: context.customTt.numberFontLarge?.copyWith(
                             color: context.cs.surface,
-                            fontSize: 48,
-                            height: 1.4,
+                            fontSize: 52,
+                            height: 1.1,
                           ),
                         ),
+                        SizedBox(height: 3,),
                         Text(
                           displayDetailsPeriod,
                           style: context.customTt.paragraphText?.copyWith(
                             color: context.cs.surface,
-                            fontSize: 14
+                            fontSize: 16,
+                            height: 1.3
                           ),
                         ),
                       ],
@@ -282,7 +285,7 @@ class ChartSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.only(top: 12.0),
+      padding: const EdgeInsets.only(top: 12.0, left: 12, right: 12),
       sliver: SliverToBoxAdapter(
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,

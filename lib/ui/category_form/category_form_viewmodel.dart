@@ -29,7 +29,7 @@ class CategoryFormViewModel extends ChangeNotifier {
 
   CostItemCategory _draft = CostItemCategory(id: Uuid().v7());
   CostItemCategory get draft => _draft;
-  
+
   CostItemCategory? _default;
   CostItemCategory? get defaultCat => _default;
 
@@ -71,13 +71,22 @@ class CategoryFormViewModel extends ChangeNotifier {
   }
 
   void updateIcon(String path) {
-    _draft = _draft.copyWith(imagePath: path);
+    _draft = _draft.copyWith(imagePath: path, iconName: () => null);
+    notifyListeners();
+  }
+
+  void updateIconData(String iconName) {
+    _draft = _draft.copyWith(iconName: () => iconName);
+    // debugPrint('icon data: ${iconData}');
     notifyListeners();
   }
 
   String? validateForm() {
     if (_draft.name?.isEmpty ?? true) {
       return "Name cannot be empty!";
+    }
+    if (_draft.costType == null) {
+      return "Cost type cannot be empty!";
     }
 
     return null;
@@ -92,7 +101,6 @@ class CategoryFormViewModel extends ChangeNotifier {
     }
     notifyListeners();
   }
-
 
   List<CostItem>? getCategoryItems() {
     if (inEditMode) {
@@ -113,6 +121,7 @@ class CategoryFormViewModel extends ChangeNotifier {
 
   Future<void> deleteCategoryItem() async {
     await _categoryRepo.deleteCategory(_draft);
+    await _costItemRepo.deleteCostItemByCategory(_draft);
     notifyListeners();
   }
 
@@ -124,5 +133,4 @@ class CategoryFormViewModel extends ChangeNotifier {
     int? decimalDigits,
   })
   get currencyFormat => _currencyRepo.formatCurrency;
-
 }

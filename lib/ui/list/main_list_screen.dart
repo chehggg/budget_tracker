@@ -93,14 +93,19 @@ class _CostListScreenState extends State<CostListScreen> {
                   children: [
                     isSearchOpened ? const ItemFilterChips() : const DateBreadcrumb(),
                     Expanded(
-                      child: CustomScrollView(
+                      child: Scrollbar(
+                        thickness: 2,
+                        radius: Radius.circular(12),
                         controller: _controller,
-                        slivers: [
-                          SummaryTab(
-                            onPressed: animateScroll,
-                          ),
-                          const CostEntryList(),
-                        ],
+                        child: CustomScrollView(
+                          controller: _controller,
+                          slivers: [
+                            SummaryTab(
+                              onPressed: animateScroll,
+                            ),
+                            const CostEntryList(),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -256,7 +261,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
     } else {
       return AppBar(
         scrolledUnderElevation: 0,
-        actionsPadding: EdgeInsets.only(right: 10),
+        actionsPadding: EdgeInsets.only(right: 8),
         title: Text(AppLocale.overview.getString(context), style: context.customTt.dateLabel),
         actions: [
           IconButton(
@@ -331,7 +336,8 @@ class DateBreadcrumb extends StatelessWidget {
               child: Center(
                 child: Text(
                   DateFormat(
-                    "yMMMM", FlutterLocalization.instance.currentLocale.toString()
+                    "yMMMM",
+                    FlutterLocalization.instance.currentLocale.toString(),
                   ).format(curMonth),
                   style: context.customTt.dateLabel!.copyWith(fontSize: 28),
                 ),
@@ -554,7 +560,12 @@ class CostEntryList extends StatelessWidget {
                             compact: true,
                           ),
                           textStyle: context.customTt.numberFontMedium!.copyWith(
-                            color: daySummary < 0 ? Colors.redAccent : Colors.greenAccent,
+                            color:
+                                contextWatch.displayConfig.showTotalColor
+                                    ? (daySummary < 0
+                                        ? contextWatch.accentColors.negative
+                                        : contextWatch.accentColors.positive)
+                                    : context.cs.primary,
                           ),
                         ),
                       ],
@@ -617,9 +628,11 @@ class CostEntryList extends StatelessWidget {
                               ),
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color:
-                                    costItem.isExpense
-                                        ? Colors.red.withAlpha(200)
-                                        : Colors.green.withAlpha(200),
+                                    contextWatch.displayConfig.showAmountColor
+                                        ? (costItem.isExpense
+                                            ? contextWatch.accentColors.negative
+                                            : contextWatch.accentColors.positive)
+                                        : context.cs.primary.withAlpha(200),
                               ),
                             ),
                           ],
@@ -679,6 +692,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
     String labelText = "",
     double progress = 0,
     String value = "",
+    String overflowText = "",
     bool isBig = false,
   }) {
     final appColorTheme = context.cs;
@@ -698,7 +712,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                 style: context.customTt.numberFontSmall!.copyWith(
                   fontSize: 14,
                   height: lerpDouble(
-                    1.5,
+                    1.6,
                     !isBig ? 0.01 : 1.5,
                     Interval(0.3, 0.7).transform(progress),
                   ),
@@ -712,18 +726,19 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
           opacity: !isBig ? lerpDouble(1, 0, Interval(0, 0.8).transform(progress))! : 1,
           child: HideableText(
             value,
+            overflowText: overflowText,
             maxLine: 1,
             isCurrency: true,
             textStyle:
                 isBig
                     ? context.customTt.numberFontLarge!.copyWith(
-                      height: 1.2,
-                      fontSize: lerpDouble(50, 36, progress),
+                      height: 1.1,
+                      fontSize: lerpDouble(52, 36, progress),
                       color: context.customCs.onFlipCard,
                     )
                     : context.customTt.numberFontSmall!.copyWith(
                       height: lerpDouble(1.2, 0.01, Interval(0.2, 0.8).transform(progress)),
-                      fontSize: lerpDouble(22, 1, progress),
+                      fontSize: lerpDouble(20, 1, progress),
                       color: context.customCs.onFlipCard,
                     ),
           ),
@@ -758,6 +773,13 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                     expenseMetricCard(
                       context,
                       labelText: "Summary",
+                      overflowText: context.listMod.currencyFormat(
+                        balance,
+                        abbreviated: true,
+                        alwaysShowSign: true,
+                        compact: true,
+                        decimalDigits: 2,
+                      ),
                       progress: progress,
                       value: context.listMod.currencyFormat(
                         balance,
@@ -777,6 +799,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             HideableText(
+                              overflowText: "",
                               context.listMod.currencyFormat(
                                 -expense,
                                 alwaysShowSign: true,
@@ -790,6 +813,7 @@ class SummaryHeaderDelegate extends SliverPersistentHeaderDelegate {
                               ),
                             ),
                             HideableText(
+                              overflowText: "",
                               context.listMod.currencyFormat(
                                 income,
                                 alwaysShowSign: true,
@@ -1220,4 +1244,3 @@ class FilterAmountDialogState extends State<FilterAmountDialog> {
     );
   }
 }
-

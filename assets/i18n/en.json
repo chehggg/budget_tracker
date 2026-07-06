@@ -4,5 +4,8 @@
   "settings": "Settings",
   "aboutNomi": "About Nomi",
   "data": "Data",
-  "changeLanguage": "Change Language"
+  "changeLanguage": "Change Language",
+  "loadData": "Load Data",
+  "exportData": "Export Data",
+  "clearData": "Clear Data"
 }

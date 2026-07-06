@@ -388,14 +388,31 @@ class ChartViewModel extends ChangeNotifier {
   };
 
   double get chartMax {
-    final maxIncome = [
-      curRangeSummary.income ?? 0,
-      prevRangeToDayCumulative.income ?? 0,
-      curRangeSummary.expense ?? 0,
-      prevRangeToDayCumulative.expense ?? 0,
-    ].fold(0.0, (prev, value) => max(prev, value));
+    final incomeMax = max(
+      curRangeSummary.income ?? 0.01,
+      prevRangeToDayCumulative.income ?? 0.01,
+    );
+    final expenseMax = max(
+      curRangeSummary.expense ?? 0.01,
+      prevRangeToDayCumulative.expense ?? 0.01,
+    );
+      return incomeMax * 1.6 + expenseMax * 0.4;
+    // if (incomeMax > expenseMax) {
+    //   return incomeMax * 1.6;
+    // } else if (expenseMax - incomeMax < incomeMax) {
+    //   return incomeMax * 1.6;
+    // } else {
+    //   return incomeMax * 1.6;
+    //   // return expenseMax * 0.5;
+    // }
+    // final maxIncome = [
+    //   curRangeSummary.income ?? 0,
+    //   prevRangeToDayCumulative.income ?? 0,
+    //   curRangeSummary.expense ?? 0,
+    //   prevRangeToDayCumulative.expense ?? 0,
+    // ].fold(0.0, (prev, value) => max(prev, value));
 
-    return maxIncome * 1.6;
+    // return maxIncome * 1.6;
   }
 
   // double get chartMin {

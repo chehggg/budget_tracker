@@ -132,7 +132,7 @@ class SettingsDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 0.0, bottom: 0),
+      padding: const EdgeInsets.only(top: 8.0, bottom: 2),
       child: Divider(),
     );
   }
@@ -176,9 +176,9 @@ class ReportBugSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       titleWidget: Row(
-        spacing: 4,
+        spacing: 8,
         children: [
-          Text("Report issue"),
+          Text("Report issue", style: context.tt.bodyMedium),
           Icon(
             Icons.open_in_new,
             size: 16,
@@ -199,10 +199,13 @@ class SupportMeSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
-      title: "Support Me",
+      // title: "Support Me",
       titleWidget: Row(
-        spacing: 4,
-        children: [Text("Support Me"), Icon(Icons.open_in_new, size: 16)],
+        spacing: 8,
+        children: [
+          Text("Support Me", style: context.tt.bodyMedium),
+          Icon(Icons.open_in_new, size: 16),
+        ],
       ),
       onTap: () async {
         await launchUrlString("https://github.com/chehggg/");
@@ -498,93 +501,9 @@ class HideCostSettingsTile extends StatelessWidget {
     final blur = context.select((ThemeModel state) => state.defaultBlur);
     debugPrint("rebuild");
     return CustomSettingsTile(
-      trailingWidget: Text(blur.name),
-      title: "Hide Amount On Start",
-      onTap:
-          () => showDialog(
-            context: context,
-            builder: (context) {
-              final themeStateRead = context.read<ThemeModel>();
-              ValueBlur curDefBlur = themeStateRead.defaultBlur;
-              return StatefulBuilder(
-                builder: (context, setState) {
-                  return AlertDialog(
-                    title: Text("Hide Amount On Start"),
-                    content: Column(
-                      spacing: 0,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Hide amount when app opened. This can be toggled on and off afterwards from the top.",
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium!.copyWith(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        DialogListTile(
-                          title: "All",
-                          trailing: Switch(
-                            value: curDefBlur == ValueBlur.all,
-                            onChanged: (value) {
-                              themeStateRead.updateDefaultBlur(
-                                ValueBlur.all,
-                                value,
-                              );
-                              setState(
-                                () => curDefBlur = themeStateRead.defaultBlur,
-                              );
-                            },
-                          ),
-                        ),
-                        Divider(),
-                        DialogListTile(
-                          title: "Summary",
-                          trailing: Switch(
-                            value: [
-                              ValueBlur.all,
-                              ValueBlur.summary,
-                            ].contains(curDefBlur),
-                            onChanged: (value) {
-                              context.read<ThemeModel>().updateDefaultBlur(
-                                ValueBlur.summary,
-                                value,
-                              );
-                              setState(
-                                () => curDefBlur = themeStateRead.defaultBlur,
-                              );
-                            },
-                          ),
-                        ),
-                        DialogListTile(
-                          title: "List",
-                          trailing: Switch(
-                            value: [
-                              ValueBlur.all,
-                              ValueBlur.list,
-                            ].contains(curDefBlur),
-                            onChanged: (value) {
-                              context.read<ThemeModel>().updateDefaultBlur(
-                                ValueBlur.list,
-                                value,
-                              );
-                              setState(
-                                () => curDefBlur = themeStateRead.defaultBlur,
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+      // trailingWidget: Text(blur.name),
+      title: "List Screen",
+      onTap: () => context.push('/settings/list'),
     );
   }
 }
@@ -674,7 +593,7 @@ class LanguageSetting extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           // title: Text(AppLocalizations.of(context)!.changeLanguage),
-          title: Text("Change language"),
+          title: Text("Language"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children:
@@ -825,7 +744,7 @@ class ExportDataSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
-      title: "Export data",
+      title: AppLocale.exportData.getString(context),
       trailingWidget: const SizedBox.shrink(),
       onTap: () => showExportDialog(context),
     );
@@ -891,7 +810,7 @@ class LoadDataSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
-      title: "Load data",
+      title: AppLocale.loadData.getString(context),
       trailingWidget: const SizedBox.shrink(),
       onTap: () => showLoadItemDialog(context),
     );
@@ -975,7 +894,7 @@ class ClearDataSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
-      title: "Clear data",
+      title: AppLocale.clearData.getString(context),
       trailingWidget: const SizedBox.shrink(),
       onTap:
           () => showDialog(
@@ -1094,27 +1013,24 @@ class KeyboardSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       title: "Keyboard Settings",
-      onTap: () {},
+      onTap: () {
+        context.push('/settings/keyboard');
+      },
     );
   }
 }
 
 class ChangeLanguageSettingsTile extends StatelessWidget {
   const ChangeLanguageSettingsTile({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
+    final localization = FlutterLocalization.instance;
     return CustomSettingsTile(
       title: AppLocale.changeLanguage.getString(context),
-      trailingWidget: Text(AppLocale.title.getString(context), style: context.tt.bodyMedium),
+      trailingWidget: Text(localization.getLanguageName(), style: context.tt.bodyMedium),
       onTap: () {
-        final FlutterLocalization localization = FlutterLocalization.instance;
-        if (localization.currentLocale?.languageCode == "en") {
-          localization.translate('ja');
-        } else {
-          localization.translate('en');
-        }
-        ;
+        context.push('/settings/languages');
       },
     );
   }

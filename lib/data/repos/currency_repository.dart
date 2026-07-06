@@ -146,9 +146,10 @@ class CurrencyRepository {
       pattern = pattern.endsWith("S") ? pattern.replaceAll(r"S", "${suffix}S") : "$pattern$suffix";
     }
 
-    if (alwaysShowSign) {
-      pattern = "+$pattern";
-    }
+    // if (alwaysShowSign) {
+    //   pattern = pattern.replaceAll(RegExp(r"[+-]")"-", "");
+    //   pattern = "-$pattern";
+    // }
 
     if (compact && transformedValue % 1 == 0) {
       pattern = pattern.replaceAll(RegExp(r'\.0{2,}'), '');
@@ -156,7 +157,7 @@ class CurrencyRepository {
       transformedValue = double.parse(transformedValue.toStringAsFixed(decimalDigits));
       pattern = pattern.replaceAll(
         RegExp(r'0(.0{1,}|$|(?=[S;]))'),
-        '0.${List.filled(decimalDigits, '0').join()}',
+        '0${decimalDigits > 0 ? "." : ""}${List.filled(decimalDigits, '0').join()}',
       );
     }
     if (!showSymbol) {
@@ -164,7 +165,14 @@ class CurrencyRepository {
     }
     final money = Money.fromNumWithCurrency(transformedValue, _currency);
 
-    return money.format(pattern);
+    final firstFormat = money.format(pattern).replaceAll("-", "");
+    if (transformedValue < 0) {
+      return "-$firstFormat";
+    } else if (alwaysShowSign) {
+      return "+$firstFormat";
+    } else {
+      return firstFormat;
+    }
   }
 
   Future<void> updateCurrencyFormat(Currency newCurrency) async {

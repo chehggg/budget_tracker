@@ -16,14 +16,7 @@ class CurrencyViewModel extends ChangeNotifier {
 
     _selectedCurrency = _currencyRepo.currency;
 
-    _currencies = [
-      if (!isCurrencyExchange) _selectedCurrency,
-      ..._currencyRepo.recentCurrencies.where((currency) => (currency.isoCode != _selectedCurrency.isoCode)),
-      ..._currencyRepo.availableCurrencies.where(
-        (currency) => (currency.isoCode != _selectedCurrency.isoCode) && !_currencyRepo.recentCurrencies.contains(currency),
-      ),
-    ];
-    _filteredCurrencies = _currencies;
+    getInitValue();
 
     _isInit = true;
 
@@ -32,6 +25,17 @@ class CurrencyViewModel extends ChangeNotifier {
 
   List<Currency> _filteredCurrencies = [];
   List<Currency> get filteredCurrencies => _filteredCurrencies;
+
+  void getInitValue() {
+    _currencies = [
+      if (!isCurrencyExchange) _selectedCurrency,
+      ..._currencyRepo.recentCurrencies.where((currency) => (currency.isoCode != _selectedCurrency.isoCode)),
+      ..._currencyRepo.availableCurrencies.where(
+        (currency) => (currency.isoCode != _selectedCurrency.isoCode) && !_currencyRepo.recentCurrencies.contains(currency),
+      ),
+    ];
+    _filteredCurrencies = _currencies;
+  }
 
   void updateFilteredCurrencies() {
     _filteredCurrencies = [
@@ -81,6 +85,9 @@ class CurrencyViewModel extends ChangeNotifier {
 
   void clearRecentlyUsed() {
     _currencyRepo.clearRecentlyUsedCurrency();
+    getInitValue();
+    updateFilteredCurrencies();
+    notifyListeners();
   }
 
 }

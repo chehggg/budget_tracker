@@ -3,6 +3,7 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -10,8 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'dart:ui' as ui;
 
 // screen for user to input a new cost item
 // or edit a existing cost item
@@ -27,6 +30,7 @@ class CostFormScreenWrapper extends StatelessWidget {
     return ChangeNotifierProvider(
       create:
           (context) => FormViewModel(
+            sharedElRepo: context.read(),
             initCostItem: arg?.selectedCostItem,
             costItemRepo: context.read(),
             savedItemRepo: context.read(),
@@ -56,6 +60,7 @@ class CostFormScreen extends StatelessWidget {
     return Scaffold(
       // resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        actionsPadding: EdgeInsets.only(right: 8),
         title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
         actions: [
           if (formGroup != FormGroup.favorite)
@@ -63,7 +68,7 @@ class CostFormScreen extends StatelessWidget {
               onPressed: () async {
                 final response = await context.push('/form/edit-category');
               },
-              icon: Icon(Icons.add),
+              icon: Icon(Symbols.splitscreen_add),
             ),
           if (formGroup != FormGroup.favorite)
             IconButton(
@@ -78,13 +83,13 @@ class CostFormScreen extends StatelessWidget {
                   context.formMod.toggleEditCategory();
                 }
               },
-              icon: Icon(editMode ? Icons.cancel : Icons.edit),
+              icon: Icon(editMode ? Icons.close : Symbols.edit_square),
             ),
         ],
       ),
       bottomSheet: const FormBottomSheet(),
       body: SafeArea(
-        minimum: EdgeInsets.only(top: 12, left: 12, right: 12),
+        minimum: EdgeInsets.only(left: 12, right: 12, top: 12),
         bottom: false,
         child:
             ready
@@ -364,16 +369,23 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               ),
                             ),
                           Expanded(
-                            child: Text(
-                              amountController.text.isEmpty ? "0.00" : amountController.text,
-                              textAlign:
-                                  !context.formMod.symbolOnLeft ? TextAlign.start : TextAlign.end,
-                              style: context.customTt.numberFontLarge!.copyWith(
-                                fontSize: 60,
-                                color:
-                                    amountController.text.isEmpty
-                                        ? context.customCs.fadeColor2
-                                        : context.cs.primary,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                // textDirection: !context.formMod.symbolOnLeft ? ui.TextDirection.rtl : ui.TextDirection.ltr,
+                                amountController.text.isEmpty ? "0.00" : amountController.text,
+                                maxLines: 1,
+                                overflow: TextOverflow.clip,
+                                textAlign:
+                                    !context.formMod.symbolOnLeft ? TextAlign.end : TextAlign.start,
+                                style: context.customTt.numberFontLarge!.copyWith(
+                                  fontSize: 60,
+                                  color:
+                                      amountController.text.isEmpty
+                                          ? context.customCs.fadeColor2
+                                          : context.cs.primary,
+                                ),
                               ),
                             ),
                           ),
@@ -426,12 +438,14 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             context.go('/', extra: DateTime.now().millisecondsSinceEpoch);
                           }
                         },
-                        onTap: (KeyboardButtonType type, String value) {
-                          // if (type == KeyboardButtonType.char) {
-                          amountController.value = amountController.value.copyWith(text: value);
-                          // }
-                          return null;
-                        } ,
+                        // onTap: (KeyboardButtonType type, String value) {
+                        //   // if (type == KeyboardButtonType.char) {
+                        //   amountController.value = amountController.value.copyWith(text: value);
+                        //   // }
+                        //   return null;
+                        // } ,
+                        customButton: context.formMod.customButtonText,
+                        layout: context.formMod.layout,
                         selectedDate: _selectedDate,
                         onDateTapped: selectDate,
                       ),
@@ -501,18 +515,22 @@ class FormMainSelectionView extends StatelessWidget {
       mainAxisSize: MainAxisSize.max,
       children: [
         Row(
-          spacing: 20,
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 12,
           children: [
             Expanded(
               child: SizedBox(
+                height: 56,
                 width: double.infinity,
                 child: SegmentedButton(
                   style: SegmentedButton.styleFrom(
                     // padding: EdgeInsets.symmetric(vertical: 12),
-                    visualDensity: VisualDensity(vertical: 0),
+                    visualDensity: VisualDensity(vertical: 1),
+                    textStyle: context.customTt.dateLabel?.copyWith(fontSize: 20),
+
                     selectedBackgroundColor: context.customCs.flipCardColor,
                     selectedForegroundColor: context.customCs.onFlipCard,
-                    side: BorderSide(color: context.cs.primary.withAlpha(100)),
+                    side: BorderSide(color: context.customCs.fadeColor1!.withAlpha(120)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
                   ),
                   segments: [
@@ -524,12 +542,12 @@ class FormMainSelectionView extends StatelessWidget {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             formGroup.name.capitalize(),
-                            style: context.customTt.numberLabel!.copyWith(
-                              color:
-                                  selectedFormGroup == formGroup
-                                      ? context.customCs.onFlipCard
-                                      : context.cs.primary,
-                            ),
+                            // style: context.customTt.numberLabel!.copyWith(
+                            //   color:
+                            //       selectedFormGroup == formGroup
+                            //           ? context.customCs.onFlipCard
+                            //           : context.cs.primary,
+                            // ),
                           ),
                         ),
                       );
@@ -549,12 +567,12 @@ class FormMainSelectionView extends StatelessWidget {
                 duration: Durations.short4,
                 curve: Curves.easeInOut,
                 decoration: BoxDecoration(
-                  color:
-                      selectedFormGroup == FormGroup.favorite
-                          ? context.cs.primary
-                          : context.cs.surface,
+                  color: selectedFormGroup == FormGroup.favorite ? context.cs.primary : null,
                   borderRadius: BorderRadius.circular(12),
-                  border: BoxBorder.all(width: 1, color: context.cs.primary.withAlpha(100)),
+                  border: BoxBorder.all(
+                    width: 1,
+                    color: context.customCs.fadeColor1!.withAlpha(120),
+                  ),
                 ),
                 width: 48,
                 height: 48,
@@ -633,6 +651,8 @@ class CategorySelectionView extends StatelessWidget {
                   children: [
                     AnimatedContainer(
                       duration: Durations.medium1,
+                      height: 64,
+                      width: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.rectangle,
                         borderRadius: BorderRadius.circular(16),
@@ -640,8 +660,9 @@ class CategorySelectionView extends StatelessWidget {
                         color: bgColor,
                       ),
                       child: Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(12),
                         child: CategoryIconContainer(
+                          size: 30,
                           category: category,
                           inContainer: false,
                         ),
@@ -666,7 +687,7 @@ class CategorySelectionView extends StatelessWidget {
                 ReusableContainer(
                   padding: EdgeInsets.all(16),
                   // highlight: true,
-                  customColor: context.cs.secondary,
+                  customColor: context.customCs.fadeColor2,
                   filled: true,
                   onTap: () => context.push('/form/edit-category'),
                   child: Icon(

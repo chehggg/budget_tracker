@@ -4,5 +4,8 @@
   "settings": "セッチング",
   "aboutNomi": "のみついて",
   "data": "インフォ",
-  "changeLanguage": "言語を変える"
+  "changeLanguage": "言語を変える",
+  "loadData": "データを読み込む",
+  "exportData": "データをエクスポートする",
+  "clearData": "データを消す"
 }

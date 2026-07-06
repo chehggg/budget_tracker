@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
@@ -110,6 +111,18 @@ class CostItemRepository {
     _dataStreamController.add(dataStream.copyWith(date: deletedItem.date));
     return await _localServices.writeCostItemFile(_costItems);
   }
+
+  Future<Result<void>> deleteCostItemByCategory(CostItemCategory category) async {
+    final items = _costItems.where((item) => item.categoryId == category.id).toList();
+    for (final item in items) {
+      deleteCostItem(item);
+      debugPrint(item.name);
+    }
+    _dataStreamController.add(dataStream.copyWith(date: items.first.date));
+    return await _localServices.writeCostItemFile(_costItems);
+  }
+
+
 
   Future<Result<void>> updateCostItem(CostItem newItem) async {
     await deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));

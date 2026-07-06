@@ -8,6 +8,9 @@ mixin AppLocale {
   static const String aboutTitle = 'aboutNomi';
   static const String data = 'data';
   static const String changeLanguage = 'changeLanguage';
+  static const String clearData = 'clearData';
+  static const String loadData = 'loadData';
+  static const String exportData = 'exportData';
 
   // static const Map<String, dynamic> EN = {
   //   title: 'Localization',

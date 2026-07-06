@@ -1,9 +1,11 @@
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
+import 'package:budget_tracker/widgets.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:money2/src/currency.dart';
 import 'package:provider/provider.dart';
 
@@ -23,21 +25,38 @@ class AdditionalCurrencySettingScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Additional Currency Settings"),
+        title: Text("Currency Settings"),
       ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: CustomSettingsTile(
-                title: "Current Format",
-                trailingWidget: Text(
-                  context.currencySetMod.formatCurrency(12345.67),
-                  style: context.tt.bodyMedium,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text('Current Format'),
+                        Text(
+                          context.currencySetMod.formatCurrency(12345.67),
+                          textAlign: TextAlign.end,
+                          style: context.customTt.numberFontLarge,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            SliverToBoxAdapter(child: Divider()),
+            SliverToBoxAdapter(child: Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Divider(),
+            )),
             SliverToBoxAdapter(
               child: CustomSettingsTile(
                 title: "Currency Symbol",
@@ -77,43 +96,49 @@ class SymbolPositionSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contextWatch = context.watch<AdditionalCurrencySettingsViewModel>();
-    final symbolPosition = context.select((AdditionalCurrencySettingsViewModel state) => state.symbolPosition);
-    return CustomSettingsTile(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (dialogContext) {
-            return ListenableBuilder(
-              listenable: context.currencySetMod,
-              builder: (listenableContext, child) {
-                return AlertDialog(
-                  title: Text("Symbol Position", style: context.customTt.dateLabel,),
-                  content: RadioGroup(
-                    groupValue: contextWatch.symbolPosition,
-                    onChanged: context.currencySetMod.updateSymbolPosition,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ...symbolPositions.entries.map(
-                          (entry) => RadioListTile(
-                            value: entry.key,
-                            title: Text(
-                              entry.value,
-                              style: context.tt.bodyMedium,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
+    final symbolPosition = context.select(
+      (AdditionalCurrencySettingsViewModel state) => state.symbolPosition,
+    );
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      title: Text(
+        "Symbol Position",
+        style: context.tt.bodyMedium,
+      ),
+      trailing: SizedBox(
+        width: 160,
+        child: DropdownMenu(
+          initialSelection: symbolPosition,
+          onSelected: (value) {
+            context.currencySetMod.updateSymbolPosition(value);
           },
-        );
-      },
-      title: "Symbol position",
-      trailingWidget: Text(symbolPositions[symbolPosition] ?? "", style: context.tt.bodyMedium),
+          expandedInsets: EdgeInsets.zero,
+          dropdownMenuEntries:
+              SymbolPosition.values
+                  .map(
+                    (el) => DropdownMenuEntry(
+                      value: el,
+                      label: el.name.capitalize(),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity(vertical: -2),
+                      ),
+                    ),
+                  )
+                  .toList(),
+          textStyle: context.tt.bodyMedium,
+          inputDecorationTheme: InputDecorationThemeData(
+            visualDensity: VisualDensity(vertical: -4),
+            constraints: BoxConstraints(maxHeight: 40),
+          ),
+          menuStyle: MenuStyle(
+            padding: WidgetStatePropertyAll(EdgeInsets.zero),
+            visualDensity: VisualDensity.comfortable,
+            backgroundColor: WidgetStatePropertyAll(
+              context.cs.surfaceContainer ?? Colors.transparent,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -131,47 +156,51 @@ class ThousandSeparatorSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contextWatch = context.watch<AdditionalCurrencySettingsViewModel>();
-    return CustomSettingsTile(
-      title: "Thousand separator",
-      trailingWidget: Text(
-        separators[currency.groupSeparator] ?? "",
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      title: Text(
+        "Thousand separator",
         style: context.tt.bodyMedium,
       ),
-      onTap: () async {
-        await showDialog(
-          context: context,
-          builder: (dialogContext) {
-            return ListenableBuilder(
-              listenable: context.currencySetMod,
-              builder: (listenableContext, child) {
-                debugPrint("dialog rebuild");
-                return AlertDialog(
-                  title: Text(
-                    "Decimal Separators",
-                    style: context.customTt.dateLabel,
-                  ),
-                  content: RadioGroup(
-                    groupValue: contextWatch.currency.groupSeparator,
-                    onChanged:
-                        (value) => context.currencySetMod.updateSeparator(value, isDecimal: false),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ...separators.entries.map(
-                          (entry) => RadioListTile(
-                            value: entry.key,
-                            title: Text(entry.value, style: context.tt.bodyMedium),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
+      trailing: SizedBox(
+        width: 160,
+        child: DropdownMenu(
+          initialSelection:
+              NumberSeparator.values.firstWhereOrNull(
+                (separator) => separator.symbol == contextWatch.currency.groupSeparator,
+              ) ??
+              NumberSeparator.comma,
+          onSelected: (value) {
+            context.currencySetMod.updateSeparator(value, isDecimal: false);
           },
-        );
-      },
+          expandedInsets: EdgeInsets.zero,
+          dropdownMenuEntries:
+              NumberSeparator.values
+                  .where((separator) => separator.applicableToThousand)
+                  .map(
+                    (el) => DropdownMenuEntry(
+                      value: el,
+                      label: "${el.name} (${el.symbol})",
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity(vertical: -2),
+                      ),
+                    ),
+                  )
+                  .toList(),
+          textStyle: context.tt.bodyMedium,
+          inputDecorationTheme: InputDecorationThemeData(
+            visualDensity: VisualDensity(vertical: -4),
+            constraints: BoxConstraints(maxHeight: 40),
+          ),
+          menuStyle: MenuStyle(
+            padding: WidgetStatePropertyAll(EdgeInsets.zero),
+            visualDensity: VisualDensity.comfortable,
+            backgroundColor: WidgetStatePropertyAll(
+              context.cs.surfaceContainer ?? Colors.transparent,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -189,47 +218,51 @@ class DecimalSeparatorSettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contextWatch = context.watch<AdditionalCurrencySettingsViewModel>();
-    return CustomSettingsTile(
-      title: "Decimal separator",
-      trailingWidget: Text(
-        separators[currency.decimalSeparator] ?? "",
+    return ListTile(
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      title: Text(
+        "Decimal separator",
         style: context.tt.bodyMedium,
       ),
-      onTap: () async {
-        await showDialog(
-          context: context,
-          builder: (dialogContext) {
-            return ListenableBuilder(
-              listenable: context.currencySetMod,
-              builder: (listenableContext, child) {
-                debugPrint("dialog rebuild");
-                return AlertDialog(
-                  title: Text(
-                    "Decimal Separators",
-                    style: context.customTt.dateLabel,
-                  ),
-                  content: RadioGroup(
-                    groupValue: contextWatch.currency.decimalSeparator,
-                    onChanged:
-                        (value) => context.currencySetMod.updateSeparator(value, isDecimal: true),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ...separators.entries.map(
-                          (entry) => RadioListTile(
-                            value: entry.key,
-                            title: Text(entry.value, style: context.tt.bodyMedium),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
+      trailing: SizedBox(
+        width: 160,
+        child: DropdownMenu(
+          initialSelection:
+              NumberSeparator.values.firstWhereOrNull(
+                (separator) => separator.symbol == contextWatch.currency.decimalSeparator,
+              ) ??
+              NumberSeparator.comma,
+          onSelected: (value) {
+            context.currencySetMod.updateSeparator(value, isDecimal: true);
           },
-        );
-      },
+          expandedInsets: EdgeInsets.zero,
+          dropdownMenuEntries:
+              NumberSeparator.values
+                  .where((separator) => separator.applicableToDecimal)
+                  .map(
+                    (el) => DropdownMenuEntry(
+                      value: el,
+                      label: "${el.name} (${el.symbol})",
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity(vertical: -2),
+                      ),
+                    ),
+                  )
+                  .toList(),
+          textStyle: context.tt.bodyMedium,
+          inputDecorationTheme: InputDecorationThemeData(
+            visualDensity: VisualDensity(vertical: -4),
+            constraints: BoxConstraints(maxHeight: 40),
+          ),
+          menuStyle: MenuStyle(
+            padding: WidgetStatePropertyAll(EdgeInsets.zero),
+            visualDensity: VisualDensity.comfortable,
+            backgroundColor: WidgetStatePropertyAll(
+              context.cs.surfaceContainer ?? Colors.transparent,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -253,54 +286,55 @@ class SymbolSpaceSettingsTile extends StatelessWidget {
     final symbolPosition = context.select(
       (AdditionalCurrencySettingsViewModel state) => state.symbolPosition,
     );
-    return CustomSettingsTile(
-      title: "Space between symbol",
-      onTap: () async {
-        if (symbolPosition == "None") return;
-        await showDialog(
-          context: context,
-          builder: (dialogContext) {
-            return ListenableBuilder(
-              listenable: context.currencySetMod,
-              builder: (listenableContext, child) {
-                return AlertDialog(
-                  title: Text(
-                    "Symbol Space",
-                    style: context.customTt.dateLabel,
-                  ),
-                  content: RadioGroup(
-                    groupValue: contextWatch.symbolSpace,
-                    onChanged: context.currencySetMod.toggleSymbolSpace,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ...symbolSpaceOptions.entries.map(
-                          (entry) => Theme(
-                            data: Theme.of(
-                              context,
-                            ).copyWith(splashFactory: NoSplash.splashFactory),
-                            child: RadioListTile(
-                              visualDensity: VisualDensity(horizontal: -4, vertical: -2),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 0),
-                              value: entry.key,
-                              title: Text(entry.value, style: context.tt.bodyMedium),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
+    return CustomSwitchListTile(
+      title: "Symbol Space",
+      value: symbolSpace,
+      onSelected: (value) {
+        context.currencySetMod.toggleSymbolSpace(value);
       },
-      trailingWidget: Text(
-        symbolSpace.toString().capitalize(),
-        style: context.tt.bodyMedium,
-      ),
     );
+
+    // ListTile(
+    //   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    //   title: Text(
+    //     "Symbol Space",
+    //     style: context.tt.bodyMedium,
+    //   ),
+    //   trailing: SizedBox(
+    //     width: 160,
+    //     child: DropdownMenu(
+    //       initialSelection: symbolSpace,
+    //       onSelected: (value) {
+    //         context.currencySetMod.toggleSymbolSpace(value);
+    //       },
+    //       expandedInsets: EdgeInsets.zero,
+    //       dropdownMenuEntries:
+    //           [true, false]
+    //               .map(
+    //                 (el) => DropdownMenuEntry(
+    //                   value: el,
+    //                   label: el.toString().capitalize(),
+    //                   style: TextButton.styleFrom(
+    //                     visualDensity: VisualDensity(vertical: -2),
+    //                   ),
+    //                 ),
+    //               )
+    //               .toList(),
+    //       textStyle: context.tt.bodyMedium,
+    //       inputDecorationTheme: InputDecorationThemeData(
+    //         visualDensity: VisualDensity(vertical: -4),
+    //         constraints: BoxConstraints(maxHeight: 40),
+    //       ),
+    //       menuStyle: MenuStyle(
+    //         padding: WidgetStatePropertyAll(EdgeInsets.zero),
+    //         visualDensity: VisualDensity.comfortable,
+    //         backgroundColor: WidgetStatePropertyAll(
+    //           context.cs.surfaceContainer ?? Colors.transparent,
+    //         ),
+    //       ),
+    //     ),
+    //   ),
+    // );
   }
 }
 

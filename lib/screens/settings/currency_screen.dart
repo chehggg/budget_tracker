@@ -1,5 +1,6 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/screens/settings/currency_viewmodel.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:money2/money2.dart';
@@ -36,23 +37,39 @@ class CurrencySelectionScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text("Select Currency"),
+        actionsPadding: EdgeInsets.only(right: 8),
         actions: [
           IconButton(
-            onPressed: () {
-              context.currencyMod.clearRecentlyUsed();
+            onPressed: () async {
+              final response = await showDialog<bool?>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: Text("Restore to Default"),
+                    content: Text("This action cannot be undone."),
+                    actions: [
+                      DismissTextButton(onTap: () => context.pop(false)),
+                      PrimaryNegativeTextButton(
+                        text: "Reset",
+                        onTap: () => context.pop(true),
+                      ),
+                    ],
+                  );
+                },
+              );
+              if (response == true && context.mounted) {
+                context.currencyMod.clearRecentlyUsed();
+              }
             },
             icon: Icon(Icons.restore),
           ),
         ],
-        // leading: BackButton(
-        //   onPressed: context.navMod.pop,
-        // ),
       ),
       body: SafeArea(
         child:
             ready
                 ? const CurrencySelectionBody()
-                : Center(
+                : const Center(
                   child: CircularProgressIndicator(),
                 ),
       ),
@@ -67,6 +84,7 @@ class CurrencySelectionBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contextWatch = context.watch<CurrencyViewModel>();
     final currencies = context.select((CurrencyViewModel state) => state.filteredCurrencies);
     final selected = context.select((CurrencyViewModel state) => state.selectedCurrency);
     return Column(

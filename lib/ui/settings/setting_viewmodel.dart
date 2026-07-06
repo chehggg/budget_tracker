@@ -32,6 +32,7 @@ class SettingsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ignore: unused_field
   StreamSubscription<Currency>? _currencySubscription;
 
   bool _isInit = false;
@@ -50,5 +51,5 @@ class SettingsViewModel extends ChangeNotifier {
   }
 
   String get displayedCurrency =>
-      "${_currencyRepo.currency.name.isEmpty ? "Custom" : _currencyRepo.currency.name} (${_currencyRepo.currency.symbol})";
+      _currencyRepo.currency.name.isEmpty ? "Custom" : _currencyRepo.currency.name;
 }

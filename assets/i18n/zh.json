@@ -4,5 +4,8 @@
   "settings": "设置",
   "aboutNomi": "关于Nomi",
   "data": "数据",
-  "changeLanguage": "更换语言"
+  "changeLanguage": "更换语言",
+  "loadData": "导入数据",
+  "exportData": "输出数据",
+  "clearData": "删除数据"
 }

@@ -6,6 +6,7 @@ import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -15,15 +16,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class LocalServices {
-  final pref = SharedPreferencesAsync();
+  final _pref = SharedPreferencesAsync();
 
   Future<String?> _loadSharedPref(String key) async {
-    final prefString = await pref.getString(key);
+    final prefString = await _pref.getString(key);
     return prefString;
   }
 
-  Future<void> _writeStringToSharedPref(String key, String value) async {
-    await pref.setString(key, value);
+  Future<void> _writeToSharedPref(String key, String value) async {
+      await _pref.setString(key, value);
   }
 
   Future<void> _writeToFile(String fileName, dynamic json) async {
@@ -176,7 +177,7 @@ class LocalServices {
   Future<Result<void>> writeSavedItems(List<SavedItem> items) async {
     try {
       final json = items.map((SavedItem el) => el.toJson()).toList();
-      await _writeStringToSharedPref("savedItems", jsonEncode(json));
+      await _writeToSharedPref("savedItems", jsonEncode(json));
       return Result.ok(null);
     } on Exception catch (e) {
       return Result.error(e);
@@ -225,7 +226,7 @@ class LocalServices {
 
   Future<Result<void>> writeCurrency(Currency currency) async {
     try {
-      await _writeStringToSharedPref("currency", jsonEncode(currency.toJson()));
+      await _writeToSharedPref("currency", jsonEncode(currency.toJson()));
       return Result.ok(null);
     } on Exception catch (e) {
       return Result.error(e);
@@ -247,7 +248,7 @@ class LocalServices {
 
   Future<Result<void>> writeRecentlyUsedCurrency(List<Currency> currency) async {
     try {
-      await _writeStringToSharedPref(
+      await _writeToSharedPref(
         "recentCurrencies",
         currency.map((currency) => currency.isoCode).join(','),
       );
@@ -261,7 +262,145 @@ class LocalServices {
     try {
       final result = await _loadSharedPref("recentCurrencies");
       if (result != null) {
-        return Result.ok(result.split(",").map((isoCode) => Currencies().find(isoCode)?? CommonCurrencies().usd).toList());
+        return Result.ok(
+          result
+              .split(",")
+              .map((isoCode) => Currencies().find(isoCode) ?? CommonCurrencies().usd)
+              .toList(),
+        );
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeKeyboardLayout(KeyboardLayout layout) async {
+    try {
+      await _writeToSharedPref("keyboardLayout", layout.name);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<KeyboardLayout?>> getKeyboardLayout() async {
+    try {
+      final result = await _loadSharedPref("keyboardLayout");
+      if (result != null) {
+        return Result.ok(KeyboardLayout.values.byName(result));
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeKeyboardButton(SimpleKeyboardButtonType button) async {
+    try {
+      await _writeToSharedPref("keyboardButton", button.name);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<SimpleKeyboardButtonType?>> getKeyboardButton() async {
+    try {
+      final result = await _loadSharedPref("keyboardButton");
+      if (result != null) {
+        return Result.ok(SimpleKeyboardButtonType.values.byName(result));
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeFormGrid(int count) async {
+    try {
+      await _pref.setInt("formGrid", count);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<int?>> getFormGrid() async {
+    try {
+      final result = await _pref.getInt("formGrid");
+      if (result != null) {
+        return Result.ok(result);
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeHideOnStart(bool value) async {
+    try {
+      await _pref.setBool("hideAmountOnStart", value);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+
+  Future<Result<bool?>> getHideOnStart() async {
+    try {
+      final result = await _pref.getBool("hideAmountOnStart");
+      if (result != null) {
+        return Result.ok(result);
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeListConfig(ListDisplayConfig config) async {
+    try {
+      await _pref.setString("listConfig", config.toJson());
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<ListDisplayConfig?>> getListConfig() async {
+    try {
+      final result = await _pref.getString("listConfig");
+      if (result != null) {
+        return Result.ok(ListDisplayConfig.fromJson(result));
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeNumberColor(AccentColor colors) async {
+    try {
+      await _pref.setString("numberColor", colors.toJson());
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<AccentColor?>> getNumberColor() async {
+    try {
+      final result = await _pref.getString("numberColor");
+      if (result != null) {
+        return Result.ok(AccentColor.fromJson(result));
       } else {
         return Result.ok(null);
       }

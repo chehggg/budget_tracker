@@ -31,6 +31,9 @@ import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
+import 'package:budget_tracker/ui/settings/keyboard_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/language_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/list_display_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -212,11 +215,23 @@ final goRouter = GoRouter(
               builder: (context, state) => const SettingsScreenWrapper(),
               routes: [
                 GoRoute(
+                  path: '/list',
+                  builder: (context, state) => const ListDisplaySettingsScreen(),
+                ),
+                GoRoute(
+                  path: '/languages',
+                  builder: (context, state) => const LanguageSettingsScreen(),
+                ),
+                GoRoute(
                   path: '/currencies',
                   builder:
                       (context, state) => const CurrencySelectionScreenWrapper(
                         currencyExchange: false,
                       ),
+                ),
+                GoRoute(
+                  path: '/keyboard',
+                  builder: (context, state) => const KeyboardSettingsScreen(),
                 ),
                 GoRoute(
                   path: '/currency-setting',

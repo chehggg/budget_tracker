@@ -149,7 +149,7 @@ ThemeData getAppTheme(Locale locale) {
     visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(
       actionsPadding: EdgeInsets.only(bottom: 30, right: 20, top: 20),
-      titleTextStyle: customTextExtension.elegantLabelLarge,
+      titleTextStyle: customTextExtension.dateLabel,
       backgroundColor: customColorScheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadiusGeometry.circular(12),
@@ -160,6 +160,9 @@ ThemeData getAppTheme(Locale locale) {
       color: customColorExtension.fadeColor2,
       thickness: 0.5,
       space: 1,
+    ),
+    scrollbarTheme: ScrollbarThemeData(
+      thumbColor: WidgetStatePropertyAll(customColorScheme.secondary.withAlpha(100))
     ),
     checkboxTheme: CheckboxThemeData(
       visualDensity: VisualDensity(vertical: -4, horizontal: -4),

@@ -1,26 +1,35 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CostItemCategory {
-  const CostItemCategory({this.id, this.name, this.color, this.imagePath, this.costType});
+  const CostItemCategory({
+    this.id,
+    this.name,
+    this.color,
+    this.imagePath,
+    this.costType,
+    this.iconName,
+  });
 
   final String? id;
   final String? name;
   final Color? color;
   final String? imagePath;
   final CostType? costType;
+  final String? iconName;
 
   CostItemCategory.error()
     : id = '0',
       name = "Not Found",
       color = Colors.white,
       imagePath = "assets/images/warning.svg",
-      costType = CostType.expense;
+      costType = CostType.expense,
+      iconName = null;
 
   ColorScheme colorScheme(ThemeMode mode) {
     Brightness brightness;
@@ -46,7 +55,8 @@ class CostItemCategory {
     "name": name,
     "color": color?.toARGB32(),
     "imagePath": imagePath,
-    "costType": costType!.name,
+    "costType": costType?.name,
+    "iconName": iconName,
   };
 
   String get capName => name?.capitalize() ?? "";
@@ -56,7 +66,10 @@ class CostItemCategory {
       name = json['name'],
       color = Color(json['color'] ?? 0xff000000),
       imagePath = json['imagePath'],
-      costType = CostType.fromString(json['costType']);
+      costType =
+          json['costType'] != null ? CostType.values.byName(json['costType']) : CostType.expense,
+      // ignore: non_const_argument_for_const_parameter
+      iconName = json['iconName'];
 
   @override
   bool operator ==(Object other) {
@@ -67,7 +80,7 @@ class CostItemCategory {
         other.id == id &&
         other.name == name;
   }
-  
+
   @override
   int get hashCode => Object.hash(id, name);
 
@@ -77,6 +90,7 @@ class CostItemCategory {
     Color? color,
     String? imagePath,
     CostType? costType,
+    String? Function()? iconName,
   }) {
     return CostItemCategory(
       id: id ?? this.id,
@@ -84,6 +98,7 @@ class CostItemCategory {
       color: color ?? this.color,
       imagePath: imagePath ?? this.imagePath,
       costType: costType ?? this.costType,
+      iconName: iconName != null ? iconName.call() : this.iconName,
     );
   }
 }

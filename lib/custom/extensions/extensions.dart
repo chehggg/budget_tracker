@@ -30,7 +30,7 @@ extension DayExtension on DateTime {
     if (locale?.languageCode == "ja") {
       return DateFormat('MMMd日 (E)', locale.toString()).format(this);
     }
-    return DateFormat('E, d MMM', locale.toString()).format(this);
+    return DateFormat('E, d MMM', locale?.toString()).format(this);
   } 
   // String formatPretty({Locale? locale}) => DateFormat('E, d MMM', locale.toString()).format(this); 
 
