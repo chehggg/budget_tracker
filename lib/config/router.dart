@@ -17,6 +17,7 @@ import 'package:budget_tracker/ui/category_form/category_form_screen.dart';
 import 'package:budget_tracker/ui/category_form/category_form_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_icon_selection_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_mtd_compare_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
@@ -115,6 +116,14 @@ final goRouter = GoRouter(
                       (context, state) => ChangeNotifierProvider.value(
                         value: state.extra as ChartViewModel,
                         child: ChartCategoryBreakdownScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/balance-compare',
+                  builder:
+                      (context, state) => ChangeNotifierProvider.value(
+                        value: state.extra as ChartViewModel,
+                        child: ChartMtdCompareScreen(),
                       ),
                 ),
               ],

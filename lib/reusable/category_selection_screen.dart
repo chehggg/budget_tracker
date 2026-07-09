@@ -5,6 +5,7 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -78,7 +79,7 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
               debugPrint('are all selected :${areAllSelected}');
               context.pop(areAllSelected ? () => null : () => selectedCategories);
             },
-            icon: Icon(Icons.check),
+            icon: FaIcon(FontAwesomeIcons.check),
           ),
         ],
       ),

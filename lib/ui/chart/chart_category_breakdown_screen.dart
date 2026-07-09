@@ -5,7 +5,9 @@ import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -23,71 +25,37 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
     final range = context.select(
       (ChartViewModel state) => state.displayDetailsPeriodDuration,
     );
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Details'),
-      ),
-      body: SafeArea(
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onHorizontalDragEnd: (details) {
-            if (details.primaryVelocity == null) return;
-            if (details.primaryVelocity!.abs() < 1000) return;
-            debugPrint(details.primaryVelocity!.toStringAsFixed(0));
-            context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
-          },
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 12),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    spacing: 12,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        "Category Breakdown",
-                        style: context.customTt.numberFontLarge?.copyWith(
-                          fontSize: 36,
-                          height: 1.2,
-                        ),
-                      ),
-                      Row(
-                        spacing: 12,
-                        children: [
-                          Text(
-                            "View: ${displayPeriodDuration}",
-                            style: context.customTt.paragraphTitle,
-                          ),
-                          Text(
-                            "(${range})",
-                            style: context.customTt.paragraphText,
-                          ),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "Change view",
-                          textAlign: TextAlign.left,
-                        ),
-                      ),
-                    ],
-                  ),
+    return CustomScaffold(
+      appBarTitle: Text('Details'),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity == null) return;
+          if (details.primaryVelocity!.abs() < 1000) return;
+          debugPrint(details.primaryVelocity!.toStringAsFixed(0));
+          context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
+        },
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 12),
+              sliver: SliverToBoxAdapter(
+                child: CustomChartDetailTitleBar(
+                  title: "Category Breakdown",
                 ),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 20.0, bottom: 20),
-                  child: SizedBox(
-                    height: 220,
-                    child: const CategoryPieChart(),
-                  ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 20.0, bottom: 20),
+                child: SizedBox(
+                  height: 220,
+                  child: const CategoryPieChart(),
                 ),
               ),
-              const CategorySpendList(),
-            ],
-          ),
+            ),
+            const CategorySpendList(),
+          ],
         ),
       ),
     );
@@ -122,8 +90,9 @@ class CategoryPieChart extends StatelessWidget {
                   (entry) {
                     final percentage = entry.value.expense! / total.expense!;
                     return PieChartSectionData(
+                      cornerRadius: 12,
                       value: entry.value.expense,
-                      radius: 8,
+                      radius: 12,
                       color: entry.key.color,
                       badgeWidget:
                           percentage > 0.1
@@ -224,7 +193,7 @@ class _CategoryTileState extends State<CategoryTile> {
       (ChartViewModel state) => state.hiddenCategories?.contains(widget.category) ?? false,
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -250,7 +219,7 @@ class _CategoryTileState extends State<CategoryTile> {
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
-                  spacing: 8,
+                  spacing: 4,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -299,16 +268,16 @@ class _CategoryTileState extends State<CategoryTile> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: context.customCs.fadeColor2,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(3),
                       ),
-                      height: 6,
+                      height: 10,
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: min(widget.percentage, 1),
                         child: Container(
                           decoration: BoxDecoration(
                             color: widget.category.color?.withAlpha(isHidden ? 50 : 255),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
                       ),

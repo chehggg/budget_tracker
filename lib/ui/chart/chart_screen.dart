@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
@@ -116,13 +118,10 @@ class ChartScreen extends StatelessWidget {
                     ),
                     ChartSection(
                       title: showMonth ? "YTM Overview" : "MTD Overview",
+                      pathName: '/chart/balance-compare',
                       showLabelSubtitle: true,
-                      // pathName: '/chart/category-breakdown',
                       child: SummaryData(),
                     ),
-                    // SliverToBoxAdapter(
-                    //   child: const SummaryData(),
-                    // ),
                     const ChartSection(
                       title: "Category Breakdown",
                       pathName: '/chart/category-breakdown',
@@ -234,7 +233,7 @@ class ChartFilterButtons extends StatelessWidget {
                           style: context.customTt.numberFontSmall?.copyWith(
                             color: context.cs.onSecondary.withAlpha(200),
                             fontSize: 14,
-                            fontWeight: FontWeight(600)
+                            fontWeight: FontWeight(600),
                           ),
                         ),
                         Text(
@@ -245,13 +244,15 @@ class ChartFilterButtons extends StatelessWidget {
                             height: 1.1,
                           ),
                         ),
-                        SizedBox(height: 3,),
+                        SizedBox(
+                          height: 3,
+                        ),
                         Text(
                           displayDetailsPeriod,
                           style: context.customTt.paragraphText?.copyWith(
                             color: context.cs.surface,
                             fontSize: 16,
-                            height: 1.3
+                            height: 1.3,
                           ),
                         ),
                       ],
@@ -599,140 +600,161 @@ class DailyBarChart extends StatelessWidget {
 }
 
 class SummaryData extends StatelessWidget {
-  const SummaryData({super.key});
+  const SummaryData({super.key, this.large = false});
 
+  final bool large;
   @override
   Widget build(BuildContext context) {
     final data = context.select((ChartViewModel state) => state.balanceOverview);
+    final size = 220.0;
+    final balanceOffset = context.chartMod.balanceOffset;
     return Container(
-      height: 200,
-      padding: EdgeInsets.only(bottom: 8),
-      child: BarChart(
-        BarChartData(
-          maxY: context.chartMod.chartMax,
-          alignment: BarChartAlignment.spaceAround,
-          gridData: customGrid,
-          extraLinesData: ExtraLinesData(
-            horizontalLines: [
-              HorizontalLine(y: 0, color: context.customCs.fadeColor2, dashArray: [2, 5]),
-            ],
-          ),
-          barTouchData: BarTouchData(
-            enabled: false,
-            touchTooltipData: BarTouchTooltipData(
-              tooltipPadding: EdgeInsets.only(top: 20),
-              direction: TooltipDirection.top,
-              getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                final int largerIndex =
-                    group.barRods.first.toY.abs() > group.barRods.last.toY.abs() ? 0 : 1;
-                final curValue = group.barRods.last.toY;
-                final prevValue = group.barRods.first.toY;
-                final diff =
-                    (groupIndex == 0 ? -1 : 1) * ((curValue - prevValue) / prevValue.abs());
-                final largerBetter = groupIndex != 0;
-                final isGood = (largerBetter && diff >= 0) || (!largerBetter && diff < 0);
-                final color =
-                    (diff.isInfinite || diff.isNaN)
-                        ? context.customCs.fadeColor1
-                        : isGood
-                        ? Colors.green.shade400
-                        : Colors.red.shade400;
-                final label = switch (groupIndex) {
-                  0 => "Expense",
-                  1 => "Income",
-                  2 => "Balance",
-                  _ => "",
-                };
+      height: size,
+      padding: EdgeInsets.only(bottom: 30, left: 10, right: 10, top: 30),
+      child: Stack(
+        // spacing: 40,
+        children: [
+          ... data.entries.map((el) {
+            final alignment = switch (el.key) {
+              "expense" => Alignment(-1, -1.15),
+              "income" =>
+                el.value.entries.fold(0.0, (init, entry) => max(init, entry.value)) == 0
+                    ? Alignment(-1, 0.07)
+                    : Alignment(1, 0.07),
+              "balance" => Alignment(balanceOffset, 1.25),
+              _ => Alignment(0, 0),
+            };
+            final prevValue = el.value['previous'] ?? 0;
+            final currentValue = el.value['current'] ?? 0;
 
-                String padText(String text, {int padding = 5}) {
-                  return largerIndex == 0
-                      ? text.padLeft(text.length + padding)
-                      : "${text.padRight(text.length + padding)}\u200B";
-                }
-
-                String padRightTextSpan(String text, {int padding = 5}) {
-                  return largerIndex == 0 ? text : "${text.padRight(text.length + padding)}\u200B";
-                }
-
-                String padLeftTextSpan(String text, {int padding = 5}) {
-                  return largerIndex == 0 ? text.padLeft(text.length + padding) : text;
-                }
-
-                return BarTooltipItem(
-                  "${padText(label)}\n",
-                  context.customTt.paragraphTitle!.copyWith(
-                    fontSize: 10,
-                    fontWeight: FontWeight(700),
-                    color: color,
+            final changePercentage = (el.key == 'expense' ? -1 : 1) * currentValue.calculatePercentageChange(prevValue);
+            
+            final largerBetter = el.key != 'expense';
+            final symbol =
+                (changePercentage.isNaN || changePercentage.isInfinite)
+                    ? ""
+                    : (changePercentage >= 0 ? "▲ " : "▼ ");
+            final isGood =
+                (largerBetter && changePercentage >= 0) || (!largerBetter && changePercentage < 0);
+            final color =
+                (changePercentage.isInfinite || changePercentage.isNaN)
+                    ? context.customCs.fadeColor1
+                    : isGood
+                    ? Colors.green.shade400
+                    : Colors.red.shade400;
+            return Positioned.fill(
+              child: Align(
+                alignment: alignment,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        el.key.capitalize(),
+                        style: context.tt.bodyMedium!.copyWith(fontSize: 12),
+                      ),
+                      Text(
+                        "${symbol} ${changePercentage.formatCompactPercentage().replaceAll('-', '')}",
+                        style: context.customTt.numberFontSmall!.copyWith(fontSize: 12, color: color),
+                      ),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
-                  children: [
-                    TextSpan(
-                      text: padLeftTextSpan(
-                        (diff.isNaN || diff.isInfinite) ? "" : (diff >= 0 ? "▲ " : "▼ "),
-                      ),
-                      style: TextStyle(fontSize: 10),
-                    ),
-                    TextSpan(
-                      text: padRightTextSpan(
-                        (diff.isNaN || diff.isInfinite)
-                            ? "N/A"
-                            : diff.formatCompactPercentage().replaceAll("-", ""),
-                        padding: 4,
-                      ),
-                      style: TextStyle(fontSize: 14),
-                    ),
+                ),
+              ),
+            );
+          }),
+          Padding(
+            padding: EdgeInsets.only(left: 70, right: context.chartMod.padRight ? 70 : 0),
+            // width: ,
+            child: BarChart(
+              BarChartData(
+                rotationQuarterTurns: large ? 0 : 1,
+                // maxY: large ? null : context.chartMod.chartMax,
+                // minY: large ? null : context.chartMod.chartMin,
+                alignment: BarChartAlignment.spaceBetween,
+                gridData: customGrid,
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(y: 0, color: context.customCs.fadeColor2, dashArray: [2, 5]),
                   ],
-                );
-              },
-              getTooltipColor: (group) {
-                return Colors.transparent;
-              },
+                ),
+                barTouchData: BarTouchData(
+                  enabled: false,
+                  touchTooltipData: BarTouchTooltipData(
+                    tooltipPadding: EdgeInsets.only(top: 20),
+                    direction: TooltipDirection.bottom,
+                    tooltipHorizontalAlignment: FLHorizontalAlignment.center,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem("", context.tt.bodyMedium!);
+                      // if (large) {
+                      //   return BarTooltipItem("", context.tt.bodyMedium!);
+                      // }
+                    },
+                    getTooltipColor: (group) {
+                      return Colors.transparent;
+                    },
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: getCustomChartTitleData(
+                  context: context,
+                ),
+                barGroups:
+                    data.entries.mapIndexed((index, dataEntry) {
+                      final int largerIndex =
+                          dataEntry.value.entries.first.value.abs() >
+                                  dataEntry.value.entries.last.value.abs()
+                              ? 0
+                              : 1;
+                      return BarChartGroupData(
+                        // groupVertically: true,
+                        barsSpace: 2,
+                        showingTooltipIndicators: [largerIndex],
+                        x: index,
+                        barRods:
+                            dataEntry.value.entries.map((entry) {
+                              return BarChartRodData(
+                                borderRadius: BorderRadius.circular(large ? 4 : 2),
+                                toY: entry.value,
+                                label: BarChartRodLabel(
+                                  show: !large,
+                                  offset:
+                                  large
+                                      ? Offset(entry.key == "current" ? 14 : -14, 10)
+                                  : Offset(entry.key == "current" ? 16 : -16, -30),
+                                  text:
+                                      entry.value != 0
+                                          ? context.chartMod.currencyFormat(
+                                            entry.value,
+                                            abbreviated: true,
+                                            compact: true,
+                                            alwaysShowSign: true,
+                                          )
+                                          : "",
+                                  style: context.customTt.paragraphText!.copyWith(fontSize: 10),
+                                ),
+                                width: large ? 10 : 7,
+                                color:
+                                    entry.key == "current"
+                                        ? context.cs.secondary
+                                        : Colors.blue.shade700.withAlpha(200),
+                              );
+                            }).toList(),
+                      );
+                    }).toList(),
+              ),
             ),
           ),
-          borderData: FlBorderData(show: false),
-          titlesData: getCustomChartTitleData(
-            context: context,
-          ),
-          barGroups:
-              data.entries.mapIndexed((index, dataEntry) {
-                final int largerIndex =
-                    dataEntry.value.entries.first.value.abs() >
-                            dataEntry.value.entries.last.value.abs()
-                        ? 0
-                        : 1;
-                return BarChartGroupData(
-                  // groupVertically: true,
-                  barsSpace: 4,
-                  showingTooltipIndicators: [largerIndex],
-                  x: index,
-                  barRods:
-                      dataEntry.value.entries.map((entry) {
-                        return BarChartRodData(
-                          borderRadius: BorderRadius.circular(2),
-                          toY: entry.value,
-                          label: BarChartRodLabel(
-                            offset: Offset(entry.key == "current" ? 34 : -34, -16),
-                            text:
-                                entry.value != 0
-                                    ? context.chartMod.currencyFormat(
-                                      entry.value,
-                                      abbreviated: true,
-                                      compact: true,
-                                      alwaysShowSign: true,
-                                    )
-                                    : "",
-                            style: context.customTt.paragraphText!.copyWith(fontSize: 10),
-                          ),
-                          color:
-                              entry.key == "current"
-                                  ? context.cs.secondary
-                                  : Colors.blue.shade700.withAlpha(200),
-                        );
-                      }).toList(),
-                );
-              }).toList(),
-        ),
+          // Column(
+          //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+          //   children: [
+          //     Text("1"),
+          //     Text("2"),
+          //     Text("3"),
+          //   ],
+          // ),
+        ],
       ),
     );
   }

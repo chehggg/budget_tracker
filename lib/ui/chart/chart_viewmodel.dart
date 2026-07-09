@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
@@ -129,6 +131,7 @@ class ChartViewModel extends ChangeNotifier {
   DateTime get rangeStart => _curRange.start;
   DateTime get rangeEnd => _curRange.end;
   DateTime get prevRangeStart => _prevRange.start;
+  DateTime get prevRangeEnd => _prevRange.end;
 
   DateTimeRange get _prevRange {
     switch (_period) {
@@ -345,6 +348,8 @@ class ChartViewModel extends ChangeNotifier {
     calculateCumulative(isCurrent: true, type: CostType.expense),
   ];
 
+  DateTime get previousMTD => rangeStart.isInSameYearMonthAs(DateTime.now()) ? DateTime.now().addMonth(-1) : calculateCumulative(isCurrent: false, type: CostType.expense).entries.last.key;
+
   List<Map<DateTime, double>> get avgCumulativeComparison => [
     calculateAverageCumulative(isCurrent: false),
     calculateAverageCumulative(isCurrent: true),
@@ -387,7 +392,37 @@ class ChartViewModel extends ChangeNotifier {
     },
   };
 
-  double get chartMax {
+  // double get chartMax {
+  //   final incomeMax = max(
+  //     curRangeSummary.income ?? 0.01,
+  //     prevRangeToDayCumulative.income ?? 0.01,
+  //   );
+  //   final expenseMax = max(
+  //     curRangeSummary.expense ?? 0.01,
+  //     prevRangeToDayCumulative.expense ?? 0.01,
+  //   );
+  //   return incomeMax * 1.5;
+  // }
+
+  bool get padRight {
+    return max(
+      curRangeSummary.income ?? 0,
+      prevRangeToDayCumulative.income ?? 0,
+    ) > 0;
+  }
+  // bool get padRight {
+  //   return max(
+  //     curRangeSummary.income ?? 0,
+  //     prevRangeToDayCumulative.income ?? 0,
+  //   ) > 0;
+  // }
+
+  double get balanceOffset {
+    double curve(double x) {
+      return 1 - 0.8 * pow(1 - x.abs(), 1.1);
+    }
+
+    double alignment = -1;
     final incomeMax = max(
       curRangeSummary.income ?? 0.01,
       prevRangeToDayCumulative.income ?? 0.01,
@@ -396,24 +431,30 @@ class ChartViewModel extends ChangeNotifier {
       curRangeSummary.expense ?? 0.01,
       prevRangeToDayCumulative.expense ?? 0.01,
     );
-      return incomeMax * 1.6 + expenseMax * 0.4;
-    // if (incomeMax > expenseMax) {
-    //   return incomeMax * 1.6;
-    // } else if (expenseMax - incomeMax < incomeMax) {
-    //   return incomeMax * 1.6;
-    // } else {
-    //   return incomeMax * 1.6;
-    //   // return expenseMax * 0.5;
-    // }
-    // final maxIncome = [
-    //   curRangeSummary.income ?? 0,
-    //   prevRangeToDayCumulative.income ?? 0,
-    //   curRangeSummary.expense ?? 0,
-    //   prevRangeToDayCumulative.expense ?? 0,
-    // ].fold(0.0, (prev, value) => max(prev, value));
 
-    // return maxIncome * 1.6;
+    final isCurrentLarger = curRangeSummary.balance.abs() > prevRangeToDayCumulative.balance.abs();
+    final isLargerNegative =
+        isCurrentLarger ? (curRangeSummary.balance < 0) : (prevRangeToDayCumulative.balance < 0);
+
+    if (prevRangeToDayCumulative.balance == 0 && curRangeSummary.balance == 0) {
+      return -1;
+    }
+    alignment =
+        (isCurrentLarger ? curRangeSummary.balance : prevRangeToDayCumulative.balance) /
+        (isLargerNegative ? expenseMax : incomeMax);
+    debugPrint('alignment: ${alignment}');
+
+    debugPrint('altered alignment: ${curve(alignment.abs()) * (isLargerNegative ? -1 : 1)}');
+    return curve(alignment.abs()) * (isLargerNegative ? -1 : 1);
   }
+
+  // double get chartMin {
+  //   final expenseMax = max(
+  //     curRangeSummary.expense ?? 0.01,
+  //     prevRangeToDayCumulative.expense ?? 0.01,
+  //   );
+  //   return expenseMax * -1.5;
+  // }
 
   // double get chartMin {
   //   return [curRangeSummary.expense ?? 0, prevRangeToDayCumulative.expense ?? 0].fold(0.0, (prev, value) => max(prev,value)) * -1.2;

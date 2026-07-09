@@ -19,20 +19,25 @@ extension DayExtension on DateTime {
   String displayFormat() => DateFormat("d MMM").format(this);
   String formatFull() => DateFormat('MMMM dd, yyyy').format(this);
   String formatShort() => DateFormat('dd-MM-yyyy').format(this);
+
   /// format datetime in "dd MMM" format
   String formatShorter() => DateFormat('dd MMM').format(this);
+
   /// format datetime in "MMM yyyy" format
   String formatMonth() => DateFormat('MMM yyyy').format(this);
+
   /// format datetime in "MMMM yyyy" format
-  String formatMonthLonger() => DateFormat('MMMM yyyy').format(this); 
+  String formatMonthLonger() => DateFormat('MMMM yyyy').format(this);
+
   /// format datetime in "E, d MMM" format
   String formatPretty({Locale? locale}) {
     if (locale?.languageCode == "ja") {
       return DateFormat('MMMd日 (E)', locale.toString()).format(this);
     }
     return DateFormat('E, d MMM', locale?.toString()).format(this);
-  } 
-  // String formatPretty({Locale? locale}) => DateFormat('E, d MMM', locale.toString()).format(this); 
+  }
+  String formatPrettyShort({Locale? locale})  => DateFormat('dd MMM yyyy').format(this);
+  // String formatPretty({Locale? locale}) => DateFormat('E, d MMM', locale.toString()).format(this);
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
   DateTime toEOM(int addMonth) => DateTime(year, month + addMonth + 1, 0);
@@ -56,6 +61,7 @@ extension DayExtension on DateTime {
   bool isBeforeOrSameMoment(DateTime newDate) {
     return (isBefore(newDate) || isAtSameMomentAs(newDate));
   }
+
   bool isAfterOrSameMoment(DateTime newDate) {
     return (isAfter(newDate) || isAtSameMomentAs(newDate));
   }
@@ -100,6 +106,7 @@ extension DoubleExtension on double {
   String formatCompactPercentage() {
     return NumberFormat.percentPattern().format(this);
   }
+
   String formatSignedCompactPercentage() {
     return NumberFormat('+#0%;-#0%').format(this);
   }
@@ -129,6 +136,10 @@ extension DoubleExtension on double {
     } else {
       return NumberFormat("$sign$currencySymbol#,##0.00").format(absValue);
     }
+  }
+
+  double calculatePercentageChange(double previousValue) {
+    return (this - previousValue) / (previousValue.abs());
   }
 
   // double formatPerce
@@ -313,5 +324,5 @@ extension VisualDensityExtension on VisualDensity {
 }
 
 extension CurrencyExtension on Currency {
-  bool get symbolOnLeft => pattern.startsWith("S"); 
+  bool get symbolOnLeft => pattern.startsWith("S");
 }

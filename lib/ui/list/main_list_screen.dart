@@ -14,6 +14,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localization/flutter_localization.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -269,11 +270,11 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
               context.listMod.toggleSearch();
               context.navMod.customHideBottom(true);
             },
-            icon: Icon(Icons.search),
+            icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
           ),
           IconButton(
             onPressed: context.listMod.toggleBlur,
-            icon: Icon(!isBlurred ? Icons.visibility : Icons.visibility_off),
+            icon: FaIcon(!isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash, size: 20,),
           ),
           // IconButton(
           //   onPressed: context.listMod.getCurMonthData,

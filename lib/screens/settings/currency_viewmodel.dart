@@ -28,7 +28,7 @@ class CurrencyViewModel extends ChangeNotifier {
 
   void getInitValue() {
     _currencies = [
-      if (!isCurrencyExchange) _selectedCurrency,
+      // if (!isCurrencyExchange) _selectedCurrency,
       ..._currencyRepo.recentCurrencies.where((currency) => (currency.isoCode != _selectedCurrency.isoCode)),
       ..._currencyRepo.availableCurrencies.where(
         (currency) => (currency.isoCode != _selectedCurrency.isoCode) && !_currencyRepo.recentCurrencies.contains(currency),

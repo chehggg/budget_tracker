@@ -4,6 +4,7 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:math_expressions/math_expressions.dart';
@@ -54,7 +55,7 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
     KeyboardButton(type: KeyboardButtonType.char, value: "6"),
     KeyboardButton(type: KeyboardButtonType.char, value: "9"),
     KeyboardButton(type: KeyboardButtonType.delete, widget: Icon(Icons.backspace_rounded)),
-    KeyboardButton(type: KeyboardButtonType.date, widget: Icon(Icons.date_range)),
+    KeyboardButton(type: KeyboardButtonType.date, widget: FaIcon(FontAwesomeIcons.calendarDay)),
     KeyboardButton(type: KeyboardButtonType.char, value: "+"),
     KeyboardButton(type: KeyboardButtonType.char, value: "-"),
     KeyboardButton(
@@ -80,8 +81,8 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
     KeyboardButton(type: KeyboardButtonType.char, value: "6"),
     KeyboardButton(type: KeyboardButtonType.char, value: "9"),
     KeyboardButton(type: KeyboardButtonType.char, value: "00"),
-    KeyboardButton(type: KeyboardButtonType.date, widget: Icon(Icons.date_range)),
-    KeyboardButton(type: KeyboardButtonType.delete, widget: Icon(Icons.backspace_rounded)),
+    KeyboardButton(type: KeyboardButtonType.date, widget: FaIcon(FontAwesomeIcons.calendarDay)),
+    KeyboardButton(type: KeyboardButtonType.delete, widget: FaIcon(FontAwesomeIcons.deleteLeft)),
     KeyboardButton(
       type: KeyboardButtonType.done,
       widget: Icon(_isCalculating ? Symbols.equal : Icons.check),
@@ -185,10 +186,11 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
         ),
         KeyboardButtonType.date => Flex(
           mainAxisSize: MainAxisSize.min,
+          spacing: 4,
           direction: isComplex ? Axis.vertical : Axis.horizontal,
           children: [
-            Icon(
-              Icons.date_range,
+            FaIcon(
+              FontAwesomeIcons.solidCalendarDays,
               color: context.cs.surface,
               size: 18,
             ),
@@ -801,6 +803,70 @@ class CustomSwitchListTile extends StatelessWidget {
           onChanged: onSelected,
         ),
       ),
+    );
+  }
+}
+
+class CustomScaffold extends StatelessWidget {
+  const CustomScaffold({
+    super.key,
+    required this.child,
+    this.ready = true,
+    this.appBarTitle,
+    this.actions,
+    this.padHorizontal = false,
+    this.safeAreaPadding = const EdgeInsets.only(top: 12, left: 12, right: 12),
+  });
+
+  final Widget child;
+  final bool ready;
+  final Widget? appBarTitle;
+  final List<Widget>? actions;
+  final bool padHorizontal;
+  final EdgeInsets safeAreaPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final pad =
+        padHorizontal
+            ? const EdgeInsets.only(top: 12, left: 12, right: 12)
+            : const EdgeInsets.only(top: 12);
+    return Scaffold(
+      appBar: AppBar(
+        actionsPadding: EdgeInsets.only(right: 8),
+        title: appBarTitle,
+        actions: actions,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        minimum: pad,
+        child:
+            ready == true
+                ? child
+                : const Center(
+                  child: CircularProgressIndicator(),
+                ),
+      ),
+    );
+  }
+}
+
+class CustomSpacedScrollView extends StatelessWidget {
+  const CustomSpacedScrollView({super.key, required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        ...children.map((el) => SliverToBoxAdapter(child: el)),
+        SliverToBoxAdapter(
+          child: Container(
+            height: 50,
+          ),
+        ),
+      ],
     );
   }
 }

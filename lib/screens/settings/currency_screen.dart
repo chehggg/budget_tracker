@@ -34,45 +34,36 @@ class CurrencySelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((CurrencyViewModel state) => state.ready);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Select Currency"),
-        actionsPadding: EdgeInsets.only(right: 8),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final response = await showDialog<bool?>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: Text("Restore to Default"),
-                    content: Text("This action cannot be undone."),
-                    actions: [
-                      DismissTextButton(onTap: () => context.pop(false)),
-                      PrimaryNegativeTextButton(
-                        text: "Reset",
-                        onTap: () => context.pop(true),
-                      ),
-                    ],
-                  );
-                },
-              );
-              if (response == true && context.mounted) {
-                context.currencyMod.clearRecentlyUsed();
-              }
-            },
-            icon: Icon(Icons.restore),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child:
-            ready
-                ? const CurrencySelectionBody()
-                : const Center(
-                  child: CircularProgressIndicator(),
-                ),
-      ),
+    return CustomScaffold(
+      appBarTitle: Text("Select Currency"),
+      actions: [
+        IconButton(
+          onPressed: () async {
+            final response = await showDialog<bool?>(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: Text("Restore to Default"),
+                  content: Text("This action cannot be undone."),
+                  actions: [
+                    DismissTextButton(onTap: () => context.pop(false)),
+                    PrimaryNegativeTextButton(
+                      text: "Reset",
+                      onTap: () => context.pop(true),
+                    ),
+                  ],
+                );
+              },
+            );
+            if (response == true && context.mounted) {
+              context.currencyMod.clearRecentlyUsed();
+            }
+          },
+          icon: Icon(Icons.restore),
+        ),
+      ],
+      ready: ready,
+      child: const CurrencySelectionBody()
     );
   }
 }
@@ -90,21 +81,20 @@ class CurrencySelectionBody extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0),
           child: CurrencySelectionField(),
         ),
-        if (context.currencyMod.isCurrencyExchange)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 20.0),
-            child: Row(
-              spacing: 8,
-              children: [
-                Text("Convert To:"),
-                Expanded(child: Text("${selected.name} (${selected.isoCode})")),
-                Text(selected.symbol),
-              ],
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 20, 12, 20.0),
+          child: Row(
+            spacing: 8,
+            children: [
+              Text(context.currencyMod.isCurrencyExchange ? "Converted To:": "Selected:",  style: TextStyle(fontWeight: FontWeight(600))),
+              Expanded(child: Text("${selected.name} (${selected.symbol})", style: TextStyle(fontWeight: FontWeight(600)),)),
+              Text(selected.isoCode),
+            ],
           ),
+        ),
         Divider(),
         Expanded(
           child: CustomScrollView(

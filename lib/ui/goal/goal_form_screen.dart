@@ -12,6 +12,7 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -28,94 +29,96 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final goalCategories = defaultGoalCategories.where((category) => category.type == _goalType);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("New Goal"),
-      ),
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(12.0),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  spacing: 8,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Text("Page 1 of 2"),
-                    Text(
-                      "What kind of goal do you want to set?",
-                      style: context.customTt.elegantLabelLarge,
-                    ),
-                    SegmentedButton(
-                      style: SegmentedButton.styleFrom(
-                        visualDensity: VisualDensity(vertical: 0),
-                        selectedBackgroundColor: context.cs.primary,
-                        selectedForegroundColor: context.cs.surface,
-                        textStyle: context.tt.labelSmall!.copyWith(fontSize: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadiusGeometry.circular(8),
-                        ),
-                      ),
-                      expandedInsets: EdgeInsets.only(top: 12),
-                      segments:
-                          GoalType.values
-                              .map(
-                                (type) => ButtonSegment(
-                                  value: type,
-                                  label: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      type.name.capitalize(),
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                      selected: {_goalType},
-                      onSelectionChanged: (val) => setState(() => _goalType = val.first),
-                    ),
-                    Text(
-                      _goalType.description,
-                      style: context.customTt.paragraphText,
-                    ),
-                  ],
+    return CustomScaffold(
+      padHorizontal: true,
+      appBarTitle: Text("New Goal"),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              spacing: 8,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Text("Page 1 of 2"),
+                Text(
+                  "What kind of goal do you want to set?",
+                  style: context.customTt.elegantLabelLarge,
                 ),
-              ),
-            ),
-            SliverList.builder(
-              itemCount: goalCategories.length,
-              itemBuilder: (context, index) {
-                final category = goalCategories.elementAt(index);
-
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ReusableContainer(
-                    onTap: () => context.go('/goals/new-goal-detail', extra: category),
-                    // onTap: () => context.go('/'),
-                    padding: EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 4,
-                      children: [
-                        Text(
-                          category.title,
-                          textAlign: TextAlign.left,
-                          style: context.customTt.paragraphTitle,
-                        ),
-                        Text(
-                          category.description,
-                          textAlign: TextAlign.left,
-                          style: context.customTt.paragraphText,
-                        ),
-                      ],
+                SegmentedButton(
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity(vertical: 0),
+                    selectedBackgroundColor: context.cs.primary,
+                    selectedForegroundColor: context.cs.surface,
+                    textStyle: context.tt.labelSmall!.copyWith(fontSize: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(8),
                     ),
                   ),
-                );
-              },
+                  expandedInsets: EdgeInsets.only(top: 12),
+                  segments:
+                      GoalType.values
+                          .map(
+                            (type) => ButtonSegment(
+                              value: type,
+                              label: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  type.name.capitalize(),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                  selected: {_goalType},
+                  onSelectionChanged: (val) => setState(() => _goalType = val.first),
+                ),
+                Text(
+                  _goalType.description,
+                  style: context.customTt.paragraphText,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          SliverList.builder(
+            itemCount: goalCategories.length,
+            itemBuilder: (context, index) {
+              final category = goalCategories.elementAt(index);
+      
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ReusableContainer(
+                  onTap: () => context.go('/goals/new-goal-detail', extra: category),
+                  // onTap: () => context.go('/'),
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    spacing: 20,
+                    children: [
+                      FaIcon(category.icon, size: 36,),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          spacing: 4,
+                          children: [
+                            Text(
+                              category.title,
+                              textAlign: TextAlign.left,
+                              style: context.customTt.paragraphTitle,
+                            ),
+                            Text(
+                              category.description,
+                              textAlign: TextAlign.left,
+                              style: context.customTt.paragraphText,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

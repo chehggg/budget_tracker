@@ -32,19 +32,18 @@ class GoalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((GoalViewModel state) => state.ready);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("GOALS"),
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.push("/goals/new-goal");
-            },
-            icon: Icon(Icons.add),
-          ),
-        ],
-      ),
-      body: SafeArea(child: ready ? const GoalBody() : Center(child: CircularProgressIndicator())),
+    return CustomScaffold(
+      appBarTitle: Text("GOALS"),
+      actions: [
+        IconButton(
+          onPressed: () {
+            context.push("/goals/new-goal");
+          },
+          icon: Icon(Icons.add),
+        ),
+      ],
+      ready: ready,
+      child: GoalBody(),
     );
   }
 }

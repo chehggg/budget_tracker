@@ -9,6 +9,7 @@ import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -68,7 +69,10 @@ class CostFormScreen extends StatelessWidget {
               onPressed: () async {
                 final response = await context.push('/form/edit-category');
               },
-              icon: Icon(Symbols.splitscreen_add),
+              icon: FaIcon(
+                FontAwesomeIcons.folderPlus,
+                size: 20,
+              ),
             ),
           if (formGroup != FormGroup.favorite)
             IconButton(
@@ -83,7 +87,10 @@ class CostFormScreen extends StatelessWidget {
                   context.formMod.toggleEditCategory();
                 }
               },
-              icon: Icon(editMode ? Icons.close : Symbols.edit_square),
+              icon: FaIcon(
+                editMode ? FontAwesomeIcons.xmark : FontAwesomeIcons.solidPenToSquare,
+                size: 20,
+              ),
             ),
         ],
       ),
@@ -293,8 +300,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               context.formMod.refresh();
                             }
                           },
-                          icon: Icon(
-                            Icons.favorite_border_outlined,
+                          icon: FaIcon(
+                            FontAwesomeIcons.heart,
+                            size: 20,
                             color: context.cs.surface,
                             // color: context.cs.error,
                           ),
@@ -310,9 +318,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               context.formMod.applyExchangedValue(response);
                             }
                           },
-                          icon: Icon(
-                            Icons.currency_exchange,
+                          icon: FaIcon(
+                            FontAwesomeIcons.moneyBillTransfer,
                             color: context.cs.surface,
+                            size: 20,
                           ),
                         ),
                         if (context.formMod.inEditMode)
@@ -336,9 +345,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                                 }
                               }
                             },
-                            icon: Icon(
-                              Icons.delete,
+                            icon: FaIcon(
+                              FontAwesomeIcons.trash,
                               color: context.cs.surface,
+                              size: 18,
                             ),
                           ),
                       ]

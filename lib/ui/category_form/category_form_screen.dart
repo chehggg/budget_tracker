@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
@@ -46,7 +47,7 @@ class CategoryFormScreen extends StatelessWidget {
                   context.catFormMod.resetCategory();
                 }
               },
-              icon: Icon(Symbols.reset_wrench),
+              icon: FaIcon(FontAwesomeIcons.clockRotateLeft, size: 20),
             ),
           if (editMode)
             IconButton(
@@ -70,7 +71,7 @@ class CategoryFormScreen extends StatelessWidget {
                   }
                 }
               },
-              icon: Icon(Icons.delete),
+              icon: FaIcon(FontAwesomeIcons.trash, size: 20,),
             ),
           IconButton(
             onPressed: () {
@@ -82,7 +83,7 @@ class CategoryFormScreen extends StatelessWidget {
                 context.showErrorNotification(message: error);
               }
             },
-            icon: Icon(Icons.save),
+            icon: FaIcon(FontAwesomeIcons.solidFloppyDisk, size: 20),
           ),
         ],
       ),
@@ -384,8 +385,8 @@ class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid>
                         curve: Curves.easeInOut,
                         duration: Duration(milliseconds: 300),
                         child: Center(
-                          child: Icon(
-                            Icons.check,
+                          child: FaIcon(
+                            FontAwesomeIcons.check,
                             size: 16,
                           ),
                         ),
@@ -460,7 +461,7 @@ class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Icon(Icons.add),
+              child: FaIcon(FontAwesomeIcons.plus, size: 16,),
             ),
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 
 class CustomMainScaffold extends StatelessWidget {
@@ -29,11 +30,14 @@ class CustomBottomNavBar extends StatelessWidget {
   final ValueChanged<int>? onTap;
   final int currentIndex;
 
-  static List<IconData> buttons = [
-    Icons.home, // list
-    Icons.auto_graph, // chart
-    Icons.ads_click_outlined, // goals
-    Icons.settings, // settings
+  static List<FaIconData> buttons = [
+    FontAwesomeIcons.houseChimney,
+    FontAwesomeIcons.chartPie,
+    FontAwesomeIcons.bullseye,
+    FontAwesomeIcons.gear,
+    // Icons.auto_graph, // chart
+    // Icons.ads_click_outlined, // goals
+    // Icons.settings, // settings
   ];
 
   @override
@@ -79,8 +83,8 @@ class CustomBottomNavBar extends StatelessWidget {
                       padding: const EdgeInsets.all(0.0),
                     ),
                     // visualDensity: VisualDensity.comfortable,
-                    icon: Icon(
-                      size: 30,
+                    icon: FaIcon(
+                      size: 24,
                       button,
                       color: isSelected ? context.cs.surface : context.cs.primary,
                     ),
@@ -118,8 +122,8 @@ class CustomFAB extends StatelessWidget {
         elevation: 0,
         foregroundColor: context.cs.surfaceContainer,
         backgroundColor: context.cs.primary,
-        child: Icon(
-          Icons.add,
+        child: FaIcon(
+          FontAwesomeIcons.plus,
           size: 40,
         ),
       ),

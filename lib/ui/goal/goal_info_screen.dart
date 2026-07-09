@@ -21,44 +21,35 @@ class GoalDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewModel state) => state.goal);
     final ready = context.select((GoalInfoViewModel state) => state.ready);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Goal Details"),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final response = await showDialog(
-                context: context,
-                builder: (context) => DeleteItemDialog(),
-              );
-              if (response == null) return;
-              if (response && context.mounted) {
-                await context.goalInfoMod.deleteGoal();
-                if (context.mounted) {
-                  context.pop();
-                }
-                // context.showSuccessNotification(message: "Goal is deleted");
+    return CustomScaffold(
+      appBarTitle: Text("Goal Details"),
+      padHorizontal: true,
+      actions: [
+        IconButton(
+          onPressed: () async {
+            final response = await showDialog(
+              context: context,
+              builder: (context) => DeleteItemDialog(),
+            );
+            if (response == null) return;
+            if (response && context.mounted) {
+              await context.goalInfoMod.deleteGoal();
+              if (context.mounted) {
+                context.pop();
               }
-            },
-            icon: Icon(Icons.delete),
-          ),
-          IconButton(
-            onPressed: () {
-              context.push('/goals/edit-goal', extra: goal);
-            },
-            icon: Icon(Icons.edit),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        minimum: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
-        child:
-            ready
-                ? const GoalInfoBody()
-                : const Center(
-                  child: CircularProgressIndicator(),
-                ),
-      ),
+            }
+          },
+          icon: Icon(Icons.delete),
+        ),
+        IconButton(
+          onPressed: () {
+            context.push('/goals/edit-goal', extra: goal);
+          },
+          icon: Icon(Icons.edit),
+        ),
+      ],
+      ready: ready,
+      child: const GoalInfoBody(),
     );
   }
 }
@@ -365,7 +356,7 @@ class GoalInfoTitleContainer extends StatelessWidget {
             goal.description ?? "",
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: context.tt.bodyMedium
+            style: context.tt.bodyMedium,
           ),
         ],
       ),
