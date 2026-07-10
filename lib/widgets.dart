@@ -691,10 +691,10 @@ class CustomActionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return ActionChip(
       avatar: icon,
-      backgroundColor: isActive == true ? context.cs.primary.withAlpha(20) : null,
+      backgroundColor: isActive == true ? context.customCs.fadeColor1 : null,
       label: label ?? SizedBox.shrink(),
       onPressed: onPressed,
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       labelPadding: EdgeInsets.symmetric(vertical: 4),
     );
   }
@@ -706,13 +706,17 @@ class CustomDropDownMenu<T> extends StatelessWidget {
     required this.entries,
     this.onSelected,
     this.initSelection,
+    this.border,
+    this.textAlign,
   });
 
   final List<DropdownMenuEntry<T>> entries;
   final ValueChanged<T?>? onSelected;
   final T? initSelection;
+  final InputBorder? border;
+  final TextAlign? textAlign;
 
-  @override
+  @override  
   Widget build(BuildContext context) {
     return DropdownMenu(
       initialSelection: initSelection,
@@ -720,9 +724,15 @@ class CustomDropDownMenu<T> extends StatelessWidget {
       expandedInsets: EdgeInsets.zero,
       dropdownMenuEntries: entries,
       textStyle: context.tt.bodyMedium,
+      textAlign: textAlign ?? TextAlign.start,
       inputDecorationTheme: InputDecorationThemeData(
         visualDensity: VisualDensity(vertical: -4),
         constraints: BoxConstraints(maxHeight: 40),
+        filled: true,
+        fillColor: context.customCs.fadeColor3,
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border,
       ),
       menuStyle: MenuStyle(
         padding: WidgetStatePropertyAll(EdgeInsets.zero),

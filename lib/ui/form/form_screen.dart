@@ -3,7 +3,6 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
-import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -12,36 +11,34 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
-import 'dart:ui' as ui;
 
 // screen for user to input a new cost item
 // or edit a existing cost item
-class CostFormScreenWrapper extends StatelessWidget {
-  const CostFormScreenWrapper({
-    super.key,
-    required this.arg,
-  });
-  final FormArgument? arg;
+// class CostFormScreenWrapper extends StatelessWidget {
+//   const CostFormScreenWrapper({
+//     super.key,
+//     required this.arg,
+//   });
+//   final FormArgument? arg;
 
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create:
-          (context) => FormViewModel(
-            sharedElRepo: context.read(),
-            initCostItem: arg?.selectedCostItem,
-            costItemRepo: context.read(),
-            savedItemRepo: context.read(),
-            categoryRepo: context.read(),
-            currencyRepo: context.read(),
-          ),
-      child: CostFormScreen(arg: arg),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return ChangeNotifierProvider(
+//       create:
+//           (context) => FormViewModel(
+//             sharedElRepo: context.read(),
+//             initCostItem: arg?.selectedCostItem,
+//             costItemRepo: context.read(),
+//             savedItemRepo: context.read(),
+//             categoryRepo: context.read(),
+//             currencyRepo: context.read(),
+//           ),
+//       child: CostFormScreen(arg: arg),
+//     );
+//   }
+// }
 
 class CostFormScreen extends StatelessWidget {
   const CostFormScreen({
@@ -59,10 +56,9 @@ class CostFormScreen extends StatelessWidget {
     final formGroup = context.select((FormViewModel state) => state.formGroup);
 
     return Scaffold(
-      // resizeToAvoidBottomInset: false,
       appBar: AppBar(
         actionsPadding: EdgeInsets.only(right: 8),
-        title: Text(arg?.selectedCostItem == null ? "NEW ITEM" : "EDIT ITEM"),
+        title: Text(editMode ? "Edit Item" : "New Item"),
         actions: [
           if (formGroup != FormGroup.favorite)
             IconButton(
@@ -94,7 +90,7 @@ class CostFormScreen extends StatelessWidget {
             ),
         ],
       ),
-      bottomSheet: const FormBottomSheet(),
+      bottomSheet: FormBottomSheet(initRoute: arg?.oriRoute,),
       body: SafeArea(
         minimum: EdgeInsets.only(left: 12, right: 12, top: 12),
         bottom: false,
@@ -111,8 +107,9 @@ class CostFormScreen extends StatelessWidget {
 }
 
 class FormBottomSheet extends StatefulWidget {
-  const FormBottomSheet({super.key});
+  const FormBottomSheet({super.key, this.initRoute});
 
+  final String? initRoute;
   @override
   State<FormBottomSheet> createState() => _FormBottomSheetState();
 }
@@ -445,15 +442,17 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             );
                           } else {
                             await context.formMod.submitForm();
-                            context.go('/', extra: DateTime.now().millisecondsSinceEpoch);
+                            if (context.mounted) {
+                              if (widget.initRoute != null) {
+                                debugPrint("Pop to init route");
+                                context.pop();
+                              }  else {
+                                debugPrint("back to /");
+                                context.go('/');
+                              }
+                            }
                           }
                         },
-                        // onTap: (KeyboardButtonType type, String value) {
-                        //   // if (type == KeyboardButtonType.char) {
-                        //   amountController.value = amountController.value.copyWith(text: value);
-                        //   // }
-                        //   return null;
-                        // } ,
                         customButton: context.formMod.customButtonText,
                         layout: context.formMod.layout,
                         selectedDate: _selectedDate,

@@ -1,16 +1,16 @@
-import 'dart:math';
-
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
-import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -19,14 +19,10 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayPeriodDuration = context.select(
-      (ChartViewModel state) => state.displayPeriodDuration,
-    );
-    final range = context.select(
-      (ChartViewModel state) => state.displayDetailsPeriodDuration,
-    );
+    final type = context.select((ChartViewModel state) => state.breakdownType);
     return CustomScaffold(
       appBarTitle: Text('Details'),
+      actions: [IconButton(onPressed: () {}, icon: FaIcon(FontAwesomeIcons.sort, size: 20))],
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: (details) {
@@ -38,7 +34,7 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
         child: CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
               sliver: SliverToBoxAdapter(
                 child: CustomChartDetailTitleBar(
                   title: "Category Breakdown",
@@ -46,11 +42,71 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 20.0, bottom: 20),
-                child: SizedBox(
-                  height: 220,
-                  child: const CategoryPieChart(),
+              child: SegmentedButton(
+                selectedIcon: FaIcon(FontAwesomeIcons.check),
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: Colors.transparent,
+                  selectedForegroundColor: context.cs.primary,
+                  foregroundColor: context.customCs.fadeColor1,
+                  side: BorderSide.none,
+                  textStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                  splashFactory: NoSplash.splashFactory,
+                ),
+                segments: [
+                  ...CostType.values.map(
+                    (el) => ButtonSegment(
+                      value: el,
+                      label: Text(el.name.capitalize()),
+                      icon: FaIcon(FontAwesomeIcons.moneyBill),
+                    ),
+                  ),
+                ],
+                onSelectionChanged: (type) => context.chartMod.changeBreakdownType(type.first),
+                selected: {type},
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                height: 260,
+                child: CategoryPieChart(),
+              ),
+            ),
+            // SliverPadding(
+            //   padding: const EdgeInsets.only(top: 20, bottom: 12.0),
+            //   sliver: SliverToBoxAdapter(
+            //     child: Divider(),
+            //   ),
+            // ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Category List",
+                        style: context.customTt.dateLabel,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        final response = await showDialog<CategoryBreakdownSort?>(
+                          context: context,
+                          builder: (dialogContext) {
+                            return BreakdownSortDialog(
+                              init: context.chartMod.breakdownSort,
+                            );
+                          },
+                        );
+                        if (response != null && context.mounted) {
+                          context.chartMod.updateCategorySort(response);
+                        }
+                      },
+                      icon: FaIcon(FontAwesomeIcons.sort, size: 18),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -62,21 +118,163 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
   }
 }
 
+class BreakdownSortDialog extends StatefulWidget {
+  const BreakdownSortDialog({
+    super.key,
+    required this.init,
+  });
+
+  final CategoryBreakdownSort init;
+
+  @override
+  State<BreakdownSortDialog> createState() => _BreakdownSortDialogState();
+}
+
+class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
+  SortType _categoryOrder = SortType.asc;
+  SortType _itemOrder = SortType.asc;
+
+  final List<String> _categorySortByGroup = ["Amount", "Name"];
+  final List<String> _itemSortByGroup = ["Amount", "Name", "Date"];
+  String _categorySortBy = "Amount";
+  String _itemSortBy = "Amount";
+
+  FaIconData getIcon(SortType type) {
+    return type == SortType.asc
+        ? FontAwesomeIcons.arrowDownShortWide
+        : FontAwesomeIcons.arrowDownWideShort;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _categoryOrder = widget.init.categoryOrder;
+    _categorySortBy = widget.init.categorySortBy;
+    _itemOrder = widget.init.itemOrder;
+    _itemSortBy = widget.init.itemSortBy;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Sort Breakdown List"),
+      content: Column(
+        spacing: 8,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Sort Category"),
+          Row(
+            spacing: 8,
+            children: [
+              Flexible(
+                flex: 2,
+                child: CustomDropDownMenu(
+                  onSelected: (value) {
+                    setState(() {
+                      _categorySortBy = value ?? _categorySortBy;
+                    });
+                  },
+                  initSelection: _categorySortBy,
+                  entries:
+                      _categorySortByGroup
+                          .map(
+                            (el) => DropdownMenuEntry(value: el, label: el),
+                          )
+                          .toList(),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _categoryOrder = _categoryOrder == SortType.asc ? SortType.dsc : SortType.asc;
+                  });
+                },
+                icon: FaIcon(
+                  getIcon(_categoryOrder),
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 4,
+          ),
+          Text("Sort Item"),
+          Row(
+            spacing: 8,
+            children: [
+              Flexible(
+                flex: 2,
+                child: CustomDropDownMenu(
+                  onSelected: (value) {
+                    setState(() {
+                      _itemSortBy = value ?? _categorySortBy;
+                    });
+                  },
+                  initSelection: _itemSortBy,
+                  entries:
+                      _itemSortByGroup
+                          .map(
+                            (el) => DropdownMenuEntry(value: el, label: el),
+                          )
+                          .toList(),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _itemOrder = _itemOrder == SortType.asc ? SortType.dsc : SortType.asc;
+                  });
+                },
+                icon: FaIcon(
+                  getIcon(_itemOrder),
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        DismissTextButton(
+          onTap: () => context.pop(null),
+        ),
+        AffirmativeTextButton(
+          onTap:
+              () => context.pop(
+                CategoryBreakdownSort(
+                  categoryOrder: _categoryOrder,
+                  categorySortBy: _categorySortBy,
+                  itemOrder: _itemOrder,
+                  itemSortBy: _itemSortBy,
+                ),
+              ),
+        ),
+      ],
+    );
+  }
+}
+
 class CategoryPieChart extends StatelessWidget {
   const CategoryPieChart({super.key});
   @override
   Widget build(BuildContext context) {
     final data = context.select((ChartViewModel state) => state.filteredCurRangeCategorySummary);
     final total = context.select((ChartViewModel state) => state.filteredCurRangeSummary);
+    final type = context.select((ChartViewModel state) => state.breakdownType);
     return Stack(
       alignment: Alignment.center,
       children: [
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Expense', style: context.customTt.numberFontSmall),
+            Text(type.name.capitalize(), style: context.customTt.numberFontSmall),
             Text(
-              NumberFormat.currency(symbol: "RM", decimalDigits: 0).format(total.expense),
+              NumberFormat.currency(
+                symbol: "RM",
+                decimalDigits: 0,
+              ).format(type == CostType.expense ? total.expense : total.income),
               style: context.customTt.elegantLabelLarge,
             ),
           ],
@@ -88,10 +286,14 @@ class CategoryPieChart extends StatelessWidget {
             sections:
                 data.entries.map(
                   (entry) {
-                    final percentage = entry.value.expense! / total.expense!;
+                    final value = entry.value;
+                    final percentage =
+                        type == CostType.expense
+                            ? value.expense! / total.expense!
+                            : value.income! / total.income!;
                     return PieChartSectionData(
                       cornerRadius: 12,
-                      value: entry.value.expense,
+                      value: type == CostType.expense ? value.expense : value.income,
                       radius: 12,
                       color: entry.key.color,
                       badgeWidget:
@@ -143,20 +345,21 @@ class CategorySpendList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = context.select((ChartViewModel state) => state.getItemsGroupedByCategory());
-    final data = context.select((ChartViewModel state) => state.curRangeCategorySummary);
-    final max = data.isEmpty ? 0 : data.entries.first.value.expense;
+    final items = context.select((ChartViewModel state) => state.curRangeSortedCategoryItems);
+    final data = context.select((ChartViewModel state) => state.curRangeDetailedCategorySummary);
+    final type = context.select((ChartViewModel state) => state.breakdownType);
+    final max = context.select((ChartViewModel state) => state.maxCategoryAmount);
+
     return SliverList.builder(
       itemCount: data.length,
       itemBuilder: (context, i) {
         final category = data.keys.elementAt(i);
-        final value = data.values.elementAt(i).expense;
-        final percentage = value! / max!;
-        final matchedItems = items.entries
-            .firstWhere((entry) => entry.key == category)
-            .value
-            .sorted((a, b) => b.amount!.compareTo(a.amount!));
+        final metric = data.values.elementAt(i);
+        final value = type == CostType.expense ? metric.expense : metric.income;
+        final percentage = value! / max;
+        final matchedItems = items.entries.firstWhere((entry) => entry.key == category).value;
         return CategoryTile(
+          key: ValueKey(category),
           category: category,
           value: value,
           percentage: percentage,
@@ -197,7 +400,7 @@ class _CategoryTileState extends State<CategoryTile> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          key: ValueKey((widget.category.name ?? "") + context.chartMod.rangeStart.formatShort()),
+          // key: ValueKey((widget.category.name ?? "")),
           dense: true,
           onExpansionChanged:
               (value) => setState(() {
@@ -273,7 +476,7 @@ class _CategoryTileState extends State<CategoryTile> {
                       height: 10,
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
-                        widthFactor: min(widget.percentage, 1),
+                        widthFactor: widget.percentage.isNaN ? 0 : widget.percentage.clamp(0, 1),
                         child: Container(
                           decoration: BoxDecoration(
                             color: widget.category.color?.withAlpha(isHidden ? 50 : 255),
@@ -289,39 +492,54 @@ class _CategoryTileState extends State<CategoryTile> {
           ),
           children:
               widget.items.map((item) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
-                  child: Row(
-                    spacing: 14,
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        fit: FlexFit.tight,
-                        child: Text(
-                          DateFormat('d MMM').format(item.date!),
-                          textAlign: TextAlign.right,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                return GestureDetector(
+                  onTap: () async {
+                    final response = await context.push(
+                      '/form',
+                      extra: FormArgument(
+                        selectedCostItem: item,
+                        oriRoute: '/chart/category-breakdown',
                       ),
-                      Flexible(
-                        flex: 11,
-                        fit: FlexFit.tight,
-                        child: Text(
-                          item.name!,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                    );
+                    setState(() {
+                      debugPrint("Expanded");
+                      _expanded = true;
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: Row(
+                      spacing: 14,
+                      children: [
+                        Flexible(
+                          flex: 2,
+                          fit: FlexFit.tight,
+                          child: Text(
+                            DateFormat('d MMM').format(item.date!),
+                            textAlign: TextAlign.right,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      Flexible(
-                        flex: 3,
-                        fit: FlexFit.tight,
-                        child: Text(
-                          item.amount!.customCurrencyFormat(""),
-                          textAlign: TextAlign.right,
+                        Flexible(
+                          flex: 11,
+                          fit: FlexFit.tight,
+                          child: Text(
+                            item.name!,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                      ),
-                    ],
+                        Flexible(
+                          flex: 3,
+                          fit: FlexFit.tight,
+                          child: Text(
+                            item.amount!.customCurrencyFormat(""),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),

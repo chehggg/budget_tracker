@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CostItemCategory {
   const CostItemCategory({

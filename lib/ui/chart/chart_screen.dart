@@ -4,7 +4,6 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
-import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -181,7 +180,7 @@ class ChartFilterButtons extends StatelessWidget {
           width: double.infinity,
           child: SegmentedButton(
             style: SegmentedButton.styleFrom(
-              side: BorderSide(color: context.customCs.fadeColor1!.withAlpha(120) ?? Colors.white),
+              side: BorderSide(color: context.customCs.fadeColor1?.withAlpha(120) ?? Colors.white),
               visualDensity: VisualDensity(vertical: 0),
               textStyle: context.customTt.dateLabel?.copyWith(fontSize: 20),
             ),

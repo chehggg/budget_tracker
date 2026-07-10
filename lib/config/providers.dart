@@ -7,7 +7,6 @@ import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/data/services/api_service.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
-import 'package:budget_tracker/models/currency_model.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:provider/provider.dart';

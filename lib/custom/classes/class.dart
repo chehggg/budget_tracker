@@ -370,7 +370,8 @@ class ListDisplayConfig {
 
   String toJson() => json.encode(toMap());
 
-  factory ListDisplayConfig.fromJson(String source) => ListDisplayConfig.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory ListDisplayConfig.fromJson(String source) =>
+      ListDisplayConfig.fromMap(json.decode(source) as Map<String, dynamic>);
 
   ListDisplayConfig copyWith({
     bool? showAmountColor,
@@ -383,4 +384,18 @@ class ListDisplayConfig {
       hideAmountOnStart: hideAmountOnStart ?? this.hideAmountOnStart,
     );
   }
+}
+
+class CategoryBreakdownSort {
+  CategoryBreakdownSort({
+    required this.categoryOrder,
+    required this.categorySortBy,
+    required this.itemOrder,
+    required this.itemSortBy,
+  });
+
+  final SortType categoryOrder;
+  final String categorySortBy;
+  final SortType itemOrder;
+  final String itemSortBy;
 }

@@ -274,7 +274,10 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           IconButton(
             onPressed: context.listMod.toggleBlur,
-            icon: FaIcon(!isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash, size: 20,),
+            icon: FaIcon(
+              !isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash,
+              size: 20,
+            ),
           ),
           // IconButton(
           //   onPressed: context.listMod.getCurMonthData,
@@ -369,7 +372,6 @@ class ItemFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final curMonth = context.select((ListViewModel state) => state.currentMonth);
     final categories = context.select((ListViewModel state) => state.filteredCategories);
     final curMonth = context.select((ListViewModel state) => state.currentMonth);
     final hasValue = categories != null;
@@ -380,9 +382,55 @@ class ItemFilterChips extends StatelessWidget {
       child: Row(
         spacing: 12,
         children: [
-          Expanded(
+          Flexible(
+            fit: FlexFit.tight,
+            flex: 2,
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity == null) return;
+                if (details.primaryVelocity! > 500) {
+                  // swipe right
+                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
+                } else if (details.primaryVelocity! < -500) {
+                  // swipe left
+                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
+                }
+              },
+              child: CustomActionChip(
+                icon: FaIcon(FontAwesomeIcons.solidCalendar, size: 14),
+                isActive: hasValue,
+                label: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  spacing: 12,
+                  children: [
+                    FaIcon(FontAwesomeIcons.angleLeft),
+                    Text(
+                      curMonth.formatMonth(),
+                      style: context.tt.bodyMedium!.copyWith(
+                        color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+                      ),
+                    ),
+                    FaIcon(FontAwesomeIcons.angleRight),
+                  ],
+                ),
+                onPressed: () async {
+                  await showDialog(
+                    context: context,
+                    builder:
+                        (_) => ChangeNotifierProvider.value(
+                          value: context.listMod,
+                          child: const MonthSelectorDialog(),
+                        ),
+                  );
+                },
+              ),
+            ),
+          ),
+          Flexible(
+            fit: FlexFit.tight,
+            flex: 1,
             child: CustomActionChip(
-              icon: Icon(Icons.category),
+              icon: FaIcon(FontAwesomeIcons.solidFolderOpen, size: 14),
               isActive: hasValue,
               label: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -395,19 +443,9 @@ class ItemFilterChips extends StatelessWidget {
                     ),
                   ),
                   if (hasValue)
-                    Container(
-                      height: 18,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: context.cs.secondary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Center(
-                        child: Text(
-                          categories.length.toString() ?? "",
-                          style: TextStyle(color: Colors.black, fontSize: 12),
-                        ),
-                      ),
+                    Text(
+                      " (${categories.length})",
+                      style: TextStyle(color: Colors.black, fontSize: 12),
                     ),
                 ],
               ),
@@ -423,9 +461,11 @@ class ItemFilterChips extends StatelessWidget {
               },
             ),
           ),
-          Expanded(
+          Flexible(
+            fit: FlexFit.tight,
+            flex: 1,
             child: CustomActionChip(
-              icon: Icon(Icons.rectangle),
+              icon: FaIcon(FontAwesomeIcons.moneyBill, size: 14),
               isActive: hasValue,
               label: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -437,60 +477,32 @@ class ItemFilterChips extends StatelessWidget {
                       color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
                     ),
                   ),
-                  if (hasValue)
-                    Container(
-                      height: 18,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: context.cs.secondary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Center(
-                        child: Text(
-                          categories.length.toString() ?? "",
-                          style: TextStyle(color: Colors.black, fontSize: 12),
-                        ),
-                      ),
-                    ),
+                  // if (hasValue)
+                  //   Container(
+                  //     height: 18,
+                  //     width: 20,
+                  //     decoration: BoxDecoration(
+                  //       color: context.cs.secondary,
+                  //       borderRadius: BorderRadius.circular(4),
+                  //     ),
+                  //     child: Center(
+                  //       child: Text(
+                  //         categories.length.toString() ?? "",
+                  //         style: TextStyle(color: Colors.black, fontSize: 12),
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
               onPressed: () async {
-                final response = await context.push<List<CostItemCategory>>(
-                  '/categories',
-                  extra: categories,
-                );
-                if (response == null) return;
-                if (context.mounted) {
-                  context.listMod.updateCategoryFilter(response);
-                }
-              },
-            ),
-          ),
-          Expanded(
-            child: CustomActionChip(
-              icon: Icon(Icons.date_range),
-              isActive: hasValue,
-              label: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 12,
-                children: [
-                  Text(
-                    curMonth.formatMonth(),
-                    style: context.tt.bodyMedium!.copyWith(
-                      color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
-                    ),
-                  ),
-                ],
-              ),
-              onPressed: () async {
-                await showDialog(
-                  context: context,
-                  builder:
-                      (_) => ChangeNotifierProvider.value(
-                        value: context.listMod,
-                        child: const MonthSelectorDialog(),
-                      ),
-                );
+                // final response = await context.push<List<CostItemCategory>>(
+                //   '/categories',
+                //   extra: categories,
+                // );
+                // if (response == null) return;
+                // if (context.mounted) {
+                //   context.listMod.updateCategoryFilter(response);
+                // }
               },
             ),
           ),

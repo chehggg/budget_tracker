@@ -4,7 +4,6 @@ import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
 import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
-import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 import 'package:budget_tracker/reusable/text_selection_screen.dart';
@@ -21,6 +20,7 @@ import 'package:budget_tracker/ui/chart/chart_mtd_compare_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
+import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
@@ -42,9 +42,9 @@ import 'package:provider/provider.dart';
 
 final _rootNavigator = GlobalKey<NavigatorState>();
 final _navigatorA = GlobalKey<NavigatorState>();
-final _navigatorB = GlobalKey<NavigatorState>();
-final _navigatorC = GlobalKey<NavigatorState>();
-final _navigatorD = GlobalKey<NavigatorState>();
+// final _navigatorB = GlobalKey<NavigatorState>();
+// final _navigatorC = GlobalKey<NavigatorState>();
+// final _navigatorD = GlobalKey<NavigatorState>();
 
 final goRouter = GoRouter(
   navigatorKey: _rootNavigator,
@@ -330,9 +330,18 @@ final goRouter = GoRouter(
         ),
       ],
       builder: (context, state) {
-        // debugPrint('trigger build form');
-        return CostFormScreenWrapper(
-          arg: state.extra as FormArgument?,
+        final arg = state.extra as FormArgument?;
+        return ChangeNotifierProvider(
+          create:
+              (context) => FormViewModel(
+                sharedElRepo: context.read(),
+                initCostItem: arg?.selectedCostItem,
+                costItemRepo: context.read(),
+                savedItemRepo: context.read(),
+                categoryRepo: context.read(),
+                currencyRepo: context.read(),
+              ),
+          child: CostFormScreen(arg: arg),
         );
       },
     ),

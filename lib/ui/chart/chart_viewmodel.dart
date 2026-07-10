@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
@@ -45,14 +43,7 @@ class ChartViewModel extends ChangeNotifier {
     _periodStart = _sharedRepo.displayDate;
 
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
-      // debugPrint('stream updated');
-      // debugPrint(
-      //   'stream: day summary: ${value.daySummary.entries.last.key},${value.daySummary.entries.last.value.expense}',
-      // );
       getInitValue();
-      // _costItems = value.items.where((i) => i.costType == _type).toList();
-      // _daySummary = _costItemRepo.daySummary;
-      // _monthSummary = _costItemRepo.monthSummary;
       notifyListeners();
     });
     _categorySubscription = _categoryRepo.categoryStream.listen((value) => notifyListeners());
@@ -63,7 +54,6 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   void getInitValue() {
-    // _costItems = _costItemRepo.costItems.where((i) => i.costType == _type).toList();
     _costItems = _costItemRepo.costItems.toList();
     _daySummary = _costItemRepo.daySummary;
     _monthSummary = _costItemRepo.monthSummary;
@@ -83,7 +73,6 @@ class ChartViewModel extends ChangeNotifier {
 
   DateTime _periodStart = DateTime.now().standard;
 
-  // ignore: unused_field
   StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
   StreamSubscription<List<CostItemCategory>>? _categorySubscription;
 
@@ -158,24 +147,43 @@ class ChartViewModel extends ChangeNotifier {
   })
   get currencyFormat => _currencyRepo.formatCurrency;
 
-  Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({bool curRange = true}) {
+  Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({
+    bool curRange = true,
+    CostType? type = CostType.expense,
+  }) {
     final items = _costItems.where(
       (item) => item.date!.isWithinRange(curRange ? _curRange : _prevRange),
     );
-    return groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
+    final grouped = groupBy(items, (item) => _categoryRepo.getCategoryById(item.categoryId!));
+    return Map.fromEntries(
+      grouped.entries.toList().where((entry) => type == null ? true : entry.key.costType == type),
+    );
   }
 
   Map<CostItemCategory, CostMetric> getCategorySummary({
     bool curRange = true,
     bool simplified = false,
+    CostType type = CostType.expense,
+    SortType order = SortType.dsc,
+    String sortBy = "Amount",
   }) {
     debugPrint("get category summary called");
-    final items = getItemsGroupedByCategory(curRange: curRange);
+    final items = getItemsGroupedByCategory(curRange: curRange, type: type);
     Map<CostItemCategory, CostMetric> result = items.map(
       (id, list) => MapEntry(id, CostMetric.fromCostItemList(list)),
     );
     final sorted = Map.fromEntries(
-      result.entries.sorted((a, b) => b.value.expense!.compareTo(a.value.expense!)),
+      result.entries.sorted((a, b) {
+        if (sortBy == "Amount") {
+          return type == CostType.expense
+              ? order.sortItem<double>(a.value.expense!, b.value.expense!)
+              : order.sortItem<double>(a.value.income!, b.value.income!);
+        } else if (sortBy == "Name") {
+          return order.sortItem<String>(a.key.name!.toLowerCase(), b.key.name!.toLowerCase());
+        } else {
+          return order.sortItem<String>(a.key.name!.toLowerCase(), b.key.name!.toLowerCase());
+        }
+      }),
     );
     if (!simplified) return sorted;
     if (sorted.length <= 5) {
@@ -192,8 +200,39 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
-  Map<CostItemCategory, CostMetric> get curRangeCategorySummary =>
-      getCategorySummary(curRange: true, simplified: false);
+  Map<CostItemCategory, List<CostItem>> get curRangeSortedCategoryItems {
+    final items = getItemsGroupedByCategory(
+      curRange: true,
+      type: _breakdownType,
+    );
+    return Map.fromEntries(
+      items.entries.map((entry) {
+        return MapEntry(
+          entry.key,
+          entry.value.sorted((a, b) {
+            if (_itemSortBy == "Amount") {
+              return _itemOrder.sortItem<double>(a.amount!, b.amount!);
+            } else if (_itemSortBy == "Date") {
+              return _itemOrder.sortItem<DateTime>(a.date!, b.date!);
+            } else if (_itemSortBy == "Name") {
+              return _itemOrder.sortItem<String>(a.name ?? "", b.name ?? "");
+            } else {
+              return _itemOrder.sortItem<double>(a.amount!, b.amount!);
+            }
+          }),
+        );
+      }).toList(),
+    );
+  }
+
+  Map<CostItemCategory, CostMetric> get curRangeDetailedCategorySummary => getCategorySummary(
+    curRange: true,
+    simplified: false,
+    order: _categoryOrder,
+    type: _breakdownType,
+    sortBy: _categorySortBy,
+  );
+
   Map<CostItemCategory, CostMetric> get simplifiedCurRangeCategorySummary =>
       getCategorySummary(curRange: true, simplified: true);
   Map<CostItemCategory, CostMetric> get _prevRangeCategorySummary =>
@@ -202,10 +241,70 @@ class ChartViewModel extends ChangeNotifier {
   List<CostItemCategory>? _hiddenCategories;
   List<CostItemCategory>? get hiddenCategories => _hiddenCategories;
 
+  CostType _breakdownType = CostType.expense;
+  CostType get breakdownType => _breakdownType;
+
+  double get maxCategoryAmount {
+    return curRangeDetailedCategorySummary.entries.fold(
+      0.0,
+      (init, entry) => max(
+        init,
+        _breakdownType == CostType.expense ? entry.value.expense! : entry.value.income!,
+      ),
+    );
+  }
+
+  void changeBreakdownType(CostType type) {
+    _breakdownType = type;
+    notifyListeners();
+  }
+
+  // String _category
+  SortType _categoryOrder = SortType.dsc;
+  SortType _itemOrder = SortType.dsc;
+
+  String _categorySortBy = "Amount";
+  String _itemSortBy = "Amount";
+
+  CategoryBreakdownSort get breakdownSort => CategoryBreakdownSort(
+    categoryOrder: _categoryOrder,
+    categorySortBy: _categorySortBy,
+    itemOrder: _itemOrder,
+    itemSortBy: _itemSortBy,
+  );
+
+  void changeCategoryOrder(SortType type) {
+    _categoryOrder = type;
+    notifyListeners();
+  }
+
+  void changeItemOrder(SortType type) {
+    _itemOrder = type;
+    notifyListeners();
+  }
+
+  void changeCategorySortBy(String by) {
+    _categorySortBy = by;
+    notifyListeners();
+  }
+
+  void changeItemSortBy(String by) {
+    _itemSortBy = by;
+    notifyListeners();
+  }
+
+  void updateCategorySort(CategoryBreakdownSort result) {
+    _categoryOrder = result.categoryOrder;
+    _categorySortBy = result.categorySortBy;
+    _itemOrder = result.itemOrder;
+    _itemSortBy = result.itemSortBy;
+    notifyListeners();
+  }
+
   Map<CostItemCategory, CostMetric> get filteredCurRangeCategorySummary {
-    final filteredEntries = curRangeCategorySummary.entries.where((entry) {
-      if (_hiddenCategories == null) return true;
-      return !_hiddenCategories!.contains(entry.key);
+    final filteredEntries = curRangeDetailedCategorySummary.entries.where((entry) {
+      final notHidden = _hiddenCategories == null ? true : !_hiddenCategories!.contains(entry.key);
+      return notHidden;
     });
     return Map.fromEntries(filteredEntries);
   }
@@ -245,7 +344,7 @@ class ChartViewModel extends ChangeNotifier {
     for (final category in categories) {
       result[category] = [
         _prevRangeCategorySummary[category] ?? CostMetric(),
-        curRangeCategorySummary[category] ?? CostMetric(),
+        curRangeDetailedCategorySummary[category] ?? CostMetric(),
       ];
     }
     return Map.fromEntries(result.entries.take(3));
@@ -348,7 +447,10 @@ class ChartViewModel extends ChangeNotifier {
     calculateCumulative(isCurrent: true, type: CostType.expense),
   ];
 
-  DateTime get previousMTD => rangeStart.isInSameYearMonthAs(DateTime.now()) ? DateTime.now().addMonth(-1) : calculateCumulative(isCurrent: false, type: CostType.expense).entries.last.key;
+  DateTime get previousMTD =>
+      rangeStart.isInSameYearMonthAs(DateTime.now())
+          ? DateTime.now().addMonth(-1)
+          : calculateCumulative(isCurrent: false, type: CostType.expense).entries.last.key;
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
     calculateAverageCumulative(isCurrent: false),
@@ -406,10 +508,12 @@ class ChartViewModel extends ChangeNotifier {
 
   bool get padRight {
     return max(
-      curRangeSummary.income ?? 0,
-      prevRangeToDayCumulative.income ?? 0,
-    ) > 0;
+          curRangeSummary.income ?? 0,
+          prevRangeToDayCumulative.income ?? 0,
+        ) >
+        0;
   }
+
   // bool get padRight {
   //   return max(
   //     curRangeSummary.income ?? 0,
@@ -506,5 +610,12 @@ class ChartViewModel extends ChangeNotifier {
   void updateCostType(CostType type) {
     _type = type;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _itemSubscription?.cancel();
+    _categorySubscription?.cancel();
+    super.dispose();
   }
 }
