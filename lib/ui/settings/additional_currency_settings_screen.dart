@@ -23,6 +23,7 @@ class AdditionalCurrencySettingScreen extends StatelessWidget {
     final currency = modelWatch.currency;
     final ready = context.select((AdditionalCurrencySettingsViewModel state) => state.ready);
 
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Currency Settings"),

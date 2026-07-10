@@ -339,6 +339,20 @@ class AccentColor {
 
   factory AccentColor.fromJson(String source) =>
       AccentColor.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  AccentColor copyWith({
+    Color? positive,
+    Color? negative,
+    Color? previous,
+    Color? current,
+  }) {
+    return AccentColor(
+      positive: positive ?? this.positive,
+      negative: negative ?? this.negative,
+      previous: previous ?? this.previous,
+      current: current ?? this.current,
+    );
+  }
 }
 
 class ListDisplayConfig {

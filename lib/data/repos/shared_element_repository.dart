@@ -127,7 +127,7 @@ class SharedElementRepository {
     _controller.add(true);
   }
 
-  void updateNumberColor(AccentColor colors) async {
+  void updateAccentColor(AccentColor colors) async {
     _accColor = colors;
     await _localServices.writeNumberColor(_accColor);
     _controller.add(true);

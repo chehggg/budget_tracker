@@ -86,7 +86,7 @@ class SettingsList extends StatelessWidget {
             delegate: SliverChildListDelegate(
               [
                 const SettingsSectionTitle(text: "Display"),
-                const HideCostSettingsTile(),
+                const ListScreenDisplaySettingsTile(),
                 const SettingsDivider(),
                 const SettingsSectionTitle(text: "Configuration"),
                 CurrencySettingsTile(
@@ -493,18 +493,24 @@ class FontSizeSettingsTile extends StatelessWidget {
   }
 }
 
-class HideCostSettingsTile extends StatelessWidget {
-  const HideCostSettingsTile({super.key});
+class ListScreenDisplaySettingsTile extends StatelessWidget {
+  const ListScreenDisplaySettingsTile({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final blur = context.select((ThemeModel state) => state.defaultBlur);
-    debugPrint("rebuild");
     return CustomSettingsTile(
-      // trailingWidget: Text(blur.name),
       title: "List Screen",
       onTap: () => context.push('/settings/list'),
     );
+  }
+}
+
+class GlobalDisplaySettingsTile extends StatelessWidget {
+  const GlobalDisplaySettingsTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
   }
 }
 

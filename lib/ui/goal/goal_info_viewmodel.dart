@@ -7,6 +7,7 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:flutter/material.dart';
 
 class GoalInfoViewModel extends ChangeNotifier {
@@ -14,10 +15,12 @@ class GoalInfoViewModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required GoalRepository goalRepos,
     required CategoryRepository categoryRepo,
+    required SharedElementRepository sharedElementRepo,
     required Goal goal,
   }) : _costItemRepo = costItemRepo,
        _goalRepo = goalRepos,
        _categoryRepo = categoryRepo,
+       _sharedElementRepo = sharedElementRepo,
        _goal = goal {
     init();
   }
@@ -25,11 +28,13 @@ class GoalInfoViewModel extends ChangeNotifier {
   final CostItemRepository _costItemRepo;
   final GoalRepository _goalRepo;
   final CategoryRepository _categoryRepo;
+  final SharedElementRepository _sharedElementRepo;
 
   Future<void> init() async {
     await _costItemRepo.ready;
     await _goalRepo.ready;
     await _categoryRepo.ready;
+    await _sharedElementRepo.ready;
 
     _pastProgress = _goal.getPastGoalProgress(_costItemRepo.costItems);
     _currentGoalProgress =
@@ -42,15 +47,19 @@ class GoalInfoViewModel extends ChangeNotifier {
     _subscription = _goalRepo.streamValue.listen((_) {
       notifyListeners();
     });
+    _sharedElementSubscription = _sharedElementRepo.sharedStream.listen((_) {
+      notifyListeners();
+    });
 
     notifyListeners();
   }
 
   StreamSubscription<bool>? _subscription;
+  StreamSubscription<bool>? _sharedElementSubscription;
 
   final int dayinCurrentMonth = DateTime.now().dayinCurrentMonth;
 
-  bool get showHistory => _pastProgress.length > 1;
+  bool get showHistory => _pastProgress.isNotEmpty;
 
   final Goal _goal;
   Goal get goal => _goal;
@@ -60,6 +69,12 @@ class GoalInfoViewModel extends ChangeNotifier {
 
   List<GoalProgress> _pastProgress = [];
   List<GoalProgress> get pastProgress => _pastProgress;
+
+  int get streak {
+    final index = _pastProgress.lastIndexWhere((progress) => !progress.achieved);
+    if (index == -1) return _pastProgress.length;
+    return _pastProgress.length - (index + 1);
+  }
 
   late GoalProgress _currentGoalProgress;
   GoalProgress get currentGoalProgress => _currentGoalProgress;
@@ -169,9 +184,12 @@ class GoalInfoViewModel extends ChangeNotifier {
     await _goalRepo.deleteGoal(_goal);
   }
 
+  AccentColor get accentColors => _sharedElementRepo.accentColors;
+  
   @override
   void dispose() {
     super.dispose();
     _subscription?.cancel();
+    _sharedElementSubscription?.cancel();
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
@@ -10,6 +11,7 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -59,11 +61,12 @@ class GoalInfoBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goalProgress = context.select((GoalInfoViewModel state) => state.pastProgress);
+    final pastProgress = context.select((GoalInfoViewModel state) => state.pastProgress.reversed);
     final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
     final progress = curProgress.progress;
+    final chartProgress = progress.clamp(0.0, 1.0);
     final dividerPercentage = progress * 0.008;
-    debugPrint('goal progress: ${goalProgress.length}');
+    debugPrint('goal progress: ${pastProgress.length}');
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -88,13 +91,13 @@ class GoalInfoBody extends StatelessWidget {
                         startDegreeOffset: -180,
                         sections: [
                           PieChartSectionData(
-                            value: min(1, progress),
-                            radius: 8,
+                            value: chartProgress,
+                            radius: 10,
                             showTitle: false,
                             color:
                                 curProgress.achieved
-                                    ? Colors.green.shade800
-                                    : Colors.red.shade900.withAlpha(150),
+                                    ? context.goalInfoMod.accentColors.positive
+                                    : context.goalInfoMod.accentColors.negative,
                           ),
                           PieChartSectionData(
                             value: dividerPercentage,
@@ -103,17 +106,19 @@ class GoalInfoBody extends StatelessWidget {
                             color: context.customCs.fadeColor1,
                           ),
                           PieChartSectionData(
-                            value: (1 - progress).abs(),
-                            radius: 8,
+                            value: (1 - chartProgress),
+                            radius: 10,
                             showTitle: false,
                             color:
                                 curProgress.achieved
                                     ? context.customCs.fadeColor2
-                                    : Colors.red.shade800,
+                                    : curProgress.goalType == GoalType.budget
+                                    ? context.goalInfoMod.accentColors.negative.withAlpha(100)
+                                    : context.customCs.fadeColor2,
                           ),
                           PieChartSectionData(
-                            value: max(1, progress) + dividerPercentage,
-                            radius: 8,
+                            value: max(1, chartProgress) + dividerPercentage,
+                            radius: 10,
                             showTitle: false,
                             color: Colors.transparent,
                           ),
@@ -127,10 +132,11 @@ class GoalInfoBody extends StatelessWidget {
                 ],
               ),
               Column(
+                spacing: 4,
                 children: [
                   Text(
                     curProgress.date!.formatMonthLonger(),
-                    style: context.customTt.paragraphText,
+                    style: context.customTt.paragraphTitle,
                   ),
                   SizedBox(
                     height: 8,
@@ -141,7 +147,7 @@ class GoalInfoBody extends StatelessWidget {
                   ),
                   Text(
                     "${curProgress.value.formatRoundedString()} / ${curProgress.target!.formatRoundedString()}",
-                    style: context.customTt.numberFontSmall,
+                    style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
                   ),
                 ],
               ),
@@ -242,7 +248,20 @@ class GoalInfoBody extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Text("History", style: context.customTt.dateLabel),
               ),
-              ...goalProgress.map(
+              if (context.goalInfoMod.streak > 0)
+                ReusableContainer(
+                  filled: true,
+                  child: Row(
+                    children: [
+                      FaIcon(FontAwesomeIcons.fire),
+                      Text(
+                        "${context.goalInfoMod.streak} streak, keep it up!",
+                        style: context.customTt.numberLabel!.copyWith(color: context.cs.surface),
+                      ),
+                    ],
+                  ),
+                ),
+              ...pastProgress.map(
                 (progress) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: ReusableContainer(
@@ -573,7 +592,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
-                          colors: [Colors.green.shade800, context.cs.secondary],
+                          colors: [context.goalInfoMod.accentColors.positive, context.cs.secondary],
                         ),
                       ),
                     ),
@@ -587,7 +606,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                     width: 8,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(2),
-                      color: Colors.red.shade800,
+                      color: context.goalInfoMod.accentColors.negative,
                     ),
                   ),
                   Text("Exceed", style: context.customTt.paragraphTextSmall),
@@ -972,17 +991,17 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
         if (value != null) {
           if (widget.target != null) {
             if (value > widget.target!) {
-              color = Colors.red.shade800;
+              color = context.goalInfoMod.accentColors.negative;
             } else {
               color =
                   Color.lerp(
-                    Colors.green.shade800,
+                    context.goalInfoMod.accentColors.positive,
                     context.cs.secondary,
                     (value) / widget.target!,
                   )!;
             }
           } else {
-            color = Colors.green;
+            color = context.goalInfoMod.accentColors.positive;
           }
         } else {
           color = context.customCs.fadeColor2!;
@@ -1183,38 +1202,38 @@ class HeatmapDialog extends StatelessWidget {
             ),
           ),
           Text('\nLegend', style: context.customTt.numberFontSmall!.copyWith(fontSize: 14)),
-          Row(
-            spacing: 6,
-            children: [
-              Text("Low", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
-              Expanded(
-                child: Container(
-                  height: 10,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [Colors.green, context.cs.secondary],
-                    ),
-                  ),
-                ),
-              ),
-              Text("High", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
-              SizedBox(
-                width: 10,
-              ),
-              Container(
-                height: 10,
-                width: 10,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: Colors.red,
-                ),
-              ),
-              Text("Exceed", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
-            ],
-          ),
+          //   Row(
+          //     spacing: 6,
+          //     children: [
+          //       Text("Low", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
+          //       Expanded(
+          //         child: Container(
+          //           height: 10,
+          //           decoration: BoxDecoration(
+          //             borderRadius: BorderRadius.circular(2),
+          //             gradient: LinearGradient(
+          //               begin: Alignment.centerLeft,
+          //               end: Alignment.centerRight,
+          //               colors: [Colors.green, context.cs.secondary],
+          //             ),
+          //           ),
+          //         ),
+          //       ),
+          //       Text("High", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
+          //       SizedBox(
+          //         width: 10,
+          //       ),
+          //       Container(
+          //         height: 10,
+          //         width: 10,
+          //         decoration: BoxDecoration(
+          //           borderRadius: BorderRadius.circular(2),
+          //           color: Colors.red,
+          //         ),
+          //       ),
+          //       Text("Exceed", style: context.customTt.paragraphText!.copyWith(fontSize: 14)),
+          //     ],
+          //   ),
         ],
       ),
       actions: [

@@ -26,6 +26,7 @@ import 'package:budget_tracker/ui/goal/goal_form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_list_screen.dart';
+import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
@@ -34,7 +35,7 @@ import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.d
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/keyboard_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/language_settings_screen.dart';
-import 'package:budget_tracker/ui/settings/list_display_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/display/list_display_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -134,7 +135,17 @@ final goRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/goals',
-              builder: (context, state) => const GoalScreenWrapper(),
+              builder:
+                  (context, state) => ChangeNotifierProvider(
+                    create: (context) {
+                      return GoalViewModel(
+                        costItemRepo: context.read(),
+                        goalRepo: context.read(),
+                        sharedElementRepo: context.read(),
+                      );
+                    },
+                    child: const GoalScreen(),
+                  ),
               routes: [
                 GoRoute(
                   parentNavigatorKey: _rootNavigator,
@@ -226,6 +237,10 @@ final goRouter = GoRouter(
                 GoRoute(
                   path: '/list',
                   builder: (context, state) => const ListDisplaySettingsScreen(),
+                ),
+                GoRoute(
+                  path: '/global',
+                  builder: (context, state) => const GlobalDisplaySettingsTile(),
                 ),
                 GoRoute(
                   path: '/languages',

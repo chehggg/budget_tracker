@@ -37,6 +37,7 @@ class _MainAppState extends State<MainApp> {
     super.initState();
     localization.onTranslatedLanguage = _onTranslatedLanguage;
     // or JSON asset base on your language source
+    
     _initializeLocalizationJsonAsset();
   }
 
