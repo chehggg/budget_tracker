@@ -5,11 +5,13 @@ import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/languages.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localization/flutter_localization.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -19,31 +21,6 @@ import 'package:budget_tracker/ui/list/main_list_screen.dart';
 
 class ChartScreen extends StatelessWidget {
   const ChartScreen({super.key});
-
-  static List<String> weekdayInitials = [
-    "M",
-    "T",
-    "W",
-    "T",
-    "F",
-    "S",
-    "S",
-  ];
-
-  static List<String> monthInitials = [
-    "J",
-    "F",
-    "M",
-    "A",
-    "M",
-    "J",
-    "J",
-    "A",
-    "S",
-    "O",
-    "N",
-    "D",
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -61,20 +38,10 @@ class ChartScreen extends StatelessWidget {
           interval: 1,
           reservedSize: 30,
           getTitlesWidget: (value, meta) {
-            final day = value.toInt();
-            String text = "";
-            switch (period) {
-              case ChartPeriod.week:
-                text = weekdayInitials.elementAtOrNull(day) ?? "";
-              case ChartPeriod.year:
-                text = monthInitials.elementAtOrNull(day) ?? "";
-              default:
-                text = "•";
-            }
             return Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
-                text,
+                context.chartMod.getInitials(value.round(), useInitials: true),
                 style: context.tt.bodyMedium!.copyWith(fontSize: 10),
               ),
             );
@@ -88,7 +55,9 @@ class ChartScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          AppLocale.aboutTitle.getString(context) //TODO: change this to the correct localization data
+          AppLocale.aboutTitle.getString(
+            context,
+          ), //TODO: change this to the correct localization data
         ),
       ),
       body: SafeArea(
@@ -151,7 +120,7 @@ class ChartFilterButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final period = context.select((ChartViewModel state) => state.period);
-    final displayPeriod = context.select((ChartViewModel state) => state.displayPeriodDuration);
+    final displayPeriod = context.select((ChartViewModel state) => state.curDisplayPeriod);
     final displayDetailsPeriod = context.select(
       (ChartViewModel state) => state.displayDetailsPeriodDuration,
     );
@@ -273,49 +242,52 @@ class ChartSection extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.only(top: 12.0, left: 12, right: 12),
       sliver: SliverToBoxAdapter(
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => pathName != null ? context.push(pathName!, extra: context.chartMod) : null,
-          child: Column(
-            spacing: 12,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: context.customTt.dateLabel,
-                        ),
+        child: Column(
+          spacing: 12,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: context.customTt.dateLabel,
                       ),
-                      IconButton(onPressed: () {}, icon: Icon(Icons.more_vert_outlined)),
+                    ),
+                    IconButton(
+                      onPressed:
+                          () =>
+                              pathName != null
+                                  ? context.push(pathName!, extra: context.chartMod)
+                                  : null,
+                      icon: FaIcon(FontAwesomeIcons.arrowRight, size: 20),
+                    ),
+                  ],
+                ),
+                if (showLabelSubtitle)
+                  Row(
+                    spacing: 12,
+                    children: [
+                      LabelIndicator(
+                        text: context.chartMod.curDisplayPeriod,
+                        color: context.chartMod.accentColors.current,
+                        fade: true,
+                      ),
+                      LabelIndicator(
+                        text: context.chartMod.prevDisplayPeriod,
+                        color: context.chartMod.accentColors.previous,
+                        fade: true,
+                      ),
                     ],
                   ),
-                  if (showLabelSubtitle)
-                    Row(
-                      spacing: 12,
-                      children: [
-                        LabelIndicator(
-                          text: "Current Range",
-                          color: context.cs.secondary,
-                          fade: true,
-                        ),
-                        LabelIndicator(
-                          text: "Previous Range",
-                          color: Colors.blue.shade400,
-                          fade: true,
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-              child,
-            ],
-          ),
+              ],
+            ),
+            child,
+          ],
         ),
       ),
     );
@@ -599,7 +571,7 @@ class SummaryData extends StatelessWidget {
       child: Stack(
         // spacing: 40,
         children: [
-          ... data.entries.map((el) {
+          ...data.entries.map((el) {
             final alignment = switch (el.key) {
               "expense" => Alignment(-1, -1.15),
               "income" =>
@@ -612,8 +584,9 @@ class SummaryData extends StatelessWidget {
             final prevValue = el.value['previous'] ?? 0;
             final currentValue = el.value['current'] ?? 0;
 
-            final changePercentage = (el.key == 'expense' ? -1 : 1) * currentValue.calculatePercentageChange(prevValue);
-            
+            final changePercentage =
+                (el.key == 'expense' ? -1 : 1) * currentValue.calculatePercentageChange(prevValue);
+
             final largerBetter = el.key != 'expense';
             final symbol =
                 (changePercentage.isNaN || changePercentage.isInfinite)
@@ -641,7 +614,10 @@ class SummaryData extends StatelessWidget {
                       ),
                       Text(
                         "${symbol} ${changePercentage.formatCompactPercentage().replaceAll('-', '')}",
-                        style: context.customTt.numberFontSmall!.copyWith(fontSize: 12, color: color),
+                        style: context.customTt.numberFontSmall!.copyWith(
+                          fontSize: 12,
+                          color: color,
+                        ),
                       ),
                     ],
                   ),
@@ -703,9 +679,9 @@ class SummaryData extends StatelessWidget {
                                 label: BarChartRodLabel(
                                   show: !large,
                                   offset:
-                                  large
-                                      ? Offset(entry.key == "current" ? 14 : -14, 10)
-                                  : Offset(entry.key == "current" ? 16 : -16, -30),
+                                      large
+                                          ? Offset(entry.key == "current" ? 14 : -14, 10)
+                                          : Offset(entry.key == "current" ? 16 : -16, -30),
                                   text:
                                       entry.value != 0
                                           ? context.chartMod.currencyFormat(
@@ -1087,12 +1063,18 @@ class NewCumulativeLineChart extends StatelessWidget {
               ).toList();
             },
           ),
+          extraLinesData: ExtraLinesData(
+            horizontalLines: [
+              HorizontalLine(y: 0, dashArray: [2, 8], color: context.customCs.fadeColor2),
+            ],
+          ),
           gridData: customGrid,
           lineBarsData:
               cumulativeComparison.mapIndexed((i, element) {
                 final bool isPrev = i == 0;
                 final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
                 return getCustomLineChartBarData(
+                  showingIndicators: [0],
                   dashArray: isPrev ? [2, 8] : null,
                   color: mainColor,
                   dotData: FlDotData(
@@ -1212,36 +1194,4 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
   }
 }
 
-class LabelIndicator extends StatelessWidget {
-  const LabelIndicator({super.key, required this.text, this.color, this.fade = false});
 
-  final String text;
-  final Color? color;
-  final bool fade;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: color,
-          ),
-        ),
-        SizedBox(width: 6),
-        Text(
-          text,
-          style: context.tt.bodyMedium!.copyWith(
-            fontSize: 12,
-            color: fade ? context.customCs.fadeColor1 : context.cs.primary,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
-}

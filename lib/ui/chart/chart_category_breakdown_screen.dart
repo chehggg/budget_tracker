@@ -42,7 +42,7 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                 child: CustomChartDetailTitleBar(
                   title: "Category Breakdown",
                 ),
-              ),
+              ),  
             ),
             SliverToBoxAdapter(
               child: SegmentedButton(

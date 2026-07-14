@@ -55,10 +55,21 @@ class SharedElementRepository {
       case Error():
         _listConfig = _listConfig;
     }
+
+    final syncDateResult = await _localServices.getSyncDateSettings();
+    switch (syncDateResult) {
+      case Ok():
+        _syncDate = syncDateResult.value ?? _syncDate;
+      case Error():
+        _syncDate = _syncDate;
+    }
   }
 
   final StreamController<bool> _controller = StreamController<bool>.broadcast();
   Stream<bool> get sharedStream => _controller.stream;
+
+  final StreamController<YearMonth> _sharedDateController = StreamController<YearMonth>.broadcast();
+  Stream<YearMonth> get sharedDateStream => _sharedDateController.stream;
 
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
@@ -69,9 +80,12 @@ class SharedElementRepository {
   DateTime _displayDate = DateTime.now();
   DateTime get displayDate => _displayDate;
 
+  bool _syncDate = false;
+  bool get syncDate => _syncDate;
+
   YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now().startOfMonth);
   YearMonth get currentYearMonth => _yearMonth;
-  
+
   KeyboardLayout _keyboardLayout = KeyboardLayout.simple;
   KeyboardLayout get keyboardLayout => _keyboardLayout;
 
@@ -170,6 +184,15 @@ class SharedElementRepository {
     _controller.add(true);
   }
 
+  void updateYearMonth(YearMonth newYearMonth) {
+    _yearMonth = newYearMonth;
+    _sharedDateController.add(_yearMonth);
+  }
+  
+  void toggleSyncDate(bool value) {
+    _syncDate = value;
+    _sharedDateController.add(_yearMonth);
+  }
   // void updatePositiveAmountColor(SimpleKeyboardButtonType newButton) async {
   //   _keyboardButton = newButton;
   //   await _localServices.writeKeyboardButton(_keyboardButton);

@@ -10,7 +10,7 @@ class CustomChartDetailTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayPeriodDuration = context.select(
-      (ChartViewModel state) => state.displayPeriodDuration,
+      (ChartViewModel state) => state.curDisplayPeriod,
     );
     final range = context.select(
       (ChartViewModel state) => state.displayDetailsPeriodDuration,
@@ -48,6 +48,40 @@ class CustomChartDetailTitleBar extends StatelessWidget {
         //     textAlign: TextAlign.left,
         //   ),
         // ),
+      ],
+    );
+  }
+}
+
+class LabelIndicator extends StatelessWidget {
+  const LabelIndicator({super.key, required this.text, this.color, this.fade = false});
+
+  final String text;
+  final Color? color;
+  final bool fade;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: color,
+          ),
+        ),
+        SizedBox(width: 6),
+        Text(
+          text,
+          style: context.tt.bodyMedium!.copyWith(
+            fontSize: 12,
+            color: fade ? context.customCs.fadeColor1 : context.cs.primary,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }

@@ -1,3 +1,5 @@
+import 'package:budget_tracker/custom/classes/class.dart';
+
 enum CostType {
   expense,
   income;
@@ -79,4 +81,19 @@ enum SortType {
     asc => "↓",
     dsc => "↑",
   };
+}
+
+enum ChartMetric {
+  expense, income, balance;
+
+  double? getCostMetric(CostMetric costMetric) {
+    switch (this) {
+      case expense:
+        return costMetric.expense;
+      case income:
+        return costMetric.income;
+      case balance:
+        return costMetric.balance;
+    }
+  }
 }

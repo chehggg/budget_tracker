@@ -55,6 +55,13 @@ class ListViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    _sharedDateSubscription = _sharedRepo.sharedDateStream.listen((value) {
+      if (_sharedRepo.syncDate) {
+        _yearMonth = value;
+        notifyListeners();
+      }
+    });
+
     _isBlurred = displayConfig.hideAmountOnStart;
 
     _isInitialized = true;
@@ -62,6 +69,7 @@ class ListViewModel extends ChangeNotifier {
   }
 
   StreamSubscription<bool>? _sharedElSubscription;
+  StreamSubscription<YearMonth>? _sharedDateSubscription;
   StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
   StreamSubscription<Currency>? _currencySubscription;
   StreamSubscription<List<CostItemCategory>>? _categorySubscription;
@@ -180,7 +188,11 @@ class ListViewModel extends ChangeNotifier {
   }
 
   void updateYearMonth(YearMonth newYearMonth) {
-    _yearMonth = newYearMonth;
+    if (_sharedRepo.syncDate) {
+      _sharedRepo.updateYearMonth(newYearMonth);
+    } else {
+      _yearMonth = newYearMonth;
+    }
     notifyListeners();
   }
 

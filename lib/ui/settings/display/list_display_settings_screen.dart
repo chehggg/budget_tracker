@@ -1,5 +1,4 @@
 import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +16,7 @@ class _ListDisplaySettingsScreenState extends State<ListDisplaySettingsScreen> {
   bool _hideAmount = false;
   bool _showAmountColor = true;
   bool _showTotalColor = true;
+  bool _syncDate = false;
 
   @override
   void initState() {
@@ -25,13 +25,13 @@ class _ListDisplaySettingsScreenState extends State<ListDisplaySettingsScreen> {
     _hideAmount = config.hideAmountOnStart;
     _showAmountColor = config.showAmountColor;
     _showTotalColor = config.showTotalColor;
+    _syncDate = context.read<SharedElementRepository>().syncDate;
   }
 
   @override
   Widget build(BuildContext context) {
     debugPrint("display rebuilt");
     final repoRead = context.read<SharedElementRepository>();
-    // final hideAmount = context.select((SharedElementRepository))();
     return Scaffold(
       appBar: AppBar(title: Text("Title")),
       body: SafeArea(
@@ -72,11 +72,11 @@ class _ListDisplaySettingsScreenState extends State<ListDisplaySettingsScreen> {
                   ),
                   CustomSwitchListTile(
                     title: "Sync date in list & chart screen",
-                    value: false,
+                    value: _syncDate,
                     onSelected: (value) {
                       setState(() {
-                        _showTotalColor = value;
-                        repoRead.toggleShowTotalColor(value);
+                        _syncDate = value;
+                        repoRead.toggleSyncDate(value);
                       });
                     },
                   ),

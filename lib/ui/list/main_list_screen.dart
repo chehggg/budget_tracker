@@ -576,9 +576,7 @@ class CostEntryList extends StatelessWidget {
                           textStyle: context.customTt.numberFontMedium!.copyWith(
                             color:
                                 contextWatch.displayConfig.showTotalColor
-                                    ? (daySummary < 0
-                                        ? contextWatch.accentColors.negative
-                                        : contextWatch.accentColors.positive)
+                                    ? contextWatch.accentColors.getColorByValue(daySummary)
                                     : context.cs.primary,
                           ),
                         ),

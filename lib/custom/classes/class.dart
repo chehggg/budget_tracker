@@ -306,10 +306,18 @@ class AccentColor {
   final Color current;
 
   Color getColorByValue(double value, {bool reversed = false}) {
-    if (value >= 0) {
-      return reversed ? negative : positive;
+    if (reversed) {
+      if (value <= 0) {
+        return positive;
+      } else {
+        return negative;
+      }
     } else {
-      return reversed ? positive : negative;
+      if (value >= 0) {
+        return positive;
+      } else {
+        return negative;
+      }
     }
   }
 

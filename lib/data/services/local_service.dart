@@ -429,4 +429,26 @@ class LocalServices {
       return Result.error(e);
     }
   }
+
+  Future<Result<void>> writeSyncDateSettings(bool value) async {
+    try {
+      await _pref.setBool("syncDate", value);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<bool?>> getSyncDateSettings() async {
+    try {
+      final result = await _pref.getBool("keyboardSettings");
+      if (result != null) {
+        return Result.ok(result);
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
 }

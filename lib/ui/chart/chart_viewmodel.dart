@@ -80,6 +80,9 @@ class ChartViewModel extends ChangeNotifier {
   Map<DateTime, CostMetric> _daySummary = {};
   Map<DateTime, CostMetric> _monthSummary = {};
 
+  ChartMetric _chartMetric = ChartMetric.balance;
+  ChartMetric get chartMetric => _chartMetric;
+
   static List<String> get weekdayInitials => [
     "Mon",
     "Tue",
@@ -118,7 +121,7 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
-  String get displayPeriodDuration {
+  String get curDisplayPeriod {
     switch (_period) {
       case ChartPeriod.month:
         return DateFormat('MMMM yyyy').format(_periodStart);
@@ -146,6 +149,11 @@ class ChartViewModel extends ChangeNotifier {
 
   String get displayDetailsPeriodDuration {
     return '${DateFormat("dd MMM yyyy").format(_curRange.start)} - ${DateFormat("dd MMM yyyy").format(_curRange.end)}';
+  }
+
+  void updateChartMetric(ChartMetric newMetric) {
+    _chartMetric = newMetric;
+    notifyListeners();
   }
 
   DateRangeType _rangeType = DateRangeType.thisMonth;
@@ -453,40 +461,29 @@ class ChartViewModel extends ChangeNotifier {
     return Map.fromEntries(result);
   }
 
-  Map<DateTime, double> calculateCumulative({bool isCurrent = true, CostType? type}) {
+  Map<DateTime, double> calculateCumulative({
+    bool isCurrent = true,
+    ChartMetric type = ChartMetric.balance,
+  }) {
     return calculateCumulativeMetric(isCurrent: isCurrent).map(
-      (key, value) => MapEntry(
-        key,
-        type == null
-            ? value.balance
-            : type == CostType.expense
-            ? value.expense ?? 0
-            : value.income ?? 0,
-      ),
+      (key, value) => MapEntry(key, type.getCostMetric(value) ?? 0),
     );
-    // double total = 0;
-    // List<MapEntry<DateTime, double>> result = [];
-    // final rangeMap = isCurrent ? curRangeOverview : prevRangeOverview;
-    // rangeMap.forEach((key, metric) {
-    //   total += (_type == CostType.expense ? (metric.expense ?? 0) : (metric.income ?? 0));
-    //   result.add(MapEntry(key, total));
-    // });
-    // return Map.fromEntries(result);
   }
 
-  Map<DateTime, double> calculateAverageCumulative({bool isCurrent = true}) {
-    // List<MapEntry<DateTime, double>> result = [];
+  Map<DateTime, double> calculateAverageCumulative({
+    bool isCurrent = true,
+    ChartMetric type = ChartMetric.balance,
+  }) {
     return Map.fromEntries(
-      calculateCumulative(isCurrent: isCurrent).entries.mapIndexed((index, entry) {
+      calculateCumulative(isCurrent: isCurrent, type: type).entries.mapIndexed((index, entry) {
         return MapEntry(entry.key, entry.value / (index + 1));
       }),
     );
-    // return Map.fromEntries(result);
   }
 
   List<Map<DateTime, double>> get cumulativeComparison => [
-    calculateCumulative(isCurrent: false, type: CostType.expense),
-    calculateCumulative(isCurrent: true, type: CostType.expense),
+    calculateCumulative(isCurrent: false, type: _chartMetric),
+    calculateCumulative(isCurrent: true, type: _chartMetric),
   ];
 
   DateTime get curMTD =>
@@ -666,6 +663,13 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   AccentColor get accentColors => _sharedRepo.accentColors;
+
+  Color getChangePercentageColor(double value, {ChartMetric? metric}) {
+    return accentColors.getColorByValue(
+      value,
+      reversed: (metric ?? _chartMetric) == ChartMetric.expense,
+    );
+  }
 
   @override
   void dispose() {

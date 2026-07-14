@@ -228,7 +228,7 @@ class GoalProgress {
   String get status {
     switch (goalType) {
       case GoalType.budget:
-        return achieved ? "Contained" : "Overbudget";
+        return achieved ? "Contained" : "Overspent";
       case GoalType.savings:
         return achieved ? "Achieved" : "Not Achieved";
       case GoalType.payment:
@@ -241,7 +241,7 @@ class GoalProgress {
   String get currentStatus {
     switch (goalType) {
       case GoalType.budget:
-        return achieved ? "Contained" : "Overspent";
+        return achieved ? "Contained" : "Overbudget";
       case GoalType.savings:
         return achieved ? "Achieved" : "Pending";
       case GoalType.payment:

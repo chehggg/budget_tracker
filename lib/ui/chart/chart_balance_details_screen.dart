@@ -1,19 +1,24 @@
 import 'dart:math';
 
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CumulativeBalanceDetailScreen extends StatelessWidget {
   const CumulativeBalanceDetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final metric = context.select((ChartViewModel state) => state.chartMetric);
     final overview = context.chartMod.cumulativeComparison;
     final maxLength = max(overview.first.length, overview.last.length);
     final columns = [
@@ -36,8 +41,49 @@ class CumulativeBalanceDetailScreen extends StatelessWidget {
             ),
           ),
           SliverToBoxAdapter(
+            child: SegmentedButton(
+              segments: ChartMetric.values.map((el) => ButtonSegment(value: el)).toList(),
+              onSelectionChanged: (value) {
+                context.chartMod.updateChartMetric(value.first);
+              },
+              selected: {metric},
+            ),
+          ),
+          SliverToBoxAdapter(
             child: NewCumulativeLineChart(
-              titleData: getCustomChartTitleData(context: context),
+              titleData: getCustomChartTitleData(
+                context: context,
+                bottomTitle: AxisTitles(
+                  sideTitles: SideTitles(
+                    getTitlesWidget: (value, meta) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          context.chartMod.getInitials(value.round(), useInitials: true),
+                          style: context.tt.bodyMedium!.copyWith(fontSize: 10),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Row(
+              spacing: 12,
+              children: [
+                LabelIndicator(
+                  text: context.chartMod.curDisplayPeriod,
+                  color: context.chartMod.accentColors.current,
+                  fade: true,
+                ),
+                LabelIndicator(
+                  text: context.chartMod.prevDisplayPeriod,
+                  color: context.chartMod.accentColors.previous,
+                  fade: true,
+                ),
+              ],
             ),
           ),
           SliverToBoxAdapter(
@@ -94,11 +140,14 @@ class CumulativeBalanceDetailScreen extends StatelessWidget {
                                             entry.value,
                                             abbreviated: true,
                                             compact: true,
+                                            alwaysShowSign: false,
                                           ),
                                     ),
                                     if (entry != null)
                                       Text(
-                                        entry.key.formatPrettyShort(),
+                                        context.chartMod.showMonths
+                                            ? entry.key.formatMonth()
+                                            : entry.key.formatPrettyShort(),
                                         style: context.customTt.paragraphTextSmall,
                                       ),
                                   ],
@@ -119,16 +168,15 @@ class CumulativeBalanceDetailScreen extends StatelessWidget {
                                           change,
                                           abbreviated: true,
                                           compact: true,
-                                          alwaysShowSign: true,
+                                          alwaysShowSign: false,
                                         ),
                                   ),
                                   if (percentage != null)
                                     Text(
                                       percentage.formatSignedCompactPercentage(),
                                       style: context.customTt.paragraphTextSmall!.copyWith(
-                                        color: context.chartMod.accentColors.getColorByValue(
+                                        color: context.chartMod.getChangePercentageColor(
                                           percentage,
-                                          reversed: true,
                                         ),
                                       ),
                                     ),
@@ -139,11 +187,6 @@ class CumulativeBalanceDetailScreen extends StatelessWidget {
                         ],
                       );
                     }).toList(),
-                // rows:  [
-                //   DataRow(cells: [DataCell(Text("What")), DataCell(Text("What"))]),
-                //   DataRow(cells: [DataCell(Text("What")), DataCell(Text("What"))]),
-                //   DataRow(cells: [DataCell(Text("What")), DataCell(Text("What"))]),
-                // ],
               ),
             ),
           ),

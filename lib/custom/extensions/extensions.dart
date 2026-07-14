@@ -36,7 +36,7 @@ extension DayExtension on DateTime {
     }
     return DateFormat('E, d MMM', locale?.toString()).format(this);
   }
-  String formatPrettyShort({Locale? locale})  => DateFormat('dd MMM yyyy').format(this);
+  String formatPrettyShort({Locale? locale})  => DateFormat('d MMM yyyy').format(this);
   // String formatPretty({Locale? locale}) => DateFormat('E, d MMM', locale.toString()).format(this);
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
