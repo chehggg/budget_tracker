@@ -90,7 +90,9 @@ class CostFormScreen extends StatelessWidget {
             ),
         ],
       ),
-      bottomSheet: FormBottomSheet(initRoute: arg?.oriRoute,),
+      bottomSheet: FormBottomSheet(
+        initRoute: arg?.oriRoute,
+      ),
       body: SafeArea(
         minimum: EdgeInsets.only(left: 12, right: 12, top: 12),
         bottom: false,
@@ -143,12 +145,12 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
         return Theme(
           data: Theme.of(context).copyWith(
             datePickerTheme: DatePickerThemeData(
-              backgroundColor: context.cs.surface,
+              backgroundColor: context.cs.surfaceContainerHigh,
               shape: RoundedRectangleBorder(
                 side: BorderSide(color: context.cs.primary.withAlpha(50)),
                 borderRadius: BorderRadiusGeometry.circular(30),
               ),
-              dayStyle: context.customTt.numberFontSmall,
+              dayStyle: context.tt.bodyMedium,
               weekdayStyle: context.customTt.numberFontSmall,
               yearStyle: context.customTt.numberFontSmall,
               toggleButtonTextStyle: context.customTt.numberFontSmall,
@@ -228,10 +230,10 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
               duration: Durations.medium1,
               curve: Curves.easeInOutExpo,
               height: _isFormExpanded ? 64 : 120,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 4,
+                spacing: 0,
                 children: [
                   AnimatedScale(
                     scale: _isFormExpanded ? 0.7 : 1,
@@ -244,7 +246,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                     ),
                   ),
                   SizedBox(
-                    width: 8,
+                    width: 12,
                   ),
                   Expanded(
                     child: Column(
@@ -446,7 +448,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                               if (widget.initRoute != null) {
                                 debugPrint("Pop to init route");
                                 context.pop();
-                              }  else {
+                              } else {
                                 debugPrint("back to /");
                                 context.go('/');
                               }
@@ -454,7 +456,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                           }
                         },
                         customButton: context.formMod.customButtonText,
-                        layout: context.formMod.layout,
+                        layout: context.formMod.settings.layout,
+                        reversed: context.formMod.settings.rowReversed,
+                        customButtonReversed: context.formMod.settings.customButtonReversed,
                         selectedDate: _selectedDate,
                         onDateTapped: selectDate,
                       ),

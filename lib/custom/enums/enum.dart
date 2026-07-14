@@ -75,4 +75,8 @@ enum SortType {
 
     }
   }
+  String get arrow => switch(this) {
+    asc => "↓",
+    dsc => "↑",
+  };
 }

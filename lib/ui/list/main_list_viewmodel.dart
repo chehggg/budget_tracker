@@ -36,7 +36,6 @@ class ListViewModel extends ChangeNotifier {
     await _currencyRepo.ready;
     await _sharedRepo.ready;
 
-
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
       debugPrint("subscription trigger refresh for cost items.");
       _curYearMonth = value.date ?? DateTime.now().startOfMonth;
@@ -82,6 +81,12 @@ class ListViewModel extends ChangeNotifier {
   DateTime _curYearMonth = DateTime.now().startOfMonth;
   DateTime get currentMonth => _curYearMonth;
 
+  YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now().startOfMonth);
+  YearMonth get currentYearMonth => _yearMonth;
+
+  DateTimeRange? _currentRange;
+  DateTimeRange? get currentRange => _currentRange;
+
   bool _isSearchOpened = false;
   bool get isSearchOpened => _isSearchOpened;
 
@@ -95,7 +100,7 @@ class ListViewModel extends ChangeNotifier {
   String _searchText = "";
 
   ListDisplayConfig get displayConfig => _sharedRepo.listScreenConfig;
-  
+
   AccentColor get accentColors => _sharedRepo.accentColors;
 
   Map<DateTime, List<CostItem>> get outputCostItems {
@@ -142,11 +147,21 @@ class ListViewModel extends ChangeNotifier {
 
   Map<DateTime, CostMetric> get monthlyOverview => _costItemRepo.monthSummary;
 
-
   Map<DateTime, List<CostItem>> get curMonthGbDateCostItems => Map.fromEntries(
     _costItemRepo.gbDateCostItems.entries
         .where(
-          (entry) => entry.key.isInSameYearMonthAs(_curYearMonth),
+          (entry) {
+            return _yearMonth.isWithin(entry.key);
+            // // switch(selectedResult) {
+            // //   case SingleYearMonth():
+
+            // // }
+            // if (_currentRange != null) {
+            //   return entry.key.isWithinRange(_currentRange!, setEndToEoM: true);
+            // } else {
+            //   return entry.key.isInSameYearMonthAs(_curYearMonth);
+            // }
+          },
         )
         .sorted((a, b) => b.key.compareTo(a.key)),
   );
@@ -164,9 +179,17 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void changeYearMonth(DateTime newYearMonth) {
-    _curYearMonth = newYearMonth;
-    _sharedRepo.updateDisplayDate(newYearMonth);
+  void updateYearMonth(YearMonth newYearMonth) {
+    _yearMonth = newYearMonth;
+    notifyListeners();
+  }
+
+  void incrementYearMonth({bool increase = true}) {
+    final value = increase ? 1 : -1;
+    _yearMonth = _yearMonth.copyWith(
+      date1: _yearMonth.date1.addMonth(value),
+      date2: () => _yearMonth.date2?.addMonth(value),
+    );
     notifyListeners();
   }
 
@@ -199,6 +222,11 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateDateRange(DateTimeRange? range) {
+    debugPrint("update date range, range: ${range?.start} - ${range?.end}");
+    _currentRange = range;
+    notifyListeners();
+  }
 
   // void toggleCategoryFilter(String id, bool selected) {
   //   if (selected) {

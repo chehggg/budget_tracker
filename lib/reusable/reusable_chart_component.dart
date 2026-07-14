@@ -31,6 +31,7 @@ LineChartBarData getCustomLineChartBarData({
   bool showGradient = true,
   List<int>? dashArray,
   FlDotData? dotData,
+  List<int> showingIndicators = const [],
 }) {
   return LineChartBarData(
     curveSmoothness: 0.5,
@@ -39,6 +40,7 @@ LineChartBarData getCustomLineChartBarData({
     barWidth: 1.5,
     isStrokeCapRound: true,
     isStrokeJoinRound: true,
+    showingIndicators: showingIndicators,
     belowBarData: BarAreaData(
       show: showGradient,
       gradient: LinearGradient(

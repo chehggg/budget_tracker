@@ -15,6 +15,7 @@ import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_form_screen.dart';
 import 'package:budget_tracker/ui/category_form/category_form_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_icon_selection_screen.dart';
+import 'package:budget_tracker/ui/chart/chart_balance_details_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_mtd_compare_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
@@ -33,6 +34,7 @@ import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
+import 'package:budget_tracker/ui/settings/display/global_display_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/keyboard_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/language_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/display/list_display_settings_screen.dart';
@@ -117,6 +119,14 @@ final goRouter = GoRouter(
                       (context, state) => ChangeNotifierProvider.value(
                         value: state.extra as ChartViewModel,
                         child: ChartCategoryBreakdownScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/cumulative-balance',
+                  builder:
+                      (context, state) => ChangeNotifierProvider.value(
+                        value: state.extra as ChartViewModel,
+                        child: CumulativeBalanceDetailScreen(),
                       ),
                 ),
                 GoRoute(
@@ -219,6 +229,8 @@ final goRouter = GoRouter(
                               goalRepos: context.read(),
                               costItemRepo: context.read(),
                               categoryRepo: context.read(),
+                              currencyRepo: context.read(),
+                              sharedElementRepo: context.read(),
                               goal: state.extra as Goal,
                             ),
                         child: const GoalDetailsScreen(),
@@ -240,7 +252,7 @@ final goRouter = GoRouter(
                 ),
                 GoRoute(
                   path: '/global',
-                  builder: (context, state) => const GlobalDisplaySettingsTile(),
+                  builder: (context, state) => const GlobalDisplaySettingsScreen(),
                 ),
                 GoRoute(
                   path: '/languages',

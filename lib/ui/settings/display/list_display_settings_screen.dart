@@ -70,6 +70,16 @@ class _ListDisplaySettingsScreenState extends State<ListDisplaySettingsScreen> {
                       });
                     },
                   ),
+                  CustomSwitchListTile(
+                    title: "Sync date in list & chart screen",
+                    value: false,
+                    onSelected: (value) {
+                      setState(() {
+                        _showTotalColor = value;
+                        repoRead.toggleShowTotalColor(value);
+                      });
+                    },
+                  ),
                 ],
               ),
             ),

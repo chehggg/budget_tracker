@@ -24,7 +24,7 @@ class LocalServices {
   }
 
   Future<void> _writeToSharedPref(String key, String value) async {
-      await _pref.setString(key, value);
+    await _pref.setString(key, value);
   }
 
   Future<void> _writeToFile(String fileName, dynamic json) async {
@@ -351,7 +351,6 @@ class LocalServices {
     }
   }
 
-
   Future<Result<bool?>> getHideOnStart() async {
     try {
       final result = await _pref.getBool("hideAmountOnStart");
@@ -401,6 +400,28 @@ class LocalServices {
       final result = await _pref.getString("numberColor");
       if (result != null) {
         return Result.ok(AccentColor.fromJson(result));
+      } else {
+        return Result.ok(null);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeKeyboardSettings(KeyboardSettings settings) async {
+    try {
+      await _pref.setString("keyboardSettings", settings.toJson());
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<KeyboardSettings?>> getKeyboardSettings() async {
+    try {
+      final result = await _pref.getString("keyboardSettings");
+      if (result != null) {
+        return Result.ok(KeyboardSettings.fromJson(result));
       } else {
         return Result.ok(null);
       }

@@ -4,6 +4,7 @@ import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -41,8 +42,7 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
   void initState() {
     super.initState();
     _controller =
-        TextEditingController()
-        ..addListener(
+        TextEditingController()..addListener(
           () => context.read<CategorySelectionViewModel>().updateFilterString(
             _controller.text,
           ),
@@ -70,74 +70,151 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
     // final length2 = context.select(
     //   (CategorySelectionViewmodel state) => state.displayedCategories.length,
     // );
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Filter Category"),
-        actions: [
-          IconButton(
-            onPressed: () {
-              debugPrint('are all selected :${areAllSelected}');
-              context.pop(areAllSelected ? () => null : () => selectedCategories);
-            },
-            icon: FaIcon(FontAwesomeIcons.check),
+    return CustomScaffold(
+      appBarTitle: Text("Filter Category"),
+      actions: [
+        IconButton(
+          onPressed: () {
+            debugPrint('are all selected :${areAllSelected}');
+            context.pop(areAllSelected ? () => null : () => selectedCategories);
+          },
+          icon: FaIcon(
+            FontAwesomeIcons.check,
+            size: 20,
           ),
-        ],
-      ),
-      body: SafeArea(
-        minimum: EdgeInsets.only(top: 20),
-        child:
-            ready
-                ? Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: TextFormField(
-                        style: context.tt.bodyMedium,
-                        decoration: InputDecoration(
-                          hintText: "Search for categories...",
-                          prefixIcon: Icon(
-                            Icons.search,
-                            size: 20,
-                          ),
-                          hintStyle: TextStyle(color: context.customCs.fadeColor2),
-                          prefixIconConstraints: BoxConstraints(minWidth: 40, minHeight: 0),
-                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                        ),
-                        controller: _controller,
+        ),
+      ],
+      ready: ready,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Row(
+              spacing: 12,
+              children: [
+                Flexible(
+                  fit: FlexFit.tight,
+                  flex: 2,
+                  child: TextFormField(
+                    style: context.tt.bodyMedium,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      visualDensity: VisualDensity(vertical: -1),
+                      hintText: "Search for categories...",
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 20,
+                      ),
+                      hintStyle: TextStyle(color: context.customCs.fadeColor2),
+                      prefixIconConstraints: BoxConstraints(minWidth: 40, minHeight: 0),
+                      contentPadding: EdgeInsets.symmetric(vertical: 13, horizontal: 10),
+                    ),
+                    controller: _controller,
+                  ),
+                ),
+                Flexible(
+                  fit: FlexFit.tight,
+                  flex: 1,
+                  child: CustomDropDownMenu(
+                    onSelected: (value) {
+                      readCatMod.updateCostTypeFilter(value);
+                    },
+                    entries:
+                        readCatMod.costTypeMenu
+                            .map(
+                              (type) => DropdownMenuEntry(
+                                value: type,
+                                label: type?.name.capitalize() ?? "All",
+                              ),
+                            )
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              return readCatMod.areAllSelected
+                  ? readCatMod.removeAllCategories()
+                  : readCatMod.selectAllCategories();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16),
+              child: Row(
+                spacing: 8,
+                children: [
+                  Text(
+                    readCatMod.areAllSelected ? "Unselect All" : "Select All",
+                    style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
+                  ),
+                  Expanded(
+                    child: Text(
+                      "(${selectedCategories.length} selected)",
+                      style: context.customTt.paragraphText,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 20,
+                    child: Transform.scale(
+                      scale: 0.9,
+                      child: Checkbox(
+                        value: readCatMod.areAllSelected,
+                        onChanged: (val) {
+                          if (val == null) return;
+                          return val
+                              ? readCatMod.selectAllCategories()
+                              : readCatMod.removeAllCategories();
+                        },
                       ),
                     ),
-                    InkWell(
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: 0),
+            child: Divider(),
+          ),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                SliverList.builder(
+                  itemCount: displayCat.length,
+                  itemBuilder: (context, index) {
+                    final category = displayCat.elementAt(index);
+                    final selected = selectedCategories.contains(category);
+                    return InkWell(
                       onTap: () {
-                        return readCatMod.areAllSelected
-                            ? readCatMod.removeAllCategories()
-                            : readCatMod.selectAllCategories();
+                        return selected
+                            ? readCatMod.removeCategory(category)
+                            : readCatMod.selectCategory(category);
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0,
+                          vertical: 6,
+                        ),
                         child: Row(
-                          spacing: 8,
+                          spacing: 16,
                           children: [
-                            Text(
-                              readCatMod.areAllSelected ? "Unselect All" : "Select All",
-                              style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
+                            CategoryIconContainer(
+                              category: category,
+                              size: 18,
                             ),
-                            Expanded(
-                              child: Text(
-                                "(${selectedCategories.length} selected)",
-                                style: context.customTt.paragraphText,
-                              ),
-                            ),
+                            Expanded(child: Text(category.name!.capitalize())),
                             SizedBox(
                               height: 20,
                               child: Transform.scale(
                                 scale: 0.9,
                                 child: Checkbox(
-                                  value: readCatMod.areAllSelected,
+                                  value: selected,
                                   onChanged: (val) {
                                     if (val == null) return;
                                     return val
-                                        ? readCatMod.selectAllCategories()
-                                        : readCatMod.removeAllCategories();
+                                        ? readCatMod.selectCategory(category)
+                                        : readCatMod.removeCategory(category);
                                   },
                                 ),
                               ),
@@ -145,67 +222,13 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
                           ],
                         ),
                       ),
-                    ),
-                    Padding(
-                            padding: EdgeInsets.only(top: 0),
-                            child: Divider(),
-                          ),
-                    Expanded(
-                      child: CustomScrollView(
-                        slivers: [
-                          SliverList.builder(
-                            itemCount: displayCat.length,
-                            itemBuilder: (context, index) {
-                              final category = displayCat.elementAt(index);
-                              final selected = selectedCategories.contains(category);
-                              return InkWell(
-                                onTap: () {
-                                  return selected
-                                      ? readCatMod.removeCategory(category)
-                                      : readCatMod.selectCategory(category);
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12.0,
-                                    vertical: 6,
-                                  ),
-                                  child: Row(
-                                    spacing: 16,
-                                    children: [
-                                      CategoryIconContainer(
-                                        category: category,
-                                        size: 18,
-                                      ),
-                                      Expanded(child: Text(category.name!.capitalize())),
-                                      SizedBox(
-                                        height: 20,
-                                        child: Transform.scale(
-                                          scale: 0.9,
-                                          child: Checkbox(
-                                            value: selected,
-                                            onChanged: (val) {
-                                              if (val == null) return;
-                                              return val
-                                                  ? readCatMod.selectCategory(category)
-                                                  : readCatMod.removeCategory(category);
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-                : Center(
-                  child: CircularProgressIndicator(),
+                    );
+                  },
                 ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

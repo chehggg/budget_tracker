@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localization/flutter_localization.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:gif_view/gif_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -294,7 +295,8 @@ class DateBreadcrumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final curMonth = context.select((ListViewModel state) => state.currentMonth);
+    final currentYearMonth = context.select((ListViewModel state) => state.currentYearMonth);
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -311,10 +313,10 @@ class DateBreadcrumb extends StatelessWidget {
         if (details.primaryVelocity == null) return;
         if (details.primaryVelocity! > 500) {
           // swipe right
-          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
+          context.listMod.incrementYearMonth(increase: false);
         } else if (details.primaryVelocity! < -500) {
           // swipe left
-          context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
+          context.listMod.incrementYearMonth(increase: true);
         }
       },
       child: Container(
@@ -324,14 +326,14 @@ class DateBreadcrumb extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.25,
+              width: MediaQuery.of(context).size.width * 0.18,
               child: IconButton(
                 iconSize: 24,
                 style: ElevatedButton.styleFrom(
                   splashFactory: NoSplash.splashFactory,
                 ),
                 onPressed: () {
-                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
+                  context.listMod.incrementYearMonth(increase: false);
                 },
                 icon: Icon(Icons.arrow_back_ios),
               ),
@@ -339,23 +341,20 @@ class DateBreadcrumb extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Text(
-                  DateFormat(
-                    "yMMMM",
-                    FlutterLocalization.instance.currentLocale.toString(),
-                  ).format(curMonth),
+                  currentYearMonth.formatYearMonth(),
                   style: context.customTt.dateLabel!.copyWith(fontSize: 28),
                 ),
               ),
             ),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.25,
+              width: MediaQuery.of(context).size.width * 0.18,
               child: IconButton(
                 iconSize: 24,
                 style: ElevatedButton.styleFrom(
                   splashFactory: NoSplash.splashFactory,
                 ),
                 onPressed: () {
-                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
+                  context.listMod.incrementYearMonth(increase: false);
                 },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
@@ -373,14 +372,15 @@ class ItemFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categories = context.select((ListViewModel state) => state.filteredCategories);
-    final curMonth = context.select((ListViewModel state) => state.currentMonth);
+    final curYearMonth = context.select((ListViewModel state) => state.currentYearMonth);
+    // final curRange = context.select((ListViewModel state) => state.currentRange);
     final hasValue = categories != null;
     return Container(
       height: 44,
       decoration: BoxDecoration(color: context.cs.surface),
       padding: EdgeInsets.only(left: 12, right: 12),
       child: Row(
-        spacing: 12,
+        spacing: 8,
         children: [
           Flexible(
             fit: FlexFit.tight,
@@ -390,120 +390,108 @@ class ItemFilterChips extends StatelessWidget {
                 if (details.primaryVelocity == null) return;
                 if (details.primaryVelocity! > 500) {
                   // swipe right
-                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month - 1));
+                   context.listMod.incrementYearMonth(increase: false);
                 } else if (details.primaryVelocity! < -500) {
                   // swipe left
-                  context.listMod.changeYearMonth(DateTime(curMonth.year, curMonth.month + 1));
+                   context.listMod.incrementYearMonth(increase: true);
                 }
               },
-              child: CustomActionChip(
-                icon: FaIcon(FontAwesomeIcons.solidCalendar, size: 14),
-                isActive: hasValue,
-                label: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  spacing: 12,
-                  children: [
-                    FaIcon(FontAwesomeIcons.angleLeft),
-                    Text(
-                      curMonth.formatMonth(),
-                      style: context.tt.bodyMedium!.copyWith(
-                        color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+              onTap: () async {
+                await showDialog(
+                  context: context,
+                  builder:
+                      (_) => ChangeNotifierProvider.value(
+                        value: context.listMod,
+                        child: const MonthSelectorDialog(),
                       ),
+                );
+              },
+              child: ReusableContainer(
+                height: 42,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  spacing: 8,
+                  children: [
+                    FaIcon(FontAwesomeIcons.angleLeft, size: 14),
+                    Row(
+                      spacing: 10,
+                      children: [
+                        // FaIcon(FontAwesomeIcons.calendar, size: 14),
+                        Text(
+                          curYearMonth.formatYearMonth(),
+                          style: context.customTt.numberFontSmall!.copyWith(
+                            fontSize: 14,
+                            // color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+                          ),
+                        ),
+                      ],
                     ),
-                    FaIcon(FontAwesomeIcons.angleRight),
+                    FaIcon(FontAwesomeIcons.angleRight, size: 14),
                   ],
                 ),
-                onPressed: () async {
-                  await showDialog(
-                    context: context,
-                    builder:
-                        (_) => ChangeNotifierProvider.value(
-                          value: context.listMod,
-                          child: const MonthSelectorDialog(),
+              ),
+            ),
+          ),
+          ReusableContainer(
+            height: 42,
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.0,
+            ),
+            onTap: () async {
+              final response = await context.push<List<CostItemCategory>? Function()>(
+                '/categories',
+                extra: context.listMod.filteredCategories,
+              );
+              if (response != null && context.mounted) {
+                context.listMod.updateCategoryFilter(response());
+              }
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              spacing: 12,
+              children: [
+                FaIcon(FontAwesomeIcons.folder, size: 14),
+                if (hasValue)
+                  ReusableContainer(
+                    customColor: context.cs.secondary,
+                    padding: EdgeInsets.only(),
+                    radius: 4,
+                    height: 20,
+                    width: 20,
+                    filled: true,
+                    highlight: true,
+                    child: Center(
+                      child: Text(
+                        "${categories.length ?? 0}",
+                        style: context.customTt.numberFontSmall!.copyWith(
+                          fontSize: 12,
+                          color: context.cs.surface,
                         ),
-                  );
-                },
-              ),
-            ),
-          ),
-          Flexible(
-            fit: FlexFit.tight,
-            flex: 1,
-            child: CustomActionChip(
-              icon: FaIcon(FontAwesomeIcons.solidFolderOpen, size: 14),
-              isActive: hasValue,
-              label: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 12,
-                children: [
-                  Text(
-                    "Category",
-                    style: context.tt.bodyMedium!.copyWith(
-                      color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
+                      ),
                     ),
                   ),
-                  if (hasValue)
-                    Text(
-                      " (${categories.length})",
-                      style: TextStyle(color: Colors.black, fontSize: 12),
-                    ),
-                ],
-              ),
-              onPressed: () async {
-                final response = await context.push<List<CostItemCategory>? Function()>(
-                  '/categories',
-                  extra: categories,
-                );
-                if (response == null) return;
-                if (context.mounted) {
-                  context.listMod.updateCategoryFilter(response());
-                }
-              },
+              ],
             ),
           ),
-          Flexible(
-            fit: FlexFit.tight,
-            flex: 1,
-            child: CustomActionChip(
-              icon: FaIcon(FontAwesomeIcons.moneyBill, size: 14),
-              isActive: hasValue,
-              label: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 12,
-                children: [
-                  Text(
-                    "Range",
-                    style: context.tt.bodyMedium!.copyWith(
-                      color: hasValue ? context.cs.primary : context.customCs.fadeColor1,
-                    ),
-                  ),
-                  // if (hasValue)
-                  //   Container(
-                  //     height: 18,
-                  //     width: 20,
-                  //     decoration: BoxDecoration(
-                  //       color: context.cs.secondary,
-                  //       borderRadius: BorderRadius.circular(4),
-                  //     ),
-                  //     child: Center(
-                  //       child: Text(
-                  //         categories.length.toString() ?? "",
-                  //         style: TextStyle(color: Colors.black, fontSize: 12),
-                  //       ),
-                  //     ),
-                  //   ),
-                ],
-              ),
-              onPressed: () async {
-                // final response = await context.push<List<CostItemCategory>>(
-                //   '/categories',
-                //   extra: categories,
-                // );
-                // if (response == null) return;
-                // if (context.mounted) {
-                //   context.listMod.updateCategoryFilter(response);
-                // }
-              },
+          ReusableContainer(
+            height: 42,
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              spacing: 12,
+              children: [
+                FaIcon(FontAwesomeIcons.moneyBill, size: 14),
+                // if (hasValue)
+                //   Text(
+                //     " (${categories.length})",
+                //     style: TextStyle(color: Colors.black, fontSize: 12),
+                //   ),
+              ],
             ),
           ),
         ],
@@ -535,7 +523,20 @@ class CostEntryList extends StatelessWidget {
         child: SizedBox(
           height: context.mq.size.height * 0.5,
           child: Center(
-            child: const Text("Nothing here...!?"),
+            child: Column(
+              spacing: 12,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GifView.asset(
+                  'assets/images/ghost.gif',
+                  withOpacityAnimation: false,
+                  height: 24,
+                  width: 24,
+                  frameRate: 4,
+                ),
+                Text("Nothing here...", style: context.customTt.paragraphText),
+              ],
+            ),
           ),
         ),
       );

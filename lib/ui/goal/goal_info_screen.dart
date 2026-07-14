@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_string_interpolations
+
 import 'dart:math';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
@@ -80,7 +82,7 @@ class GoalInfoBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(
-                    height: 160,
+                    height: 170,
                   ),
                   SizedBox(
                     height: 0,
@@ -139,11 +141,14 @@ class GoalInfoBody extends StatelessWidget {
                     style: context.customTt.paragraphTitle,
                   ),
                   SizedBox(
-                    height: 8,
+                    height: 4,
                   ),
                   Text(
                     curProgress.progress.formatDecimalPercentage(),
                     style: context.customTt.dateLabel!.copyWith(fontSize: 48, height: 1),
+                  ),
+                  SizedBox(
+                    height: 1,
                   ),
                   Text(
                     "${curProgress.value.formatRoundedString()} / ${curProgress.target!.formatRoundedString()}",
@@ -249,35 +254,85 @@ class GoalInfoBody extends StatelessWidget {
                 child: Text("History", style: context.customTt.dateLabel),
               ),
               if (context.goalInfoMod.streak > 0)
-                ReusableContainer(
-                  filled: true,
-                  child: Row(
-                    children: [
-                      FaIcon(FontAwesomeIcons.fire),
-                      Text(
-                        "${context.goalInfoMod.streak} streak, keep it up!",
-                        style: context.customTt.numberLabel!.copyWith(color: context.cs.surface),
-                      ),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: ReusableContainer(
+                    padding: EdgeInsets.all(12),
+                    filled: true,
+                    highlight: true,
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        FaIcon(
+                          FontAwesomeIcons.fire,
+                          color: Colors.red,
+                        ),
+                        Text(
+                          "${context.goalInfoMod.streak} streak, keep it up!",
+                          style: context.customTt.numberLabel!.copyWith(color: context.cs.surface),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ...pastProgress.map(
                 (progress) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: ReusableContainer(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12),
-                    child: Row(
-                      spacing: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8.0,
+                    ),
+                    child: Column(
+                      spacing: 4,
                       children: [
-                        Container(
-                          height: 10,
-                          width: 10,
-                          decoration: BoxDecoration(
-                            color: progress.achieved ? Colors.green : Colors.red,
-                          ),
+                        Row(
+                          spacing: 12,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                progress.date?.formatMonthLonger() ?? "No date",
+                                style: context.customTt.numberFontSmall,
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(child: Text(progress.date?.formatMonthLonger() ?? "No date")),
-                        Text(progress.progress.formatCompactPercentage()),
+                        Row(
+                          spacing: 10,
+                          children: [
+                            Container(
+                              height: 10,
+                              width: 10,
+                              decoration: BoxDecoration(
+                                color:
+                                    progress.achieved
+                                        ? context.goalInfoMod.accentColors.positive
+                                        : context.goalInfoMod.accentColors.negative,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(progress.status, style: context.customTt.paragraphText),
+                            ),
+                            Text(
+                              // ignore: prefer_adjacent_string_concatenation
+                              '${context.goalInfoMod.currencyFormat(progress.value, showSymbol: false, abbreviated: true, compact: true)}' +
+                                  // ignore: prefer_interpolation_to_compose_strings
+                                  " / " +
+                                  context.goalInfoMod.currencyFormat(progress.target ?? 0, showSymbol: false, abbreviated: true, compact: true),
+                              style: context.customTt.paragraphText,
+                            ),
+                            Text(
+                              "(${progress.progress.formatCompactPercentage()})",
+                              style: context.customTt.numberFontSmall!.copyWith(
+                                fontSize: 14,
+                                color:
+                                    progress.achieved
+                                        ? context.goalInfoMod.accentColors.positive
+                                        : context.goalInfoMod.accentColors.negative,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -285,6 +340,7 @@ class GoalInfoBody extends StatelessWidget {
               ),
             ]),
           ),
+          SliverToBoxAdapter(child: SizedBox(height: 20))
       ],
     );
   }
@@ -299,6 +355,7 @@ class GoalInfoTitleContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewModel state) => state.goal);
     final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
+    final streak = context.select((GoalInfoViewModel state) => state.streak);
     return Container(
       // padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
       // padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
@@ -310,53 +367,90 @@ class GoalInfoTitleContainer extends StatelessWidget {
             spacing: 8,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // FaIcon(
+              //   goal.goalType == GoalType.budget
+              //       ? FontAwesomeIcons.coins
+              //       : goal.goalType == GoalType.savings
+              //       ? FontAwesomeIcons.piggyBank
+              //       : FontAwesomeIcons.creditCard,
+              //   size: 12,
+              // ),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: context.cs.primary.withAlpha(150),
+                  border: BoxBorder.all(color: Colors.white.withAlpha(50)),
+                  color: context.cs.primary.withAlpha(30),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  goal.goalType!.name.capitalize(),
-                  style: context.customTt.numberFontSmall?.copyWith(
-                    // fontSize: 40,
-                    fontSize: 12,
-                    color: context.cs.surface,
-                  ),
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    FaIcon(
+                      goal.goalType == GoalType.budget
+                          ? FontAwesomeIcons.coins
+                          : goal.goalType == GoalType.savings
+                          ? FontAwesomeIcons.piggyBank
+                          : FontAwesomeIcons.creditCard,
+                      size: 12,
+                    ),
+                    Text(
+                      goal.goalType!.name.capitalize(),
+                      style: context.customTt.paragraphText?.copyWith(
+                        // fontSize: 40,
+                        fontSize: 12,
+
+                        color: context.cs.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color:
-                      curProgress.achieved
-                          ? Colors.green.shade800.withAlpha(120)
-                          : Colors.red.shade800.withAlpha(120),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  curProgress.status,
-                  style: context.customTt.numberFontSmall?.copyWith(
-                    // fontSize: 40,
-                    fontSize: 12,
-                    color: context.cs.primary,
-                  ),
-                ),
-              ),
-              if (curProgress.achieved)
+              // Container(
+              //   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              //   decoration: BoxDecoration(
+              //     border: BoxBorder.all(color: Colors.white.withAlpha(50)),
+              //     color:
+              //         curProgress.currentStatus == "Pending"
+              //             ? context.cs.secondary.withAlpha(60)
+              //             : curProgress.achieved
+              //             ? context.goalInfoMod.accentColors.positive.withAlpha(60)
+              //             : context.goalInfoMod.accentColors.negative.withAlpha(60),
+              //     borderRadius: BorderRadius.circular(8),
+              //   ),
+              //   child: Text(
+              //     curProgress.currentStatus,
+              //     style: context.customTt.paragraphText?.copyWith(
+              //       // fontSize: 40,
+              //       fontSize: 12,
+              //       color: context.cs.primary,
+              //     ),
+              //   ),
+              // ),
+              if (streak > 0)
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.deepOrange.withAlpha(120),
+                    border: BoxBorder.all(color: Colors.white.withAlpha(50)),
+                    color: Colors.deepOrange.withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    "5 month streak",
-                    style: context.customTt.numberFontSmall?.copyWith(
-                      // fontSize: 40,
-                      fontSize: 12,
-                      color: context.cs.primary,
-                    ),
+                  child: Row(
+                    spacing: 8,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FaIcon(
+                        FontAwesomeIcons.fire,
+                        color: Colors.red,
+                        size: 12,
+                      ),
+                      Text(
+                        "$streak",
+                        style: context.customTt.paragraphText?.copyWith(
+                          fontSize: 12,
+                          color: context.cs.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -753,7 +847,7 @@ class GoalInfoLineChart extends StatelessWidget {
         ),
         Container(
           padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
-          height: 160,
+          height: 180,
           child: LineChart(
             LineChartData(
               titlesData: FlTitlesData(show: false),
@@ -765,13 +859,23 @@ class GoalInfoLineChart extends StatelessWidget {
                       final startDate = context.goalInfoMod.chartStartDate.addDay(
                         spot.x.round() - 1,
                       );
-                      final label = spot.barIndex == 0 ? "Limit" : startDate.formatShorter();
-                      final color =
-                          spot.barIndex == 0 ? Colors.blue.shade300 : context.cs.secondary;
+                      final label = switch (spot.barIndex) {
+                        0 => "Limit",
+                        1 => startDate.formatShorter(),
+                        2 => "${startDate.formatShorter()} (Target)",
+                        _ => "",
+                      };
+                      final color = switch (spot.barIndex) {
+                        0 => context.goalInfoMod.accentColors.previous,
+                        1 => context.goalInfoMod.accentColors.current,
+                        2 => Colors.grey,
+                        _ => Colors.transparent,
+                      };
+                      // == 0 ? "Limit" : startDate.formatShorter();
                       return LineTooltipItem(
                         "$label: ${spot.y.customCurrencyFormat("RM", round: true)}",
                         context.tt.bodyMedium!.copyWith(
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: FontWeight(500),
                           color: color,
                         ),
@@ -805,6 +909,7 @@ class GoalInfoLineChart extends StatelessWidget {
                       return DateTime.now().standard == date;
                     },
                   ),
+                  showingIndicators: [5],
                   isCurved: false,
                   color: context.cs.secondary,
                   spots: [
@@ -815,6 +920,22 @@ class GoalInfoLineChart extends StatelessWidget {
                             return FlSpot((index + 1).toDouble(), el.value?.expense ?? 0);
                           },
                         ),
+                  ],
+                ),
+                getCustomLineChartBarData(
+                  dotData: FlDotData(
+                    checkToShowDot: (spot, barData) {
+                      return false;
+                    },
+                  ),
+                  isCurved: false,
+                  color: Colors.grey.shade600,
+                  dashArray: [1, 15],
+                  spots: [
+                    ...List.generate(
+                      context.goalInfoMod.dataCount,
+                      (i) => (i + 1) * context.goalInfoMod.targetSpendPerDay,
+                    ).mapIndexed((index, val) => FlSpot((index + 1).toDouble(), val)),
                   ],
                 ),
               ],

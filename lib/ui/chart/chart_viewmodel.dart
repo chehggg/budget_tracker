@@ -80,6 +80,44 @@ class ChartViewModel extends ChangeNotifier {
   Map<DateTime, CostMetric> _daySummary = {};
   Map<DateTime, CostMetric> _monthSummary = {};
 
+  static List<String> get weekdayInitials => [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun",
+  ];
+
+  static List<String> get monthInitials => [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  String getInitials(int index, {bool useInitials = false}) {
+    switch (_period) {
+      case ChartPeriod.month:
+        return (index + 1).toString();
+      case ChartPeriod.week:
+        return weekdayInitials.elementAtOrNull(index)?.substring(0, useInitials ? 1 : null) ?? "";
+      case ChartPeriod.year:
+        return monthInitials.elementAtOrNull(index)?.substring(0, useInitials ? 1 : null) ?? "";
+      case ChartPeriod.custom:
+        return (index + 1).toString();
+    }
+  }
+
   String get displayPeriodDuration {
     switch (_period) {
       case ChartPeriod.month:
@@ -142,6 +180,7 @@ class ChartViewModel extends ChangeNotifier {
     double value, {
     bool abbreviated,
     bool alwaysShowSign,
+    bool showSymbol,
     bool compact,
     int? decimalDigits,
   })
@@ -272,6 +311,9 @@ class ChartViewModel extends ChangeNotifier {
     itemOrder: _itemOrder,
     itemSortBy: _itemSortBy,
   );
+
+  CostItemCategory? _expandedCat;
+  CostItemCategory? get expandedCat => _expandedCat;
 
   void changeCategoryOrder(SortType type) {
     _categoryOrder = type;
@@ -447,10 +489,26 @@ class ChartViewModel extends ChangeNotifier {
     calculateCumulative(isCurrent: true, type: CostType.expense),
   ];
 
-  DateTime get previousMTD =>
+  DateTime get curMTD =>
       rangeStart.isInSameYearMonthAs(DateTime.now())
-          ? DateTime.now().addMonth(-1)
-          : calculateCumulative(isCurrent: false, type: CostType.expense).entries.last.key;
+          ? DateTime.now().standard
+          : rangeStart.endOfMonth;
+
+  DateTime get previousMTD {
+    switch (_period) {
+      case ChartPeriod.month:
+        return rangeStart.isInSameYearMonthAs(DateTime.now())
+            ? curMTD.addMonth(-1)
+            : curMTD.addMonth(-1).endOfMonth;
+      case ChartPeriod.week:
+        return curMTD.addDay(-7);
+      case ChartPeriod.year:
+        return curMTD.addYear(-1);
+      case ChartPeriod.custom:
+        return curMTD.addYear(-1);
+    }
+    ;
+  }
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
     calculateAverageCumulative(isCurrent: false),
@@ -575,16 +633,6 @@ class ChartViewModel extends ChangeNotifier {
         _curRange = DateTimeRange(start: _periodStart.startOfYear, end: _periodStart.endOfYear);
       case ChartPeriod.custom:
         _curRange = DateTimeRange(start: _periodStart.startOfYear, end: _periodStart.endOfYear);
-      // case DateRangeType.thisYear:
-      //   _curRange = DateTimeRange(start: now.startOfYear, end: now.endOfYear);
-      // case DateRangeType.thisWeek:
-      //   _curRange = DateTimeRange(start: now.startOfWeek, end: now.endOfWeek);
-      // case DateRangeType.oneWeek:
-      //   _curRange = DateTimeRange(start: now.standardNow.addDay(-6), end: now.standardNow);
-      // case DateRangeType.oneMonth:
-      //   _curRange = DateTimeRange(start: now.standardNow.addMonth(-1), end: now.standardNow);
-      // case DateRangeType.oneYear:
-      //   _curRange = DateTimeRange(start: now.standardNow.addYear(-1), end: now.standardNow);
     }
 
     notifyListeners();
@@ -611,6 +659,13 @@ class ChartViewModel extends ChangeNotifier {
     _type = type;
     notifyListeners();
   }
+
+  void expandTileAfterFormUpdate(CostItemCategory category) {
+    _expandedCat = category;
+    notifyListeners();
+  }
+
+  AccentColor get accentColors => _sharedRepo.accentColors;
 
   @override
   void dispose() {

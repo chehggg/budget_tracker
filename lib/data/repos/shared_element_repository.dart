@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
+import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/services/local_service.dart';
 import 'package:budget_tracker/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,14 @@ class SharedElementRepository {
         _keyboardLayout = layoutResult.value ?? KeyboardLayout.simple;
       case Error():
         _keyboardLayout = KeyboardLayout.simple;
+    }
+
+    final keyboardSettingsResult = await _localServices.getKeyboardSettings();
+    switch (keyboardSettingsResult) {
+      case Ok():
+        _keyboardSettings = keyboardSettingsResult.value ?? _keyboardSettings;
+      case Error():
+        _keyboardSettings = _keyboardSettings;
     }
 
     final buttonResult = await _localServices.getKeyboardButton();
@@ -54,9 +63,15 @@ class SharedElementRepository {
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
 
+  KeyboardSettings _keyboardSettings = KeyboardSettings();
+  KeyboardSettings get keyboardSettings => _keyboardSettings;
+
   DateTime _displayDate = DateTime.now();
   DateTime get displayDate => _displayDate;
 
+  YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now().startOfMonth);
+  YearMonth get currentYearMonth => _yearMonth;
+  
   KeyboardLayout _keyboardLayout = KeyboardLayout.simple;
   KeyboardLayout get keyboardLayout => _keyboardLayout;
 
@@ -67,14 +82,14 @@ class SharedElementRepository {
   int get formGridColumn => _formGridColumn;
 
   ListDisplayConfig _listConfig = ListDisplayConfig();
-  ListDisplayConfig get listScreenConfig =>  _listConfig;
+  ListDisplayConfig get listScreenConfig => _listConfig;
 
   // bool _hideOnStart = false;
   // bool get hideOnStart => _hideOnStart;
 
   // bool _showAmountColor = false;
   // bool get showAmountColor => _showAmountColor;
-  
+
   // bool _showTotalColor = false;
   // bool get showTotalColor => _showTotalColor;
 
@@ -91,8 +106,20 @@ class SharedElementRepository {
   }
 
   void updateKeyboardLayout(KeyboardLayout newLayout) async {
-    _keyboardLayout = newLayout;
-    await _localServices.writeKeyboardLayout(_keyboardLayout);
+    _keyboardSettings = _keyboardSettings.copyWith(layout: newLayout);
+    await _localServices.writeKeyboardSettings(_keyboardSettings);
+    _controller.add(true);
+  }
+
+  void updateKeyboardButtonSwitch(bool value) async {
+    _keyboardSettings = _keyboardSettings.copyWith(customButtonReversed: value);
+    await _localServices.writeKeyboardSettings(_keyboardSettings);
+    _controller.add(true);
+  }
+
+  void updateKeyboardRowSwitch(bool value) async {
+    _keyboardSettings = _keyboardSettings.copyWith(rowReversed: value);
+    await _localServices.writeKeyboardSettings(_keyboardSettings);
     _controller.add(true);
   }
 
@@ -101,7 +128,6 @@ class SharedElementRepository {
     await _localServices.writeFormGrid(_formGridColumn);
     _controller.add(true);
   }
-
 
   void updateKeyboardCustomButton(SimpleKeyboardButtonType newButton) async {
     _keyboardButton = newButton;
@@ -120,7 +146,7 @@ class SharedElementRepository {
     await _localServices.writeListConfig(_listConfig);
     _controller.add(true);
   }
-  
+
   void toggleShowTotalColor(bool? value) async {
     _listConfig = _listConfig.copyWith(showTotalColor: value);
     await _localServices.writeListConfig(_listConfig);
@@ -133,6 +159,16 @@ class SharedElementRepository {
     _controller.add(true);
   }
 
+  void resetAccentColor() async {
+    _accColor = AccentColor(
+      positive: Colors.green,
+      negative: Colors.red,
+      previous: Colors.blue,
+      current: Colors.amber,
+    );
+    await _localServices.writeNumberColor(_accColor);
+    _controller.add(true);
+  }
 
   // void updatePositiveAmountColor(SimpleKeyboardButtonType newButton) async {
   //   _keyboardButton = newButton;

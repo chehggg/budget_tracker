@@ -19,7 +19,11 @@ class ChartMtdCompareScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = context.select((ChartViewModel state) => state.balanceOverview);
-    final currentMTD = context.select((ChartViewModel state) => state.cumulativeComparison.last.keys.last);
+    final curOverview = context.select((ChartViewModel state) => state.curRangeSummary);
+    final prevOverview = context.select((ChartViewModel state) => state.prevRangeToDayCumulative);
+    final currentMTD = context.select(
+      (ChartViewModel state) => state.curMTD,
+    );
     final previousMTD = context.select((ChartViewModel state) => state.previousMTD);
     return CustomScaffold(
       padHorizontal: true,
@@ -106,43 +110,17 @@ class ChartMtdCompareScreen extends StatelessWidget {
             padding: EdgeInsets.only(top: 20, bottom: 10),
             child: Divider(),
           ),
+          Text('MTD Expense%', style: context.customTt.dateLabel),
           Padding(
             padding: const EdgeInsets.only(top: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 24,
+              spacing: 12,
               children: [
-                ...data.entries.map((el) {
-                  final curValue = (el.value['current'] ?? 0) * (el.key == "expense" ? -1 : 1);
-                  final prevValue = (el.value['previous'] ?? 0) * (el.key == "expense" ? -1 : 1);
-                  final maxValue = max(curValue, prevValue);
-                  final minValue = min(curValue, prevValue);
-                  final currentBigger = curValue > prevValue;
-                  final percentage =
-                      (maxValue == 0 && minValue == 0) ? 0.0 : (minValue / maxValue).abs();
-
-                  final change = (curValue - prevValue);
-                  final changePercentage = change / prevValue.abs();
-                  final largerBetter = el.key != 'expense';
-                  final symbol =
-                      (changePercentage.isNaN || changePercentage.isInfinite)
-                          ? ""
-                          : (changePercentage >= 0 ? "▲ " : "▼ ");
-                  final isGood =
-                      (largerBetter && changePercentage >= 0) ||
-                      (!largerBetter && changePercentage < 0);
-                  final color =
-                      (changePercentage.isInfinite || changePercentage.isNaN)
-                          ? context.customCs.fadeColor1
-                          : isGood
-                          ? Colors.green.shade400
-                          : Colors.red.shade400;
-
-                  
-                  // debugPrint("${el.key} : $percentage, current bigger : $currentBigger");
-                  // final currentBigger = (el.value['current'] ?? 0) > (el.value['previous'] ?? 0);
+                ...[curOverview, prevOverview].mapIndexed((i, el) {
+                  final percentage = ((el.expense ?? 0) / (el.income ?? 1)).clamp(0.01, 1.00);
                   return Column(
-                    spacing: 8,
+                    spacing: 4,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Row(
@@ -150,66 +128,96 @@ class ChartMtdCompareScreen extends StatelessWidget {
                         textBaseline: TextBaseline.alphabetic,
                         spacing: 12,
                         children: [
-                          Flexible(
-                            flex: 3,
-                            fit: FlexFit.tight,
-                            child: Text(
-                              el.key.capitalize(),
-                              style: context.customTt.dateLabel,
-                            ),
-                          ),
-                          Flexible(
-                            flex: 1,
-                            fit: FlexFit.tight,
-                            child: Text(
-                              context.chartMod.currencyFormat(change, alwaysShowSign: true),
-                              textAlign: TextAlign.end,
-                              style: context.customTt.numberFontMedium!.copyWith(
-                                color: color,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          Flexible(
-                            flex: 1,
-                            fit: FlexFit.tight,
-                            child: Text(
-                              symbol +
-                                  changePercentage.formatCompactPercentage().replaceAll("-", ""),
-                              textAlign: TextAlign.end,
-                              style: context.customTt.numberFontMedium!.copyWith(
-                                color: color,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
+                          // Flexible(
+                          //   flex: 3,
+                          //   fit: FlexFit.tight,
+                          //   child: Text(
+                          //     i == 0 ? "Current" : "Previous",
+                          //     style: context.customTt.numberFontSmall,
+                          //   ),
+                          // ),
+                          // Flexible(
+                          //   flex: 1,
+                          //   fit: FlexFit.tight,
+                          //   child: Text(
+                          //     "",
+                          //     // context.chartMod.currencyFormat(change, alwaysShowSign: true),
+                          //     textAlign: TextAlign.end,
+                          //     style: context.customTt.numberFontMedium!.copyWith(
+                          //       color: color,
+                          //       fontSize: 12,
+                          //     ),
+                          //   ),
+                          // ),
+                          // Flexible(
+                          //   flex: 1,
+                          //   fit: FlexFit.tight,
+                          //   child: Text(
+                          //     symbol +
+                          //         changePercentage.formatCompactPercentage().replaceAll("-", ""),
+                          //     textAlign: TextAlign.end,
+                          //     style: context.customTt.numberFontMedium!.copyWith(
+                          //       color: color,
+                          //       fontSize: 18,
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                       SizedBox(
-                        height: 12,
+                        height: 36,
                         width: double.infinity,
                         child: Stack(
+                          alignment: AlignmentGeometry.center,
                           children: [
-                            FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: 1,
+                            Padding(
+                              padding: const EdgeInsets.only(top: 20, bottom: 4),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: currentBigger ? Colors.amber : Colors.blue.shade900,
+                                  color: context.chartMod.accentColors.positive.withAlpha(100),
                                   borderRadius: BorderRadius.circular(4),
+                                ),
+                                width: double.infinity,
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: percentage,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: context.chartMod.accentColors.negative,
+                                      // color: currentBigger ? Colors.blue.shade900 : Colors.amber,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                            FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: percentage,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: currentBigger ? Colors.blue.shade900 : Colors.amber,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16.0),
+                              child: VerticalDivider(
+                                color: Colors.white,
+                                thickness: 1,
                               ),
                             ),
+                            Positioned(
+                              top: 0,
+                              right: percentage == 1 ? 0 : null,
+                              left:
+                                  percentage == 1
+                                      ? null
+                                      : (percentage * context.mq.size.width - 50).clamp(
+                                        0,
+                                        context.mq.size.width,
+                                      ),
+                              child: Text(
+                                "Till ${i == 0 ? context.chartMod.curMTD.formatShorter() : context.chartMod.previousMTD.formatShorter()}: ${percentage.formatCompactPercentage()}",
+                                style: context.customTt.paragraphTextSmall,
+                              ),
+                            ),
+                            // Positioned(
+                            //   top: 0,
+                            //   left: 0,
+                            //   child: Text("Current Month", style: context.customTt.paragraphTextSmall),
+                            // ),
                           ],
                         ),
                       ),
@@ -221,11 +229,11 @@ class ChartMtdCompareScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                "Until ${previousMTD.formatPrettyShort()}",
+                                "Expense",
                                 style: context.customTt.paragraphTextSmall,
                               ),
                               Text(
-                                "Until ${currentMTD.formatPrettyShort()}",
+                                "Income",
                                 style: context.customTt.paragraphTextSmall,
                               ),
                             ],
@@ -234,16 +242,12 @@ class ChartMtdCompareScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                context.chartMod.currencyFormat(prevValue),
-                                style: context.tt.bodyMedium!.copyWith(fontSize: 16),
-                              ),
-                              FaIcon(
-                                FontAwesomeIcons.arrowRight,
-                                size: 12,
+                                context.chartMod.currencyFormat(el.expense ?? 0, compact: true),
+                                style: context.customTt.numberFontSmall!,
                               ),
                               Text(
-                                context.chartMod.currencyFormat(curValue),
-                                style: context.tt.bodyMedium!.copyWith(fontSize: 16),
+                                context.chartMod.currencyFormat(el.income ?? 0, compact: true),
+                                style: context.customTt.numberFontSmall!,
                               ),
                             ],
                           ),

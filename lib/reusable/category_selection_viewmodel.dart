@@ -35,6 +35,10 @@ class CategorySelectionViewModel extends ChangeNotifier {
   bool _isInit = false;
   bool get ready => _isInit;
   String? _filterString;
+  
+  List<CostType?> get costTypeMenu => [null, ...CostType.values]; 
+  CostType? _type;
+  CostType? get type => _type;
 
   List<CostItemCategory> _selectedCategories = [];
   List<CostItemCategory> _displayedCategories = [];
@@ -52,19 +56,23 @@ class CategorySelectionViewModel extends ChangeNotifier {
 
   UnmodifiableListView<CostItemCategory> generateDisplayCategories() {
     final unselectedCategories = _baseCategories.where(
-      (category) =>
-          !_selectedCategories.contains(category) &&
-          category.name!.toLowerCase().contains(_filterString ?? ""),
+      (category) {
+        final typeQuery = _type == null ? true : category.costType == _type;
+        return !_selectedCategories.contains(category) &&
+          category.name!.toLowerCase().contains(_filterString ?? "") && typeQuery;
+      },
     );
     final filteredSelected = selectedCategories.where(
-      (category) =>
-          category.name!.toLowerCase().contains(_filterString ?? ""),
+      (category) {
+        final typeQuery = _type == null ? true : category.costType == _type;
+        return category.name!.toLowerCase().contains(_filterString ?? "") && typeQuery;
+      },
     );
 
     return UnmodifiableListView(
       [
-        ...filteredSelected.sorted((a, b) => a.name!.compareTo(b.name!)),
-        ...unselectedCategories.sorted((a, b) => a.name!.compareTo(b.name!)),
+        ...filteredSelected.sorted((a, b) => a.name!.toLowerCase().compareTo(b.name!.toLowerCase())),
+        ...unselectedCategories.sorted((a, b) => a.name!.toLowerCase().compareTo(b.name!.toLowerCase())),
       ],
     );
   }
@@ -73,6 +81,12 @@ class CategorySelectionViewModel extends ChangeNotifier {
 
   void selectCategory(CostItemCategory category) {
     _selectedCategories.add(category);
+    notifyListeners();
+  }
+
+  void updateCostTypeFilter(CostType? newType) {
+    _type = newType;
+    _displayedCategories = List.from(generateDisplayCategories());
     notifyListeners();
   }
 

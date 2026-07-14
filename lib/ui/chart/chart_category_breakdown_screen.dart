@@ -20,6 +20,9 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = context.select((ChartViewModel state) => state.breakdownType);
+    final breakdownSortDisplay = context.select(
+      (ChartViewModel state) => state.breakdownSort.display,
+    );
     return CustomScaffold(
       appBarTitle: Text('Details'),
       actions: [IconButton(onPressed: () {}, icon: FaIcon(FontAwesomeIcons.sort, size: 20))],
@@ -72,12 +75,6 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                 child: CategoryPieChart(),
               ),
             ),
-            // SliverPadding(
-            //   padding: const EdgeInsets.only(top: 20, bottom: 12.0),
-            //   sliver: SliverToBoxAdapter(
-            //     child: Divider(),
-            //   ),
-            // ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
               sliver: SliverToBoxAdapter(
@@ -89,6 +86,10 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                         "Category List",
                         style: context.customTt.dateLabel,
                       ),
+                    ),
+                    Text(
+                      breakdownSortDisplay,
+                      style: context.customTt.paragraphTextSmall,
                     ),
                     IconButton(
                       onPressed: () async {
@@ -111,6 +112,11 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
               ),
             ),
             const CategorySpendList(),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 40,
+              ),
+            ),
           ],
         ),
       ),
@@ -349,6 +355,7 @@ class CategorySpendList extends StatelessWidget {
     final data = context.select((ChartViewModel state) => state.curRangeDetailedCategorySummary);
     final type = context.select((ChartViewModel state) => state.breakdownType);
     final max = context.select((ChartViewModel state) => state.maxCategoryAmount);
+    final expandedCategory = context.select((ChartViewModel state) => state.expandedCat);
 
     return SliverList.builder(
       itemCount: data.length,
@@ -364,6 +371,7 @@ class CategorySpendList extends StatelessWidget {
           value: value,
           percentage: percentage,
           items: matchedItems,
+          expanded: expandedCategory == category,
         );
       },
     );
@@ -377,11 +385,13 @@ class CategoryTile extends StatefulWidget {
     required this.value,
     required this.percentage,
     required this.items,
+    this.expanded,
   });
 
   final CostItemCategory category;
   final double? value;
   final double percentage;
+  final bool? expanded;
   final List<CostItem> items;
 
   @override
@@ -390,6 +400,13 @@ class CategoryTile extends StatefulWidget {
 
 class _CategoryTileState extends State<CategoryTile> {
   bool _expanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.expanded ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isHidden = context.select(
@@ -400,6 +417,7 @@ class _CategoryTileState extends State<CategoryTile> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          initiallyExpanded: _expanded,
           // key: ValueKey((widget.category.name ?? "")),
           dense: true,
           onExpansionChanged:
@@ -453,7 +471,7 @@ class _CategoryTileState extends State<CategoryTile> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Text(
-                                widget.value!.customCurrencyFormat("RM"),
+                                context.chartMod.currencyFormat(widget.value!),
                                 style: context.customTt.numberFontSmall?.copyWith(
                                   color: isHidden ? context.customCs.fadeColor1 : null,
                                 ),
@@ -501,40 +519,49 @@ class _CategoryTileState extends State<CategoryTile> {
                         oriRoute: '/chart/category-breakdown',
                       ),
                     );
-                    setState(() {
-                      debugPrint("Expanded");
-                      _expanded = true;
-                    });
+                    if(context.mounted) {
+                      context.chartMod.expandTileAfterFormUpdate(widget.category);
+                    }
+
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    padding: const EdgeInsets.only(top: 6.0, bottom: 6),
                     child: Row(
-                      spacing: 14,
+                      spacing: 12,
                       children: [
-                        Flexible(
-                          flex: 2,
-                          fit: FlexFit.tight,
+                        SizedBox(
+                          width: context.mq.size.width * 0.11 - 6,
+                          // flex: 2,
+                          // fit: FlexFit.tight,
                           child: Text(
-                            DateFormat('d MMM').format(item.date!),
+                            DateFormat('dd/M').format(item.date!),
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Flexible(
-                          flex: 11,
-                          fit: FlexFit.tight,
+                        SizedBox(
+                          width: context.mq.size.width * 0.6 - 6,
+                        // Flexible(
+                        //   flex: 11,
+                        //   fit: FlexFit.tight,
                           child: Text(
                             item.name!,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
                         ),
-                        Flexible(
-                          flex: 3,
-                          fit: FlexFit.tight,
+                        SizedBox(
+                          width: context.mq.size.width * 0.2 - 6,
+                        // Flexible(
+                        //   flex: 3,
+                        //   fit: FlexFit.tight,
                           child: Text(
-                            item.amount!.customCurrencyFormat(""),
+                            context.chartMod.currencyFormat(
+                              item.amount!,
+                              showSymbol: false,
+                              compact: true,
+                            ),
                             textAlign: TextAlign.right,
                           ),
                         ),
@@ -544,6 +571,7 @@ class _CategoryTileState extends State<CategoryTile> {
                 );
               }).toList(),
         ),
+        
       ),
     );
   }

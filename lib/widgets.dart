@@ -1,10 +1,12 @@
 import 'dart:ui' as ui;
 
 import 'package:another_flushbar/flushbar.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:math_expressions/math_expressions.dart';
@@ -20,6 +22,8 @@ class CustomKeyboard extends StatefulWidget {
     super.key,
     this.layout = KeyboardLayout.simple,
     this.customButton = ".",
+    this.reversed = false,
+    this.customButtonReversed = false,
     required this.controller,
     required this.selectedDate,
     this.onDone,
@@ -30,6 +34,8 @@ class CustomKeyboard extends StatefulWidget {
   final TextEditingController controller;
   final String customButton;
   final KeyboardLayout layout;
+  final bool reversed;
+  final bool customButtonReversed;
   final void Function()? onDone;
   final void Function(KeyboardButtonType type, String value)? onTap;
   final DateTime selectedDate;
@@ -42,18 +48,32 @@ class CustomKeyboard extends StatefulWidget {
 class _CustomKeyboardState extends State<CustomKeyboard> {
   bool _isCalculating = false;
 
-  List<KeyboardButton> get simpleButtons => [
+  List<KeyboardButton> get numColumn1 => [
     KeyboardButton(type: KeyboardButtonType.char, value: "1"),
     KeyboardButton(type: KeyboardButtonType.char, value: "4"),
     KeyboardButton(type: KeyboardButtonType.char, value: "7"),
-    KeyboardButton(type: KeyboardButtonType.char, value: widget.customButton),
+  ];
+  List<KeyboardButton> get numColumn2 => [
     KeyboardButton(type: KeyboardButtonType.char, value: "2"),
     KeyboardButton(type: KeyboardButtonType.char, value: "5"),
     KeyboardButton(type: KeyboardButtonType.char, value: "8"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "0"),
+  ];
+  List<KeyboardButton> get numColumn3 => [
     KeyboardButton(type: KeyboardButtonType.char, value: "3"),
     KeyboardButton(type: KeyboardButtonType.char, value: "6"),
     KeyboardButton(type: KeyboardButtonType.char, value: "9"),
+  ];
+
+  KeyboardButton get customButton =>
+      KeyboardButton(type: KeyboardButtonType.char, value: widget.customButton);
+  KeyboardButton get doubleZeroButton => KeyboardButton(type: KeyboardButtonType.char, value: "00");
+
+  List<KeyboardButton> get simpleButtons => [
+    ...widget.reversed ? numColumn1.reversed : numColumn1,
+    customButton,
+    ...widget.reversed ? numColumn2.reversed : numColumn2,
+    KeyboardButton(type: KeyboardButtonType.char, value: "0"),
+    ...widget.reversed ? numColumn3.reversed : numColumn3,
     KeyboardButton(type: KeyboardButtonType.delete, widget: Icon(Icons.backspace_rounded)),
     KeyboardButton(type: KeyboardButtonType.date, widget: FaIcon(FontAwesomeIcons.calendarDay)),
     KeyboardButton(type: KeyboardButtonType.char, value: "+"),
@@ -69,18 +89,12 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
     KeyboardButton(type: KeyboardButtonType.char, value: "-"),
     KeyboardButton(type: KeyboardButtonType.char, value: "×", widget: Icon(Icons.close)),
     KeyboardButton(type: KeyboardButtonType.char, value: "÷"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "1"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "4"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "7"),
-    KeyboardButton(type: KeyboardButtonType.char, value: widget.customButton),
-    KeyboardButton(type: KeyboardButtonType.char, value: "2"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "5"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "8"),
+    ...widget.reversed ? numColumn1.reversed : numColumn1,
+    widget.customButtonReversed ? doubleZeroButton : customButton,
+    ...widget.reversed ? numColumn2.reversed : numColumn2,
     KeyboardButton(type: KeyboardButtonType.char, value: "0"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "3"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "6"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "9"),
-    KeyboardButton(type: KeyboardButtonType.char, value: "00"),
+    ...widget.reversed ? numColumn3.reversed : numColumn3,
+    widget.customButtonReversed ? customButton : doubleZeroButton,
     KeyboardButton(type: KeyboardButtonType.date, widget: FaIcon(FontAwesomeIcons.calendarDay)),
     KeyboardButton(type: KeyboardButtonType.delete, widget: FaIcon(FontAwesomeIcons.deleteLeft)),
     KeyboardButton(
@@ -294,84 +308,6 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
           ),
         ],
       ),
-      // child: GridView(
-      //   physics: NeverScrollableScrollPhysics(),
-      //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      //     crossAxisCount: 4,
-      //     mainAxisSpacing: 8,
-      //     crossAxisSpacing: 8,
-      //     mainAxisExtent: 50,
-      //     // childAspectRatio: 1.5
-      //   ),
-      //   children:
-      //       buttons.map((KeyboardButton button) {
-      //         final Widget child;
-      //         switch (button.type) {
-      //           case KeyboardButtonType.char:
-      //             // child = button.display;
-      //             child = customTextButton(button.value as String, context);
-      //           case KeyboardButtonType.date:
-      //             child = Row(
-      //               mainAxisSize: MainAxisSize.min,
-      //               spacing: 4,
-      //               children: [
-      //                 Icon(
-      //                   Icons.date_range,
-      //                   color: context.cs.surface,
-      //                   size: 18,
-      //                 ),
-      //                 Text(
-      //                   widget.selectedDate.displayFormat(),
-      //                   style: context.customTt.numberFontSmall!.copyWith(
-      //                     color: context.cs.surface,
-      //                   ),
-      //                 ),
-      //               ],
-      //             );
-      //           default:
-      //             child = button.display;
-      //             // child = Icon(button.value as IconData);
-      //         }
-      //         return Container(
-      //           height: 20,
-      //           decoration: BoxDecoration(
-      //             color:
-      //                 button.type == KeyboardButtonType.date
-      //                     ? context.cs.primary
-      //                     : button.type == KeyboardButtonType.done
-      //                     ? context.cs.secondary
-      //                     : context.cs.primary.withAlpha(10),
-      //             borderRadius: BorderRadius.circular(12),
-      //           ),
-      //           child: Material(
-      //             color: Colors.transparent,
-      //             child: InkWell(
-      //               customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      //               onTap: () {
-      //                 // widget.onTap?.call(button.type, button.value);
-      //                 switch (button.type) {
-      //                   case KeyboardButtonType.char:
-      //                     updateText(button.value ?? "");
-      //                   case KeyboardButtonType.date:
-      //                     widget.onDateTapped();
-      //                   case KeyboardButtonType.delete:
-      //                     deleteText();
-      //                   case KeyboardButtonType.done:
-      //                     // if + and - is present, button switch to calculation mode
-      //                     if (_isCalculating) {
-      //                       calculateAmount();
-      //                     } else {
-      //                       widget.onDone();
-      //                     }
-      //                 }
-      //                 HapticFeedback.lightImpact();
-      //               },
-      //               child: Center(child: child),
-      //             ),
-      //           ),
-      //         );
-      //       }).toList(),
-      // ),
     );
   }
 
@@ -484,16 +420,19 @@ class MonthSelectorDialog extends StatefulWidget {
 
 class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
   late DateTime _selectedDateTime;
+  late YearMonth _yearMonth;
 
   @override
   void initState() {
     super.initState();
-    _selectedDateTime = context.listMod.currentMonth;
+    _yearMonth = context.listMod.currentYearMonth;
+    _selectedDateTime = _yearMonth.date1;
   }
 
   @override
   Widget build(BuildContext context) {
     final monthlyOverview = context.listMod.monthlyOverview;
+
     return AlertDialog(
       content: SizedBox(
         width: MediaQuery.sizeOf(context).width * 0.7,
@@ -510,10 +449,7 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            _selectedDateTime = DateTime(
-                              _selectedDateTime.year - 1,
-                              _selectedDateTime.month,
-                            );
+                            _selectedDateTime = _selectedDateTime.addYear(-1);
                           });
                         },
                         icon: Icon(
@@ -532,10 +468,7 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                       IconButton(
                         onPressed: () {
                           setState(() {
-                            _selectedDateTime = DateTime(
-                              _selectedDateTime.year + 1,
-                              _selectedDateTime.month,
-                            );
+                            _selectedDateTime = _selectedDateTime.addYear(1);
                           });
                         },
                         icon: Icon(Icons.chevron_right_rounded, size: 30),
@@ -556,43 +489,142 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                       final balance = monthlyOverview[date]?.balance ?? 0;
                       final displayText =
                           monthlyOverview.containsKey(date)
-                              ? NumberFormat.compactCurrency(symbol: "RM").format(balance)
+                              ? context.listMod.currencyFormat(balance, abbreviated: true)
                               : "N/A";
+                      final color =
+                          _yearMonth.isInYearMonth(date) ? context.customCs.fadeColor4 : null;
+                      final innerColor =
+                          _yearMonth.isWithin(date) && !_yearMonth.isInYearMonth(date)
+                              ? context.customCs.fadeColor3
+                              : null;
+
                       return GestureDetector(
                         onTap: () {
-                          context.listMod.changeYearMonth(date);
-                          context.nav.pop();
+                          if (!_yearMonth.useRange) {
+                            setState(() {
+                              _yearMonth = _yearMonth.copyWith(date1: date);
+                            });
+                            context.listMod.updateYearMonth(_yearMonth);
+                            context.pop();
+                          } else {
+                            if (_yearMonth.date2 != null) {
+                              setState(() {
+                                _yearMonth = _yearMonth.copyWith(date1: date, date2: () => null);
+                              });
+                              debugPrint("end date is not null, select new date");
+                              debugPrint("new year month: ${_yearMonth.date2}");
+                            } else if (date.isBefore(_yearMonth.date1)) {
+                              debugPrint("start date before select date, select new date");
+                              setState(() {
+                                _yearMonth = _yearMonth.copyWith(date1: date, date2: () => null);
+                              });
+                            } else {
+                              setState(() {
+                                _yearMonth = _yearMonth.copyWith(date2: () => date);
+                              });
+                              context.listMod.updateYearMonth(_yearMonth);
+                              context.pop();
+                            }
+                          }
+
+                          // setState(() {
+                          //   _selectedDateTime = date;
+                          // });
+                          // if (_useRange && _selectedStart != null) {
+                          //   if (_selectedEnd != null) {
+                          //     setState(() {
+                          //       _selectedStart = date;
+                          //       _selectedEnd = null;
+                          //     });
+                          //   } else if (date.isBefore(_selectedStart!)) {
+                          //     setState(() {
+                          //       _selectedStart = date;
+                          //       _selectedEnd = null;
+                          //     });
+                          //   } else {
+                          //     context.listMod.updateDateRange(
+                          //       DateTimeRange(start: _selectedStart!, end: date),
+                          //     );
+                          //     context.pop();
+                          //   }
+                          // } else {
+                          //   context.listMod.updateYearMonth(date);
+                          //   context.nav.pop();
+                          // }
                         },
-                        child: Container(
-                          padding: EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: date == _selectedDateTime ? context.customCs.fadeColor2 : null,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                DateFormat('MMM').format(date),
-                                style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: AnimatedContainer(
+                            duration: Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            padding: EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(color: innerColor),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    DateFormat('MMM').format(date),
+                                    style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                                  ),
+                                  Text(
+                                    displayText,
+                                    style: context.customTt.numberFontSmall!.copyWith(
+                                      fontSize: 12,
+                                      color:
+                                          balance < 0
+                                              ? context.listMod.accentColors.negative
+                                              : balance > 0
+                                              ? context.listMod.accentColors.positive
+                                              : context.customCs.fadeColor1,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                displayText,
-                                style: context.tt.bodyMedium!.copyWith(
-                                  fontSize: 12,
-                                  color:
-                                      balance < 0
-                                          ? Colors.red
-                                          : balance > 0
-                                          ? Colors.green
-                                          : context.customCs.fadeColor1,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       );
                     }),
+                  ],
+                ),
+                Divider(),
+                Column(
+                  spacing: 4,
+                  children: [
+                    CustomSwitchListTile(
+                      dense: true,
+                      title: "Use Range",
+                      onSelected: (value) {
+                        setState(
+                          () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
+                        );
+                        if (!_yearMonth.useRange) {
+                          context.listMod.updateYearMonth(
+                            YearMonth(useRange: false, date1: _yearMonth.date1),
+                          );
+                          context.pop();
+                        }
+                      },
+                      value: _yearMonth.useRange,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                      title: Text(
+                        "Select Current Month",
+                        style: context.tt.bodyMedium,
+                      ),
+                      onTap: () {
+                        context.listMod.updateYearMonth(
+                          YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+                        );
+                        context.pop();
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -716,7 +748,7 @@ class CustomDropDownMenu<T> extends StatelessWidget {
   final InputBorder? border;
   final TextAlign? textAlign;
 
-  @override  
+  @override
   Widget build(BuildContext context) {
     return DropdownMenu(
       initialSelection: initSelection,
@@ -729,7 +761,7 @@ class CustomDropDownMenu<T> extends StatelessWidget {
         visualDensity: VisualDensity(vertical: -4),
         constraints: BoxConstraints(maxHeight: 40),
         filled: true,
-        fillColor: context.customCs.fadeColor3,
+        fillColor: context.customCs.fadeColor4,
         border: border,
         enabledBorder: border,
         focusedBorder: border,
@@ -738,7 +770,7 @@ class CustomDropDownMenu<T> extends StatelessWidget {
         padding: WidgetStatePropertyAll(EdgeInsets.zero),
         visualDensity: VisualDensity.comfortable,
         backgroundColor: WidgetStatePropertyAll(
-          context.cs.surfaceContainer,
+          context.cs.surfaceContainerHigh,
         ),
       ),
     );
@@ -787,19 +819,23 @@ class CustomSwitchListTile extends StatelessWidget {
     required this.title,
     required this.value,
     this.onSelected,
+    this.enabled = true,
+    this.dense = false,
   });
 
   final ValueChanged<bool>? onSelected;
   final bool value;
   final String title;
+  final bool enabled;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       onTap: () {
-        onSelected?.call(!value);
+        enabled ? onSelected?.call(!value) : null;
       },
-      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 0 : 6),
       title: Text(
         title,
         style: context.tt.bodyMedium,
@@ -810,7 +846,7 @@ class CustomSwitchListTile extends StatelessWidget {
         child: Switch(
           padding: EdgeInsets.zero,
           value: value,
-          onChanged: onSelected,
+          onChanged: enabled ? onSelected : null,
         ),
       ),
     );

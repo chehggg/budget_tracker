@@ -6,6 +6,7 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:flutter/material.dart';
@@ -15,11 +16,13 @@ class GoalInfoViewModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required GoalRepository goalRepos,
     required CategoryRepository categoryRepo,
+    required CurrencyRepository currencyRepo,
     required SharedElementRepository sharedElementRepo,
     required Goal goal,
   }) : _costItemRepo = costItemRepo,
        _goalRepo = goalRepos,
        _categoryRepo = categoryRepo,
+       _currencyRepo = currencyRepo,
        _sharedElementRepo = sharedElementRepo,
        _goal = goal {
     init();
@@ -28,6 +31,7 @@ class GoalInfoViewModel extends ChangeNotifier {
   final CostItemRepository _costItemRepo;
   final GoalRepository _goalRepo;
   final CategoryRepository _categoryRepo;
+  final CurrencyRepository _currencyRepo;
   final SharedElementRepository _sharedElementRepo;
 
   Future<void> init() async {
@@ -185,7 +189,17 @@ class GoalInfoViewModel extends ChangeNotifier {
   }
 
   AccentColor get accentColors => _sharedElementRepo.accentColors;
-  
+
+  String Function(
+    double value, {
+    bool abbreviated,
+    bool alwaysShowSign,
+    bool compact,
+    int? decimalDigits,
+    bool showSymbol,
+  })
+  get currencyFormat => _currencyRepo.formatCurrency;
+
   @override
   void dispose() {
     super.dispose();

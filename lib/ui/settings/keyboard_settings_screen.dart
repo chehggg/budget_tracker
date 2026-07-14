@@ -1,3 +1,4 @@
+import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
@@ -14,14 +15,15 @@ class KeyboardSettingsScreen extends StatefulWidget {
 }
 
 class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
-  KeyboardLayout _layout = KeyboardLayout.simple;
+  // KeyboardLayout _layout = KeyboardLayout.simple;
+  KeyboardSettings _settings = KeyboardSettings();
   SimpleKeyboardButtonType _button = SimpleKeyboardButtonType.decimal;
 
   @override
   void initState() {
     super.initState();
 
-    _layout = context.read<SharedElementRepository>().keyboardLayout;
+    _settings = context.read<SharedElementRepository>().keyboardSettings;
     _button = context.read<SharedElementRepository>().keyboardButton;
   }
 
@@ -44,15 +46,17 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                 children: [
                   Text(
                     "Current Keyboard",
-                    style: context.customTt.paragraphTitle,
+                    style: context.customTt.numberFontSmall,
                   ),
                   SizedBox(
                     height: 220,
                     child: CustomKeyboard(
-                      layout: _layout,
+                      layout: _settings.layout,
+                      customButtonReversed: _settings.customButtonReversed,
+                      reversed: _settings.rowReversed,
                       customButton:
                           _button == SimpleKeyboardButtonType.doubleZero &&
-                                  _layout == KeyboardLayout.simple
+                                  _settings.layout == KeyboardLayout.simple
                               ? "00"
                               : currencyRepo.currency.decimalSeparator,
                       controller: TextEditingController(),
@@ -63,7 +67,9 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
               ),
             ),
             Divider(),
-            SizedBox(height: 8,),
+            SizedBox(
+              height: 8,
+            ),
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -82,12 +88,12 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                           trailing: SizedBox(
                             width: 200,
                             child: DropdownMenu(
-                              initialSelection: _layout,
+                              initialSelection: _settings.layout,
                               onSelected: (value) {
                                 setState(() {
-                                  _layout = value ?? _layout;
+                                  _settings = _settings.copyWith(layout: value);
                                 });
-                                sharedElRepo.updateKeyboardLayout(_layout);
+                                sharedElRepo.updateKeyboardLayout(_settings.layout);
                               },
                               expandedInsets: EdgeInsets.zero,
                               dropdownMenuEntries:
@@ -128,7 +134,7 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                           trailing: SizedBox(
                             width: 200,
                             child: DropdownMenu(
-                              enabled: _layout == KeyboardLayout.simple,
+                              enabled: _settings.layout == KeyboardLayout.simple,
                               initialSelection: _button,
                               onSelected: (value) {
                                 setState(() {
@@ -166,6 +172,28 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                               ),
                             ),
                           ),
+                        ),
+                        CustomSwitchListTile(
+                          value: _settings.rowReversed,
+                          title: "Reverse number row",
+                          onSelected: (value) {
+                            setState(() {
+                              _settings = _settings.copyWith(rowReversed: value);
+                            });
+                            sharedElRepo.updateKeyboardRowSwitch(_settings.rowReversed);
+                            debugPrint("value: $value, new value: ${_settings.rowReversed}");
+                          },
+                        ),
+                        CustomSwitchListTile(
+                          enabled: _settings.layout == KeyboardLayout.complex,
+                          value: _settings.customButtonReversed,
+                          title: "Reverse 00 and separator position",
+                          onSelected: (value) {
+                            setState(() {
+                              _settings = _settings.copyWith(customButtonReversed: value);
+                            });
+                            sharedElRepo.updateKeyboardButtonSwitch(value);
+                          },
                         ),
                       ],
                     ),

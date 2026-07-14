@@ -253,9 +253,9 @@ class FormViewModel extends ChangeNotifier {
   })
   get currencyFormat => _currencyRepo.formatCurrency;
 
-  KeyboardLayout get layout => _sharedElRepo.keyboardLayout;
+  KeyboardSettings get settings => _sharedElRepo.keyboardSettings;
   String get customButtonText =>
-      _sharedElRepo.keyboardLayout == KeyboardLayout.simple &&
+      settings.layout == KeyboardLayout.simple &&
               _sharedElRepo.keyboardButton == SimpleKeyboardButtonType.doubleZero
           ? "00"
           : _currencyRepo.currency.decimalSeparator;

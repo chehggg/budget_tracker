@@ -96,6 +96,7 @@ class SymbolPositionSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
     final contextWatch = context.watch<AdditionalCurrencySettingsViewModel>();
     final symbolPosition = context.select(
       (AdditionalCurrencySettingsViewModel state) => state.symbolPosition,
@@ -135,7 +136,7 @@ class SymbolPositionSettingsTile extends StatelessWidget {
             padding: WidgetStatePropertyAll(EdgeInsets.zero),
             visualDensity: VisualDensity.comfortable,
             backgroundColor: WidgetStatePropertyAll(
-              context.cs.surfaceContainer ?? Colors.transparent,
+              context.cs.surfaceContainer,
             ),
           ),
         ),

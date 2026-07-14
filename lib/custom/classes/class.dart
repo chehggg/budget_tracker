@@ -305,6 +305,14 @@ class AccentColor {
   final Color previous;
   final Color current;
 
+  Color getColorByValue(double value, {bool reversed = false}) {
+    if (value >= 0) {
+      return reversed ? negative : positive;
+    } else {
+      return reversed ? positive : negative;
+    }
+  }
+
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'positive': positive.toHexString(),
@@ -412,4 +420,128 @@ class CategoryBreakdownSort {
   final String categorySortBy;
   final SortType itemOrder;
   final String itemSortBy;
+
+  String get display {
+    final categoryText = '$categorySortBy ${categoryOrder.arrow}';
+    final itemText = '$itemSortBy ${itemOrder.arrow}';
+    if (categoryText == itemText) {
+      return categoryText;
+    } else {
+      return "$categoryText, $itemText";
+    }
+  }
+}
+
+class KeyboardSettings {
+  KeyboardSettings({
+    this.layout = KeyboardLayout.simple,
+    this.rowReversed = false,
+    this.customButtonReversed = false,
+  });
+
+  final KeyboardLayout layout;
+  final bool rowReversed;
+  final bool customButtonReversed;
+
+  KeyboardSettings copyWith({
+    KeyboardLayout? layout,
+    bool? rowReversed,
+    bool? customButtonReversed,
+  }) {
+    return KeyboardSettings(
+      layout: layout ?? this.layout,
+      rowReversed: rowReversed ?? this.rowReversed,
+      customButtonReversed: customButtonReversed ?? this.customButtonReversed,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'layout': layout.name,
+      'rowReversed': rowReversed,
+      'customButtonReversed': customButtonReversed,
+    };
+  }
+
+  factory KeyboardSettings.fromMap(Map<String, dynamic> map) {
+    return KeyboardSettings(
+      layout: KeyboardLayout.values.byName(map['layout'] as String),
+      rowReversed: map['rowReversed'] as bool,
+      customButtonReversed: map['customButtonReversed'] as bool,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory KeyboardSettings.fromJson(String source) =>
+      KeyboardSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+}
+
+class YearMonth {
+  YearMonth({
+    required this.useRange,
+    required this.date1,
+    this.date2,
+  });
+
+  final bool useRange;
+  final DateTime date1;
+  final DateTime? date2;
+
+  YearMonthResult get selected {
+    if (useRange) {
+      return YearMonthRange(DateTimeRange(start: date1, end: date2 ?? date1));
+    } else {
+      return SingleYearMonth(date1);
+    }
+  }
+
+  bool isWithin(DateTime date) {
+    if (useRange) {
+      int value = date.year * 12 + date.month;
+      int startNum = date1.year * 12 + date1.month;
+      int endNum = (date2 ?? date1).year * 12 + (date2 ?? date1).month;
+
+      return value >= startNum && value <= endNum;
+    } else {
+      return date.isInSameYearMonthAs(date1);
+    }
+  }
+
+  bool isInYearMonth(DateTime date) {
+    return date.isInSameYearMonthAs(date1) ||
+        (date2 != null ? date.isInSameYearMonthAs(date2!) : false);
+  }
+
+  String formatYearMonth() {
+    if (useRange) {
+      return DateTimeRange(start: date1, end: date2 ?? date1).formatYearMonth();
+    } else {
+      return date1.formatMonth();
+    }
+  }
+
+  YearMonth copyWith({
+    bool? useRange,
+    DateTime? date1,
+    DateTime? Function()? date2,
+  }) {
+    return YearMonth(
+      useRange: useRange ?? this.useRange,
+      date1: date1 ?? this.date1,
+      date2: useRange == false ? null : (date2 != null ? date2.call() : this.date2),
+    );
+  }
+}
+
+sealed class YearMonthResult {}
+
+class SingleYearMonth extends YearMonthResult {
+  final DateTime date;
+  SingleYearMonth(this.date);
+}
+
+class YearMonthRange extends YearMonthResult {
+  final DateTimeRange dateRange;
+  YearMonthRange(this.dateRange);
 }

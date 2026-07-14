@@ -87,6 +87,7 @@ class SettingsList extends StatelessWidget {
               [
                 const SettingsSectionTitle(text: "Display"),
                 const ListScreenDisplaySettingsTile(),
+                const GlobalDisplaySettingsTile(),
                 const SettingsDivider(),
                 const SettingsSectionTitle(text: "Configuration"),
                 CurrencySettingsTile(
@@ -510,7 +511,10 @@ class GlobalDisplaySettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return CustomSettingsTile(
+      title: "Global",
+      onTap: () => context.push('/settings/global'),
+    );
   }
 }
 

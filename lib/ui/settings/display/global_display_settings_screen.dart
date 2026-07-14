@@ -3,6 +3,7 @@ import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -20,49 +21,86 @@ class _GlobalDisplaySettingsScreenState extends State<GlobalDisplaySettingsScree
     final color = sharedRepo.accentColors;
     return CustomScaffold(
       appBarTitle: const Text('Global Display'),
-      child: SliverList(
-        delegate: SliverChildListDelegate([
-          ColorListTile(
-            title: "Positive Number Color",
-            color: color.positive,
-            onColorChanged: (newColor) {
-              sharedRepo.updateAccentColor(
-                color.copyWith(positive: newColor),
-              );
+      actions: [
+        IconButton(
+          onPressed: () async {
+            final response = await showDialog(
+              context: context,
+              builder:
+                  (context) => AlertDialog(
+                    title: Text("Reset Settings"),
+                    content: Text("Are you sure you want to reset the display settings?"),
+                    actions: [
+                      DismissTextButton(
+                        onTap: () {
+                          context.pop(false);
+                        },
+                      ),
+                      AffirmativeTextButton(
+                        text: 'Reset',
+                        onTap: () {
+                          context.pop(true);
+                        },
+                      ),
+                    ],
+                  ),
+            );
+            if (response == true) {
+              sharedRepo.resetAccentColor();
               setState(() {});
-            },
+            }
+          },
+          icon: FaIcon(FontAwesomeIcons.clockRotateLeft, size: 20),
+        ),
+      ],
+      child: CustomScrollView(
+        slivers: [
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Text("Colors", style: context.customTt.dateLabel),
+              ColorListTile(
+                title: "Positive Number",
+                color: color.positive,
+                onColorChanged: (newColor) {
+                  sharedRepo.updateAccentColor(
+                    color.copyWith(positive: newColor),
+                  );
+                  setState(() {});
+                },
+              ),
+              ColorListTile(
+                title: "Negative Number",
+                color: color.negative,
+                onColorChanged: (newColor) {
+                  sharedRepo.updateAccentColor(
+                    color.copyWith(negative: newColor),
+                  );
+                  setState(() {});
+                },
+              ),
+              ColorListTile(
+                title: "Current Range",
+                color: color.current,
+                onColorChanged: (newColor) {
+                  sharedRepo.updateAccentColor(
+                    color.copyWith(current: newColor),
+                  );
+                  setState(() {});
+                },
+              ),
+              ColorListTile(
+                title: "Previous Range",
+                color: color.previous,
+                onColorChanged: (newColor) {
+                  sharedRepo.updateAccentColor(
+                    color.copyWith(previous: newColor),
+                  );
+                  setState(() {});
+                },
+              ),
+            ]),
           ),
-          ColorListTile(
-            title: "Negative Number Color",
-            color: color.negative,
-            onColorChanged: (newColor) {
-              sharedRepo.updateAccentColor(
-                color.copyWith(negative: newColor),
-              );
-              setState(() {});
-            },
-          ),
-          ColorListTile(
-            title: "Current Range Color",
-            color: color.current,
-            onColorChanged: (newColor) {
-              sharedRepo.updateAccentColor(
-                color.copyWith(current: newColor),
-              );
-              setState(() {});
-            },
-          ),
-          ColorListTile(
-            title: "Previous Range Color",
-            color: color.previous,
-            onColorChanged: (newColor) {
-              sharedRepo.updateAccentColor(
-                color.copyWith(previous: newColor),
-              );
-              setState(() {});
-            },
-          ),
-        ]),
+        ],
       ),
     );
   }
@@ -83,7 +121,7 @@ class ColorListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       onTap: () async {
         final response = await showDialog<Color?>(
           context: context,
@@ -131,15 +169,18 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text('Select Color'),
-      content: ColorPicker(
-        colorPickerWidth: 200,
-        pickerColor: _selectedColor,
-        onColorChanged: (color) {
-          setState(() {
-            _selectedColor = color;
-          });
-        },
-        pickerAreaHeightPercent: 0.5,
+      content: SizedBox(
+        height: 260,
+        child: ColorPicker(
+          colorPickerWidth: 250,
+          pickerColor: _selectedColor,
+          onColorChanged: (color) {
+            setState(() {
+              _selectedColor = color;
+            });
+          },
+          pickerAreaHeightPercent: 0.6,
+        ),
       ),
       actions: <Widget>[
         DismissTextButton(

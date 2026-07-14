@@ -53,8 +53,12 @@ extension DayExtension on DateTime {
   DateTime get endOfWeek => DateTime(year, month, day - (weekday - 1) + 6);
   int get dayinCurrentMonth => DateTime(year, month + 1, 0).day;
 
-  bool isWithinRange(DateTimeRange range) {
-    return (isBefore(range.end) || isAtSameMomentAs(range.end)) && isAfter(range.start) ||
+  bool isWithinRange(DateTimeRange range, {bool inclusive = true, bool setEndToEoM = false}) {
+    final realEnd = setEndToEoM ? range.end.endOfMonth : range.end;
+    if (!inclusive) {
+    return isBefore(realEnd) && isAfter(range.start);
+    }
+    return (isBefore(realEnd) || isAtSameMomentAs(realEnd)) && isAfter(range.start) ||
         isAtSameMomentAs(range.start);
   }
 
@@ -79,6 +83,13 @@ extension DayExtension on DateTime {
       return currentWeekday;
     });
   }
+}
+
+extension DateTimeRangeExtension on DateTimeRange {
+  String formatYearMonth() {
+    return "${start.formatMonth()} - ${end.formatMonth()}"; 
+  }
+
 }
 
 extension DoubleExtension on double {

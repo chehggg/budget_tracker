@@ -2,12 +2,14 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
+import 'package:budget_tracker/languages.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localization/flutter_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -86,25 +88,8 @@ class ChartScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Visualize".toUpperCase(),
+          AppLocale.aboutTitle.getString(context) //TODO: change this to the correct localization data
         ),
-        // actions: [
-        //   SizedBox(
-        //     height: 40,
-        //     child: DropdownMenu(
-        //       inputDecorationTheme: InputDecorationThemeData(),
-        //       onSelected: (value) {
-        //         if (value == null) return;
-        //         context.chartMod.updateCostType(value);
-        //       },
-        //       initialSelection: type,
-        //       dropdownMenuEntries:
-        //           CostType.values
-        //               .map((type) => DropdownMenuEntry(value: type, label: type.name))
-        //               .toList(),
-        //     ),
-        //   ),
-        // ],
       ),
       body: SafeArea(
         minimum: EdgeInsets.fromLTRB(0, 0, 0, 0),
@@ -136,6 +121,7 @@ class ChartScreen extends StatelessWidget {
                     ChartSection(
                       title: "Cumulative Spend",
                       showLabelSubtitle: true,
+                      pathName: '/chart/cumulative-balance',
                       child: NewCumulativeLineChart(
                         titleData: chartTitleData,
                       ),
@@ -570,7 +556,7 @@ class DailyBarChart extends StatelessWidget {
             ),
           ),
           borderData: FlBorderData(show: false),
-          gridData: FlGridData(drawVerticalLine: false),
+          gridData: customGrid,
           titlesData: titleData,
           // maxY: maxValue,
           barGroups:
@@ -639,8 +625,8 @@ class SummaryData extends StatelessWidget {
                 (changePercentage.isInfinite || changePercentage.isNaN)
                     ? context.customCs.fadeColor1
                     : isGood
-                    ? Colors.green.shade400
-                    : Colors.red.shade400;
+                    ? context.chartMod.accentColors.positive
+                    : context.chartMod.accentColors.negative;
             return Positioned.fill(
               child: Align(
                 alignment: alignment,
@@ -669,8 +655,6 @@ class SummaryData extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 rotationQuarterTurns: large ? 0 : 1,
-                // maxY: large ? null : context.chartMod.chartMax,
-                // minY: large ? null : context.chartMod.chartMin,
                 alignment: BarChartAlignment.spaceBetween,
                 gridData: customGrid,
                 extraLinesData: ExtraLinesData(
