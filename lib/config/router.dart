@@ -15,11 +15,13 @@ import 'package:budget_tracker/screens/settings/ex_rate_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_form_screen.dart';
 import 'package:budget_tracker/ui/category_form/category_form_viewmodel.dart';
 import 'package:budget_tracker/ui/category_form/category_icon_selection_screen.dart';
-import 'package:budget_tracker/ui/chart/chart_balance_details_screen.dart';
-import 'package:budget_tracker/ui/chart/chart_category_breakdown_screen.dart';
+import 'package:budget_tracker/ui/chart/details/chart_avg_cumulative_details_screen.dart';
+import 'package:budget_tracker/ui/chart/details/chart_cumulative_details_screen.dart';
+import 'package:budget_tracker/ui/chart/details/chart_category_breakdown_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_mtd_compare_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
+import 'package:budget_tracker/ui/chart/details/chart_daily_spend_details_screen.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_form_screen.dart';
@@ -127,6 +129,22 @@ final goRouter = GoRouter(
                       (context, state) => ChangeNotifierProvider.value(
                         value: state.extra as ChartViewModel,
                         child: CumulativeBalanceDetailScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/daily-spend',
+                  builder:
+                      (context, state) => ChangeNotifierProvider.value(
+                        value: state.extra as ChartViewModel,
+                        child: DailySpendDetailsScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/cumulative-avg',
+                  builder:
+                      (context, state) => ChangeNotifierProvider.value(
+                        value: state.extra as ChartViewModel,
+                        child: AvgCumulativeBalanceDetailScreen(),
                       ),
                 ),
                 GoRoute(

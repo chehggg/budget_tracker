@@ -44,34 +44,38 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                 ),
               ),  
             ),
-            SliverToBoxAdapter(
-              child: SegmentedButton(
-                selectedIcon: FaIcon(FontAwesomeIcons.check),
-                style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: Colors.transparent,
-                  selectedForegroundColor: context.cs.primary,
-                  foregroundColor: context.customCs.fadeColor1,
-                  side: BorderSide.none,
-                  textStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
-                  splashFactory: NoSplash.splashFactory,
-                ),
-                segments: [
-                  ...CostType.values.map(
-                    (el) => ButtonSegment(
-                      value: el,
-                      label: Text(el.name.capitalize()),
-                      icon: FaIcon(FontAwesomeIcons.moneyBill),
-                    ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              sliver: SliverToBoxAdapter(
+                child: SegmentedButton(
+                  selectedIcon: FaIcon(FontAwesomeIcons.check),
+                  style: SegmentedButton.styleFrom(
+                    // selectedForegroundColor: context.cs.primary,
+                    // foregroundColor: context.customCs.fadeColor1,
+                    side: BorderSide(color: context.customCs.fadeColor2!),
+                    // textStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                    splashFactory: NoSplash.splashFactory,
+                    iconSize: 14,
+                    visualDensity: VisualDensity(vertical: 0)
                   ),
-                ],
-                onSelectionChanged: (type) => context.chartMod.changeBreakdownType(type.first),
-                selected: {type},
+                  segments: [
+                    ...CostType.values.map(
+                      (el) => ButtonSegment(
+                        value: el,
+                        label: Text(el.name.capitalize()),
+                        icon: FaIcon(FontAwesomeIcons.moneyBill),
+                      ),
+                    ),
+                  ],
+                  onSelectionChanged: (type) => context.chartMod.changeBreakdownType(type.first),
+                  selected: {type},
+                ),
               ),
             ),
             SliverToBoxAdapter(
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                height: 260,
+                padding: EdgeInsets.symmetric(vertical: 30),
+                height: 300,
                 child: CategoryPieChart(),
               ),
             ),

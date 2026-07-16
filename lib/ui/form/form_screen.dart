@@ -334,13 +334,11 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                                 await context.formMod.deleteItem();
 
                                 if (context.mounted) {
-                                  context.go('/', extra: DateTime.now().millisecondsSinceEpoch);
-                                  // await Future.delayed(Duration.zero);
-                                  // WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  //   context.showSuccessNotification(
-                                  //     message: "Item deleted successfully.",
-                                  //   );
-                                  // });
+                                  if (widget.initRoute != null) {
+                                    context.pop();
+                                  } else {
+                                    context.go('/');
+                                  }
                                 }
                               }
                             },
@@ -446,10 +444,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             await context.formMod.submitForm();
                             if (context.mounted) {
                               if (widget.initRoute != null) {
-                                debugPrint("Pop to init route");
                                 context.pop();
                               } else {
-                                debugPrint("back to /");
                                 context.go('/');
                               }
                             }

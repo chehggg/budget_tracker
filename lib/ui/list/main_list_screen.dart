@@ -373,7 +373,6 @@ class ItemFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final categories = context.select((ListViewModel state) => state.filteredCategories);
     final curYearMonth = context.select((ListViewModel state) => state.currentYearMonth);
-    // final curRange = context.select((ListViewModel state) => state.currentRange);
     final hasValue = categories != null;
     return Container(
       height: 44,

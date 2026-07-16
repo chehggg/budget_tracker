@@ -861,7 +861,7 @@ class CustomScaffold extends StatelessWidget {
     this.appBarTitle,
     this.actions,
     this.padHorizontal = false,
-    this.safeAreaPadding = const EdgeInsets.only(top: 12, left: 12, right: 12),
+    this.safeAreaPadding,
   });
 
   final Widget child;
@@ -869,14 +869,15 @@ class CustomScaffold extends StatelessWidget {
   final Widget? appBarTitle;
   final List<Widget>? actions;
   final bool padHorizontal;
-  final EdgeInsets safeAreaPadding;
+  final EdgeInsets? safeAreaPadding;
 
   @override
   Widget build(BuildContext context) {
     final pad =
-        padHorizontal
+        safeAreaPadding ??
+        (padHorizontal
             ? const EdgeInsets.only(top: 12, left: 12, right: 12)
-            : const EdgeInsets.only(top: 12);
+            : const EdgeInsets.only(top: 12));
     return Scaffold(
       appBar: AppBar(
         actionsPadding: EdgeInsets.only(right: 8),

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
@@ -7,6 +8,7 @@ import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -27,12 +29,14 @@ class ChartScreen extends StatelessWidget {
     // ignore: unused_local_variable
     final contextWatch = context.watch<ChartViewModel>();
     final ready = context.select((ChartViewModel state) => state.ready);
-    final type = context.select((ChartViewModel state) => state.type);
-    final period = context.select((ChartViewModel state) => state.period);
     final showMonth = context.chartMod.showMonths;
+
+    final displayPeriod = context.chartMod.curDisplayPeriod;
+    final displayDetailsPeriod = context.chartMod.displayDetailsPeriodDuration;
 
     final FlTitlesData chartTitleData = getCustomChartTitleData(
       context: context,
+      showLeft: true,
       bottomTitle: AxisTitles(
         sideTitles: SideTitles(
           interval: 1,
@@ -41,7 +45,11 @@ class ChartScreen extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
-                context.chartMod.getInitials(value.round(), useInitials: true),
+                context.chartMod.getInitials(
+                  value.round(),
+                  useInitials: true,
+                  useDotForMonth: true,
+                ),
                 style: context.tt.bodyMedium!.copyWith(fontSize: 10),
               ),
             );
@@ -52,61 +60,80 @@ class ChartScreen extends StatelessWidget {
       ),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          AppLocale.aboutTitle.getString(
-            context,
-          ), //TODO: change this to the correct localization data
-        ),
+    SliverPadding getDivider() => SliverPadding(
+      padding: const EdgeInsets.only(top: 18, bottom: 4),
+      sliver: SliverToBoxAdapter(
+        child: Divider(),
       ),
-      body: SafeArea(
-        minimum: EdgeInsets.fromLTRB(0, 0, 0, 0),
-        child:
-            ready
-                ? CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: const ChartFilterButtons(),
-                    ),
-                    ChartSection(
-                      title: showMonth ? "YTM Overview" : "MTD Overview",
-                      pathName: '/chart/balance-compare',
-                      showLabelSubtitle: true,
-                      child: SummaryData(),
-                    ),
-                    const ChartSection(
-                      title: "Category Breakdown",
-                      pathName: '/chart/category-breakdown',
-                      child: CategoryBreakdownChart(),
-                    ),
-                    ChartSection(
-                      title: showMonth ? "Monthly Spend" : "Daily Spend",
-                      showLabelSubtitle: true,
-                      child: DailyBarChart(
-                        titleData: chartTitleData,
-                      ),
-                    ),
-                    ChartSection(
-                      title: "Cumulative Spend",
-                      showLabelSubtitle: true,
-                      pathName: '/chart/cumulative-balance',
-                      child: NewCumulativeLineChart(
-                        titleData: chartTitleData,
-                      ),
-                    ),
-                    ChartSection(
-                      title: "Cumulative Average Spend",
-                      showLabelSubtitle: true,
-                      child: NewAverageCumulativeLineChart(
-                        titleData: chartTitleData,
-                      ),
-                    ),
-                  ],
-                )
-                : Center(
-                  child: CircularProgressIndicator(),
+    );
+
+    return CustomScaffold(
+      appBarTitle: Text(
+        AppLocale.aboutTitle.getString(context),
+      ),
+      ready: ready,
+      safeAreaPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      child: Column(
+        children: [
+          ChartFilterButtons(),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  floating: true,
+                  delegate: ChartHeaderDelegate(
+                    displayPeriod: displayPeriod,
+                    displayDetailsPeriod: displayDetailsPeriod,
+                  ),
                 ),
+                ChartSection(
+                  title: "MoM Overview",
+                  child: YearMonthOverview(),
+                ),
+                getDivider(),
+                // ChartSection(
+                //   title: showMonth ? "YTM Overview" : "MTD Overview",
+                //   pathName: '/chart/balance-compare',
+                //   showLabelSubtitle: true,
+                //   child: SummaryData(),
+                // ),
+                const ChartSection(
+                  title: "Category Breakdown",
+                  pathName: '/chart/category-breakdown',
+                  child: CategoryBreakdownChart(),
+                ),
+                getDivider(),
+                ChartSection(
+                  title: showMonth ? "Monthly Spend" : "Daily Spend",
+                  pathName: '/chart/daily-spend',
+                  showLabelSubtitle: true,
+                  child: DailyBarChart(
+                    titleData: chartTitleData,
+                  ),
+                ),
+                getDivider(),
+                ChartSection(
+                  title: "Cumulative",
+                  showLabelSubtitle: true,
+                  pathName: '/chart/cumulative-balance',
+                  child: NewCumulativeLineChart(
+                    titleData: chartTitleData,
+                  ),
+                ),
+                getDivider(),
+                ChartSection(
+                  title: "Cumulative Average",
+                  pathName: '/chart/cumulative-avg',
+                  showLabelSubtitle: true,
+                  child: NewAverageCumulativeLineChart(
+                    titleData: chartTitleData,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -120,18 +147,13 @@ class ChartFilterButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final period = context.select((ChartViewModel state) => state.period);
-    final displayPeriod = context.select((ChartViewModel state) => state.curDisplayPeriod);
-    final displayDetailsPeriod = context.select(
-      (ChartViewModel state) => state.displayDetailsPeriodDuration,
-    );
-    debugPrint('rebuild');
     return Column(
       spacing: 8,
       children: [
         Container(
           padding: EdgeInsetsDirectional.symmetric(horizontal: 12),
           decoration: BoxDecoration(color: context.cs.surface),
-          height: 46,
+          height: 44,
           width: double.infinity,
           child: SegmentedButton(
             style: SegmentedButton.styleFrom(
@@ -155,69 +177,69 @@ class ChartFilterButtons extends StatelessWidget {
             selected: {period},
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity == null) return;
-              if (details.primaryVelocity!.abs() < 100) return;
-              debugPrint(details.primaryVelocity!.toStringAsFixed(0));
-              context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
-            },
-            child: ReusableContainer(
-              height: 120,
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-              width: double.infinity,
-              filled: true,
-              highlight: true,
-              child: Row(
-                children: [
-                  // Icon(
-                  //   Icons.keyboard_arrow_left_rounded,
-                  //   color: context.cs.surface,
-                  //   size: 40,
-                  // ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Current View",
-                          style: context.customTt.numberFontSmall?.copyWith(
-                            color: context.cs.onSecondary.withAlpha(200),
-                            fontSize: 14,
-                            fontWeight: FontWeight(600),
-                          ),
-                        ),
-                        Text(
-                          displayPeriod,
-                          style: context.customTt.numberFontLarge?.copyWith(
-                            color: context.cs.surface,
-                            fontSize: 52,
-                            height: 1.1,
-                          ),
-                        ),
-                        SizedBox(
-                          height: 3,
-                        ),
-                        Text(
-                          displayDetailsPeriod,
-                          style: context.customTt.paragraphText?.copyWith(
-                            color: context.cs.surface,
-                            fontSize: 16,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.arrow_right_outlined, color: context.cs.surface),
-                ],
-              ),
-            ),
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        //   child: GestureDetector(
+        //     behavior: HitTestBehavior.translucent,
+        //     onHorizontalDragEnd: (details) {
+        //       if (details.primaryVelocity == null) return;
+        //       if (details.primaryVelocity!.abs() < 100) return;
+        //       debugPrint(details.primaryVelocity!.toStringAsFixed(0));
+        //       context.chartMod.updatePeriodDuration(increase: details.primaryVelocity! < 0);
+        //     },
+        //     child: ReusableContainer(
+        //       height: 120,
+        //       padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        //       width: double.infinity,
+        //       filled: true,
+        //       highlight: true,
+        //       child: Row(
+        //         children: [
+        //           // Icon(
+        //           //   Icons.keyboard_arrow_left_rounded,
+        //           //   color: context.cs.surface,
+        //           //   size: 40,
+        //           // ),
+        //           Expanded(
+        //             child: Column(
+        //               crossAxisAlignment: CrossAxisAlignment.start,
+        //               children: [
+        //                 Text(
+        //                   "Current View",
+        //                   style: context.customTt.numberFontSmall?.copyWith(
+        //                     color: context.cs.onSecondary.withAlpha(200),
+        //                     fontSize: 14,
+        //                     fontWeight: FontWeight(600),
+        //                   ),
+        //                 ),
+        //                 Text(
+        //                   displayPeriod,
+        //                   style: context.customTt.numberFontLarge?.copyWith(
+        //                     color: context.cs.surface,
+        //                     fontSize: 52,
+        //                     height: 1.1,
+        //                   ),
+        //                 ),
+        //                 SizedBox(
+        //                   height: 3,
+        //                 ),
+        //                 Text(
+        //                   displayDetailsPeriod,
+        //                   style: context.customTt.paragraphText?.copyWith(
+        //                     color: context.cs.surface,
+        //                     fontSize: 16,
+        //                     height: 1.3,
+        //                   ),
+        //                 ),
+        //               ],
+        //             ),
+        //           ),
+        //           Icon(Icons.arrow_right_outlined, color: context.cs.surface),
+        //         ],
+        //       ),
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }
@@ -264,7 +286,7 @@ class ChartSection extends StatelessWidget {
                               pathName != null
                                   ? context.push(pathName!, extra: context.chartMod)
                                   : null,
-                      icon: FaIcon(FontAwesomeIcons.arrowRight, size: 20),
+                      icon: FaIcon(FontAwesomeIcons.angleRight, size: 18),
                     ),
                   ],
                 ),
@@ -496,10 +518,11 @@ class DailyBarChart extends StatelessWidget {
     final prevRangeStart = context.chartMod.prevRangeStart;
     return Container(
       height: 180,
-      padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+      padding: EdgeInsets.only(top: 12),
       child: BarChart(
         duration: Durations.medium1,
         BarChartData(
+          extraLinesData: getExtraLines(context, y: [0]),
           alignment: BarChartAlignment.spaceBetween,
           // groupsSpace: 20,
           barTouchData: BarTouchData(
@@ -544,7 +567,7 @@ class DailyBarChart extends StatelessWidget {
                             width: isPrev ? 2 : 5,
                             color:
                                 isPrev ? Colors.blue.shade400.withAlpha(150) : context.cs.secondary,
-                            toY: entry.value.expense ?? 0,
+                            toY: context.chartMod.chartMetric.getCostMetric(entry.value) ?? 0,
                           );
                         },
                       ).toList(),
@@ -1030,14 +1053,15 @@ class NewCumulativeLineChart extends StatelessWidget {
     final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
     final prevRangeStart = context.select((ChartViewModel state) => state.prevRangeStart);
     final showMonths = context.select((ChartViewModel state) => state.showMonths);
-
+    final metric = context.select((ChartViewModel state) => state.chartMetric);
     final now = DateTime.now().standard;
     return Container(
       height: 180,
-      padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+      padding: EdgeInsets.only(top: 12),
       child: LineChart(
         LineChartData(
           titlesData: titleData ?? FlTitlesData(),
+          minY: metric != ChartMetric.balance ? 0 : null,
           borderData: FlBorderData(show: false),
           lineTouchData: getCustomLineTouchData(
             context: context,
@@ -1055,8 +1079,14 @@ class NewCumulativeLineChart extends StatelessWidget {
                           ? prevRangeStart.addMonth(spot.x.round()).formatMonth()
                           : prevRangeStart.addDay(spot.x.round()).formatShorter();
                   return LineTooltipItem(
-                    "${isPrev ? prevDate : curDate}: ${context.chartMod.currencyFormat(spot.y)}",
-                    context.tt.bodyMedium!.copyWith(fontSize: 10),
+                    "${isPrev ? prevDate : curDate}: ${context.chartMod.currencyFormat(spot.y, abbreviated: true, compact: true)}",
+                    context.customTt.numberFontSmall!.copyWith(
+                      fontSize: 10,
+                      color:
+                          isPrev
+                              ? context.chartMod.accentColors.previous
+                              : context.chartMod.accentColors.current,
+                    ),
                     textAlign: TextAlign.right,
                   );
                 },
@@ -1065,7 +1095,12 @@ class NewCumulativeLineChart extends StatelessWidget {
           ),
           extraLinesData: ExtraLinesData(
             horizontalLines: [
-              HorizontalLine(y: 0, dashArray: [2, 8], color: context.customCs.fadeColor2),
+              HorizontalLine(
+                y: 0,
+                dashArray: [2, 10],
+                color: context.customCs.fadeColor2,
+                strokeWidth: 1,
+              ),
             ],
           ),
           gridData: customGrid,
@@ -1075,7 +1110,7 @@ class NewCumulativeLineChart extends StatelessWidget {
                 final Color mainColor = isPrev ? Colors.blue.shade300 : context.cs.secondary;
                 return getCustomLineChartBarData(
                   showingIndicators: [0],
-                  dashArray: isPrev ? [2, 8] : null,
+                  dashArray: isPrev ? [2, 10] : null,
                   color: mainColor,
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) {
@@ -1119,15 +1154,27 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
     final cumulativeComparison = context.select(
       (ChartViewModel state) => state.avgCumulativeComparison,
     );
+    final metric = context.select((ChartViewModel state) => state.chartMetric);
     final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
     final prevRangeStart = context.select((ChartViewModel state) => state.prevRangeStart);
     final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final now = DateTime.now().standard;
     return Container(
       height: 180,
-      padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+      padding: EdgeInsets.only(top: 12),
       child: LineChart(
         LineChartData(
+          minY: metric != ChartMetric.balance ? 0 : null,
+          extraLinesData: ExtraLinesData(
+            horizontalLines: [
+              HorizontalLine(
+                y: 0,
+                dashArray: [2, 10],
+                color: context.customCs.fadeColor2,
+                strokeWidth: 1,
+              ),
+            ],
+          ),
           titlesData: titleData ?? FlTitlesData(),
           borderData: FlBorderData(show: false),
           lineTouchData: getCustomLineTouchData(
@@ -1174,7 +1221,7 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                     ),
                   ],
                   color: mainColor,
-                  dashArray: isPrev ? [2, 8] : null,
+                  dashArray: isPrev ? [2, 10] : null,
                   dotData: FlDotData(
                     checkToShowDot: (spot, barData) {
                       if (showMonths) {
@@ -1194,4 +1241,153 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
   }
 }
 
+class YearMonthOverview extends StatelessWidget {
+  const YearMonthOverview({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    final overview = context.select((ChartViewModel state) => state.sixMonthOverview);
+    final start = context.select((ChartViewModel state) => state.rangeStart);
+    return Container(
+      height: 180,
+      child: BarChart(
+        BarChartData(
+          gridData: customGrid,
+          titlesData: getCustomChartTitleData(
+            context: context,
+            bottomTitle: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(overview.keys.elementAt(value.round()).formatMonth());
+                },
+              ),
+            ),
+          ),
+          barGroups:
+              overview.entries.mapIndexed((i, el) {
+                return BarChartGroupData(
+                  x: i,
+                  barRods:
+                      [
+                        ChartMetric.expense,
+                        ChartMetric.income,
+                      ].mapIndexed((metricIndex, e) {
+                        final expense = metricIndex == 0;
+                        final income = metricIndex == 1;
+                        return BarChartRodData(
+                          width: 10,
+                          toY: e.getCostMetric(el.value) ?? 0,
+                          color: (expense
+                                  ? context.chartMod.accentColors.negative
+                                  : context.chartMod.accentColors.positive)
+                              .withAlpha(el.key.isInSameYearMonthAs(start) ? 250 : 100),
+                        );
+                      }).toList(),
+                );
+              }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class ChartHeaderDelegate extends SliverPersistentHeaderDelegate {
+  ChartHeaderDelegate({required this.displayPeriod, required this.displayDetailsPeriod});
+
+  final String displayPeriod, displayDetailsPeriod;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final double progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0, 1);
+    return Container(
+      color: context.cs.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10),
+        child: GestureDetector(
+          onHorizontalDragEnd: (details) {
+            if (details.primaryVelocity == null) return;
+            if (details.primaryVelocity! > 500) {
+              // swipe right
+              context.chartMod.updatePeriodDuration(increase: false);
+            } else if (details.primaryVelocity! < -500) {
+              // swipe left
+              context.chartMod.updatePeriodDuration(increase: true);
+            }
+          },
+          child: ReusableContainer(
+            height: 120,
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            width: double.infinity,
+            filled: true,
+            highlight: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  "Current View",
+                  style: context.customTt.numberFontSmall?.copyWith(
+                    color: context.cs.onSecondary.withAlpha(200),
+                    fontSize: lerpDouble(14, 14, progress),
+                    height: lerpDouble(1.4, 1.4, progress),
+                    fontWeight: FontWeight(600),
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.chartMod.updatePeriodDuration(increase: false),
+                      icon: FaIcon(
+                        FontAwesomeIcons.angleLeft,
+                        color: context.cs.surface,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        displayPeriod,
+                        textAlign: TextAlign.center,
+                        style: context.customTt.numberFontLarge?.copyWith(
+                          color: context.cs.surface,
+                          fontSize: lerpDouble(52, 36, progress),
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => context.chartMod.updatePeriodDuration(increase: true),
+                      icon: FaIcon(
+                        FontAwesomeIcons.angleRight,
+                        color: context.cs.surface,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  displayDetailsPeriod,
+                  style: context.customTt.paragraphText?.copyWith(
+                    color: context.cs.surface.withAlpha(
+                      lerpDouble(200, 0, progress)!.round(),
+                    ),
+                    fontSize: lerpDouble(16, 12, progress),
+                    height: lerpDouble(1.3, 0.01, progress),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  double get maxExtent => 140;
+
+  @override
+  double get minExtent => 100;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return true;
+  }
+}

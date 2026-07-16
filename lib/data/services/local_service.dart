@@ -441,7 +441,7 @@ class LocalServices {
 
   Future<Result<bool?>> getSyncDateSettings() async {
     try {
-      final result = await _pref.getBool("keyboardSettings");
+      final result = await _pref.getBool("syncDate");
       if (result != null) {
         return Result.ok(result);
       } else {

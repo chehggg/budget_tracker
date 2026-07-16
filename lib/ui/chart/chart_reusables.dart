@@ -39,6 +39,7 @@ class CustomChartDetailTitleBar extends StatelessWidget {
             ),
           ],
         ),
+        SizedBox(height: 6,)
         // SizedBox(height: 20,)
         // Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(),)
         // TextButton(

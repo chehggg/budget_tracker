@@ -68,6 +68,9 @@ class ChartViewModel extends ChangeNotifier {
   ChartPeriod _period = ChartPeriod.month;
   ChartPeriod get period => _period;
 
+  YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now());
+  YearMonth get yearMonth => _yearMonth;
+
   CostType _type = CostType.expense;
   CostType get type => _type;
 
@@ -108,10 +111,14 @@ class ChartViewModel extends ChangeNotifier {
     "Dec",
   ];
 
-  String getInitials(int index, {bool useInitials = false}) {
+  String getInitials(int index, {bool useInitials = false, bool useDotForMonth = false}) {
     switch (_period) {
       case ChartPeriod.month:
-        return (index + 1).toString();
+        if (useDotForMonth) {
+          return "•";
+        } else {
+          return (index + 1).toString();
+        }
       case ChartPeriod.week:
         return weekdayInitials.elementAtOrNull(index)?.substring(0, useInitials ? 1 : null) ?? "";
       case ChartPeriod.year:
@@ -126,7 +133,7 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.month:
         return DateFormat('MMMM yyyy').format(_periodStart);
       case ChartPeriod.week:
-        return "${_curRange.end.year}, Week ${_periodStart.weekNumber}";
+        return "${_curRange.end.year}, W${_periodStart.weekNumber}";
       case ChartPeriod.year:
         return DateFormat('yyyy').format(_periodStart);
       case ChartPeriod.custom:
@@ -149,6 +156,26 @@ class ChartViewModel extends ChangeNotifier {
 
   String get displayDetailsPeriodDuration {
     return '${DateFormat("dd MMM yyyy").format(_curRange.start)} - ${DateFormat("dd MMM yyyy").format(_curRange.end)}';
+  }
+
+  Map<DateTime, CostMetric> get sixMonthOverview {
+    final monthNow = DateTime.now().year * 12 + DateTime.now().month;
+    return Map.fromEntries(
+      _costItemRepo.monthSummary.entries
+          .where(
+            (entry) {
+              final month = entry.key.year * 12 + entry.key.month;
+              final diff = monthNow - month;
+              return entry.key.isWithinRange(
+                DateTimeRange(
+                  start: _periodStart.addMonth(-4),
+                  end: _periodStart.addMonth((monthNow - month + 1).clamp(0, 3)),
+                ),
+              );
+            },
+          )
+          .sorted((a, b) => a.key.compareTo(b.key)),
+    );
   }
 
   void updateChartMetric(ChartMetric newMetric) {
@@ -434,13 +461,13 @@ class ChartViewModel extends ChangeNotifier {
     List<Map<DateTime, CostMetric>> result = [];
     for (int i = 0; i < maxLength; i++) {
       List<MapEntry<DateTime, CostMetric>> entries = [];
-      final curData = curRangeOverview.entries.elementAtOrNull(i);
-      if (curData != null) {
-        entries.add(curData);
-      }
       final prevData = prevRangeOverview.entries.elementAtOrNull(i);
       if (prevData != null) {
         entries.add(prevData);
+      }
+      final curData = curRangeOverview.entries.elementAtOrNull(i);
+      if (curData != null) {
+        entries.add(curData);
       }
       result.add(Map.fromEntries(entries));
     }
@@ -486,6 +513,36 @@ class ChartViewModel extends ChangeNotifier {
     calculateCumulative(isCurrent: true, type: _chartMetric),
   ];
 
+  Map<int, Map<String, double?>> getPercentageChange({
+    required Map<DateTime, double> previous,
+    required Map<DateTime, double> current,
+    // ChartMetric? chartMetric,
+  }) {
+    final maxLength = max(previous.length, current.length);
+    // final metric = chartMetric ?? _chartMetric;
+    return Map.fromEntries(
+      List.generate(maxLength , (i) {
+        final curEntry = current.entries.elementAtOrNull(i);
+        final prevEntry = previous.entries.elementAtOrNull(i);
+        final curValue = curEntry?.value;
+        final prevValue = prevEntry?.value;
+        if (curValue == null || prevValue == null) {
+          return MapEntry(i, {
+            "change": null,
+            "percentage": null,
+          });
+        } else {
+          final change = curValue - prevValue;
+          final percentage = change / (prevValue.abs());
+          return MapEntry(i, {
+            "change": change,
+            "percentage": percentage,
+          });
+        }
+      }),
+    );
+  }
+
   DateTime get curMTD =>
       rangeStart.isInSameYearMonthAs(DateTime.now())
           ? DateTime.now().standard
@@ -508,8 +565,8 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
-    calculateAverageCumulative(isCurrent: false),
-    calculateAverageCumulative(isCurrent: true),
+    calculateAverageCumulative(isCurrent: false, type: _chartMetric),
+    calculateAverageCumulative(isCurrent: true, type: _chartMetric),
   ];
 
   CostMetric get prevRangeToDayCumulative {
