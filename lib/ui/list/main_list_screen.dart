@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/languages.dart';
@@ -389,10 +390,10 @@ class ItemFilterChips extends StatelessWidget {
                 if (details.primaryVelocity == null) return;
                 if (details.primaryVelocity! > 500) {
                   // swipe right
-                   context.listMod.incrementYearMonth(increase: false);
+                  context.listMod.incrementYearMonth(increase: false);
                 } else if (details.primaryVelocity! < -500) {
                   // swipe left
-                   context.listMod.incrementYearMonth(increase: true);
+                  context.listMod.incrementYearMonth(increase: true);
                 }
               },
               onTap: () async {
@@ -464,7 +465,7 @@ class ItemFilterChips extends StatelessWidget {
                     highlight: true,
                     child: Center(
                       child: Text(
-                        "${categories.length ?? 0}",
+                        "${categories.length}",
                         style: context.customTt.numberFontSmall!.copyWith(
                           fontSize: 12,
                           color: context.cs.surface,
@@ -480,6 +481,24 @@ class ItemFilterChips extends StatelessWidget {
             padding: EdgeInsets.symmetric(
               horizontal: 12.0,
             ),
+            onTap: () async {
+              final response = await showDialog<Map<String, dynamic>?>(
+                context: context,
+                builder: (dialogContext) {
+                  return RangeSliderAlertDialog(
+                    items: context.listMod.items,
+                    initRange: context.listMod.priceRange,
+                    initCostTypes: context.listMod.types,
+                  );
+                },
+              );
+              if (response != null && context.mounted) {
+                context.listMod.updateRangeFilter(
+                  range: response['range'],
+                  types: response['types'],
+                );
+              }
+            },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               spacing: 12,
@@ -1232,25 +1251,87 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
   }
 }
 
-class FilterAmountDialog extends StatefulWidget {
-  const FilterAmountDialog({super.key});
+class RangeSliderAlertDialog extends StatefulWidget {
+  const RangeSliderAlertDialog({
+    super.key,
+
+    required this.items,
+    this.initRange,
+    this.initCostTypes,
+  });
+  final List<CostItem> items;
+  final RangeValues? initRange;
+  final Set<CostType>? initCostTypes;
 
   @override
-  State<FilterAmountDialog> createState() => FilterAmountDialogState();
+  State<RangeSliderAlertDialog> createState() => _RangeSliderAlertDialogState();
 }
 
-class FilterAmountDialogState extends State<FilterAmountDialog> {
+class _RangeSliderAlertDialogState extends State<RangeSliderAlertDialog> {
+  RangeValues _curRange = RangeValues(0, 1);
+  Set<CostType> _costTypes = Set.from(CostType.values);
+
+  @override
+  void initState() {
+    super.initState();
+    _curRange = widget.initRange ?? RangeValues(minimum, maximum);
+    _costTypes = widget.initCostTypes ?? _costTypes;
+  }
+
+  double get minimum {
+    return widget.items
+        .where((item) => _costTypes.contains(item.costType))
+        .fold(double.infinity, (initial, item) => min(initial, item.absoluteAmount));
+  }
+
+  double get maximum {
+    return widget.items
+        .where((item) => _costTypes.contains(item.costType))
+        .fold(double.negativeInfinity, (initial, item) => max(initial, item.absoluteAmount));
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text("Amount Filter"),
-      content: RangeSlider(
-        values: RangeValues(context.listMod.minAmount, context.listMod.maxAmount),
-        onChanged: (values) {},
+      title: Text("Additional Filters"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SegmentedButton(
+            multiSelectionEnabled: true,
+            segments:
+                CostType.values
+                    .map((el) => ButtonSegment(value: el, label: Text(el.name)))
+                    .toList(),
+            selected: _costTypes,
+            onSelectionChanged: (value) {
+              setState(() {
+                _costTypes = value;
+              });
+            },
+          ),
+          RangeSlider(
+            values: _curRange,
+            min: minimum,
+            max: maximum,
+            onChanged: (RangeValues value) {
+              setState(() {
+                _curRange = value;
+              });
+            },
+          ),
+        ],
       ),
       actions: [
-        const DismissTextButton(text: "Cancel"),
-        const AffirmativeTextButton(text: "Save"),
+        DismissTextButton(
+          onTap: context.pop,
+        ),
+        AffirmativeTextButton(
+          text: "Apply",
+          onTap: () {
+            context.pop({"range": _curRange, "types": _costTypes});
+          },
+        ),
       ],
     );
   }

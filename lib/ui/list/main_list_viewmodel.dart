@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
@@ -80,8 +81,11 @@ class ListViewModel extends ChangeNotifier {
   bool _selectionMode = false;
   bool get selectionMode => _selectionMode;
 
-  NumRangeMatchType? _rangeMatch;
-  NumRangeMatchType? get numberRange => _rangeMatch;
+  // NumRangeMatchType? _rangeMatch;
+  // NumRangeMatchType? get numberRange => _rangeMatch;
+
+  RangeValues? _priceRange;
+  RangeValues? get priceRange => _priceRange;
 
   final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
@@ -94,6 +98,9 @@ class ListViewModel extends ChangeNotifier {
 
   DateTimeRange? _currentRange;
   DateTimeRange? get currentRange => _currentRange;
+  
+  Set<CostType>? _types;
+  Set<CostType>? get types => _types;
 
   bool _isSearchOpened = false;
   bool get isSearchOpened => _isSearchOpened;
@@ -121,6 +128,11 @@ class ListViewModel extends ChangeNotifier {
       (key, value) => MapEntry(
         key,
         value.where((item) {
+          final bool rangeQuery =
+              (_priceRange != null
+                  ? ((item.amount ?? 0) <= _priceRange!.end &&
+                      (item.amount ?? 0) >= _priceRange!.start)
+                  : true);
           final bool searchQuery =
               (_searchText.isNotEmpty
                   ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) ?? false
@@ -129,7 +141,7 @@ class ListViewModel extends ChangeNotifier {
               _filteredCategories != null
                   ? _filteredCategories!.map((cat) => cat.id).contains(item.categoryId)
                   : true;
-          return searchQuery && categoryQuery;
+          return rangeQuery && searchQuery && categoryQuery;
         }).toList(),
       ),
     );
@@ -214,7 +226,7 @@ class ListViewModel extends ChangeNotifier {
     if (!_isSearchOpened) {
       _searchText = "";
       _filteredCategories = null;
-      _rangeMatch = null;
+      _priceRange = null;
     }
     notifyListeners();
   }
@@ -284,10 +296,21 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  double get maxAmount =>
-      _costItemRepo.costItems.fold(0, (init, item) => max(init, item.absoluteAmount));
-  double get minAmount =>
-      _costItemRepo.costItems.fold(0, (init, item) => min(init, item.absoluteAmount));
+  void updateRangeFilter({required RangeValues range, required Set<CostType> types}) {
+    _priceRange = range;
+    _types = types;
+    notifyListeners();
+  }
+
+  List<CostItem> get items => outputCostItems.values.flattenedToList;
+  // double get maxAmount => outputCostItems.values.flattenedToList.fold(
+  //   double.negativeInfinity,
+  //   (init, item) => max(init, item.absoluteAmount),
+  // );
+  // double get minAmount => outputCostItems.values.flattenedToList.fold(
+  //   double.infinity,
+  //   (init, item) => min(init, item.absoluteAmount),
+  // );
 
   String Function(
     double value, {

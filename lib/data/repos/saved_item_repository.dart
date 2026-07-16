@@ -17,6 +17,10 @@ class SavedItemRepository {
   late final Future<void> _initFuture;
   Future<void> get ready => _initFuture;
 
+  void restart() {
+    _initFuture = _init();
+  }
+  
   Future<void> _init() async {
     final Result<List<SavedItem>> result = await _localServices.loadSavedItems();
     switch (result) {

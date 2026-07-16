@@ -13,13 +13,17 @@ class CurrencyRepository {
   CurrencyRepository({required LocalServices localServices, required ApiServices apiServices})
     : _localServices = localServices,
       _apiServices = apiServices {
-    _initFuture = init();
+    _initFuture = _init();
   }
 
   final LocalServices _localServices;
   final ApiServices _apiServices;
 
-  Future<void> init() async {
+  void restart() {
+    _initFuture = _init();
+  }
+  
+  Future<void> _init() async {
     final result = await _localServices.getCurrency();
 
     switch (result) {

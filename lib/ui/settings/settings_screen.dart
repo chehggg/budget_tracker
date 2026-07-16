@@ -1,9 +1,19 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
+import 'package:budget_tracker/data/repos/category_repository.dart';
+import 'package:budget_tracker/data/repos/cost_item_repository.dart';
+import 'package:budget_tracker/data/repos/currency_repository.dart';
+import 'package:budget_tracker/data/repos/exchange_rate_repository.dart';
+import 'package:budget_tracker/data/repos/goal_repository.dart';
+import 'package:budget_tracker/data/repos/saved_item_repository.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
+import 'package:budget_tracker/data/services/exporter_service.dart';
 import 'package:budget_tracker/languages.dart';
 import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
+import 'package:budget_tracker/utils/result.dart';
+import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_localization/flutter_localization.dart';
@@ -770,27 +780,14 @@ class ExportDataSettingsTile extends StatelessWidget {
             "Press confirm to export the cost item as CSV into your desired location",
           ),
           actions: [
-            TextButton(
-              onPressed: () async {
-                await context.read<SettingsViewModel>().exportCostItemData();
-                // if (context.mounted) {
-                //   Navigator.pop(context);
-                //   if (outputPath != null) {
-                //     Flushbar(
-                //       // title: "Saved!",
-                //       message: "File successfully saved to $outputPath",
-                //       flushbarPosition: FlushbarPosition.TOP,
-                //       duration: Duration(seconds: 3),
-                //       flushbarStyle: FlushbarStyle.GROUNDED,
-                //     ).show(context);
-                //   }
-                // }
-              },
-              child: const Text("confirm"),
+            DismissTextButton(
+              onTap: () => Navigator.pop(context),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("cancel"),
+            AffirmativeTextButton(
+              onTap: () async {
+                // await context.read<SettingsViewModel>().exportCostItemData();
+                await context.read<ExporterServices>().exportData();
+              },
             ),
           ],
         );
@@ -803,15 +800,21 @@ class LoadDataSettingsTile extends StatelessWidget {
   const LoadDataSettingsTile({super.key});
 
   final loadOptions = const [
+    // {
+    //   "function": "Append",
+    //   "desc": "Import selected file's data into existing list.",
+    //   "overwrite": false,
+    //   "flushMsg": "Data appended",
+    // },
+    // {
+    //   "function": "Overwrite",
+    //   "desc": "Replace existing list with selected file's data. Previous data will be deleted.",
+    //   "overwrite": true,
+    //   "flushMsg": "Data overwrited",
+    // },
     {
-      "function": "Append",
-      "desc": "Import selected file's data into existing list.",
-      "overwrite": false,
-      "flushMsg": "Data appended",
-    },
-    {
-      "function": "Overwrite",
-      "desc": "Replace existing list with selected file's data. Previous data will be deleted.",
+      "function": "Load everything",
+      "desc": "Replace all items and saved configuration from exported json.",
       "overwrite": true,
       "flushMsg": "Data overwrited",
     },
@@ -848,7 +851,24 @@ class LoadDataSettingsTile extends StatelessWidget {
                     height: 100,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     onTap: () async {
-                      final result = await context.read<SettingsViewModel>().loadData();
+                      final result = await context.read<ExporterServices>().loadData();
+                      if (context.mounted) {
+                        switch (result) {
+                          case Ok():
+                            context.read<CostItemRepository>().restart();
+                            context.read<CategoryRepository>().restart();
+                            context.read<CurrencyRepository>().restart();
+                            context.read<ExchangeRateRepository>().restart();
+                            context.read<GoalRepository>().restart();
+                            context.read<SavedItemRepository>().restart();
+                            context.read<SharedElementRepository>().restart();
+                          case Error():
+                        }
+                      }
+                      if (context.mounted) {
+                        context.go('/');
+                      }
+                      // final result = await context.read<SettingsViewModel>().loadData();
                       // if (result == null) return;
                       // if (result == "success") {
                       //   context.nav.pop();
@@ -1032,7 +1052,7 @@ class KeyboardSettingsTile extends StatelessWidget {
 
 class ChangeLanguageSettingsTile extends StatelessWidget {
   const ChangeLanguageSettingsTile({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     final localization = FlutterLocalization.instance;

@@ -42,6 +42,7 @@ extension DayExtension on DateTime {
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
   DateTime toEOM(int addMonth) => DateTime(year, month + addMonth + 1, 0);
   DateTime addYear(int addYear) => DateTime(year + addYear, month, day);
+  DateTime addWeek(int addWeek) => DateTime(year, month, day + (addWeek * 7));
   DateTime addMonth(int addMonth) => DateTime(year, month + addMonth, day);
   DateTime addDay(int addDay) => DateTime(year, month, day + addDay);
   DateTime get standard => DateTime(year, month, day);

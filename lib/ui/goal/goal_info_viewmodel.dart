@@ -153,17 +153,15 @@ class GoalInfoViewModel extends ChangeNotifier {
   }
 
   Map<DateTime, CostMetric?> get lineChartData {
-    double income = 0;
-    double expense = 0;
+    CostMetric metric = CostMetric();
     List<MapEntry<DateTime, CostMetric?>> mapEntries = [];
     for (int i = 0; i < dailyData.length; i++) {
       final entry = dailyData.entries.elementAt(i);
-      expense += (entry.value?.expense ?? 0);
-      income += (entry.value?.income ?? 0);
+      metric = metric.combineWith(entry.value ?? CostMetric());
       mapEntries.add(
         MapEntry(
           entry.key,
-          entry.value == null ? null : CostMetric(expense: expense, income: income),
+          entry.value == null ? null : metric,
         ),
       );
     }

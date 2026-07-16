@@ -9,12 +9,16 @@ import 'package:flutter/material.dart';
 
 class SharedElementRepository {
   SharedElementRepository({required LocalServices localServices}) : _localServices = localServices {
-    _initFuture = init();
+    _initFuture = _init();
   }
 
   final LocalServices _localServices;
 
-  Future<void> init() async {
+  void restart() {
+    _initFuture = _init();
+  }
+  
+  Future<void> _init() async {
     final layoutResult = await _localServices.getKeyboardLayout();
 
     switch (layoutResult) {

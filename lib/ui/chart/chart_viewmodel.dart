@@ -159,23 +159,55 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   Map<DateTime, CostMetric> get sixMonthOverview {
-    final monthNow = DateTime.now().year * 12 + DateTime.now().month;
-    return Map.fromEntries(
-      _costItemRepo.monthSummary.entries
-          .where(
-            (entry) {
-              final month = entry.key.year * 12 + entry.key.month;
-              final diff = monthNow - month;
-              return entry.key.isWithinRange(
-                DateTimeRange(
-                  start: _periodStart.addMonth(-4),
-                  end: _periodStart.addMonth((monthNow - month + 1).clamp(0, 3)),
-                ),
-              );
-            },
-          )
-          .sorted((a, b) => a.key.compareTo(b.key)),
-    );
+    switch (_period) {
+      case ChartPeriod.month:
+        int startMonth, endMonth;
+        final index = _costItemRepo.monthSummary.keys.toList().indexWhere(
+          (date) => date.isInSameYearMonthAs(_periodStart),
+        );
+        if (index < 0) {
+          startMonth = -7;
+          endMonth = 0;
+        } else {
+          startMonth = -7 + index;
+          endMonth = startMonth + 7;
+        }
+        return Map.fromEntries(
+          _costItemRepo.monthSummary.entries
+              .where(
+                (entry) {
+                  return entry.key.isWithinRange(
+                    DateTimeRange(
+                      start: _periodStart.addMonth(startMonth),
+                      end: _periodStart.addMonth(endMonth),
+                    ),
+                  );
+                },
+              )
+              .toList()
+              .reversed,
+        );
+      case ChartPeriod.week:
+        return {};
+      case ChartPeriod.year:
+        return Map.fromEntries(
+          _costItemRepo.yearSummary.entries
+              .where(
+                (entry) {
+                  return entry.key.isWithinRange(
+                    DateTimeRange(
+                      start: _periodStart.addYear(-4),
+                      end: _periodStart.addYear(3),
+                    ),
+                  );
+                },
+              )
+              .toList()
+              .reversed,
+        );
+      case ChartPeriod.custom:
+        return {};
+    }
   }
 
   void updateChartMetric(ChartMetric newMetric) {
@@ -521,7 +553,7 @@ class ChartViewModel extends ChangeNotifier {
     final maxLength = max(previous.length, current.length);
     // final metric = chartMetric ?? _chartMetric;
     return Map.fromEntries(
-      List.generate(maxLength , (i) {
+      List.generate(maxLength, (i) {
         final curEntry = current.entries.elementAtOrNull(i);
         final prevEntry = previous.entries.elementAtOrNull(i);
         final curValue = curEntry?.value;

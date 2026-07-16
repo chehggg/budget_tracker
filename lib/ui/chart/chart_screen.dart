@@ -1165,16 +1165,7 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
       child: LineChart(
         LineChartData(
           minY: metric != ChartMetric.balance ? 0 : null,
-          extraLinesData: ExtraLinesData(
-            horizontalLines: [
-              HorizontalLine(
-                y: 0,
-                dashArray: [2, 10],
-                color: context.customCs.fadeColor2,
-                strokeWidth: 1,
-              ),
-            ],
-          ),
+          extraLinesData: getExtraLines(context, y: [0]),
           titlesData: titleData ?? FlTitlesData(),
           borderData: FlBorderData(show: false),
           lineTouchData: getCustomLineTouchData(
@@ -1250,43 +1241,71 @@ class YearMonthOverview extends StatelessWidget {
     final start = context.select((ChartViewModel state) => state.rangeStart);
     return Container(
       height: 180,
-      child: BarChart(
-        BarChartData(
-          gridData: customGrid,
-          titlesData: getCustomChartTitleData(
-            context: context,
-            bottomTitle: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  return Text(overview.keys.elementAt(value.round()).formatMonth());
-                },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          LineChart(
+            LineChartData(
+              borderData: FlBorderData(show: false),
+              gridData: customGrid,
+              titlesData: getCustomChartTitleData(
+                context: context,
               ),
+              lineBarsData: [
+                getCustomLineChartBarData(
+                  color: context.cs.primary,
+                  showGradient: false,
+                  dotData: FlDotData(show: true),
+                  spots:
+                      overview.entries
+                          .mapIndexed(
+                            (index, entry) => FlSpot(index.toDouble(), entry.value.balance),
+                          )
+                          .toList(),
+                ),
+              ],
             ),
           ),
-          barGroups:
-              overview.entries.mapIndexed((i, el) {
-                return BarChartGroupData(
-                  x: i,
-                  barRods:
-                      [
-                        ChartMetric.expense,
-                        ChartMetric.income,
-                      ].mapIndexed((metricIndex, e) {
-                        final expense = metricIndex == 0;
-                        final income = metricIndex == 1;
-                        return BarChartRodData(
-                          width: 10,
-                          toY: e.getCostMetric(el.value) ?? 0,
-                          color: (expense
-                                  ? context.chartMod.accentColors.negative
-                                  : context.chartMod.accentColors.positive)
-                              .withAlpha(el.key.isInSameYearMonthAs(start) ? 250 : 100),
-                        );
-                      }).toList(),
-                );
-              }).toList(),
-        ),
+          BarChart(
+            BarChartData(
+              borderData: FlBorderData(show: false),
+              gridData: customGrid,
+              titlesData: getCustomChartTitleData(
+                context: context,
+                bottomTitle: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      return Text(overview.keys.elementAt(value.round()).formatMonth());
+                    },
+                  ),
+                ),
+              ),
+              barGroups:
+                  overview.entries.mapIndexed((i, el) {
+                    return BarChartGroupData(
+                      x: i,
+                      barRods:
+                          [
+                            ChartMetric.expense,
+                            ChartMetric.income,
+                          ].mapIndexed((metricIndex, e) {
+                            final expense = metricIndex == 0;
+                            final income = metricIndex == 1;
+                            return BarChartRodData(
+                              width: 10,
+                              toY: e.getCostMetric(el.value) ?? 0,
+                              color: (expense
+                                      ? context.chartMod.accentColors.negative
+                                      : context.chartMod.accentColors.positive)
+                                  .withAlpha(el.key.isInSameYearMonthAs(start) ? 250 : 100),
+                            );
+                          }).toList(),
+                    );
+                  }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

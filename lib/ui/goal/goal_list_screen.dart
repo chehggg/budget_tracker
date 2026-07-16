@@ -54,6 +54,8 @@ class GoalBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
+    final contextWatch = context.watch<GoalViewModel>();
     final goals = context.select((GoalViewModel state) => state.goalOverview);
     final goalsInProgress = goals.entries.where(
       (entry) => entry.key.isStarted && !entry.key.isEnded,
@@ -63,8 +65,7 @@ class GoalBody extends StatelessWidget {
       ...goals.entries.where((entry) => entry.key.isEnded),
       ...goals.entries.where((entry) => !entry.key.isStarted),
     ];
-    // final startedGoal = goals.entries.where((entry) => !entry.key.isStarted);
-    // final usePlural = goals.length >= 2;
+    
     return CustomScrollView(
       slivers: [
         SliverPadding(

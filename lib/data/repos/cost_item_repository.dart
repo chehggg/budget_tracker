@@ -13,12 +13,17 @@ import 'package:budget_tracker/utils/result.dart';
 
 class CostItemRepository {
   CostItemRepository({required LocalServices localServices}) : _localServices = localServices {
-    _initFuture = _init();
+    _initFuture = init();
   }
 
-  Future<void> _init() async {
+  Future<void> init() async {
     await getCostItem();
   }
+
+  void restart() {
+    _initFuture = init();
+  }
+
 
   final LocalServices _localServices;
 

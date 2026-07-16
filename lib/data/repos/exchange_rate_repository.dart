@@ -3,12 +3,16 @@ import 'package:budget_tracker/utils/result.dart';
 
 class ExchangeRateRepository {
   ExchangeRateRepository({required ApiServices apiServices}) : _apiServices = apiServices {
-    _initFuture = init();
+    _initFuture = _init();
   }
 
   final ApiServices _apiServices;
 
-  Future<void> init() async {
+  void restart() {
+    _initFuture = _init();
+  }
+  
+  Future<void> _init() async {
     final result = await _apiServices.getExchangeRate();
     switch (result) {
       case Ok():

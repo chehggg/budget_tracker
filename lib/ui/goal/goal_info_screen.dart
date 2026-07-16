@@ -891,7 +891,7 @@ class GoalInfoLineChart extends StatelessWidget {
                 getCustomLineChartBarData(
                   isCurved: false,
                   showGradient: true,
-                  color: Colors.blue.shade400,
+                  color: Colors.white,
                   dashArray: [2, 8],
                   spots: [
                     ...List.generate(
@@ -929,6 +929,7 @@ class GoalInfoLineChart extends StatelessWidget {
                     },
                   ),
                   isCurved: false,
+                  showGradient: false,
                   color: Colors.grey.shade600,
                   dashArray: [1, 15],
                   spots: [
@@ -938,6 +939,23 @@ class GoalInfoLineChart extends StatelessWidget {
                     ).mapIndexed((index, val) => FlSpot((index + 1).toDouble(), val)),
                   ],
                 ),
+                // getCustomLineChartBarData(
+                //   dotData: FlDotData(
+                //     checkToShowDot: (spot, barData) {
+                //       return false;
+                //     },
+                //   ),
+                //   isCurved: false,
+                //   showGradient: false,
+                //   color: Colors.grey.shade600,
+                //   dashArray: [1, 15],
+                //   spots: [
+                //     ...List.generate(
+                //       context.goalInfoMod.dataCount,
+                //       (i) => (i + 1) * context.goalInfoMod.targetSpendPerDay,
+                //     ).mapIndexed((index, val) => FlSpot((index + 1).toDouble(), val)),
+                //   ],
+                // ),
               ],
             ),
           ),

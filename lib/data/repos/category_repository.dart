@@ -23,6 +23,10 @@ class CategoryRepository {
     await getCategory();
   }
 
+  void restart() {
+    _initFuture = _init();
+  }
+
   final StreamController<List<CostItemCategory>> _streamController =
       StreamController<List<CostItemCategory>>.broadcast();
 
