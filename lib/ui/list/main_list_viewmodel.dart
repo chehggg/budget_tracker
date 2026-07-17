@@ -39,7 +39,7 @@ class ListViewModel extends ChangeNotifier {
 
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
       debugPrint("subscription trigger refresh for cost items.");
-      _curYearMonth = value.date ?? DateTime.now().startOfMonth;
+      _yearMonth = value.date != null ? YearMonth(useRange: false, date1: value.date!) : _yearMonth;
       notifyListeners();
     });
 
@@ -90,8 +90,6 @@ class ListViewModel extends ChangeNotifier {
   final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
 
-  DateTime _curYearMonth = DateTime.now().startOfMonth;
-  DateTime get currentMonth => _curYearMonth;
 
   YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now().startOfMonth);
   YearMonth get currentYearMonth => _yearMonth;

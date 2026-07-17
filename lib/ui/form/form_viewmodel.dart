@@ -237,6 +237,14 @@ class FormViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> duplicateForm() async {
+    final finalItem = _draftedItem.copyWith(
+      lastModified: DateTime.now(),
+      lastCreated: DateTime.now(),
+    );
+    await _costItemRepo.createCostItem(finalItem);
+  }
+
   void refresh() {
     _utilityRefresh = _utilityRefresh;
     notifyListeners();

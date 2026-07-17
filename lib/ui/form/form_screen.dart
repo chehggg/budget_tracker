@@ -323,6 +323,30 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             size: 20,
                           ),
                         ),
+                        MenuAnchor(
+                          menuChildren: [
+                            TextButton(
+                              child: Text("Attach image"),
+                              onPressed: () {
+                                //TODO: implement file picker
+                              },
+                            ),
+                            TextButton(
+                              child: Text("Currency exchange"),
+                              onPressed: () {
+                                //TODO: implement file picker
+                              },
+                            ),
+                            TextButton(
+                              child: Text("Duplicate"),
+                              onPressed: () {
+                                context.formMod.duplicateForm();
+                                context.go('/');
+                                //TODO: implement file picker
+                              },
+                            ),
+                          ],
+                        ),
                         if (context.formMod.inEditMode)
                           IconButton(
                             onPressed: () async {
