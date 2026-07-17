@@ -355,7 +355,7 @@ class DateBreadcrumb extends StatelessWidget {
                   splashFactory: NoSplash.splashFactory,
                 ),
                 onPressed: () {
-                  context.listMod.incrementYearMonth(increase: false);
+                  context.listMod.incrementYearMonth(increase: true);
                 },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
