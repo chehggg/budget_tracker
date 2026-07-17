@@ -46,7 +46,10 @@ class ChartViewModel extends ChangeNotifier {
       getInitValue();
       notifyListeners();
     });
-    _categorySubscription = _categoryRepo.categoryStream.listen((value) => notifyListeners());
+    _categorySubscription = _categoryRepo.categoryStream.listen((value) {
+      getInitValue();
+      notifyListeners();
+    });
 
     _isInitalized = true;
 
@@ -54,6 +57,7 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   void getInitValue() {
+    debugPrint("chartviewmodel, get init value");
     _costItems = _costItemRepo.costItems.toList();
     _daySummary = _costItemRepo.daySummary;
     _monthSummary = _costItemRepo.monthSummary;

@@ -16,15 +16,16 @@ class CategoryRepository {
   List<CostItemCategory> _categories = [];
   UnmodifiableListView<CostItemCategory> get categories => UnmodifiableListView(_categories);
 
-  late Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
 
   Future<void> _init() async {
     await getCategory();
   }
 
-  void restart() {
-    _initFuture = _init();
+  Future<void> restart() async {
+    await _init();
+    _streamController.add(_categories);
   }
 
   final StreamController<List<CostItemCategory>> _streamController =

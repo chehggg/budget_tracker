@@ -14,8 +14,8 @@ class SavedItemRepository {
   final List<SavedItem> _savedItems = [];
   UnmodifiableListView<SavedItem> get savedItems => UnmodifiableListView(_savedItems);
 
-  late final Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
 
   void restart() {
     _initFuture = _init();

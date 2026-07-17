@@ -20,15 +20,16 @@ class CostItemRepository {
     await getCostItem();
   }
 
-  void restart() {
-    _initFuture = init();
+  Future<void> restart() async {
+    await init();
+    _dataStreamController.add(dataStream);
   }
 
 
   final LocalServices _localServices;
 
-  late final Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
 
   List<CostItem> _costItems = List<CostItem>.empty(growable: true);
   List<CostItem> get costItems => UnmodifiableListView(_costItems);

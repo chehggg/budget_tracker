@@ -366,6 +366,7 @@ class LocalServices {
 
   Future<Result<void>> writeListConfig(ListDisplayConfig config) async {
     try {
+      debugPrint("write list config");
       await _pref.setString("listConfig", config.toJson());
       return Result.ok(null);
     } on Exception catch (e) {
@@ -376,6 +377,7 @@ class LocalServices {
   Future<Result<ListDisplayConfig?>> getListConfig() async {
     try {
       final result = await _pref.getString("listConfig");
+      debugPrint("read list config: $result");
       if (result != null) {
         return Result.ok(ListDisplayConfig.fromJson(result));
       } else {

@@ -1,18 +1,8 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/data/repos/category_repository.dart';
-import 'package:budget_tracker/data/repos/cost_item_repository.dart';
-import 'package:budget_tracker/data/repos/currency_repository.dart';
-import 'package:budget_tracker/data/repos/exchange_rate_repository.dart';
-import 'package:budget_tracker/data/repos/goal_repository.dart';
-import 'package:budget_tracker/data/repos/saved_item_repository.dart';
-import 'package:budget_tracker/data/repos/shared_element_repository.dart';
-import 'package:budget_tracker/data/services/exporter_service.dart';
 import 'package:budget_tracker/languages.dart';
-import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
-import 'package:budget_tracker/utils/result.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -33,6 +23,11 @@ class SettingsScreenWrapper extends StatelessWidget {
             costItemRepo: context.read(),
             categoryRepo: context.read(),
             currencyRepo: context.read(),
+            exportServices: context.read(),
+            exchangeRateRepo: context.read(),
+            goalRepo: context.read(),
+            savedItemRepo: context.read(),
+            sharedElementRepo: context.read(),
           ),
       child: const SettingsScreen(),
     );
@@ -766,14 +761,25 @@ class ExportDataSettingsTile extends StatelessWidget {
     return CustomSettingsTile(
       title: AppLocale.exportData.getString(context),
       trailingWidget: const SizedBox.shrink(),
-      onTap: () => showExportDialog(context),
+      onTap: () async {
+        final response = await showExportDialog(context);
+        if (response == true && context.mounted) {
+          final response = await context.settingMod.exportData();
+        }
+        // if (response != null && context.mounted) {
+        //   debugPrint("save response: " + response.toString());
+        //   if (response == "") {
+        //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Data saved")));
+        //   }
+        // }
+      },
     );
   }
 
-  Future showExportDialog(BuildContext context) {
-    return showDialog(
+  Future<bool?> showExportDialog(BuildContext context) {
+    return showDialog<bool?>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text("Export data"),
           content: const Text(
@@ -781,12 +787,11 @@ class ExportDataSettingsTile extends StatelessWidget {
           ),
           actions: [
             DismissTextButton(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
             ),
             AffirmativeTextButton(
               onTap: () async {
-                // await context.read<SettingsViewModel>().exportCostItemData();
-                await context.read<ExporterServices>().exportData();
+                context.pop(true);
               },
             ),
           ],
@@ -796,8 +801,29 @@ class ExportDataSettingsTile extends StatelessWidget {
   }
 }
 
-class LoadDataSettingsTile extends StatelessWidget {
+class LoadDataSettingsTile extends StatefulWidget {
   const LoadDataSettingsTile({super.key});
+
+  @override
+  State<LoadDataSettingsTile> createState() => _LoadDataSettingsTileState();
+}
+
+class _LoadDataSettingsTileState extends State<LoadDataSettingsTile> {
+  OverlayEntry? _entry;
+
+  void showOverlay() {
+    _entry = OverlayEntry(
+      builder: (context) {
+        return SettingOverlay(loadingMessage: "Loading data...",);
+      },
+    );
+    Overlay.of(context).insert(_entry!);
+  }
+
+  void removeOverlay() {
+    _entry?.remove();
+    _entry = null;
+  }
 
   final loadOptions = const [
     // {
@@ -822,17 +848,37 @@ class LoadDataSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loading = context.select((SettingsViewModel state) => state.loading);
     return CustomSettingsTile(
       title: AppLocale.loadData.getString(context),
       trailingWidget: const SizedBox.shrink(),
-      onTap: () => showLoadItemDialog(context),
+      onTap: () async {
+        final response = await showLoadItemDialog(context);
+        if (response == true && context.mounted) {
+          showOverlay();
+          final result = await context.settingMod.loadAllData();
+          removeOverlay();
+        }
+        // if (response != null) {
+        //   if (response == "" && context.mounted) {
+        //     context.go('/');
+        //     ScaffoldMessenger.of(
+        //       context,
+        //     ).showSnackBar(SnackBar(content: Text("Data load successfully")));
+        //     // debugPrint("Data load successfully");
+        //     // context.showSuccessNotification(message: "Data loaded");
+        //   } else {
+        //     // context.showErrorNotification(message: "Error: $response");
+        //   }
+        // }
+      },
     );
   }
 
-  Future showLoadItemDialog(BuildContext context) {
-    return showDialog(
+  Future<bool?> showLoadItemDialog(BuildContext context) {
+    return showDialog<bool?>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: const Text("Load data"),
           content: Padding(
@@ -851,40 +897,9 @@ class LoadDataSettingsTile extends StatelessWidget {
                     height: 100,
                     padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                     onTap: () async {
-                      final result = await context.read<ExporterServices>().loadData();
-                      if (context.mounted) {
-                        switch (result) {
-                          case Ok():
-                            context.read<CostItemRepository>().restart();
-                            context.read<CategoryRepository>().restart();
-                            context.read<CurrencyRepository>().restart();
-                            context.read<ExchangeRateRepository>().restart();
-                            context.read<GoalRepository>().restart();
-                            context.read<SavedItemRepository>().restart();
-                            context.read<SharedElementRepository>().restart();
-                          case Error():
-                        }
-                      }
-                      if (context.mounted) {
-                        context.go('/');
-                      }
-                      // final result = await context.read<SettingsViewModel>().loadData();
-                      // if (result == null) return;
-                      // if (result == "success") {
-                      //   context.nav.pop();
-                      //   Flushbar(
-                      //     message: option['flushMsg'] as String? ?? "",
-                      //     flushbarPosition: FlushbarPosition.TOP,
-                      //     duration: Duration(seconds: 3),
-                      //     flushbarStyle: FlushbarStyle.GROUNDED,
-                      //   ).show(context);
-                      // } else {
-                      //   Flushbar(
-                      //     message: "Operation failed. Error: $result ",
-                      //     flushbarPosition: FlushbarPosition.TOP,
-                      //     duration: Duration(seconds: 3),
-                      //     flushbarStyle: FlushbarStyle.GROUNDED,
-                      //   );
+                      context.pop(true);
+                      // if (context.mounted) {
+                      //   context.pop(result);
                       // }
                     },
                     child: Column(
@@ -918,69 +933,67 @@ class LoadDataSettingsTile extends StatelessWidget {
   }
 }
 
-class ClearDataSettingsTile extends StatelessWidget {
+class ClearDataSettingsTile extends StatefulWidget {
   const ClearDataSettingsTile({super.key});
+
+  @override
+  State<ClearDataSettingsTile> createState() => _ClearDataSettingsTileState();
+}
+
+class _ClearDataSettingsTileState extends State<ClearDataSettingsTile> {
+  OverlayEntry? _entry;
+
+  void showOverlay() {
+    _entry = OverlayEntry(builder: (context) => SettingOverlay(loadingMessage: "Clearing data...",));
+    Overlay.of(context).insert(_entry!);
+  }
+
+  void removeOverlay() {
+    _entry?.remove();
+    _entry = null;
+  }
 
   @override
   Widget build(BuildContext context) {
     return CustomSettingsTile(
       title: AppLocale.clearData.getString(context),
       trailingWidget: const SizedBox.shrink(),
-      onTap:
-          () => showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: const Text("Clear data"),
-                content: const Text(
-                  "Warning: All existing data will be removed. This action cannot be undone. It is recommended to keep a export current data as backup.",
+      onTap: () async {
+        final response = await showDialog<bool?>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text("Clear data"),
+              content: const Text(
+                "Warning: All existing data will be removed. This action cannot be undone. It is recommended to keep a export current data as backup.",
+              ),
+              actions: [
+                DismissTextButton(
+                  onTap: () => context.pop(),
+                  text: "Cancel",
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      "Cancel",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      await showDialog(
-                        context: context,
-                        builder:
-                            (context) => AlertDialog(
-                              content: Column(
-                                children: [
-                                  const Text("Type clear to clear data"),
-                                  TextFormField(),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () async {
-                                    // await context.read<AppModel>().clearCostItem();
-                                    // if (context.mounted) {
-                                    //   Navigator.pop(context);
-                                    //   context
-                                    //       .read<NavigatorModel>()
-                                    //       .popBackToMainScreenAndRefresh();
-                                    // }
-                                  },
-                                  child: Text("Confirm"),
-                                ),
-                              ],
-                            ),
-                      );
-                    },
-                    child: const Text(
-                      "Clear",
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+                PrimaryNegativeTextButton(
+                  onTap: () async {
+                    if (context.mounted) {
+                      context.pop(true);
+                    }
+                  },
+                  text: "Clear",
+                ),
+              ],
+            );
+          },
+        );
+        if (response == true && context.mounted) {
+          showOverlay();
+          final response = await context.settingMod.deleteData();
+          removeOverlay();
+          debugPrint("clear data response: $response");
+          // if (response == "") {
+          //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Clear")));
+          // }
+        }
+      },
     );
   }
 }
@@ -1062,6 +1075,43 @@ class ChangeLanguageSettingsTile extends StatelessWidget {
       onTap: () {
         context.push('/settings/languages');
       },
+    );
+  }
+}
+
+class SettingOverlay extends StatelessWidget {
+  const SettingOverlay({super.key, this.loadingMessage});
+
+  final String? loadingMessage;
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        height: 150,
+        width: 150,
+        padding: EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          color: context.cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 12,
+            children: [
+              CircularProgressIndicator(
+                // constraints: BoxConstraints(maxWidth: 60, maxHeight: 60),
+              ),
+              if (loadingMessage != null)
+                Text(
+                  loadingMessage!,
+                  style: context.customTt.paragraphText,
+                  textAlign: TextAlign.center,
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

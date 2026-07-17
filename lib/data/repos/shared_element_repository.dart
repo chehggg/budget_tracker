@@ -14,10 +14,15 @@ class SharedElementRepository {
 
   final LocalServices _localServices;
 
-  void restart() {
-    _initFuture = _init();
+  Future<void> restart() async {
+    // _initFuture =  _init();
+    await _init();
+    _controller.add(true);
   }
-  
+
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
+
   Future<void> _init() async {
     final layoutResult = await _localServices.getKeyboardLayout();
 
@@ -55,9 +60,10 @@ class SharedElementRepository {
     final listConfigResult = await _localServices.getListConfig();
     switch (listConfigResult) {
       case Ok():
-        _listConfig = listConfigResult.value ?? _listConfig;
+        debugPrint("config found! show amount color: ${listConfigResult.value?.toJson()}");
+        _listConfig = listConfigResult.value ?? ListDisplayConfig();
       case Error():
-        _listConfig = _listConfig;
+        _listConfig = ListDisplayConfig();
     }
 
     final syncDateResult = await _localServices.getSyncDateSettings();
@@ -75,9 +81,7 @@ class SharedElementRepository {
   final StreamController<YearMonth> _sharedDateController = StreamController<YearMonth>.broadcast();
   Stream<YearMonth> get sharedDateStream => _sharedDateController.stream;
 
-  late final Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
-
+  
   KeyboardSettings _keyboardSettings = KeyboardSettings();
   KeyboardSettings get keyboardSettings => _keyboardSettings;
 

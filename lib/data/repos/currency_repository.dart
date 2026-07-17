@@ -19,8 +19,9 @@ class CurrencyRepository {
   final LocalServices _localServices;
   final ApiServices _apiServices;
 
-  void restart() {
-    _initFuture = _init();
+  Future<void> restart() async {
+    await _init();
+    _currencyController.add(_currency);
   }
   
   Future<void> _init() async {
@@ -64,8 +65,8 @@ class CurrencyRepository {
   // final StreamController<String> _currencyStreamController = StreamController<String>.broadcast();
   // Stream<String> get valueStream => _currencyStreamController.stream;
 
-  late final Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
 
   late Currency _currency;
   Currency get currency => _currency;

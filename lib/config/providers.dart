@@ -25,15 +25,19 @@ List<SingleChildWidget> get providers => [
   ),
   Provider(
     create: (context) => CostItemRepository(localServices: context.read()),
+    lazy: false,
   ),
   Provider(
     create: (context) => GoalRepository(localServices: context.read()),
+    lazy: false,
   ),
   Provider(
     create: (context) => CategoryRepository(localServices: context.read()),
+    lazy: false,
   ),
   Provider(
     create: (context) => SavedItemRepository(localServices: context.read()),
+    lazy: false,
   ),
   Provider(
     create: (context) => ExchangeRateRepository(apiServices: context.read()),
@@ -41,9 +45,11 @@ List<SingleChildWidget> get providers => [
   Provider(
     create:
         (context) => CurrencyRepository(localServices: context.read(), apiServices: context.read()),
+    lazy: false,
   ),
   Provider(
     create: (context) => SharedElementRepository(localServices: context.read()),
+    lazy: false,
   ),
   ChangeNotifierProvider<ThemeModel>(
     create: (context) => ThemeModel(),

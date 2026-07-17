@@ -53,6 +53,7 @@ class ListViewModel extends ChangeNotifier {
     });
 
     _sharedElSubscription = _sharedRepo.sharedStream.listen((value) {
+      debugPrint("shared subscription trigger refresh for list.");
       notifyListeners();
     });
 

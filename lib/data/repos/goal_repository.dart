@@ -11,8 +11,9 @@ class GoalRepository {
 
   final LocalServices _localServices;
 
-  void restart() {
-    _initFuture = _init();
+  Future<void> restart() async {
+    await  _init();
+    _controller.add(true);
   }
   
   Future<void> _init() async {
@@ -22,8 +23,8 @@ class GoalRepository {
   final StreamController<bool> _controller = StreamController<bool>.broadcast();
   Stream<bool> get streamValue => _controller.stream;
 
-  late final Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
 
   List<Goal> _goals = [];
   List<Goal> get goals => _goals;

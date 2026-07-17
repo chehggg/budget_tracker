@@ -8,8 +8,8 @@ class ExchangeRateRepository {
 
   final ApiServices _apiServices;
 
-  void restart() {
-    _initFuture = _init();
+  Future<void> restart() async {
+    await _init();
   }
   
   Future<void> _init() async {
@@ -22,8 +22,8 @@ class ExchangeRateRepository {
     }
   }
 
-  late final Future<void> _initFuture;
-  Future<void> get ready => _initFuture;
+  Future<void>? _initFuture;
+  Future<void> get ready => _initFuture ?? Future.value();
 
   Map<String, double> _exchangeRates = {};
   Map<String, double> get exchangeRates => _exchangeRates;

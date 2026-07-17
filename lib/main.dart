@@ -62,6 +62,7 @@ class _MainAppState extends State<MainApp> {
   Widget build(BuildContext context) {
     final activeLocale = localization.currentLocale ?? const Locale('en');
     return MaterialApp.router(
+      // key: ValueKey(value),
       routerConfig: goRouter,
       supportedLocales: localization.supportedLocales,
       localizationsDelegates: localization.localizationsDelegates,
@@ -69,7 +70,6 @@ class _MainAppState extends State<MainApp> {
       theme: getAppTheme(activeLocale),
       themeMode: context.select((ThemeModel state) => state.theme),
       darkTheme: getAppTheme(activeLocale),
-      // home: const HomeScreen(),
     );
   }
 }

@@ -560,6 +560,7 @@ class CostEntryList extends StatelessWidget {
       );
     } else {
       debugPrint('grouped cost item length: $itemLength');
+      debugPrint('config in UI: ${contextWatch.displayConfig.toJson()}');
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 12),
         sliver: SliverList.builder(
