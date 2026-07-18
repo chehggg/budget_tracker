@@ -20,18 +20,20 @@ FlTitlesData getCustomChartTitleData({
   required BuildContext context,
   AxisTitles? bottomTitle,
   // AxisTitles? leftTitle,
+  bool padLeft = false,
   bool showLeft = false,
+  bool padRight = false,
+  bool showRight = false,
   AxisTitles? topTitle,
 }) => FlTitlesData(
-  rightTitles: AxisTitles(drawBelowEverything: false),
   topTitles: topTitle ?? AxisTitles(drawBelowEverything: false),
   leftTitles: AxisTitles(
     sideTitles: SideTitles(
-      showTitles: showLeft,
+      showTitles: showLeft || padLeft,
       getTitlesWidget:
           (value, meta) => Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: Text(
+            child: !padLeft ? Text(
               NumberFormat.compact().format(value),
               textAlign: TextAlign.left,
               overflow: TextOverflow.ellipsis,
@@ -40,7 +42,29 @@ FlTitlesData getCustomChartTitleData({
                 fontSize: 10,
                 color: context.customCs.fadeColor1,
               ),
-            ),
+            ) : SizedBox.shrink(),
+          ),
+      reservedSize: 30,
+      minIncluded: false,
+      maxIncluded: false,
+    ),
+  ),
+  rightTitles: AxisTitles(
+    sideTitles: SideTitles(
+      showTitles: showRight || padRight,
+      getTitlesWidget:
+          (value, meta) =>  Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: !padRight? Text(
+              NumberFormat.compact().format(value),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: context.customTt.numberFontSmall!.copyWith(
+                fontSize: 10,
+                color: context.customCs.fadeColor1,
+              ),
+            ): SizedBox.shrink(),
           ),
       reservedSize: 30,
       minIncluded: false,
@@ -58,12 +82,13 @@ LineChartBarData getCustomLineChartBarData({
   List<int>? dashArray,
   FlDotData? dotData,
   List<int> showingIndicators = const [],
+  double? barWidth,
 }) {
   return LineChartBarData(
     curveSmoothness: 0.5,
     isCurved: isCurved,
     dashArray: dashArray,
-    barWidth: 1.5,
+    barWidth: barWidth ?? 1.5,
     isStrokeCapRound: true,
     isStrokeJoinRound: true,
     showingIndicators: showingIndicators,

@@ -43,8 +43,10 @@ class CostListScreenWrapper extends StatelessWidget {
 class CostListScreen extends StatefulWidget {
   const CostListScreen({
     super.key,
+    this.initDate,
   });
 
+  final DateTime? initDate;
   @override
   State<CostListScreen> createState() => _CostListScreenState();
 }
@@ -52,21 +54,35 @@ class CostListScreen extends StatefulWidget {
 class _CostListScreenState extends State<CostListScreen> {
   late final ScrollController _controller;
   bool expanded = true;
+  // double _curPosition = 0;
+  int _refresh = 0;
+  // bool _loadingReady = true;
+  OverlayEntry? _overlay;
 
-  void animateScroll() {
-    if (expanded) {
-      _controller.animateTo(80, duration: Durations.medium1, curve: Curves.easeInOut);
-    } else {
-      _controller.animateTo(0, duration: Durations.medium1, curve: Curves.easeInOut);
+  void addOverlay() {
+    _overlay = OverlayEntry(builder: (context) => LoadingOverlay());
+    Overlay.of(context).insert(_overlay!);
+  }
+
+  void removeOverlay() {
+    _overlay?.remove();
+    _overlay = null;
+  }
+
+  void scrollToPosition(double position) {
+    debugPrint("Animated");
+    if (_controller.hasClients) {
+      _controller.jumpTo(0);
+      _controller.jumpTo(position);
     }
-    // setState(() {
-    //   expanded = !expanded;
-    // });
   }
 
   @override
   void initState() {
     super.initState();
+    debugPrint("new init");
+    // _curPosition = context.listMod.scrollPosition;
+    _refresh = context.listMod.scrollRefresh;
     _controller = ScrollController();
     _controller.addListener(() {
       setState(() {
@@ -81,41 +97,74 @@ class _CostListScreenState extends State<CostListScreen> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    debugPrint("rebuild screen state");
+    // ignore: unused_local_variable
+    final refresh = context.select((ListViewModel state) => state.scrollRefresh);
+    final scrollPosition = context.select((ListViewModel state) => state.scrollPosition);
     final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
     final ready = context.select((ListViewModel state) => state.ready);
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: const ListViewAppBar(),
-      body: SafeArea(
-        // minimum: EdgeInsets.only(top: 8),
-        child:
-            ready
-                ? Flex(
-                  direction: Axis.vertical,
-                  children: [
-                    isSearchOpened ? const ItemFilterChips() : const DateBreadcrumb(),
-                    Expanded(
-                      child: Scrollbar(
-                        thickness: 2,
-                        radius: Radius.circular(12),
-                        controller: _controller,
-                        child: CustomScrollView(
-                          controller: _controller,
-                          slivers: [
-                            SummaryTab(
-                              onPressed: animateScroll,
-                            ),
-                            const CostEntryList(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-                : const Center(
-                  child: CircularProgressIndicator(),
-                ),
+    if (_refresh != refresh) {
+      scrollToPosition(scrollPosition);
+      _refresh = refresh;
+      // _curPosition = scrollPosition;
+    }
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   scrollToPosition(scrollPosition);
+    // });
+    // if (refresh != _curScrollRefresh) {
+    //    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //     context.listMod.scrollToPositionAfterEntry(_controller, date);
+    //     await Future.microtask(() {});
+    //     debugPrint("Animated");
+    //     final pos = context.listMod.getScrollPosition(widget.initDate!);
+    //     _controller.jumpTo(pos);
+    //     removeOverlay();
+    //     _loadingReady = true;
+    //   });
+    //   _curScrollRefresh = refresh;
+    //   scrollToPosition();
+    //   // setState(() {
+    //   // });
+    // }
+    return CustomScaffold(
+      resizeInset: false,
+      customAppBar: const ListViewAppBar(),
+      safeAreaPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+      ready: ready,
+      child: Flex(
+        direction: Axis.vertical,
+        children: [
+          // IconButton(
+          //   onPressed: () {
+          //     animateScroll();
+          //   },
+          //   icon: FaIcon(FontAwesomeIcons.accusoft),
+          // ),
+          isSearchOpened ? const ItemFilterChips() : const DateBreadcrumb(),
+          Expanded(
+            child: Scrollbar(
+              thickness: 2,
+              radius: Radius.circular(12),
+              controller: _controller,
+              child: CustomScrollView(
+                controller: _controller,
+                slivers: [
+                  SummaryTab(
+                    // onPressed: animateScroll,
+                  ),
+                  const CostEntryList(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -177,87 +226,6 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: Row(
           children: [
             Expanded(child: const SearchTabTextField()),
-            // IconButton(
-            //   onPressed: () async {
-            //     await showDialog(
-            //       context: context,
-            //       builder: (context) {
-            //         return AlertDialog(
-            //           title: Text(
-            //             "Item Filter",
-            //             style: context.customTt.dateLabel,
-            //           ),
-            //           content: Column(
-            //             mainAxisSize: MainAxisSize.min,
-            //             children: [
-            //               TextButton(
-            //                 onPressed: () async {
-            //                   final init = context.listMod.filteredCategories;
-            //                   final response = await context.nav.push(
-            //                     MaterialPageRoute(
-            //                       builder:
-            //                           (context) => CategorySelectionScreen(
-            //                             initSelection: init,
-            //                           ),
-            //                     ),
-            //                   );
-            //                   if (response != null) return;
-            //                   if (context.mounted) {
-            //                     context.listMod.updateCategoryFilter(response);
-            //                   }
-            //                 },
-            //                 child: Text("Categories"),
-            //               ),
-            //               Text("Price Range"),
-            //             ],
-            //           ),
-            //         );
-            //       },
-            //     );
-            //   },
-            //   icon: Icon(Icons.toll_rounded),
-            // ),
-            // IconButton(
-            //   onPressed: () async {
-            //     final init = context.listMod.filteredCategories;
-            //     final List<CostItemCategory>? response = await context.nav.push(
-            //       MaterialPageRoute(
-            //         builder:
-            //             (context) => CategorySelectionScreen(
-            //               initSelection: init,
-            //             ),
-            //       ),
-            //     );
-            //     if (response != null) return;
-            //     if (context.mounted) {
-            //       context.listMod.updateCategoryFilter(response!);
-            //     }
-            //   },
-            //   icon: Stack(
-            //     alignment: Alignment(1.5, 1.5),
-            //     children: [
-            //       Icon(Icons.category_outlined, size: 22),
-            //       Container(
-            //         width: 12,
-            //         height: 12,
-            //         decoration: BoxDecoration(
-            //           color: context.cs.secondary,
-            //           borderRadius: BorderRadius.circular(20),
-            //         ),
-            //         child: Center(
-            //           child: Text(
-            //             "2",
-            //             style: context.tt.bodyMedium!.copyWith(
-            //               color: context.cs.surface,
-            //               fontSize: 8,
-            //               fontWeight: FontWeight(700),
-            //             ),
-            //           ),
-            //         ),
-            //       ),
-            //     ],
-            //   ),
-            // ),
           ],
         ),
       );
@@ -355,7 +323,7 @@ class DateBreadcrumb extends StatelessWidget {
                   splashFactory: NoSplash.splashFactory,
                 ),
                 onPressed: () {
-                  context.listMod.incrementYearMonth(increase: false);
+                  context.listMod.incrementYearMonth(increase: true);
                 },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
@@ -578,28 +546,32 @@ class CostEntryList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      textBaseline: TextBaseline.ideographic,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(dateString, style: context.customTt.dateLabel!.copyWith()),
-                        HideableText(
-                          context.listMod.currencyFormat(
-                            daySummary,
-                            alwaysShowSign: true,
-                            compact: true,
+                  Container(
+                    height: 40,
+                    // decoration: BoxDecoration(border: BoxBorder.all(color: Colors.white)),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        textBaseline: TextBaseline.ideographic,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(dateString, style: context.customTt.dateLabel!.copyWith()),
+                          HideableText(
+                            context.listMod.currencyFormat(
+                              daySummary,
+                              alwaysShowSign: true,
+                              compact: true,
+                            ),
+                            textStyle: context.customTt.numberFontMedium!.copyWith(
+                              color:
+                                  contextWatch.displayConfig.showTotalColor
+                                      ? contextWatch.accentColors.getColorByValue(daySummary)
+                                      : context.cs.primary,
+                            ),
                           ),
-                          textStyle: context.customTt.numberFontMedium!.copyWith(
-                            color:
-                                contextWatch.displayConfig.showTotalColor
-                                    ? contextWatch.accentColors.getColorByValue(daySummary)
-                                    : context.cs.primary,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   ...costItems.map((costItem) {
@@ -622,9 +594,11 @@ class CostEntryList extends StatelessWidget {
                         }
                       },
                       child: Container(
+                        height: 52,
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: selected ? context.customCs.fadeColor3 : Colors.transparent,
+                          // border: BoxBorder.all(color: Colors.white)
                         ),
                         child: Row(
                           spacing: 12,

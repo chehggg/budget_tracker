@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +10,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:math_expressions/math_expressions.dart';
+import 'package:math_expressions/math_expressions.dart' as mathexp;
 import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
@@ -158,10 +159,10 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
 
   void calculateAmount() async {
     try {
-      final ShuntingYardParser p = ShuntingYardParser();
+      final mathexp.ShuntingYardParser p = mathexp.ShuntingYardParser();
       final text = widget.controller.text.replaceAll("×", "*").replaceAll("÷", "/");
-      Expression expression = p.parse(text);
-      num value = RealEvaluator().evaluate(expression);
+      mathexp.Expression expression = p.parse(text);
+      num value = mathexp.RealEvaluator().evaluate(expression);
 
       widget.controller.value = widget.controller.value.copyWith(
         text: value.toStringAsFixed(value % 1 == 0 ? 0 : 2),
@@ -397,11 +398,15 @@ class HideableText extends StatelessWidget {
                     )
                 : data,
             style: textStyle,
+            overflow: TextOverflow.ellipsis,
+            maxLines: maxLine,
           );
         } else {
           return Text(
             isBlurred ? blurredText ?? "***" : overflowText,
             style: textStyle,
+            overflow: TextOverflow.ellipsis,
+            maxLines: maxLine,
           );
         }
       },
@@ -668,7 +673,7 @@ class PrimaryNegativeTextButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
         child: Text(
           text,
           style: context.customTt.numberFontSmall!.copyWith(color: Colors.red.shade600),
@@ -689,7 +694,7 @@ class DismissTextButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap ?? () => context.nav.pop(false),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
         child: Text(
           text,
           style: context.customTt.numberFontSmall!.copyWith(color: context.customCs.fadeColor1),
@@ -862,6 +867,8 @@ class CustomScaffold extends StatelessWidget {
     this.actions,
     this.padHorizontal = false,
     this.safeAreaPadding,
+    this.resizeInset,
+    this.customAppBar,
   });
 
   final Widget child;
@@ -870,6 +877,8 @@ class CustomScaffold extends StatelessWidget {
   final List<Widget>? actions;
   final bool padHorizontal;
   final EdgeInsets? safeAreaPadding;
+  final bool? resizeInset;
+  final PreferredSizeWidget? customAppBar;
 
   @override
   Widget build(BuildContext context) {
@@ -879,21 +888,53 @@ class CustomScaffold extends StatelessWidget {
             ? const EdgeInsets.only(top: 12, left: 12, right: 12)
             : const EdgeInsets.only(top: 12));
     return Scaffold(
-      appBar: AppBar(
-        actionsPadding: EdgeInsets.only(right: 8),
-        title: appBarTitle,
-        actions: actions,
-        scrolledUnderElevation: 0,
-        elevation: 0,
-      ),
+      resizeToAvoidBottomInset: resizeInset,
+      appBar:
+          customAppBar ??
+          AppBar(
+            actionsPadding: EdgeInsets.only(right: 8),
+            title: appBarTitle,
+            actions: actions,
+            scrolledUnderElevation: 0,
+            elevation: 0,
+          ),
       body: SafeArea(
-        minimum: pad,
-        child:
-            ready == true
-                ? child
-                : const Center(
-                  child: CircularProgressIndicator(),
-                ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: pad,
+              child: child,
+            ),
+            if (ready != true) const LoadingOverlay(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(color: context.cs.surface.withAlpha(80)),
+      child: Center(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: context.cs.surface,
+          ),
+          width: 100,
+          height: 100,
+          child: Padding(
+            padding: EdgeInsets.all(30),
+            child: CircularProgressIndicator(),
+          ),
+        ),
       ),
     );
   }

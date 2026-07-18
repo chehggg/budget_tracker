@@ -84,7 +84,7 @@ class SettingsViewModel extends ChangeNotifier {
     await _currencyRepo.restart();
     await _exchangeRateRepo.restart();
     await _goalRepo.restart();
-    // await _savedItemRepo.restart();
+    await _savedItemRepo.restart();
     await _sharedElementRepo.restart();
   }
 

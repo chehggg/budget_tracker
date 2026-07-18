@@ -18,6 +18,7 @@ class CostItem {
     this.lastCreated,
     this.lastModified,
     this.date,
+    this.image,
     this.costType,
   });
 
@@ -26,6 +27,7 @@ class CostItem {
   final String? name;
   final double? amount;
   final DateTime? date;
+  final String? image;
   final CostType? costType;
   final DateTime? lastCreated;
   final DateTime? lastModified;
@@ -38,6 +40,7 @@ class CostItem {
     'categoryId': categoryId,
     'amount': amount,
     'name': name,
+    'image': image,
     'lastCreated': lastCreated?.toString(),
     'lastModified': lastModified?.toString(),
   };
@@ -46,6 +49,7 @@ class CostItem {
     : uuid = json['uuid'] as String?,
       name = json['name'] as String?,
       amount = json['amount'] as double?,
+      image = json['image'] as String?,
       categoryId = json['categoryId'] as String?,
       costType = CostType.values.byName(json['costType'] as String? ?? 'expense'),
       date = (json['date'] as String?)?.dateParseStd(),
@@ -53,7 +57,7 @@ class CostItem {
       lastModified = DateTime.tryParse(json['lastModified'] ?? "") ?? DateTime.now();
 
   bool get isExpense => costType == CostType.expense;
-  double get absoluteAmount => costType == CostType.expense ? 0 - amount! : amount!;
+  double get absoluteAmount => costType == CostType.expense ? 0 - (amount?? 0) : (amount?? 0);
 
   // double get signedAmount => isExpense ? 0 - amount : amount;
 
@@ -89,6 +93,7 @@ class CostItem {
     String? name,
     double? amount,
     DateTime? date,
+    String? Function()? image,
     CostType? costType,
     DateTime? lastCreated,
     DateTime? lastModified,
@@ -100,6 +105,7 @@ class CostItem {
       amount: amount ?? this.amount,
       date: date ?? this.date,
       costType: costType ?? this.costType,
+      image: image != null ? image.call() : this.image,
       lastCreated: lastCreated ?? this.lastCreated,
       lastModified: lastModified ?? this.lastModified,
     );

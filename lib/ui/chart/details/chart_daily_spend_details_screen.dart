@@ -11,6 +11,7 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class DailySpendDetailsScreen extends StatefulWidget {
@@ -244,29 +245,35 @@ class DailySpendTable extends StatelessWidget {
                     final costMetric = metric.getCostMetric(entry.value);
                     final showValue = entry.key.isBeforeOrSameMoment(DateTime.now().standard);
                     return DataCell(
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 2,
-                          children: [
-                            Text(
-                              showValue
-                                  ? context.chartMod.currencyFormat(
-                                    costMetric ?? 0,
-                                    abbreviated: true,
-                                    compact: true,
-                                    showSymbol: false,
-                                  )
-                                  : "-",
-                            ),
-                            if (showValue)
+                      GestureDetector(
+                        onTap: () {
+                          context.chartMod.updateListDate(entry.key);
+                          context.go('/');
+                        },
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: 2,
+                            children: [
                               Text(
-                                context.chartMod.showMonths
-                                    ? entry.key.formatMonth()
-                                    : entry.key.formatPrettyShort(),
-                                style: context.customTt.paragraphTextSmall,
+                                showValue
+                                    ? context.chartMod.currencyFormat(
+                                      costMetric ?? 0,
+                                      abbreviated: true,
+                                      compact: true,
+                                      showSymbol: false,
+                                    )
+                                    : "-",
                               ),
-                          ],
+                              if (showValue)
+                                Text(
+                                  context.chartMod.showMonths
+                                      ? entry.key.formatMonth()
+                                      : entry.key.formatPrettyShort(),
+                                  style: context.customTt.paragraphTextSmall,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -282,26 +289,27 @@ class DailySpendTable extends StatelessWidget {
                         spacing: 2,
                         children: [
                           Text(
-                            showValues ?
-                            context.chartMod.currencyFormat(
-                              diff,
-                              abbreviated: true,
-                              compact: true,
-                              showSymbol: false,
-                            ) : "-",
+                            showValues
+                                ? context.chartMod.currencyFormat(
+                                  diff,
+                                  abbreviated: true,
+                                  compact: true,
+                                  showSymbol: false,
+                                )
+                                : "-",
                           ),
                           if (showValues)
-                          Text(
-                            percentage.formatSignedCompactPercentage(),
-                            style: context.customTt.paragraphTextSmall!.copyWith(
-                              color:
-                                  percentage.isInfinite || percentage.isNaN
-                                      ? null
-                                      : context.chartMod.getChangePercentageColor(
-                                        percentage,
-                                      ),
+                            Text(
+                              percentage.formatSignedCompactPercentage(),
+                              style: context.customTt.paragraphTextSmall!.copyWith(
+                                color:
+                                    percentage.isInfinite || percentage.isNaN
+                                        ? null
+                                        : context.chartMod.getChangePercentageColor(
+                                          percentage,
+                                        ),
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -361,8 +369,8 @@ class DifferenceBarChart extends StatelessWidget {
                 final diff = (curValue ?? 0) - (prevValue ?? 0);
                 final percentage = diff / ((prevValue ?? 1).abs());
                 final showValues =
-                  prev.key.isBeforeOrSameMoment(DateTime.now().standard) &&
-                  current.key.isBeforeOrSameMoment(DateTime.now().standard);
+                    prev.key.isBeforeOrSameMoment(DateTime.now().standard) &&
+                    current.key.isBeforeOrSameMoment(DateTime.now().standard);
                 return BarChartGroupData(
                   x: index,
                   barRods: [

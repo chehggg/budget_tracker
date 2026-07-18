@@ -80,7 +80,7 @@ class GoalInfoViewModel extends ChangeNotifier {
     return _pastProgress.length - (index + 1);
   }
 
-  late GoalProgress _currentGoalProgress;
+  GoalProgress _currentGoalProgress = GoalProgress();
   GoalProgress get currentGoalProgress => _currentGoalProgress;
 
   int get currentDay => DateTime.now().day;

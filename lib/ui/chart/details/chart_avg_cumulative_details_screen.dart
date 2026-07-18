@@ -28,7 +28,7 @@ class _AvgCumulativeBalanceDetailScreenState extends State<AvgCumulativeBalanceD
   Widget build(BuildContext context) {
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final overview = context.select((ChartViewModel state) => state.avgCumulativeComparison);
-    final maxLength = max(overview.first.length, overview.last.length);
+    final maxLength = context.chartMod.xRange;
     final columns = [
       "Day",
       context.chartMod.prevRangeStart.formatMonth(),

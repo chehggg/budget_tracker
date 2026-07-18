@@ -25,7 +25,6 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
     );
     return CustomScaffold(
       appBarTitle: Text('Details'),
-      actions: [IconButton(onPressed: () {}, icon: FaIcon(FontAwesomeIcons.sort, size: 20))],
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: (details) {

@@ -148,7 +148,7 @@ ThemeData getAppTheme(Locale locale) {
     colorScheme: customColorScheme,
     visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(
-      actionsPadding: EdgeInsets.only(bottom: 30, right: 20, top: 20),
+      actionsPadding: EdgeInsets.only(bottom: 20, right: 20, top: 20),
       titleTextStyle: customTextExtension.dateLabel,
       backgroundColor: customColorScheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(

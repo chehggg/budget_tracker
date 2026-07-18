@@ -76,9 +76,7 @@ final goRouter = GoRouter(
                         currencyRepo: context.read(),
                         sharedRepo: context.read(),
                       ),
-                  child: const CostListScreenWrapper(
-                    // key: state.extra != null ? ValueKey(state.extra) : ValueKey('home-root'),
-                  ),
+                  child: CostListScreen(),
                 );
               },
               routes: [

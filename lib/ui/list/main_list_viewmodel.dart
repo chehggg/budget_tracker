@@ -39,7 +39,11 @@ class ListViewModel extends ChangeNotifier {
 
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
       debugPrint("subscription trigger refresh for cost items.");
-      _curYearMonth = value.date ?? DateTime.now().startOfMonth;
+      // _curYearMonth = value.date ?? DateTime.now().startOfMonth;
+      // _refresh = (value.date ?? DateTime.now()).millisecondsSinceEpoch;
+      updateYearMonth(YearMonth(useRange: false, date1: value.date?? DateTime.now()));
+      getScrollPosition(value.date?? DateTime.now());
+      _refresh = DateTime.now().millisecondsSinceEpoch;
       notifyListeners();
     });
 
@@ -82,6 +86,11 @@ class ListViewModel extends ChangeNotifier {
   bool _selectionMode = false;
   bool get selectionMode => _selectionMode;
 
+  int _refresh = 0;
+  int get scrollRefresh => _refresh;
+
+  double _scrollPosition = 0;
+  double get scrollPosition => _scrollPosition;
   // NumRangeMatchType? _rangeMatch;
   // NumRangeMatchType? get numberRange => _rangeMatch;
 
@@ -91,15 +100,12 @@ class ListViewModel extends ChangeNotifier {
   final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
 
-  DateTime _curYearMonth = DateTime.now().startOfMonth;
-  DateTime get currentMonth => _curYearMonth;
-
   YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now().startOfMonth);
   YearMonth get currentYearMonth => _yearMonth;
 
   DateTimeRange? _currentRange;
   DateTimeRange? get currentRange => _currentRange;
-  
+
   Set<CostType>? _types;
   Set<CostType>? get types => _types;
 
@@ -173,19 +179,31 @@ class ListViewModel extends ChangeNotifier {
         .where(
           (entry) {
             return _yearMonth.isWithin(entry.key);
-            // // switch(selectedResult) {
-            // //   case SingleYearMonth():
-
-            // // }
-            // if (_currentRange != null) {
-            //   return entry.key.isWithinRange(_currentRange!, setEndToEoM: true);
-            // } else {
-            //   return entry.key.isInSameYearMonthAs(_curYearMonth);
-            // }
           },
         )
         .sorted((a, b) => b.key.compareTo(a.key)),
   );
+
+  // void scrollToPositionAfterEntry(ScrollController controller, DateTime date) {
+  //   updateYearMonth(YearMonth(useRange: false, date1: date.startOfMonth));
+  //   final index = getScrollPosition(date);
+  //   controller.jumpTo(index);
+  // }
+
+  void getScrollPosition(DateTime date) {
+    final index = outputCostItems.entries.toList().indexWhere((entry) => entry.key == date);
+    if (index == -1) {
+      return;
+    }
+    // final itemCount = outputCostItems.entries.length - index - 1;
+    final count = outputCostItems.entries
+        .toList()
+        .sublist(0, index)
+        .fold(0, (init, entry) => init += entry.value.length);
+    _scrollPosition = 40.0 + (60 * index) + (52 * count);
+    debugPrint("count: $count, scrollPosition:${_scrollPosition.round()}");
+    notifyListeners();
+  }
 
   CostItemCategory findCatInList(CostItem item) {
     return _categoryRepo.categories.firstWhereOrNull(

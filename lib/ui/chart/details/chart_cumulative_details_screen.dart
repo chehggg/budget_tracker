@@ -27,7 +27,7 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
   Widget build(BuildContext context) {
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final overview = context.select((ChartViewModel state) => state.cumulativeComparison);
-    final maxLength = max(overview.first.length, overview.last.length);
+    final maxLength = context.chartMod.xRange;
     final change = context.chartMod.getPercentageChange(
       current: overview.last,
       previous: overview.first,

@@ -137,7 +137,7 @@ class GoalInfoBody extends StatelessWidget {
                 spacing: 4,
                 children: [
                   Text(
-                    curProgress.date!.formatMonthLonger(),
+                    curProgress.date?.formatMonthLonger() ?? "",
                     style: context.customTt.paragraphTitle,
                   ),
                   SizedBox(
@@ -151,7 +151,7 @@ class GoalInfoBody extends StatelessWidget {
                     height: 1,
                   ),
                   Text(
-                    "${curProgress.value.formatRoundedString()} / ${curProgress.target!.formatRoundedString()}",
+                    "${curProgress.value.formatRoundedString()} / ${curProgress.target?.formatRoundedString()}",
                     style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
                   ),
                 ],
@@ -160,7 +160,7 @@ class GoalInfoBody extends StatelessWidget {
           ),
         ),
         SliverToBoxAdapter(
-          child: const GoalDetailsExpansionTile(),
+          child: GoalDetailsExpansionTile(),
         ),
         SliverToBoxAdapter(
           child: Column(
@@ -230,13 +230,13 @@ class GoalInfoBody extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
           sliver: SliverToBoxAdapter(
-            child: const GoalInfoLineChart(),
+            child: GoalInfoLineChart(),
           ),
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
           sliver: SliverToBoxAdapter(
-            child: const GoalInfoHeatmapChart(),
+            child: GoalInfoHeatmapChart(),
           ),
         ),
         if (context.goalInfoMod.showHistory)

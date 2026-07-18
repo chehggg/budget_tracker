@@ -25,7 +25,6 @@ class CostItemRepository {
     _dataStreamController.add(dataStream);
   }
 
-
   final LocalServices _localServices;
 
   Future<void>? _initFuture;
@@ -128,8 +127,6 @@ class CostItemRepository {
     return await _localServices.writeCostItemFile(_costItems);
   }
 
-
-
   Future<Result<void>> updateCostItem(CostItem newItem) async {
     await deleteCostItem(_costItems.firstWhere((item) => item.uuid == newItem.uuid));
     await createCostItem(newItem);
@@ -164,6 +161,17 @@ class CostItemRepository {
 
   Future<void> exportCostItem() async {
     _localServices.exportCostItemJson(_costItems);
+  }
+
+  void redirectListScroll(DateTime date) {
+    _dataStreamController.add(
+      CostItemRepoDataStream(
+        items: _costItems,
+        daySummary: daySummary,
+        monthSummary: monthSummary,
+        date: date,
+      ),
+    );
   }
 }
 

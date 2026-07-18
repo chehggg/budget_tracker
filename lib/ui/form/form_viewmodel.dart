@@ -169,6 +169,13 @@ class FormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateImage(String? imageString) {
+    _draftedItem = _draftedItem.copyWith(
+      image: () => imageString
+    );
+    notifyListeners();
+  }
+
   void selectSavedItem(SavedItem item) {
     _draftedItem = _draftedItem.copyWith(
       name: item.description,
@@ -235,6 +242,15 @@ class FormViewModel extends ChangeNotifier {
     } else {
       await _costItemRepo.createCostItem(finalItem);
     }
+  }
+
+  Future<void> duplicateItem() async {
+    final finalItem = _draftedItem.copyWith(
+      lastModified: DateTime.now(),
+      lastCreated: DateTime.now(),
+      uuid: Uuid().v4()
+    );
+    await _costItemRepo.createCostItem(finalItem);
   }
 
   void refresh() {

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
@@ -6,13 +8,16 @@ import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/ui/form/form_viewmodel.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'dart:ui' as ui;
 
 // screen for user to input a new cost item
 // or edit a existing cost item
@@ -131,6 +136,22 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
     }
   }
 
+  OverlayEntry? _entry;
+
+  void showOverlay() {
+    _entry = OverlayEntry(
+      builder: (context) {
+        return LoadingOverlay();
+      },
+    );
+    Overlay.of(context).insert(_entry!);
+  }
+
+  void removeOverlay() {
+    _entry?.remove();
+    _entry = null;
+  }
+
   void selectDate() async {
     DateTime now = DateTime.now();
     final response = await showDatePicker(
@@ -173,8 +194,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
     CostItemCategory? selectedCategory = context.select((FormViewModel state) {
       return state.selectedCategory;
     });
-
-    debugPrint("rebuild, formOpen = ${_isFormOpened}, selected: ${selectedCategory?.name}");
+    final contextWatch = context.watch<FormViewModel>();
     // animate bottom sheet moving up/down
     if (selectedCategory != null && !_isFormOpened) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -193,6 +213,93 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
 
     if (selectedCategory == null) {
       return SizedBox.shrink();
+    }
+
+    Widget getCustomMenuAnchor(BuildContext context) {
+      return Directionality(
+        textDirection: ui.TextDirection.rtl,
+        child: MenuAnchor(
+          alignmentOffset: Offset(0, -100),
+          // animated: true,
+          builder: (context, controller, child) {
+            return IconButton(
+              iconSize: 20,
+              onPressed: () {
+                controller.isOpen ? controller.close() : controller.open();
+              },
+              // style: ,
+              icon: FaIcon(
+                FontAwesomeIcons.ellipsisVertical,
+                color: context.cs.surface,
+              ),
+            );
+          },
+          style: MenuStyle(
+            alignment: Alignment.topRight,
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(8)),
+            ),
+            // shadowColor: WidgetStatePropertyAll(context.cs.primary.withAlpha(100)),
+            // elevation: WidgetStatePropertyAll(10),
+            padding: WidgetStatePropertyAll(EdgeInsets.all(8)),
+            visualDensity: VisualDensity(vertical: -3),
+            backgroundColor: WidgetStatePropertyAll(context.cs.surfaceContainerHighest),
+          ),
+          menuChildren: [
+            Directionality(
+              textDirection: ui.TextDirection.ltr,
+              child: MenuItemButton(
+                onPressed: () async {
+                  final response = await context.push<double?>(
+                    '/form/currencies',
+                    // arguments: context.formMod.draft.amount,
+                  );
+                  if (response == null) return;
+                  if (context.mounted) {
+                    context.formMod.applyExchangedValue(response);
+                  }
+                },
+                leadingIcon: FaIcon(
+                  FontAwesomeIcons.moneyBill,
+                  size: 16,
+                  // color: context.cs.surface,
+                ),
+                child: Text(
+                  "Exchange",
+                  style: context.tt.bodyMedium!.copyWith(
+                    // color: context.cs.surface,
+                    fontWeight: FontWeight(600),
+                  ),
+                ),
+              ),
+            ),
+            if (context.formMod.inEditMode)
+              Directionality(
+                textDirection: ui.TextDirection.ltr,
+                child: MenuItemButton(
+                  onPressed: () async {
+                    await context.formMod.duplicateItem();
+                    if (context.mounted) {
+                      context.go('/');
+                    }
+                  },
+                  leadingIcon: FaIcon(
+                    FontAwesomeIcons.copy,
+                    size: 16,
+                    // color: context.cs.surface,
+                  ),
+                  child: Text(
+                    "Duplicate",
+                    style: context.tt.bodyMedium!.copyWith(
+                      // color: context.cs.surface,
+                      fontWeight: FontWeight(600),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
     }
 
     return GestureDetector(
@@ -282,74 +389,175 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                       ],
                     ),
                   ),
-                  ...(context.formMod.selectedCategory != null)
-                      ? [
-                        IconButton(
-                          onPressed: () async {
-                            final response = await context.push<bool?>(
-                              '/form/edit-saved-item',
-                              extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
-                            );
-                            if (response == null) return;
+                  if (context.formMod.selectedCategory != null) ...[
+                    IconButton(
+                      onPressed: () async {
+                        final response = await context.push<bool?>(
+                          '/form/edit-saved-item',
+                          extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
+                        );
+                        if (response == null) return;
+                        if (context.mounted) {
+                          if (response) {
+                            context.formMod.updateFormGroup(FormGroup.favorite);
+                            context.showSuccessNotification(message: "Saved item updated!");
+                          }
+                          context.formMod.refresh();
+                        }
+                      },
+                      icon: FaIcon(
+                        FontAwesomeIcons.heart,
+                        size: 20,
+                        color: context.cs.surface,
+                        // color: context.cs.error,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {
+                        Future<void> selectImage() async {
+                          final response = await FilePicker.pickFiles(
+                            type: FileType.image,
+                            compressionQuality: 50,
+                            withData: true,
+                          );
+                          if (response != null) {
+                            showOverlay();
+                            final baseString = base64Encode(response.files.first.bytes!.toList());
                             if (context.mounted) {
-                              if (response) {
-                                context.formMod.updateFormGroup(FormGroup.favorite);
-                                context.showSuccessNotification(message: "Saved item updated!");
-                              }
-                              context.formMod.refresh();
+                              context.formMod.updateImage(baseString);
                             }
-                          },
-                          icon: FaIcon(
-                            FontAwesomeIcons.heart,
-                            size: 20,
-                            color: context.cs.surface,
-                            // color: context.cs.error,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            final response = await context.push<double?>(
-                              '/form/currencies',
-                              // arguments: context.formMod.draft.amount,
-                            );
-                            if (response == null) return;
-                            if (context.mounted) {
-                              context.formMod.applyExchangedValue(response);
-                            }
-                          },
-                          icon: FaIcon(
-                            FontAwesomeIcons.moneyBillTransfer,
-                            color: context.cs.surface,
-                            size: 20,
-                          ),
-                        ),
-                        if (context.formMod.inEditMode)
-                          IconButton(
-                            onPressed: () async {
-                              final bool? deleteResponse = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => const DeleteItemDialog(),
-                              );
-                              if (deleteResponse == true && context.mounted) {
-                                await context.formMod.deleteItem();
+                            removeOverlay();
+                          }
+                        }
 
-                                if (context.mounted) {
-                                  if (widget.initRoute != null) {
-                                    context.pop();
-                                  } else {
-                                    context.go('/');
-                                  }
-                                }
-                              }
+                        if (contextWatch.draft.image != null) {
+                          final decodedImage = base64Decode(contextWatch.draft.image!);
+                          await showDialog(
+                            context: context,
+                            builder: (dialogContext) {
+                              return AlertDialog(
+                                // title: Row(
+                                //   mainAxisAlignment: MainAxisAlignment.end,
+                                //   children: [
+                                //     // Text("Image"),
+                                //     IconButton(
+                                //       onPressed: () {
+                                //         context.pop();
+                                //       },
+                                //       icon: FaIcon(FontAwesomeIcons.xmark, size: 16,),
+                                //     ),
+                                //   ],
+                                // ),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  spacing: 12,
+                                  children: [
+                                    Text(
+                                      "File size: ${(decodedImage.lengthInBytes / 1024).roundToDouble()}kB",
+                                      // textAlign: TextAlign.center,
+                                      style: context.customTt.paragraphTextSmall,
+                                    ),
+                                    Image.memory(
+                                      decodedImage,
+                                      fit: BoxFit.cover,
+                                      height: context.mq.size.height * 0.5,
+                                      // cacheHeight: (context.mq.size.height * 0.5).round(),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  PrimaryNegativeTextButton(
+                                    text: "Remove",
+                                    onTap: () async {
+                                      context.formMod.updateImage(null);
+                                      context.pop();
+                                    },
+                                  ),
+                                  AffirmativeTextButton(
+                                    text: "Change",
+                                    onTap: () async {
+                                      await selectImage();
+                                      context.pop();
+                                    },
+                                  ),
+                                ],
+                              );
                             },
-                            icon: FaIcon(
-                              FontAwesomeIcons.trash,
-                              color: context.cs.surface,
-                              size: 18,
-                            ),
-                          ),
-                      ]
-                      : [],
+                          );
+                        } else {
+                          await selectImage();
+                        }
+                        // final response = await FilePicker.pickFiles(type: FileType.image);
+                        // final response = await context.push<bool?>(
+                        //   '/form/edit-saved-item',
+                        //   extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
+                        // );
+                        // if (response == null) return;
+                        // if (context.mounted) {
+                        //   if (response) {
+                        //     context.formMod.updateFormGroup(FormGroup.favorite);
+                        //     context.showSuccessNotification(message: "Saved item updated!");
+                        //   }
+                        //   context.formMod.refresh();
+                        // }
+                      },
+                      icon: FaIcon(
+                        contextWatch.draft.image != null
+                            ? FontAwesomeIcons.solidFileImage
+                            : FontAwesomeIcons.fileImage,
+                        size: 20,
+                        color: context.cs.surface,
+                        // color: context.cs.error,
+                      ),
+                    ),
+                    // IconButton(
+                    //   onPressed: () async {
+                    //     final response = await context.push<double?>(
+                    //       '/form/currencies',
+                    //       // arguments: context.formMod.draft.amount,
+                    //     );
+                    //     if (response == null) return;
+                    //     if (context.mounted) {
+                    //       context.formMod.applyExchangedValue(response);
+                    //     }
+                    //   },
+                    //   icon: FaIcon(
+                    //     FontAwesomeIcons.moneyBillTransfer,
+                    //     color: context.cs.surface,
+                    //     size: 20,
+                    //   ),
+                    // ),
+                    if (context.formMod.inEditMode)
+                      IconButton(
+                        onPressed: () async {
+                          final bool? deleteResponse = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => const DeleteItemDialog(),
+                          );
+                          if (deleteResponse == true && context.mounted) {
+                            await context.formMod.deleteItem();
+
+                            if (context.mounted) {
+                              if (widget.initRoute != null) {
+                                context.pop();
+                              } else {
+                                context.go('/');
+                              }
+                            }
+                          }
+                        },
+                        icon: FaIcon(
+                          FontAwesomeIcons.trash,
+                          color: context.cs.surface,
+                          size: 18,
+                        ),
+                      ),
+                    getCustomMenuAnchor(context),
+                    SizedBox(
+                      width: 8,
+                    ),
+                  ],
                 ],
               ),
             ),

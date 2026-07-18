@@ -17,8 +17,8 @@ class SavedItemRepository {
   Future<void>? _initFuture;
   Future<void> get ready => _initFuture ?? Future.value();
 
-  void restart() {
-    _initFuture = _init();
+  Future<void> restart() async {
+    await _init();
   }
   
   Future<void> _init() async {

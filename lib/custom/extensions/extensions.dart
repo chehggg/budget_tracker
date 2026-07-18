@@ -22,6 +22,9 @@ extension DayExtension on DateTime {
 
   /// format datetime in "dd MMM" format
   String formatShorter() => DateFormat('dd MMM').format(this);
+  
+  /// format datetime in "d MMM" format
+  String formatEvenShorter() => DateFormat('d MMM').format(this);
 
   /// format datetime in "MMM yyyy" format
   String formatMonth() => DateFormat('MMM yyyy').format(this);
