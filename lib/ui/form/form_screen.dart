@@ -11,39 +11,12 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'dart:ui' as ui;
-
-// screen for user to input a new cost item
-// or edit a existing cost item
-// class CostFormScreenWrapper extends StatelessWidget {
-//   const CostFormScreenWrapper({
-//     super.key,
-//     required this.arg,
-//   });
-//   final FormArgument? arg;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ChangeNotifierProvider(
-//       create:
-//           (context) => FormViewModel(
-//             sharedElRepo: context.read(),
-//             initCostItem: arg?.selectedCostItem,
-//             costItemRepo: context.read(),
-//             savedItemRepo: context.read(),
-//             categoryRepo: context.read(),
-//             currencyRepo: context.read(),
-//           ),
-//       child: CostFormScreen(arg: arg),
-//     );
-//   }
-// }
 
 class CostFormScreen extends StatelessWidget {
   const CostFormScreen({
@@ -68,7 +41,7 @@ class CostFormScreen extends StatelessWidget {
           if (formGroup != FormGroup.favorite)
             IconButton(
               onPressed: () async {
-                final response = await context.push('/form/edit-category');
+                await context.push('/form/edit-category');
               },
               icon: FaIcon(
                 FontAwesomeIcons.folderPlus,
@@ -79,11 +52,10 @@ class CostFormScreen extends StatelessWidget {
             IconButton(
               onPressed: () async {
                 if (selectedCategory != null) {
-                  final response = await context.push(
+                  await context.push(
                     '/form/edit-category',
                     extra: selectedCategory,
                   );
-                  // context.formMod.toggleEditCategory(false);
                 } else if (selectedCategory == null) {
                   context.formMod.toggleEditCategory();
                 }
@@ -417,15 +389,17 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                         Future<void> selectImage() async {
                           final response = await FilePicker.pickFiles(
                             type: FileType.image,
-                            compressionQuality: 50,
+                            compressionQuality: 70,
                             withData: true,
                           );
                           if (response != null) {
                             showOverlay();
-                            final baseString = base64Encode(response.files.first.bytes!.toList());
-                            if (context.mounted) {
-                              context.formMod.updateImage(baseString);
-                            }
+                            await Future.microtask(() {
+                              final baseString = base64Encode(response.files.first.bytes!.toList());
+                              if (context.mounted) {
+                                context.formMod.updateImage(baseString);
+                              }
+                            });
                             removeOverlay();
                           }
                         }
@@ -488,19 +462,6 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                         } else {
                           await selectImage();
                         }
-                        // final response = await FilePicker.pickFiles(type: FileType.image);
-                        // final response = await context.push<bool?>(
-                        //   '/form/edit-saved-item',
-                        //   extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
-                        // );
-                        // if (response == null) return;
-                        // if (context.mounted) {
-                        //   if (response) {
-                        //     context.formMod.updateFormGroup(FormGroup.favorite);
-                        //     context.showSuccessNotification(message: "Saved item updated!");
-                        //   }
-                        //   context.formMod.refresh();
-                        // }
                       },
                       icon: FaIcon(
                         contextWatch.draft.image != null
@@ -508,26 +469,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                             : FontAwesomeIcons.fileImage,
                         size: 20,
                         color: context.cs.surface,
-                        // color: context.cs.error,
                       ),
                     ),
-                    // IconButton(
-                    //   onPressed: () async {
-                    //     final response = await context.push<double?>(
-                    //       '/form/currencies',
-                    //       // arguments: context.formMod.draft.amount,
-                    //     );
-                    //     if (response == null) return;
-                    //     if (context.mounted) {
-                    //       context.formMod.applyExchangedValue(response);
-                    //     }
-                    //   },
-                    //   icon: FaIcon(
-                    //     FontAwesomeIcons.moneyBillTransfer,
-                    //     color: context.cs.surface,
-                    //     size: 20,
-                    //   ),
-                    // ),
                     if (context.formMod.inEditMode)
                       IconButton(
                         onPressed: () async {
@@ -1010,13 +953,6 @@ class SavedItemSelectionView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Row(
-                    //   children: [
-                    //     Expanded(
-                    //       child:
-                    //     ),
-                    //   ],
-                    // ),
                   ],
                 ),
               ),

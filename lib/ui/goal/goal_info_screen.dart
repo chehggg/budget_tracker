@@ -318,7 +318,12 @@ class GoalInfoBody extends StatelessWidget {
                               '${context.goalInfoMod.currencyFormat(progress.value, showSymbol: false, abbreviated: true, compact: true)}' +
                                   // ignore: prefer_interpolation_to_compose_strings
                                   " / " +
-                                  context.goalInfoMod.currencyFormat(progress.target ?? 0, showSymbol: false, abbreviated: true, compact: true),
+                                  context.goalInfoMod.currencyFormat(
+                                    progress.target ?? 0,
+                                    showSymbol: false,
+                                    abbreviated: true,
+                                    compact: true,
+                                  ),
                               style: context.customTt.paragraphText,
                             ),
                             Text(
@@ -340,7 +345,7 @@ class GoalInfoBody extends StatelessWidget {
               ),
             ]),
           ),
-          SliverToBoxAdapter(child: SizedBox(height: 20))
+        SliverToBoxAdapter(child: SizedBox(height: 20)),
       ],
     );
   }
@@ -354,11 +359,10 @@ class GoalInfoTitleContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewModel state) => state.goal);
+    // ignore: unused_local_variable
     final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
     final streak = context.select((GoalInfoViewModel state) => state.streak);
     return Container(
-      // padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
-      // padding: EdgeInsets.fromLTRB(0, 16, 0, 0),
       child: Column(
         spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -524,101 +528,6 @@ class GoalDetailsExpansionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //     Text(
-              //       "Title",
-              //       style: context.customTt.paragraphTextSmall,
-              //     ),
-              //     Text(
-              //       goal.title ?? "",
-              //       style: context.customTt.paragraphTextSmall,
-              //     ),
-              //   ],
-              // ),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //     Text(
-              //       "Description",
-              //       style: context.customTt.paragraphTextSmall,
-              //     ),
-              //     Text(
-              //       goal.description ?? "",
-              //       style: context.customTt.paragraphTextSmall,
-              //     ),
-              //   ],
-              // ),
-              // Row(
-              //   spacing: 10,
-              //   children: [
-              //     Expanded(
-              //       child: Column(
-              //         children: [
-              //           Row(
-              //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //             children: [
-              //               Text(
-              //                 "Created",
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //               Text(
-              //                 goal.lastCreated!.formatFull(),
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //             ],
-              //           ),
-              //           Row(
-              //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //             children: [
-              //               Text(
-              //                 "Last Modified",
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //               Text(
-              //                 goal.lastModified!.formatFull(),
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //             ],
-              //           ),
-              //         ],
-              //       ),
-              //     ),
-              //     Expanded(
-              //       child: Column(
-              //         children: [
-              //           Row(
-              //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //             children: [
-              //               Text(
-              //                 "Created",
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //               Text(
-              //                 goal.lastCreated!.formatFull(),
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //             ],
-              //           ),
-              //           Row(
-              //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //             children: [
-              //               Text(
-              //                 "Last Modified",
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //               Text(
-              //                 goal.lastModified!.formatFull(),
-              //                 style: context.customTt.paragraphTextSmall,
-              //               ),
-              //             ],
-              //           ),
-              //         ],
-              //       ),
-              //     ),
-              //   ],
-              // ),
             ],
           ),
         ],
@@ -723,7 +632,6 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                     (dayData.value?.expense ?? 0) / context.goalInfoMod.targetSpendPerDay;
                 // ignore: prefer_adjacent_string_concatenation
                 return "${dayData.key.formatShorter()}\n${dayData.value == null ? "No Data" : (dayData.value!.expense ?? 0).customCurrencyFormat("RM")}" +
-                    // ignore: unnecessary_string_interpolations
                     "${dayData.value != null ? " (${NumberFormat.percentPattern().format(percentage)})" : ""}";
               }
             },
@@ -896,10 +804,11 @@ class GoalInfoLineChart extends StatelessWidget {
                   spots: [
                     ...List.generate(
                       context.goalInfoMod.dataCount,
-                      (i) => i + 1,
-                    ).map((i) => FlSpot(i.toDouble(), target!)),
-                    // FlSpot(1, target!),
-                    // FlSpot(dayinCurMonth.toDouble(), target),
+                      (i) {
+                        final el = i + 1;
+                        return FlSpot(el.toDouble(), target ?? 0);
+                      },
+                    ),
                   ],
                 ),
                 getCustomLineChartBarData(
@@ -935,27 +844,13 @@ class GoalInfoLineChart extends StatelessWidget {
                   spots: [
                     ...List.generate(
                       context.goalInfoMod.dataCount,
-                      (i) => (i + 1) * context.goalInfoMod.targetSpendPerDay,
-                    ).mapIndexed((index, val) => FlSpot((index + 1).toDouble(), val)),
+                      (i) {
+                        final target = (i + 1) * context.goalInfoMod.targetSpendPerDay;
+                        return FlSpot((i + 1).toDouble(), target);
+                      },
+                    ),
                   ],
                 ),
-                // getCustomLineChartBarData(
-                //   dotData: FlDotData(
-                //     checkToShowDot: (spot, barData) {
-                //       return false;
-                //     },
-                //   ),
-                //   isCurved: false,
-                //   showGradient: false,
-                //   color: Colors.grey.shade600,
-                //   dashArray: [1, 15],
-                //   spots: [
-                //     ...List.generate(
-                //       context.goalInfoMod.dataCount,
-                //       (i) => (i + 1) * context.goalInfoMod.targetSpendPerDay,
-                //     ).mapIndexed((index, val) => FlSpot((index + 1).toDouble(), val)),
-                //   ],
-                // ),
               ],
             ),
           ),

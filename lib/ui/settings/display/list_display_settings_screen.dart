@@ -1,4 +1,3 @@
-import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,6 @@ class ListDisplaySettingsScreen extends StatefulWidget {
 }
 
 class _ListDisplaySettingsScreenState extends State<ListDisplaySettingsScreen> {
-  late ListDisplayConfig _config;
   bool _hideAmount = false;
   bool _showAmountColor = true;
   bool _showTotalColor = true;

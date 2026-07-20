@@ -5,8 +5,6 @@ import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:collection/collection.dart';
-import 'package:flutter/material.dart';
 
 class Goal {
   Goal({
@@ -77,7 +75,6 @@ class Goal {
   bool get isStarted => startDate?.isBeforeOrSameMoment(DateTime.now().startOfMonth) ?? true;
 
   List<GoalProgress> getPastGoalProgress(List<CostItem> items) {
-    debugPrint('get past goal progress');
     if (!isStarted) return [];
     final cur = DateTime.now().startOfMonth;
     DateTime end;
@@ -86,21 +83,14 @@ class Goal {
     } else {
       end = cur;
     }
-    debugPrint('get end: ${end.formatMonthLonger()}');
-    // if (endDate?.isBefore(cur) ?? false) {
-    //   end = endDate!;
-    // } else {
-    //   if (cur.addMonth(-1).isBefore(startDate!)) {
-    //     return [];
-    //   } else {
-    //     end = cur.addMonth(-1);
-    //   }
-    // }
     if (goalTracking == GoalTrackingPeriod.monthly) {
       return List.generate(
         max(1, end.month - startDate!.month),
-        (i) => startDate!.addMonth(i),
-      ).map((month) => getGoalProgress(items, month)!).toList();
+        (i) {
+          final month = startDate!.addMonth(i);
+          return getGoalProgress(items, month)!;
+        },
+      );
     } else {
       return [];
     }

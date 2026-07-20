@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
@@ -119,15 +117,23 @@ class _AvgCumulativeBalanceDetailScreenState extends State<AvgCumulativeBalanceD
                         showTitles: true,
                         interval: 1,
                         getTitlesWidget: (value, meta) {
+                          final isMatch = context.chartMod.matchLabelDate(value.round());
                           return Padding(
                             padding: const EdgeInsets.only(top: 16.0),
-                            child: Text(
-                              context.chartMod.getInitials(
-                                value.round(),
-                                useInitials: true,
-                                useDotForMonth: true,
+                            child: Transform.scale(
+                              scale: isMatch ? 1.2 : 1,
+                              child: Text(
+                                context.chartMod.getInitials(
+                                  value.round(),
+                                  useInitials: true,
+                                  useDotForMonth: true,
+                                ),
+                                style: context.tt.bodyMedium!.copyWith(
+                                  fontSize: 10,
+                                  color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
+                                  fontWeight: FontWeight(600),
+                                ),
                               ),
-                              style: context.tt.bodyMedium!.copyWith(fontSize: 10),
                             ),
                           );
                         },
@@ -210,9 +216,7 @@ class _AvgCumulativeBalanceDetailScreenState extends State<AvgCumulativeBalanceD
                     List.generate(maxLength, (index) {
                       final prev = overview.first.entries.elementAtOrNull(index);
                       final current = overview.last.entries.elementAtOrNull(index);
-
-                      return [prev, current];
-                    }).mapIndexed((i, el) {
+                      final el = [prev, current];
                       final change =
                           el.first?.value == null || el.last?.value == null
                               ? null
@@ -223,7 +227,7 @@ class _AvgCumulativeBalanceDetailScreenState extends State<AvgCumulativeBalanceD
                         cells: [
                           // DataCell(Center(child: Text((i + 1).toString()))),
                           DataCell(
-                            Center(child: Text((context.chartMod.getInitials(i)).toString())),
+                            Center(child: Text((context.chartMod.getInitials(index)).toString())),
                           ),
                           ...el.map((entry) {
                             return DataCell(

@@ -30,7 +30,6 @@ class CostListScreenWrapper extends StatelessWidget {
     return ScreenWrapper(
       canPop: false,
       popAction: (didPop, result) {
-        debugPrint("didPop, ${didPop}");
         if (isSearchOpened) {
           context.listMod.toggleSearch(false);
         }
@@ -70,18 +69,17 @@ class _CostListScreenState extends State<CostListScreen> {
   }
 
   void scrollToPosition(double position) {
-    debugPrint("Animated");
     if (_controller.hasClients) {
       _controller.jumpTo(0);
-      _controller.jumpTo(position);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _controller.animateTo(position, duration: Durations.medium1, curve: Curves.easeOutCirc);
+      });
     }
   }
 
   @override
   void initState() {
     super.initState();
-    debugPrint("new init");
-    // _curPosition = context.listMod.scrollPosition;
     _refresh = context.listMod.scrollRefresh;
     _controller = ScrollController();
     _controller.addListener(() {
@@ -91,7 +89,6 @@ class _CostListScreenState extends State<CostListScreen> {
         } else {
           expanded = false;
         }
-        // debugPrint(expanded.toString());
       });
     });
   }
@@ -104,8 +101,6 @@ class _CostListScreenState extends State<CostListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("rebuild screen state");
-    // ignore: unused_local_variable
     final refresh = context.select((ListViewModel state) => state.scrollRefresh);
     final scrollPosition = context.select((ListViewModel state) => state.scrollPosition);
     final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
@@ -113,26 +108,7 @@ class _CostListScreenState extends State<CostListScreen> {
     if (_refresh != refresh) {
       scrollToPosition(scrollPosition);
       _refresh = refresh;
-      // _curPosition = scrollPosition;
     }
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   scrollToPosition(scrollPosition);
-    // });
-    // if (refresh != _curScrollRefresh) {
-    //    WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //     context.listMod.scrollToPositionAfterEntry(_controller, date);
-    //     await Future.microtask(() {});
-    //     debugPrint("Animated");
-    //     final pos = context.listMod.getScrollPosition(widget.initDate!);
-    //     _controller.jumpTo(pos);
-    //     removeOverlay();
-    //     _loadingReady = true;
-    //   });
-    //   _curScrollRefresh = refresh;
-    //   scrollToPosition();
-    //   // setState(() {
-    //   // });
-    // }
     return CustomScaffold(
       resizeInset: false,
       customAppBar: const ListViewAppBar(),
@@ -141,12 +117,6 @@ class _CostListScreenState extends State<CostListScreen> {
       child: Flex(
         direction: Axis.vertical,
         children: [
-          // IconButton(
-          //   onPressed: () {
-          //     animateScroll();
-          //   },
-          //   icon: FaIcon(FontAwesomeIcons.accusoft),
-          // ),
           isSearchOpened ? const ItemFilterChips() : const DateBreadcrumb(),
           Expanded(
             child: Scrollbar(
@@ -156,9 +126,7 @@ class _CostListScreenState extends State<CostListScreen> {
               child: CustomScrollView(
                 controller: _controller,
                 slivers: [
-                  SummaryTab(
-                    // onPressed: animateScroll,
-                  ),
+                  SummaryTab(),
                   const CostEntryList(),
                 ],
               ),
@@ -527,8 +495,6 @@ class CostEntryList extends StatelessWidget {
         ),
       );
     } else {
-      debugPrint('grouped cost item length: $itemLength');
-      debugPrint('config in UI: ${contextWatch.displayConfig.toJson()}');
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 12),
         sliver: SliverList.builder(
@@ -900,16 +866,6 @@ class _SummaryChartState extends State<SummaryChart> {
     super.dispose();
   }
 
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-
-  //   // _controller.jumpTo(0);
-  //   setState(() {
-  //     _currentPage = 0;
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     final expense = context.select((ListViewModel state) => state.outputMonthSummary.expense ?? 0);
@@ -918,12 +874,6 @@ class _SummaryChartState extends State<SummaryChart> {
 
     final double balancePercentage =
         balance == 0 && income == 0 ? 0.001 : max(0.001, balance / income);
-    // get month to update the chart whenever month change
-    // ignore: unused_local_variable
-    // final expense = context.select(
-    //   (AppModel state) => state.totalCurrentMonthExpense.customCurrencyFormat('RM'),
-    // );
-    // final month = context.select((AppModel state) => state.selectedYearMonth);
     final List<Widget> charts = [];
 
     charts.add(
@@ -981,36 +931,7 @@ class _SummaryChartState extends State<SummaryChart> {
         ],
       ),
     );
-    // charts.add(customPieChart(expense, context, "Budget"));
-    // if (widget.summaryData['expense']!['value'] > 0) {
-    // }
-    // if (widget.summaryData['income']!['value'] > 0) {
-    //   charts.add(customPieChart(widget.summaryData, context, "Balance"));
-    // }
     return charts.first;
-    // return Column(
-    //   mainAxisAlignment: MainAxisAlignment.end,
-    //   crossAxisAlignment: CrossAxisAlignment.end,
-    //   children: [
-    //     Container(
-    //       // decoration: BoxDecoration(border: Border.all()),
-    //       child: Expanded(
-    //         child: PageView(
-    //           onPageChanged:
-    //               (value) => setState(() {
-    //                 _currentPage = value;
-    //               }),
-    //           controller: _controller,
-    //           children: charts,
-    //         ),
-    //       ),
-    //     ),
-    //     PageIndicator(
-    //       pageLength: charts.length,
-    //       currentPage: _currentPage,
-    //     ),
-    //   ],
-    // );
   }
 
   Widget customPieChart(
@@ -1099,7 +1020,6 @@ class PageIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final actualPage = controller.page
     return Row(
       spacing: 8,
       mainAxisSize: MainAxisSize.min,
@@ -1121,52 +1041,6 @@ class PageIndicator extends StatelessWidget {
     );
   }
 }
-
-// class SearchTab extends StatelessWidget {
-//   const SearchTab({super.key});
-
-//   Widget createCustomFilterChip(
-//     BuildContext context, {
-//     IconData? icon,
-//     String text = "",
-//     Function()? onTap,
-//     bool isActive = false,
-//   }) {
-//     final borderRadius = BorderRadius.circular(12);
-//     return Flexible(
-//       fit: FlexFit.tight,
-//       child: Material(
-//         borderRadius: borderRadius,
-//         child: InkWell(
-//           borderRadius: borderRadius,
-//           onTap: onTap,
-//           child: Container(
-//             // height: toolbarHeight - 16,
-//             padding: const EdgeInsets.all(10),
-//             decoration: BoxDecoration(
-//               shape: BoxShape.rectangle,
-//               border: BoxBorder.all(color: context.cs.primary, width: 0.5),
-//               borderRadius: borderRadius,
-//               color: isActive ? context.cs.primary.withAlpha(50) : context.cs.primary.withAlpha(10),
-//             ),
-//             child: Row(
-//               spacing: 10,
-//               mainAxisSize: MainAxisSize.min,
-//               mainAxisAlignment: MainAxisAlignment.center,
-//               children: [
-//                 Icon(
-//                   isActive ? Icons.check : icon,
-//                   color: context.cs.primary,
-//                   // size: toolbarHeight / 2 - 10,
-//                 ),
-//                 Text(text, style: context.tt.bodyMedium),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
 
 class SearchTabTextField extends StatefulWidget {
   const SearchTabTextField({
@@ -1202,15 +1076,6 @@ class _SearchTabTextFieldState extends State<SearchTabTextField> {
         isDense: true,
         filled: false,
         contentPadding: EdgeInsets.all(0),
-        // suffixIcon: IconButton(
-        //   visualDensity: VisualDensity(vertical: -4, horizontal: -4),
-        //   iconSize: 24,
-        //   onPressed: () {
-        //     _controller.clear();
-        //     context.listMod.updateSearch("");
-        //   },
-        //   icon: Icon(Icons.clear),
-        // ),
         hint: Row(
           spacing: 8,
           children: [
@@ -1253,26 +1118,36 @@ class _RangeSliderAlertDialogState extends State<RangeSliderAlertDialog> {
     _costTypes = widget.initCostTypes ?? _costTypes;
   }
 
+  List<CostItem> get filteredItems {
+    return widget.items.where((item) => _costTypes.contains(item.costType)).toList();
+  }
+
   double get minimum {
-    return widget.items
-        .where((item) => _costTypes.contains(item.costType))
-        .fold(double.infinity, (initial, item) => min(initial, item.absoluteAmount));
+    return filteredItems.length == 0
+        ? 0
+        : filteredItems.fold(double.infinity, (initial, item) => min(initial, item.absoluteAmount));
   }
 
   double get maximum {
-    return widget.items
-        .where((item) => _costTypes.contains(item.costType))
-        .fold(double.negativeInfinity, (initial, item) => max(initial, item.absoluteAmount));
+    return filteredItems.length == 0
+        ? 0
+        : filteredItems.fold(
+          double.negativeInfinity,
+          (initial, item) => max(initial, item.absoluteAmount),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text("Additional Filters"),
+      title: Text("Cost Range"),
       content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 50,
         mainAxisSize: MainAxisSize.min,
         children: [
           SegmentedButton(
+            style: SegmentedButton.styleFrom(visualDensity: VisualDensity(vertical: -0)),
             multiSelectionEnabled: true,
             segments:
                 CostType.values
@@ -1282,18 +1157,56 @@ class _RangeSliderAlertDialogState extends State<RangeSliderAlertDialog> {
             onSelectionChanged: (value) {
               setState(() {
                 _costTypes = value;
+                _curRange = RangeValues(minimum, maximum);
               });
             },
           ),
-          RangeSlider(
-            values: _curRange,
-            min: minimum,
-            max: maximum,
-            onChanged: (RangeValues value) {
-              setState(() {
-                _curRange = value;
-              });
-            },
+          Column(
+            children: [
+              Theme(
+                data: Theme.of(context).copyWith(
+                  sliderTheme: SliderThemeData(
+                    trackHeight: 2,
+                    activeTrackColor: context.cs.secondary,
+                    rangeThumbShape: RoundRangeSliderThumbShape(
+                      enabledThumbRadius: 8,
+                      pressedElevation: 0,
+                    ),
+                    showValueIndicator: ShowValueIndicator.alwaysVisible,
+                    valueIndicatorTextStyle: context.customTt.numberFontSmall!.copyWith(
+                      fontSize: 12,
+                      color: context.cs.surface,
+                    ),
+                    valueIndicatorColor: context.cs.primary,
+                  ),
+                ),
+                child: RangeSlider(
+                  values: _curRange,
+                  labels: RangeLabels(
+                    _curRange.start.round().toString(),
+                    _curRange.end.round().toString(),
+                  ),
+                  divisions: max(1, (maximum - minimum).round()),
+                  min: minimum,
+                  max: maximum,
+                  onChanged: (RangeValues value) {
+                    setState(() {
+                      _curRange = value;
+                    });
+                  },
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    minimum.toString(),
+                    style: context.customTt.paragraphTextSmall,
+                  ),
+                  Text(maximum.toString(), style: context.customTt.paragraphTextSmall),
+                ],
+              ),
+            ],
           ),
         ],
       ),

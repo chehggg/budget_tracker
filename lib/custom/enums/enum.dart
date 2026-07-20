@@ -49,7 +49,8 @@ enum NumberSeparator {
   stop("."),
   comma(","),
   space(" ", applicableToDecimal: false),
-  underscore("_", applicableToDecimal: false);
+  underscore("_", applicableToDecimal: false),
+  none("", applicableToDecimal: false);
 
   final String symbol;
   final bool applicableToDecimal;
@@ -58,33 +59,35 @@ enum NumberSeparator {
   const NumberSeparator(
     this.symbol, {
     this.applicableToDecimal = true,
+    // ignore: unused_element_parameter
     this.applicableToThousand = true,
   });
 }
 
-enum SymbolPosition {
-  front,back,none
-}
+enum SymbolPosition { front, back, none }
 
 enum SortType {
-  asc, dsc;
+  asc,
+  dsc;
 
   int sortItem<T extends Comparable>(T a, T b) {
     if (this == asc) {
       return a.compareTo(b);
     } else {
       return b.compareTo(a);
-
     }
   }
-  String get arrow => switch(this) {
+
+  String get arrow => switch (this) {
     asc => "↓",
     dsc => "↑",
   };
 }
 
 enum ChartMetric {
-  expense, income, balance;
+  expense,
+  income,
+  balance;
 
   double? getCostMetric(CostMetric costMetric) {
     switch (this) {

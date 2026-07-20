@@ -163,13 +163,14 @@ class CostItemRepository {
     _localServices.exportCostItemJson(_costItems);
   }
 
-  void redirectListScroll(DateTime date) {
+  void redirectListScroll(DateTime date, {bool showMonth = false}) {
     _dataStreamController.add(
       CostItemRepoDataStream(
         items: _costItems,
         daySummary: daySummary,
         monthSummary: monthSummary,
         date: date,
+        showMonth: showMonth
       ),
     );
   }
@@ -181,24 +182,28 @@ class CostItemRepoDataStream {
     required this.items,
     required this.daySummary,
     required this.monthSummary,
+    this.showMonth = false,
   });
 
   final DateTime? date;
   final List<CostItem> items;
   final Map<DateTime, CostMetric> daySummary;
   final Map<DateTime, CostMetric> monthSummary;
+  final bool showMonth;
 
   CostItemRepoDataStream copyWith({
     DateTime? date,
     List<CostItem>? items,
     Map<DateTime, CostMetric>? daySummary,
     Map<DateTime, CostMetric>? monthSummary,
+    bool? showMonth,
   }) {
     return CostItemRepoDataStream(
       date: date ?? this.date,
       items: items ?? this.items,
       daySummary: daySummary ?? this.daySummary,
       monthSummary: monthSummary ?? this.monthSummary,
+      showMonth: showMonth ?? this.showMonth,
     );
   }
 }

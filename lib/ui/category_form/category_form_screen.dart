@@ -212,21 +212,18 @@ class CategoryFormBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final draft = context.select((CategoryFormViewModel state) => state.draft);
-    final type = context.select((CategoryFormViewModel state) => state.draft.costType);
-    final color = context.select((CategoryFormViewModel state) => state.draft.color);
-    final path = context.select((CategoryFormViewModel state) => state.draft.imagePath);
-    final iconData = context.select((CategoryFormViewModel state) => state.draft.iconName);
+    final contextWatch = context.watch<CategoryFormViewModel>();
+    final draft = contextWatch.draft;
+    final type = contextWatch.draft.costType;
+    // final color = contextWatch.draft.color;
+    // final path = contextWatch.draft.imagePath;
+    // final iconData = contextWatch.draft.iconName;
 
     return CustomScrollView(
       // crossAxisAlignment: CrossAxisAlignment.stretch,
       slivers: [
         SliverList(
           delegate: SliverChildListDelegate([
-            // Padding(
-            //   padding: const EdgeInsets.only(top: 8.0, bottom: 8),
-            //   child: Text("Category Name"),
-            // ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 12,

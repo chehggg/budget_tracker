@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
@@ -109,15 +107,24 @@ class _DailySpendDetailsScreenState extends State<DailySpendDetailsScreen> {
                         showTitles: true,
                         interval: 1,
                         getTitlesWidget: (value, meta) {
+                          final isMatch = context.chartMod.matchLabelDate(value.round());
                           return Padding(
                             padding: const EdgeInsets.only(top: 16.0),
-                            child: Text(
-                              context.chartMod.getInitials(
-                                value.round(),
-                                useInitials: true,
-                                useDotForMonth: true,
+                            child: Transform.scale(
+                              scale: isMatch ? 1.2 : 1,
+                              alignment: Alignment.center,
+                              child: Text(
+                                context.chartMod.getInitials(
+                                  value.round(),
+                                  useInitials: true,
+                                  useDotForMonth: true,
+                                ),
+                                style: context.tt.bodyMedium!.copyWith(
+                                  fontSize: 10,
+                                  color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
+                                  fontWeight: FontWeight(600),
+                                ),
                               ),
-                              style: context.tt.bodyMedium!.copyWith(fontSize: 10),
                             ),
                           );
                         },
@@ -198,7 +205,6 @@ class DailySpendTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final overview = context.select((ChartViewModel state) => state.dayToDayComparison);
     final metric = context.select((ChartViewModel state) => state.chartMetric);
-    final maxLength = overview.length;
     final columns = [
       "Day",
       context.chartMod.prevRangeStart.formatMonth(),
@@ -246,6 +252,7 @@ class DailySpendTable extends StatelessWidget {
                     final showValue = entry.key.isBeforeOrSameMoment(DateTime.now().standard);
                     return DataCell(
                       GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () {
                           context.chartMod.updateListDate(entry.key);
                           context.go('/');
@@ -331,7 +338,7 @@ class DifferenceBarChart extends StatelessWidget {
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     return Container(
       height: 180,
-      padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceBetween,

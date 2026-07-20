@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';

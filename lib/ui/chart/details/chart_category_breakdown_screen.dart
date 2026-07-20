@@ -41,7 +41,7 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                 child: CustomChartDetailTitleBar(
                   title: "Category Breakdown",
                 ),
-              ),  
+              ),
             ),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -55,7 +55,7 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                     // textStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
                     splashFactory: NoSplash.splashFactory,
                     iconSize: 14,
-                    visualDensity: VisualDensity(vertical: 0)
+                    visualDensity: VisualDensity(vertical: 0),
                   ),
                   segments: [
                     ...CostType.values.map(
@@ -474,7 +474,11 @@ class _CategoryTileState extends State<CategoryTile> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Text(
-                                context.chartMod.currencyFormat(widget.value!),
+                                context.chartMod.currencyFormat(
+                                  widget.value!,
+                                  compact: true,
+                                  showSymbol: false,
+                                ),
                                 style: context.customTt.numberFontSmall?.copyWith(
                                   color: isHidden ? context.customCs.fadeColor1 : null,
                                 ),
@@ -522,10 +526,9 @@ class _CategoryTileState extends State<CategoryTile> {
                         oriRoute: '/chart/category-breakdown',
                       ),
                     );
-                    if(context.mounted) {
+                    if (context.mounted && response != null) {
                       context.chartMod.expandTileAfterFormUpdate(widget.category);
                     }
-
                   },
                   child: Padding(
                     padding: const EdgeInsets.only(top: 6.0, bottom: 6),
@@ -545,9 +548,6 @@ class _CategoryTileState extends State<CategoryTile> {
                         ),
                         SizedBox(
                           width: context.mq.size.width * 0.6 - 6,
-                        // Flexible(
-                        //   flex: 11,
-                        //   fit: FlexFit.tight,
                           child: Text(
                             item.name!,
                             overflow: TextOverflow.ellipsis,
@@ -556,9 +556,9 @@ class _CategoryTileState extends State<CategoryTile> {
                         ),
                         SizedBox(
                           width: context.mq.size.width * 0.2 - 6,
-                        // Flexible(
-                        //   flex: 3,
-                        //   fit: FlexFit.tight,
+                          // Flexible(
+                          //   flex: 3,
+                          //   fit: FlexFit.tight,
                           child: Text(
                             context.chartMod.currencyFormat(
                               item.amount!,
@@ -574,7 +574,6 @@ class _CategoryTileState extends State<CategoryTile> {
                 );
               }).toList(),
         ),
-        
       ),
     );
   }

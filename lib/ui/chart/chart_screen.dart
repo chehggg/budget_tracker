@@ -45,15 +45,24 @@ class ChartScreen extends StatelessWidget {
           interval: 1,
           reservedSize: 30,
           getTitlesWidget: (value, meta) {
+            final isMatch = context.chartMod.matchLabelDate(value.round());
             return Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                context.chartMod.getInitials(
-                  value.round(),
-                  useInitials: true,
-                  useDotForMonth: true,
+              child: Transform.scale(
+                alignment: Alignment.center,
+                scale: isMatch ? 1.2 : 1,
+                child: Text(
+                  context.chartMod.getInitials(
+                    value.round(),
+                    useInitials: true,
+                    useDotForMonth: true,
+                  ),
+                  style: context.tt.bodyMedium!.copyWith(
+                    fontSize: 10,
+                    color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
+                    fontWeight:  FontWeight(600),
+                  ),
                 ),
-                style: context.tt.bodyMedium!.copyWith(fontSize: 10),
               ),
             );
           },
@@ -356,7 +365,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                                         e.value.expense!,
                                         abbreviated: true,
                                         compact: true,
-                                        showSymbol: false
+                                        showSymbol: false,
                                       ),
                                       style: context.tt.bodyMedium!.copyWith(
                                         fontSize: 12,
@@ -406,10 +415,8 @@ class DailyBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = context.select((ChartViewModel state) => state.dayToDayComparison);
-    final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final isEmpty = context.chartMod.noData;
     final curRangeStart = context.chartMod.rangeStart;
-    final prevRangeStart = context.chartMod.prevRangeStart;
     return Container(
       height: 180,
       padding: EdgeInsets.only(top: 12),
@@ -884,7 +891,6 @@ class NewCumulativeLineChart extends StatelessWidget {
     );
     final isEmpty = context.chartMod.noData;
     final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
-    final prevRangeStart = context.select((ChartViewModel state) => state.prevRangeStart);
     final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final now = DateTime.now().standard;
@@ -1002,7 +1008,6 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
     final isEmpty = context.chartMod.noData;
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
-    final prevRangeStart = context.select((ChartViewModel state) => state.prevRangeStart);
     final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final now = DateTime.now().standard;
     return Container(
@@ -1101,7 +1106,6 @@ class YearMonthOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final overview = context.select((ChartViewModel state) => state.rangeOverview);
-    final start = context.select((ChartViewModel state) => state.rangeStart);
     return Container(
       height: 180,
       padding: EdgeInsets.only(bottom: 12),
@@ -1151,12 +1155,11 @@ class YearMonthOverview extends StatelessWidget {
                             ChartMetric.expense,
                             ChartMetric.income,
                           ].mapIndexed((metricIndex, e) {
-                            final expense = metricIndex == 0;
-                            final income = metricIndex == 1;
+                            final isExpense = metricIndex == 0;
                             return BarChartRodData(
                               width: 6,
                               toY: e.getCostMetric(el.value) ?? 0,
-                              color: (expense
+                              color: (isExpense
                                       ? context.chartMod.accentColors.negative
                                       : context.chartMod.accentColors.positive)
                                   .withAlpha(context.chartMod.matchItem(el.key) ? 250 : 100),

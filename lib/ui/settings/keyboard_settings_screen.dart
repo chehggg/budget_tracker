@@ -77,101 +77,53 @@ class _KeyboardSettingsScreenState extends State<KeyboardSettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ListTile(
-                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          title: Text(
-                            "Keyboard Layout",
-                            style: context.customTt.paragraphTitle,
-                          ),
-                          // dense: true,
-                          visualDensity: VisualDensity(vertical: -4),
-                          trailing: SizedBox(
-                            width: 200,
-                            child: DropdownMenu(
-                              initialSelection: _settings.layout,
-                              onSelected: (value) {
-                                setState(() {
-                                  _settings = _settings.copyWith(layout: value);
-                                });
-                                sharedElRepo.updateKeyboardLayout(_settings.layout);
-                              },
-                              expandedInsets: EdgeInsets.zero,
-                              dropdownMenuEntries:
-                                  KeyboardLayout.values
-                                      .map(
-                                        (el) => DropdownMenuEntry(
-                                          value: el,
-                                          label: el.name,
-                                          style: TextButton.styleFrom(
-                                            visualDensity: VisualDensity(vertical: -2),
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                              textStyle: context.tt.bodyMedium,
-                              inputDecorationTheme: InputDecorationThemeData(
-                                visualDensity: VisualDensity(vertical: -4),
-                                constraints: BoxConstraints(maxHeight: 40),
-                              ),
-                              menuStyle: MenuStyle(
-                                padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                                visualDensity: VisualDensity.comfortable,
-                                backgroundColor: WidgetStatePropertyAll(
-                                  context.cs.surfaceContainer ?? Colors.transparent,
-                                ),
-                              ),
-                            ),
-                          ),
+                        CustomDropdownListTile(
+                          title: "Keyboard Layout",
+                          initSelection: _settings.layout,
+                          entries:
+                              KeyboardLayout.values
+                                  .map(
+                                    (el) => DropdownMenuEntry(
+                                      value: el,
+                                      label: el.name,
+                                      style: TextButton.styleFrom(
+                                        visualDensity: VisualDensity(vertical: -2),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                          onSelected: (value) {
+                            setState(() {
+                              _settings = _settings.copyWith(layout: value);
+                            });
+                            sharedElRepo.updateKeyboardLayout(_settings.layout);
+                          },
                         ),
-                        ListTile(
-                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          title: Text(
-                            "Custom Button",
-                            style: context.customTt.paragraphTitle,
-                          ),
+                        CustomDropdownListTile(
+                          title: "Custom Button",
                           // dense: true,
-                          visualDensity: VisualDensity(vertical: -4),
-                          trailing: SizedBox(
-                            width: 200,
-                            child: DropdownMenu(
-                              enabled: _settings.layout == KeyboardLayout.simple,
-                              initialSelection: _button,
-                              onSelected: (value) {
-                                setState(() {
-                                  _button = value ?? _button;
-                                });
-                                sharedElRepo.updateKeyboardCustomButton(_button);
-                              },
-                              expandedInsets: EdgeInsets.zero,
-                              dropdownMenuEntries:
-                                  SimpleKeyboardButtonType.values
-                                      .map(
-                                        (buttonType) => DropdownMenuEntry(
-                                          value: buttonType,
-                                          label:
-                                              buttonType == SimpleKeyboardButtonType.doubleZero
-                                                  ? "00"
-                                                  : "${currencyRepo.currency.decimalSeparator} (Decimal separator)",
-                                          style: TextButton.styleFrom(
-                                            visualDensity: VisualDensity(vertical: -2),
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                              textStyle: context.tt.bodyMedium,
-                              inputDecorationTheme: InputDecorationThemeData(
-                                visualDensity: VisualDensity(vertical: -4),
-                                constraints: BoxConstraints(maxHeight: 40),
-                              ),
-                              menuStyle: MenuStyle(
-                                padding: WidgetStatePropertyAll(EdgeInsets.zero),
-                                visualDensity: VisualDensity.comfortable,
-                                backgroundColor: WidgetStatePropertyAll(
-                                  context.cs.surfaceContainer ?? Colors.transparent,
-                                ),
-                              ),
-                            ),
-                          ),
+                          initSelection: _button,
+                          onSelected: (value) {
+                            setState(() {
+                              _button = value ?? _button;
+                            });
+                            sharedElRepo.updateKeyboardCustomButton(_button);
+                          },
+                          entries:
+                              SimpleKeyboardButtonType.values
+                                  .map(
+                                    (buttonType) => DropdownMenuEntry(
+                                      value: buttonType,
+                                      label:
+                                          buttonType == SimpleKeyboardButtonType.doubleZero
+                                              ? "00"
+                                              : "${currencyRepo.currency.decimalSeparator} (Decimal separator)",
+                                      style: TextButton.styleFrom(
+                                        visualDensity: VisualDensity(vertical: -2),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
                         ),
                         CustomSwitchListTile(
                           value: _settings.rowReversed,

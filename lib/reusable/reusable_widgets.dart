@@ -1,12 +1,10 @@
 import 'package:budget_tracker/constants/icons.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 class ReusableContainer extends StatelessWidget {
   const ReusableContainer({
@@ -56,15 +54,6 @@ class ReusableContainer extends StatelessWidget {
                   : filled
                   ? context.customCs.fadeColor3
                   : null),
-          // gradient:
-          //     customColor != null
-          //         ? LinearGradient(
-          //           stops: [0, 1.5],
-          //           colors: [customColor!, Colors.transparent],
-          //           begin: Alignment.topCenter,
-          //           end: Alignment.bottomRight,
-          //         )
-          //         : null,
           borderRadius: BorderRadius.circular(radius),
         ),
         child: child,

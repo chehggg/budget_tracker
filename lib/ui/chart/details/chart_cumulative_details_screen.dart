@@ -32,15 +32,6 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
       current: overview.last,
       previous: overview.first,
     );
-    final maxChange = change.entries.fold(
-      double.negativeInfinity,
-      (init, entry) => max(init, entry.value['change'] ?? double.negativeInfinity),
-    );
-    final minChange = change.entries.fold(
-      double.infinity,
-      (init, entry) => min(init, entry.value['change'] ?? double.infinity),
-    );
-    final stop = ((maxChange - 0) / (maxChange - minChange)).clamp(0.0, 1.0);
     final columns = [
       "Day",
       context.chartMod.prevRangeStart.formatMonth(),
@@ -121,15 +112,23 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                         showTitles: true,
                         interval: 1,
                         getTitlesWidget: (value, meta) {
+                          final isMatch = context.chartMod.matchLabelDate(value.round());
                           return Padding(
                             padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              context.chartMod.getInitials(
-                                value.round(),
-                                useInitials: true,
-                                useDotForMonth: true,
+                            child: Transform.scale(
+                              scale: isMatch ? 1.2 : 1,
+                              child: Text(
+                                context.chartMod.getInitials(
+                                  value.round(),
+                                  useInitials: true,
+                                  useDotForMonth: true,
+                                ),
+                                style: context.tt.bodyMedium!.copyWith(
+                                  fontSize: 10,
+                                  color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
+                                  fontWeight: FontWeight(600),
+                                ),
                               ),
-                              style: context.tt.bodyMedium!.copyWith(fontSize: 10),
                             ),
                           );
                         },
@@ -220,16 +219,15 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                       final prev = overview.first.entries.elementAtOrNull(index);
                       final current = overview.last.entries.elementAtOrNull(index);
 
-                      return [prev, current];
-                    }).mapIndexed((i, el) {
-                      final currentVal = change.values.elementAt(i);
+                      final el = [prev, current];
+                      final currentVal = change.values.elementAt(index);
                       final currentChange = currentVal['change'];
                       final currentPercentage = currentVal['percentage'];
                       return DataRow(
                         cells: [
                           // DataCell(Center(child: Text((i + 1).toString()))),
                           DataCell(
-                            Center(child: Text((context.chartMod.getInitials(i)).toString())),
+                            Center(child: Text((context.chartMod.getInitials(index)).toString())),
                           ),
                           ...el.map((entry) {
                             return DataCell(
@@ -270,7 +268,7 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                                     currentChange == null
                                         ? "-"
                                         : context.chartMod.currencyFormat(
-                                          currentChange ?? 0,
+                                          currentChange,
                                           abbreviated: true,
                                           compact: true,
                                           alwaysShowSign: true,
@@ -385,18 +383,27 @@ class PercentageChangeLineChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 interval: 1,
-                getTitlesWidget:
-                    (value, meta) => Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
+                getTitlesWidget: (value, meta) {
+                  final isMatch = context.chartMod.matchLabelDate(value.round());
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Transform.scale(
+                      scale: isMatch ? 1.2 : 1,
                       child: Text(
                         context.chartMod.getInitials(
                           value.round(),
                           useInitials: true,
                           useDotForMonth: true,
                         ),
-                        style: context.tt.bodyMedium!.copyWith(fontSize: 10),
+                        style: context.tt.bodyMedium!.copyWith(
+                          fontSize: 10,
+                          color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
+                          fontWeight: FontWeight(600),
+                        ),
                       ),
                     ),
+                  );
+                },
               ),
             ),
           ),

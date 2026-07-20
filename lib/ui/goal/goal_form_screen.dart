@@ -81,7 +81,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
             itemCount: goalCategories.length,
             itemBuilder: (context, index) {
               final category = goalCategories.elementAt(index);
-      
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: ReusableContainer(
@@ -91,7 +91,10 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                   child: Row(
                     spacing: 20,
                     children: [
-                      FaIcon(category.icon, size: 36,),
+                      FaIcon(
+                        category.icon,
+                        size: 36,
+                      ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -833,8 +836,10 @@ class _DateDialogState extends State<DateDialog> {
     "November",
     "December",
   ];
-  final yearList =
-      List.generate(11, (i) => DateTime.now().year + i - 5).map((el) => el.toString()).toList();
+  final yearList = List.generate(11, (i) {
+    final el = DateTime.now().year + i - 5;
+    return el.toString();
+  });
 
   DateTime get selectedYearMonth => DateFormat(
     "MMMM yyyy",

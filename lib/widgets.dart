@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -125,19 +124,6 @@ class _CustomKeyboardState extends State<CustomKeyboard> {
   }
 
   void updateText(String input) {
-    // final newText = "${widget.controller.text}$input".replaceAll(r',', '');
-    // if (input == "+" || input == "-") {
-    //   widget.controller.value = widget.controller.value.copyWith(
-    //     text: '${widget.controller.text}$input',
-    //   );
-    // }
-    // final latestText = newText.split(RegExp(r'[\+-]')).last;
-    // final formatted = [];
-    // for (final subStr in subStrings) {
-    //   RegExp(r'^\d+(\.\d+)?$').hasMatch(input);
-    // }
-    // if (newText.length > 4 && RegExp(r'\d{4}$').hasMatch(newText)) {}
-    // // if (!validateText(newText)) return;
     widget.controller.value = widget.controller.value.copyWith(
       text: '${widget.controller.text}$input',
     );
@@ -532,30 +518,6 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                             }
                           }
 
-                          // setState(() {
-                          //   _selectedDateTime = date;
-                          // });
-                          // if (_useRange && _selectedStart != null) {
-                          //   if (_selectedEnd != null) {
-                          //     setState(() {
-                          //       _selectedStart = date;
-                          //       _selectedEnd = null;
-                          //     });
-                          //   } else if (date.isBefore(_selectedStart!)) {
-                          //     setState(() {
-                          //       _selectedStart = date;
-                          //       _selectedEnd = null;
-                          //     });
-                          //   } else {
-                          //     context.listMod.updateDateRange(
-                          //       DateTimeRange(start: _selectedStart!, end: date),
-                          //     );
-                          //     context.pop();
-                          //   }
-                          // } else {
-                          //   context.listMod.updateYearMonth(date);
-                          //   context.nav.pop();
-                          // }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),

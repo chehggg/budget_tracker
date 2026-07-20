@@ -63,7 +63,7 @@ class CurrencySelectionScreen extends StatelessWidget {
         ),
       ],
       ready: ready,
-      child: const CurrencySelectionBody()
+      child: const CurrencySelectionBody(),
     );
   }
 }
@@ -76,8 +76,8 @@ class CurrencySelectionBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contextWatch = context.watch<CurrencyViewModel>();
-    final currencies = context.select((CurrencyViewModel state) => state.filteredCurrencies);
-    final selected = context.select((CurrencyViewModel state) => state.selectedCurrency);
+    final currencies = contextWatch.filteredCurrencies;
+    final selected = contextWatch.selectedCurrency;
     return Column(
       children: [
         Padding(
@@ -89,8 +89,16 @@ class CurrencySelectionBody extends StatelessWidget {
           child: Row(
             spacing: 8,
             children: [
-              Text(context.currencyMod.isCurrencyExchange ? "Converted To:": "Selected:",  style: TextStyle(fontWeight: FontWeight(600))),
-              Expanded(child: Text("${selected.name} (${selected.symbol})", style: TextStyle(fontWeight: FontWeight(600)),)),
+              Text(
+                context.currencyMod.isCurrencyExchange ? "Converted To:" : "Selected:",
+                style: TextStyle(fontWeight: FontWeight(600)),
+              ),
+              Expanded(
+                child: Text(
+                  "${selected.name} (${selected.symbol})",
+                  style: TextStyle(fontWeight: FontWeight(600)),
+                ),
+              ),
               Text(selected.isoCode),
             ],
           ),

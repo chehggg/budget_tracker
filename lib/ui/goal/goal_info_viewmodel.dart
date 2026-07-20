@@ -113,9 +113,8 @@ class GoalInfoViewModel extends ChangeNotifier {
   Map<DateTime, CostMetric?> get dailyData => Map.fromEntries(
     List.generate(
       dataCount,
-      (i) => chartStartDate.addDay(i),
-    ).map(
-      (date) {
+      (i) {
+        final date = chartStartDate.addDay(i);
         final CostMetric? metric;
         final items =
             currentGoalProgress.items?.where((item) => item.date!.isAtSameMomentAs(date)) ?? [];
@@ -126,7 +125,7 @@ class GoalInfoViewModel extends ChangeNotifier {
         }
         return MapEntry(date, metric);
       },
-    ).toList(),
+    ),
   );
   Map<int, double> get indexedDailyData {
     final indexedMap = dailyData.entries.indexed;

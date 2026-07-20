@@ -41,35 +41,39 @@ extension BuildContextExtension on BuildContext {
   CurrencyViewModel get currencyMod => read<CurrencyViewModel>();
   ExRateViewModel get exRateMod => read<ExRateViewModel>();
   CategoryFormViewModel get catFormMod => read<CategoryFormViewModel>();
-  AdditionalCurrencySettingsViewModel get currencySetMod => read<AdditionalCurrencySettingsViewModel>();
+  AdditionalCurrencySettingsViewModel get currencySetMod =>
+      read<AdditionalCurrencySettingsViewModel>();
 
   void showSuccessNotification({required String message, String? title}) {
-    Flushbar(
-      title: title,
-      message: message,
-      icon: const Icon(Icons.check, color: Colors.white),
-      backgroundColor: Colors.green.shade900,
-      duration: const Duration(seconds: 4),
-      animationDuration: Duration(milliseconds: 400),
-      flushbarPosition: FlushbarPosition.TOP,
-      flushbarStyle: FlushbarStyle.GROUNDED,
-      borderRadius: BorderRadius.circular(8),
-      // boxShadows: const [BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
-    ).show(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Flushbar(
+        title: title,
+        message: message,
+        icon: const Icon(Icons.check, color: Colors.white),
+        backgroundColor: Colors.green.shade900,
+        duration: const Duration(seconds: 4),
+        animationDuration: Duration(milliseconds: 400),
+        flushbarPosition: FlushbarPosition.TOP,
+        flushbarStyle: FlushbarStyle.GROUNDED,
+        borderRadius: BorderRadius.circular(8),
+      ).show(this);
+    });
   }
 
   void showErrorNotification({required String message, String? title}) {
-    Flushbar(
-      title: title,
-      message: message,
-      icon: const Icon(Icons.error_outline_outlined, color: Colors.white),
-      backgroundColor: Colors.red.shade800,
-      duration: const Duration(seconds: 4),
-      animationDuration: Duration(milliseconds: 400),
-      flushbarPosition: FlushbarPosition.TOP,
-      flushbarStyle: FlushbarStyle.GROUNDED,
-      borderRadius: BorderRadius.circular(8),
-      // boxShadows: const [BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
-    ).show(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Flushbar(
+        title: title,
+        message: message,
+        icon: const Icon(Icons.error_outline_outlined, color: Colors.white),
+        backgroundColor: Colors.red.shade800,
+        duration: const Duration(seconds: 4),
+        animationDuration: Duration(milliseconds: 400),
+        flushbarPosition: FlushbarPosition.TOP,
+        flushbarStyle: FlushbarStyle.GROUNDED,
+        borderRadius: BorderRadius.circular(8),
+        // boxShadows: const [BoxShadow(color: Colors.black26, offset: Offset(0, 2), blurRadius: 4)],
+      ).show(this);
+    });
   }
 }

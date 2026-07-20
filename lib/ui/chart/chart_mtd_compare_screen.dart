@@ -1,16 +1,12 @@
-import 'dart:math';
-
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/ui/chart/chart_reusables.dart';
-import 'package:budget_tracker/ui/chart/chart_screen.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 class ChartMtdCompareScreen extends StatelessWidget {
@@ -21,10 +17,6 @@ class ChartMtdCompareScreen extends StatelessWidget {
     final data = context.select((ChartViewModel state) => state.balanceOverview);
     final curOverview = context.select((ChartViewModel state) => state.curRangeSummary);
     final prevOverview = context.select((ChartViewModel state) => state.prevRangeToDayCumulative);
-    final currentMTD = context.select(
-      (ChartViewModel state) => state.curMTD,
-    );
-    final previousMTD = context.select((ChartViewModel state) => state.previousMTD);
     return CustomScaffold(
       padHorizontal: true,
       appBarTitle: Text("Comparison"),

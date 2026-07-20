@@ -103,14 +103,6 @@ class SettingsList extends StatelessWidget {
                 CurrencyAdditionalSettingsTile(),
                 KeyboardSettingsTile(),
                 ChangeLanguageSettingsTile(),
-                // const BudgetSettingsTile(),
-                // Divider(),
-                // const SettingsSectionTitle(text: "Theme"),
-                // ThemeModeSettingsTile(selectedThemeMode: selectedThemeMode),
-                // const ColorSettingsTile(),
-                // const VisualDensitySettingsTile(),
-                // const FormGridColumnItemSettingsTile(),
-                // const FontSizeSettingsTile(),
                 const SettingsDivider(),
                 SettingsSectionTitle(text: AppLocale.data.getString(context)),
                 const ExportDataSettingsTile(),
@@ -764,7 +756,12 @@ class ExportDataSettingsTile extends StatelessWidget {
       onTap: () async {
         final response = await showExportDialog(context);
         if (response == true && context.mounted) {
-          final response = await context.settingMod.exportData();
+          final exportResponse = await context.settingMod.exportData();
+          if (exportResponse.isNotEmpty) {
+            context.showErrorNotification(message: "Export failed: $exportResponse");
+          } else {
+            context.showSuccessNotification(message: "Export completed.");
+          }
         }
 
         // if (response != null && context.mounted) {
@@ -815,7 +812,9 @@ class _LoadDataSettingsTileState extends State<LoadDataSettingsTile> {
   void showOverlay() {
     _entry = OverlayEntry(
       builder: (context) {
-        return SettingOverlay(loadingMessage: "Loading data...",);
+        return SettingOverlay(
+          loadingMessage: "Loading data...",
+        );
       },
     );
     Overlay.of(context).insert(_entry!);
@@ -849,6 +848,7 @@ class _LoadDataSettingsTileState extends State<LoadDataSettingsTile> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
     final loading = context.select((SettingsViewModel state) => state.loading);
     return CustomSettingsTile(
       title: AppLocale.loadData.getString(context),
@@ -857,21 +857,15 @@ class _LoadDataSettingsTileState extends State<LoadDataSettingsTile> {
         final response = await showLoadItemDialog(context);
         if (response == true && context.mounted) {
           showOverlay();
-          final result = await context.settingMod.loadAllData();
+          final loadResponse = await context.settingMod.loadAllData();
+          if (loadResponse != "") {
+            context.showErrorNotification(message: "Data load failed: $loadResponse");
+          } else {
+            context.go('/');
+            context.showSuccessNotification(message: "Data load successfully");
+          }
           removeOverlay();
         }
-        // if (response != null) {
-        //   if (response == "" && context.mounted) {
-        //     context.go('/');
-        //     ScaffoldMessenger.of(
-        //       context,
-        //     ).showSnackBar(SnackBar(content: Text("Data load successfully")));
-        //     // debugPrint("Data load successfully");
-        //     // context.showSuccessNotification(message: "Data loaded");
-        //   } else {
-        //     // context.showErrorNotification(message: "Error: $response");
-        //   }
-        // }
       },
     );
   }
@@ -945,7 +939,12 @@ class _ClearDataSettingsTileState extends State<ClearDataSettingsTile> {
   OverlayEntry? _entry;
 
   void showOverlay() {
-    _entry = OverlayEntry(builder: (context) => SettingOverlay(loadingMessage: "Clearing data...",));
+    _entry = OverlayEntry(
+      builder:
+          (context) => SettingOverlay(
+            loadingMessage: "Clearing data...",
+          ),
+    );
     Overlay.of(context).insert(_entry!);
   }
 

@@ -196,7 +196,7 @@ class ChartViewModel extends ChangeNotifier {
           List.generate(9, (i) {
             final week = startWeek.addWeek(i);
             CostMetric costMetric = CostMetric();
-            final entry = _costItemRepo.daySummary.entries
+            _costItemRepo.daySummary.entries
                 .where(
                   (el) => el.key.year == week.year && el.key.weekNumber == week.weekNumber,
                 )
@@ -234,6 +234,16 @@ class ChartViewModel extends ChangeNotifier {
         return _periodStart.year == date.year;
       case ChartPeriod.custom:
         return true;
+    }
+  }
+
+  bool matchLabelDate(int index) {
+    final date = curRangeOverview.keys.elementAtOrNull(index);
+    if (date == null) return false;
+    if (showMonths) {
+      return DateTime.now().startOfMonth.isInSameYearMonthAs(date);
+    } else {
+      return DateTime.now().standard.isAtSameMomentAs(date);
     }
   }
 
@@ -651,7 +661,6 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.custom:
         return curMTD.addYear(-1);
     }
-    ;
   }
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
@@ -825,9 +834,9 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   void updateListDate(DateTime dateTime) {
-    _costItemRepo.redirectListScroll(dateTime);
+    _costItemRepo.redirectListScroll(dateTime, showMonth: showMonths);
   }
-  
+
   @override
   void dispose() {
     _itemSubscription?.cancel();
