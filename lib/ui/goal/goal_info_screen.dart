@@ -1,12 +1,12 @@
-// ignore_for_file: unnecessary_string_interpolations
-
 import 'dart:math';
 
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
+import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -67,6 +67,8 @@ class GoalInfoBody extends StatelessWidget {
     final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
     final progress = curProgress.progress;
     final chartProgress = progress.clamp(0.0, 1.0);
+    final extraProgress = (1 - progress).abs();
+
     final dividerPercentage = progress * 0.008;
     debugPrint('goal progress: ${pastProgress.length}');
     return CustomScrollView(
@@ -88,6 +90,7 @@ class GoalInfoBody extends StatelessWidget {
                     height: 0,
                     width: 150,
                     child: PieChart(
+                      duration: Duration.zero,
                       PieChartData(
                         centerSpaceRadius: 130,
                         startDegreeOffset: -180,
@@ -108,7 +111,7 @@ class GoalInfoBody extends StatelessWidget {
                             color: context.customCs.fadeColor1,
                           ),
                           PieChartSectionData(
-                            value: (1 - chartProgress),
+                            value: extraProgress,
                             radius: 10,
                             showTitle: false,
                             color:
@@ -119,7 +122,7 @@ class GoalInfoBody extends StatelessWidget {
                                     : context.customCs.fadeColor2,
                           ),
                           PieChartSectionData(
-                            value: max(1, chartProgress) + dividerPercentage,
+                            value: chartProgress + extraProgress + dividerPercentage,
                             radius: 10,
                             showTitle: false,
                             color: Colors.transparent,
@@ -236,6 +239,12 @@ class GoalInfoBody extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
           sliver: SliverToBoxAdapter(
+            child: GoalAvgTargetInfoChart(),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          sliver: SliverToBoxAdapter(
             child: GoalInfoHeatmapChart(),
           ),
         ),
@@ -314,15 +323,12 @@ class GoalInfoBody extends StatelessWidget {
                               child: Text(progress.status, style: context.customTt.paragraphText),
                             ),
                             Text(
-                              // ignore: prefer_adjacent_string_concatenation
-                              '${context.goalInfoMod.currencyFormat(progress.value, showSymbol: false, abbreviated: true, compact: true)}' +
+                              // ignore: prefer_interpolation_to_compose_strings, prefer_adjacent_string_concatenation
+                              context.goalInfoMod.compactCurrencyFormat(progress.value) +
                                   // ignore: prefer_interpolation_to_compose_strings
                                   " / " +
-                                  context.goalInfoMod.currencyFormat(
+                                  context.goalInfoMod.compactCurrencyFormat(
                                     progress.target ?? 0,
-                                    showSymbol: false,
-                                    abbreviated: true,
-                                    compact: true,
                                   ),
                               style: context.customTt.paragraphText,
                             ),
@@ -548,6 +554,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
     final days = context.goalInfoMod.displayDayTitle;
     final daysWithData = dailyData.where((entry) => entry.value != null).length;
     final targetReachingDays = context.goalInfoMod.targetReachingDays;
+    final dailyTarget = context.goalInfoMod.targetSpendPerDay;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       // spacing: 4,
@@ -621,18 +628,23 @@ class GoalInfoHeatmapChart extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
           child: HeatmapGraph(
-            target: context.goalInfoMod.targetSpendPerDay,
+            target: dailyTarget,
             totalCount: context.goalInfoMod.dataCount,
             getTooltipMessage: (index) {
               final dayData = dailyData.elementAtOrNull(index);
               if (dayData == null) {
                 return "No data";
               } else {
-                final percentage =
-                    (dayData.value?.expense ?? 0) / context.goalInfoMod.targetSpendPerDay;
+                final percentage = (dayData.value ?? 0) / dailyTarget;
+                final data =
+                    dayData.value == null
+                        ? "No Data"
+                        : context.goalInfoMod.compactCurrencyFormat(dayData.value ?? 0);
+                final label = dayData.key.formatEvenShorter();
                 // ignore: prefer_adjacent_string_concatenation
-                return "${dayData.key.formatShorter()}\n${dayData.value == null ? "No Data" : (dayData.value!.expense ?? 0).customCurrencyFormat("RM")}" +
-                    "${dayData.value != null ? " (${NumberFormat.percentPattern().format(percentage)})" : ""}";
+                return "$label\n$data" +
+                    // ignore: unnecessary_string_interpolations
+                    "${dayData.value != null ? " (${percentage.formatCompactPercentage()})" : ""}";
               }
             },
             data: context.goalInfoMod.indexedDailyData,
@@ -680,8 +692,6 @@ class GoalInfoLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final goal = context.goalInfoMod.goal;
-    final target = goal.target;
     final goalProgress = context.goalInfoMod.currentGoalProgress;
     final achieved = goalProgress.achieved;
     final days = context.goalInfoMod.displayDayTitle;
@@ -753,108 +763,7 @@ class GoalInfoLineChart extends StatelessWidget {
             ),
           ],
         ),
-        Container(
-          padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
-          height: 180,
-          child: LineChart(
-            LineChartData(
-              titlesData: FlTitlesData(show: false),
-              lineTouchData: getCustomLineTouchData(
-                context: context,
-                getTooltipItems: (touchedSpots) {
-                  return touchedSpots.map(
-                    (spot) {
-                      final startDate = context.goalInfoMod.chartStartDate.addDay(
-                        spot.x.round() - 1,
-                      );
-                      final label = switch (spot.barIndex) {
-                        0 => "Limit",
-                        1 => startDate.formatShorter(),
-                        2 => "${startDate.formatShorter()} (Target)",
-                        _ => "",
-                      };
-                      final color = switch (spot.barIndex) {
-                        0 => context.goalInfoMod.accentColors.previous,
-                        1 => context.goalInfoMod.accentColors.current,
-                        2 => Colors.grey,
-                        _ => Colors.transparent,
-                      };
-                      // == 0 ? "Limit" : startDate.formatShorter();
-                      return LineTooltipItem(
-                        "$label: ${spot.y.customCurrencyFormat("RM", round: true)}",
-                        context.tt.bodyMedium!.copyWith(
-                          fontSize: 10,
-                          fontWeight: FontWeight(500),
-                          color: color,
-                        ),
-                        textAlign: TextAlign.end,
-                      );
-                    },
-                  ).toList();
-                },
-              ),
-              borderData: FlBorderData(show: false),
-              gridData: customGrid,
-              lineBarsData: [
-                getCustomLineChartBarData(
-                  isCurved: false,
-                  showGradient: true,
-                  color: Colors.white,
-                  dashArray: [2, 8],
-                  spots: [
-                    ...List.generate(
-                      context.goalInfoMod.dataCount,
-                      (i) {
-                        final el = i + 1;
-                        return FlSpot(el.toDouble(), target ?? 0);
-                      },
-                    ),
-                  ],
-                ),
-                getCustomLineChartBarData(
-                  dotData: FlDotData(
-                    checkToShowDot: (spot, barData) {
-                      final date = context.goalInfoMod.chartStartDate.addDay(spot.x.round() - 1);
-                      return DateTime.now().standard == date;
-                    },
-                  ),
-                  showingIndicators: [5],
-                  isCurved: false,
-                  color: context.cs.secondary,
-                  spots: [
-                    ...context.goalInfoMod.lineChartData.entries
-                        .where((entry) => entry.value != null)
-                        .mapIndexed(
-                          (index, el) {
-                            return FlSpot((index + 1).toDouble(), el.value?.expense ?? 0);
-                          },
-                        ),
-                  ],
-                ),
-                getCustomLineChartBarData(
-                  dotData: FlDotData(
-                    checkToShowDot: (spot, barData) {
-                      return false;
-                    },
-                  ),
-                  isCurved: false,
-                  showGradient: false,
-                  color: Colors.grey.shade600,
-                  dashArray: [1, 15],
-                  spots: [
-                    ...List.generate(
-                      context.goalInfoMod.dataCount,
-                      (i) {
-                        final target = (i + 1) * context.goalInfoMod.targetSpendPerDay;
-                        return FlSpot((i + 1).toDouble(), target);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+        GoalCumulativeChart(),
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0, top: 12),
           child:
@@ -883,6 +792,371 @@ class GoalInfoLineChart extends StatelessWidget {
                   ),
         ),
       ],
+    );
+  }
+}
+
+class GoalCumulativeChart extends StatefulWidget {
+  const GoalCumulativeChart({
+    super.key,
+  });
+
+  @override
+  State<GoalCumulativeChart> createState() => _GoalCumulativeChartState();
+}
+
+class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
+  int _index = 0;
+  bool _isTouched = false;
+  int defaultIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    defaultIndex =
+        context.goalInfoMod.lineChartCumulativeData.entries
+            .where((entry) => entry.value != null)
+            .length -
+        1;
+    _index = defaultIndex;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = context.goalInfoMod.goal.target;
+    final progress = context.goalInfoMod.currentGoalProgress;
+    final goalSpots = context.goalInfoMod.lineChartCumulativeData.entries
+        .where((entry) => entry.value != null)
+        .mapIndexed(
+          (index, el) {
+            return FlSpot((index + 1).toDouble(), el.value ?? 0);
+          },
+        );
+    final targetPerDaySpots = List.generate(
+      context.goalInfoMod.dataCount,
+      (i) {
+        final target = (i + 1) * context.goalInfoMod.targetSpendPerDay;
+        return FlSpot((i + 1).toDouble(), target);
+      },
+    );
+    final diffSpots = goalSpots.mapIndexed((index, el) {
+      final currentY = el.y;
+      final targetY = targetPerDaySpots.elementAt(index).y;
+      final diff = (currentY - targetY);
+      return FlSpot(index.toDouble(), diff);
+    });
+
+    return Container(
+      padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
+      height: 200,
+      child: LineChart(
+        LineChartData(
+          titlesData: getCustomChartTitleData(
+            context: context,
+            bottomTitle: AxisTitles(
+              sideTitles: SideTitles(
+                interval: 1,
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return ChartBottomTitleLabel(value: value);
+                },
+              ),
+            ),
+          ),
+          extraLinesData: getHorizontalExtraLines(context, y: [target ?? 0], showYLabel: [true]),
+          maxY: ((progress.value * 1.4) > (target ?? 0)) ? progress.value * 1.4 : null,
+          minY: 0,
+          lineTouchData: getCustomLineTouchData(
+            enabled: false,
+            context: context,
+            touchCallback: (event, response) {
+              setState(() {
+                if (!event.isInterestedForInteractions ||
+                    response == null ||
+                    response.lineBarSpots == null) {
+                  setState(() {
+                    _isTouched = false; // Reset touch state
+                    _index = defaultIndex;
+                  });
+                  return;
+                }
+
+                _isTouched = true;
+                _index = response.lineBarSpots?.first.x.round() ?? defaultIndex;
+              });
+            },
+            getTooltipColor: (barSpot) {
+              return context.cs.surface;
+            },
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map(
+                (spot) {
+                  final startDate = context.goalInfoMod.chartStartDate.addDay(
+                    spot.x.round() - 1,
+                  );
+                  final label = switch (spot.barIndex) {
+                    0 => startDate.formatEvenShorter(),
+                    1 => "Avg",
+                    2 => "Diff",
+                    _ => "",
+                  };
+                  final color = switch (spot.barIndex) {
+                    0 => context.goalInfoMod.accentColors.current,
+                    1 => Colors.lightGreen,
+                    2 => context.read<SharedElementRepository>().accentColors.getColorByValue(
+                      spot.y,
+                      reversed: progress.goalType == GoalType.budget,
+                    ),
+                    _ => Colors.transparent,
+                  };
+                  final data = switch (spot.barIndex) {
+                    2 =>
+                      (spot.y >= 0 ? "▲" : "▼") +
+                          context.goalInfoMod.compactCurrencyFormat(
+                            spot.y.abs(),
+                          ),
+                    _ => context.goalInfoMod.compactCurrencyFormat(spot.y),
+                  };
+                  // == 0 ? "Limit" : startDate.formatShorter();
+                  return LineTooltipItem(
+                    "$label: $data",
+                    context.tt.bodyMedium!.copyWith(
+                      fontSize: 9,
+                      fontWeight: FontWeight(500),
+                      color: color,
+                      height: 1.2,
+                    ),
+                    textAlign: TextAlign.end,
+                  );
+                },
+              ).toList();
+            },
+          ),
+          borderData: FlBorderData(show: false),
+          gridData: customGrid,
+          showingTooltipIndicators: [
+            // ShowingTooltipIndicators([LineBarSpot(LineChartBarData(), 1, spots.elementAtOrNull(8) ?? FlSpot(0, 0))]),
+            ShowingTooltipIndicators([
+              if (goalSpots.elementAtOrNull(_index) != null)
+                LineBarSpot(
+                  LineChartBarData(),
+                  0,
+                  goalSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                ),
+              LineBarSpot(
+                LineChartBarData(),
+                1,
+                targetPerDaySpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+              ),
+              if (goalSpots.elementAtOrNull(_index) != null)
+                LineBarSpot(
+                  LineChartBarData(),
+                  2,
+                  diffSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                ),
+            ]),
+            // ShowingTooltipIndicators([
+            //   LineBarSpot(LineChartBarData(), 0, FlSpot(0, target ?? 0)),
+            // ]),
+          ],
+          lineBarsData: [
+            // getCustomLineChartBarData(
+            //   isCurved: false,
+            //   showGradient: true,
+            //   color: Colors.white,
+            //   dashArray: [2, 8],
+            //   spots: targetSpots,
+            // ),
+            getCustomLineChartBarData(
+              dotData: FlDotData(
+                checkToShowDot: (spot, barData) {
+                  final date = context.goalInfoMod.chartStartDate.addDay(spot.x.round() - 1);
+                  return DateTime.now().standard == date;
+                },
+              ),
+              showingIndicators: [_index],
+              isCurved: false,
+              color: context.cs.secondary,
+              spots: goalSpots.toList(),
+            ),
+            getCustomLineChartBarData(
+              dotData: FlDotData(
+                checkToShowDot: (spot, barData) {
+                  return false;
+                },
+              ),
+              showingIndicators: [_index],
+              isCurved: false,
+              showGradient: true,
+              color: Colors.lightGreen,
+              dashArray: [1, 15],
+              spots: [...targetPerDaySpots],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GoalAvgTargetInfoChart extends StatelessWidget {
+  const GoalAvgTargetInfoChart({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 10,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          "Daily Spend",
+          style: context.customTt.dateLabel,
+        ),
+        GoalAvgTargetBarChart(),
+      ],
+    );
+  }
+}
+
+class GoalAvgTargetBarChart extends StatefulWidget {
+  const GoalAvgTargetBarChart({super.key});
+
+  @override
+  State<GoalAvgTargetBarChart> createState() => _GoalAvgTargetBarChartState();
+}
+
+class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
+  int? _touchedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final goal = context.goalInfoMod.goal;
+    final dailyData = context.goalInfoMod.dailyData.entries;
+    final maxData = dailyData.fold(0.0, (init, entry) => max(init, entry.value ?? 0));
+    final dailyTarget = context.goalInfoMod.targetSpendPerDay;
+    final List<int> showValues = [];
+    for (final (index, entry) in dailyData.indexed) {
+      if ((entry.value ?? 0) > dailyTarget) {
+        showValues.add(index);
+      }
+    }
+    return Container(
+      height: 200,
+      child: BarChart(
+        duration: Duration.zero,
+        BarChartData(
+          alignment: BarChartAlignment.spaceBetween,
+          maxY: max(dailyTarget, maxData) * 1.2,
+          barTouchData: BarTouchData(
+            enabled: true,
+            handleBuiltInTouches: true,
+            touchCallback: (event, response) {
+              setState(() {
+                if (event.isInterestedForInteractions) {
+                  _touchedIndex = response?.spot?.touchedBarGroup.x;
+                } else {
+                  _touchedIndex = null;
+                }
+              });
+            },
+            // touchExtraThreshold: EdgeInsets.symmetric(vertical: 50),
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (group) => Colors.black,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final date = dailyData.elementAt(groupIndex).key;
+                final value = dailyData.elementAt(groupIndex).value ?? 0;
+                final percentage = (value / dailyTarget).formatCompactPercentage();
+                final c = group.barRods.first.toY;
+                return BarTooltipItem(
+                  // ignore: prefer_interpolation_to_compose_strings
+                  date.formatEvenShorter() +
+                      "\n" +
+                      context.goalInfoMod.compactCurrencyFormat(
+                        c,
+                      ),
+                  context.tt.bodyMedium!.copyWith(
+                    fontSize: 9,
+                    fontWeight: FontWeight(500),
+                    height: 1.2,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: " ($percentage)",
+                      style: TextStyle(
+                        color: context.goalInfoMod.accentColors.getColorByValue(
+                          value - dailyTarget,
+                          reversed: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              tooltipMargin: 200,
+            ),
+            allowTouchBarBackDraw: true,
+          ),
+          gridData: customGrid,
+          borderData: FlBorderData(show: false),
+          titlesData: getCustomChartTitleData(
+            context: context,
+            bottomTitle: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return ChartBottomTitleLabel(value: value);
+                },
+              ),
+            ),
+          ),
+          extraLinesData: getHorizontalExtraLines(context, y: [dailyTarget], showYLabel: [true]),
+          barGroups: [
+            ...dailyData.mapIndexed((index, el) {
+              final value = el.value ?? 0;
+              return BarChartGroupData(
+                // showingTooltipIndicators: [0],
+                groupVertically: true,
+                x: index,
+                barRods: [
+                  BarChartRodData(
+                    backDrawRodData: BackgroundBarChartRodData(
+                      fromY: 0,
+                      toY: maxData,
+                      show: true,
+                      color: Colors.transparent,
+                    ),
+                    toY: value,
+                    color: context.goalInfoMod.accentColors.negative,
+                    width: 4,
+                    rodStackItems: [
+                      BarChartRodStackItem(
+                        0,
+                        dailyTarget,
+                        context.goalInfoMod.accentColors.positive,
+                      ),
+                    ],
+                    label: BarChartRodLabel(
+                      show: showValues.contains(index),
+                      text: '\n${(value / dailyTarget).formatCompactPercentage()}',
+                      style: context.customTt.paragraphTextSmall!.copyWith(
+                        fontSize: 9,
+                        color: context.goalInfoMod.accentColors.negative,
+                      ),
+                      offset: Offset(0, 10),
+                    ),
+                  ),
+                  BarChartRodData(
+                    toY: maxData,
+                    width: 0.5,
+                    color: _touchedIndex == index ? Colors.white : Colors.transparent,
+                  ),
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1043,8 +1317,8 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
         return Tooltip(
           enableTapToDismiss: false,
           textStyle: context.tt.bodyMedium!.copyWith(
-            fontSize: 12,
-            color: Color.lerp(color, Colors.white, 0.8),
+            fontSize: 9,
+            color: Color.lerp(color, Colors.white, 1),
             fontWeight: FontWeight(500),
           ),
           decoration: BoxDecoration(

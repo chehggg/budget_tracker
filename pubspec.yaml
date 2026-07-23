@@ -80,3 +80,6 @@ flutter:
 
 # dependency_overrides:
 #   intl: any
+
+dependency_overrides:
+  intl: ^0.20.3

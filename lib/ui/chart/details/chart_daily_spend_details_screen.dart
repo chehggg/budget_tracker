@@ -203,7 +203,7 @@ class DailySpendTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overview = context.select((ChartViewModel state) => state.dayToDayComparison);
+    final overview = context.select((ChartViewModel state) => state.dailyCost);
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final columns = [
       "Day",
@@ -334,7 +334,7 @@ class DifferenceBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overview = context.select((ChartViewModel state) => state.dayToDayComparison);
+    final overview = context.select((ChartViewModel state) => state.dailyCost);
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     return Container(
       height: 180,
@@ -344,7 +344,7 @@ class DifferenceBarChart extends StatelessWidget {
           alignment: BarChartAlignment.spaceBetween,
           gridData: customGrid,
           borderData: FlBorderData(show: false),
-          extraLinesData: getExtraLines(context, y: [0]),
+          extraLinesData: getHorizontalExtraLines(context, y: [0]),
           titlesData: getCustomChartTitleData(
             showLeft: true,
             context: context,

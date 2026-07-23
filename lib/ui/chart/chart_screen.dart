@@ -32,6 +32,18 @@ class ChartScreen extends StatelessWidget {
     final showMonth = context.chartMod.showMonths;
     final currentEmpty = context.chartMod.noCurData;
     final prevEmpty = context.chartMod.noPrevData;
+    final chartMetric = context.chartMod.chartMetric;
+    final period = context.chartMod.period;
+
+    String getLabel() {
+      if (period != ChartPeriod.custom) {
+        final shortForm = period.name.substring(0, 1).toUpperCase();
+        // ignore: unnecessary_brace_in_string_interps
+        return '${shortForm}o${shortForm} ';
+      } else {
+        return '';
+      }
+    }
 
     final displayPeriod = context.chartMod.curDisplayPeriod;
     final displayDetailsPeriod = context.chartMod.displayDetailsPeriodDuration;
@@ -60,7 +72,7 @@ class ChartScreen extends StatelessWidget {
                   style: context.tt.bodyMedium!.copyWith(
                     fontSize: 10,
                     color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
-                    fontWeight:  FontWeight(600),
+                    fontWeight: FontWeight(600),
                   ),
                 ),
               ),
@@ -109,7 +121,7 @@ class ChartScreen extends StatelessWidget {
                   ),
                 ),
                 ChartSection(
-                  title: "MoM Overview",
+                  title: "${getLabel()} Overview",
                   child: YearMonthOverview(),
                 ),
                 getDivider(),
@@ -120,13 +132,13 @@ class ChartScreen extends StatelessWidget {
                 //   child: SummaryData(),
                 // ),
                 const ChartSection(
-                  title: "Category Breakdown",
+                  title: "Expense by Category",
                   pathName: '/chart/category-breakdown',
                   child: CategoryBreakdownChart(),
                 ),
                 getDivider(),
                 ChartSection(
-                  title: showMonth ? "Monthly Spend" : "Daily Spend",
+                  title: "${showMonth ? "Monthly" : "Daily"} ${chartMetric.name.capitalize()}",
                   pathName: '/chart/daily-spend',
                   showLabelSubtitle: true,
                   showCurrentLabel: !currentEmpty,
@@ -137,7 +149,7 @@ class ChartScreen extends StatelessWidget {
                 ),
                 getDivider(),
                 ChartSection(
-                  title: "Cumulative",
+                  title: "Cumulative ${chartMetric.name.capitalize()}",
                   showLabelSubtitle: true,
                   showCurrentLabel: !currentEmpty,
                   showPreviousLabel: !prevEmpty,
@@ -148,7 +160,7 @@ class ChartScreen extends StatelessWidget {
                 ),
                 getDivider(),
                 ChartSection(
-                  title: "Cumulative Average",
+                  title: "Cumulative Avg ${chartMetric.name.capitalize()}",
                   pathName: '/chart/cumulative-avg',
                   showLabelSubtitle: true,
                   showCurrentLabel: !currentEmpty,
@@ -234,6 +246,7 @@ class ChartSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showPrevious = context.select((ChartViewModel state) => state.showPrevious);
     return SliverPadding(
       padding: const EdgeInsets.only(top: 12.0, left: 12, right: 12),
       sliver: SliverToBoxAdapter(
@@ -280,10 +293,28 @@ class ChartSection extends StatelessWidget {
                           fade: true,
                         ),
                       if (showPreviousLabel)
-                        LabelIndicator(
-                          text: context.chartMod.prevDisplayPeriod,
-                          color: context.chartMod.accentColors.previous,
-                          fade: true,
+                        Opacity(
+                          opacity: showPrevious ? 1 : 0.5,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTap: () {
+                              context.chartMod.toggleShowPrevious();
+                            },
+                            child: Row(
+                              spacing: 8,
+                              children: [
+                                LabelIndicator(
+                                  text: context.chartMod.prevDisplayPeriod,
+                                  color: context.chartMod.accentColors.previous,
+                                  fade: true,
+                                ),
+                                FaIcon(
+                                  showPrevious ? FontAwesomeIcons.eye : FontAwesomeIcons.eyeSlash,
+                                  size: 10,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -404,7 +435,7 @@ class CategoryBreakdownChart extends StatelessWidget {
   }
 }
 
-class DailyBarChart extends StatelessWidget {
+class DailyBarChart extends StatefulWidget {
   const DailyBarChart({
     super.key,
     this.titleData,
@@ -413,85 +444,142 @@ class DailyBarChart extends StatelessWidget {
   final FlTitlesData? titleData;
 
   @override
+  State<DailyBarChart> createState() => _DailyBarChartState();
+}
+
+class _DailyBarChartState extends State<DailyBarChart> {
+  int? _touchedIndex;
+
+  @override
   Widget build(BuildContext context) {
-    final data = context.select((ChartViewModel state) => state.dayToDayComparison);
+    final data = context.select(
+      (ChartViewModel state) => state.dailyCost,
+    );
+    final indicatorIndex = _touchedIndex ?? context.chartMod.defaultIndicatorIndex;
     final isEmpty = context.chartMod.noData;
     final curRangeStart = context.chartMod.rangeStart;
-    return Container(
-      height: 180,
-      padding: EdgeInsets.only(top: 12),
-      child:
-          isEmpty
-              ? const NoDataChartSection()
-              : BarChart(
-                duration: Durations.medium1,
-                BarChartData(
-                  extraLinesData: getExtraLines(context, y: [0]),
-                  alignment: BarChartAlignment.spaceBetween,
-                  // groupsSpace: 20,
-                  barTouchData: BarTouchData(
-                    touchExtraThreshold: EdgeInsets.all(20),
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (group) => context.cs.surface,
-                      tooltipHorizontalOffset: 0,
-                      fitInsideHorizontally: true,
-                      fitInsideVertically: true,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final String curDate = context.chartMod.getFormatLabel(
-                          data.elementAtOrNull(groupIndex)?.entries.elementAtOrNull(1)?.key,
-                        );
-                        final String prevDate = context.chartMod.getFormatLabel(
-                          data.elementAtOrNull(groupIndex)?.entries.elementAtOrNull(0)?.key,
-                        );
-                        return BarTooltipItem(
-                          "$curDate: ${context.chartMod.currencyFormat(group.barRods.last.toY, abbreviated: true, compact: true, showSymbol: false)}\n",
-                          context.customTt.numberFontSmall!.copyWith(
-                            fontSize: 10,
-                            color: context.chartMod.accentColors.current,
-                          ),
-                          textAlign: TextAlign.end,
-                          children: [
-                            TextSpan(
-                              text:
-                                  "$prevDate: ${context.chartMod.currencyFormat(group.barRods.first.toY, abbreviated: true, compact: true, showSymbol: false)}",
-                              style: TextStyle(
-                                color: context.chartMod.accentColors.previous,
+    final showPrevious = context.select((ChartViewModel state) => state.showPrevious);
+    return Column(
+      children: [
+        Container(
+          height: 200,
+          padding: EdgeInsets.only(top: 12),
+          child:
+              isEmpty
+                  ? const NoDataChartSection()
+                  : BarChart(
+                    // duration: Durations.medium1,
+                    duration: Duration.zero,
+                    BarChartData(
+                      extraLinesData: getHorizontalExtraLines(context, y: [0]),
+                      alignment: BarChartAlignment.spaceBetween,
+                      maxY: context.chartMod.dailyRangeMax ,
+                      // groupsSpace: 20,
+                      barTouchData: BarTouchData(
+                        touchExtraThreshold: EdgeInsets.all(20),
+                        touchCallback: (event, response) {
+                          setState(() {
+                            if (event is FlTapUpEvent ||
+                                event is FlLongPressEnd ||
+                                event is FlPanEndEvent ||
+                                event is FlPanCancelEvent) {
+                              _touchedIndex = null;
+                            } else {
+                              _touchedIndex = response?.spot?.touchedBarGroupIndex ?? _touchedIndex;
+                            }
+                          });
+                        },
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipColor: (group) => context.cs.surface,
+                          tooltipMargin: 1000,
+                          tooltipHorizontalOffset: 0,
+                          tooltipHorizontalAlignment: FLHorizontalAlignment.left,
+                          direction: TooltipDirection.top,
+                          fitInsideHorizontally: true,
+                          fitInsideVertically: true,
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            final String curDate = context.chartMod.getFormatLabel(
+                              data.elementAtOrNull(groupIndex)?.entries.lastOrNull?.key,
+                            );
+                            final String prevDate = context.chartMod.getFormatLabel(
+                              data.elementAtOrNull(groupIndex)?.entries.firstOrNull?.key,
+                            );
+                            return BarTooltipItem(
+                              "$curDate: ${context.chartMod.compactCurrencyFormat(group.barRods.first.toY)}",
+                              context.tt.bodyMedium!.copyWith(
+                                fontSize: 9,
+                                fontWeight: FontWeight(600),
+                                height: 1.2,
+                                color: context.chartMod.accentColors.current,
                               ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  gridData: customGrid,
-                  titlesData: titleData,
-                  // maxY: maxValue,
-                  barGroups:
-                      data.mapIndexed((i, el) {
-                        return BarChartGroupData(
-                          x: i,
-                          groupVertically: true,
-                          barRods:
-                              el.entries.map(
+                              textAlign: TextAlign.end,
+                              children: [
+                                if (showPrevious)
+                                TextSpan(
+                                  text:
+                                      "\n$prevDate: ${context.chartMod.compactCurrencyFormat(group.barRods[1].toY)}",
+                                  style: TextStyle(
+                                    color: context.chartMod.accentColors.previous,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      gridData: customGrid,
+                      titlesData: widget.titleData,
+                      // maxY: maxValue,
+                      barGroups: [
+                        ...data.mapIndexed((i, el) {
+                          return BarChartGroupData(
+                            showingTooltipIndicators: i == indicatorIndex ? [0] : [],
+                            x: i,
+                            groupVertically: true,
+                            barRods: [
+                              ...el.entries.toList().reversed.map(
                                 (entry) {
                                   final isPrev = entry.key.isBefore(curRangeStart);
+                                  final value =
+                                      context.chartMod.chartMetric.getCostMetric(entry.value) ?? 0;
                                   return BarChartRodData(
+                                    backDrawRodData: BackgroundBarChartRodData(
+                                      toY: context.chartMod.dailyRangeMax,
+                                      color: Colors.transparent,
+                                    ),
                                     width: isPrev ? 2 : 5,
                                     color:
                                         isPrev
-                                            ? Colors.blue.shade400.withAlpha(150)
-                                            : context.cs.secondary,
-                                    toY:
-                                        context.chartMod.chartMetric.getCostMetric(entry.value) ??
-                                        0,
+                                            ? context.chartMod.accentColors.previous
+                                            : context.chartMod.accentColors.current,
+                                    toY: value,
+                                    label: BarChartRodLabel(
+                                      show:
+                                          !isPrev &&
+                                          context.chartMod.dailyRangeMax != 0 &&
+                                          value >= context.chartMod.dailyRangeMax * 0.7,
+                                      text: context.chartMod.compactCurrencyFormat(value),
+                                      style: context.tt.bodyMedium!.copyWith(fontSize: 9),
+                                    ),
                                   );
                                 },
-                              ).toList(),
-                        );
-                      }).toList(),
-                ),
-              ),
+                              ),
+                              if (indicatorIndex != null)
+                                BarChartRodData(
+                                  fromY: context.chartMod.dailyRangeMin,
+                                  toY: context.chartMod.dailyRangeMax,
+                                  width: 0.5,
+                                  color: (indicatorIndex) == i ? Colors.white : Colors.transparent,
+                                ),
+                            ],
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+        ),
+      ],
     );
   }
 }
@@ -879,88 +967,131 @@ class PercentageBar extends StatelessWidget {
   }
 }
 
-class NewCumulativeLineChart extends StatelessWidget {
+class NewCumulativeLineChart extends StatefulWidget {
   const NewCumulativeLineChart({super.key, this.titleData});
 
   final FlTitlesData? titleData;
 
   @override
+  State<NewCumulativeLineChart> createState() => _NewCumulativeLineChartState();
+}
+
+class _NewCumulativeLineChartState extends State<NewCumulativeLineChart> {
+  int? _touchedIndex;
+  @override
   Widget build(BuildContext context) {
     final cumulativeComparison = context.select(
       (ChartViewModel state) => state.cumulativeComparison,
     );
+    final defaultIndex = context.chartMod.defaultIndicatorIndex;
+    final indicatorIndex = _touchedIndex ?? defaultIndex;
     final isEmpty = context.chartMod.noData;
     final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
     final showMonths = context.select((ChartViewModel state) => state.showMonths);
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final now = DateTime.now().standard;
+    final yLine =
+        _touchedIndex != null
+            ? cumulativeComparison.first.values.elementAtOrNull(_touchedIndex!)
+            : null;
+    final showPrevious = context.select((ChartViewModel state) => state.showPrevious);
+
+    ShowingTooltipIndicators getTooltipIndicator() {
+      if (indicatorIndex == null) return ShowingTooltipIndicators([]);
+      final List<LineBarSpot> barSpots = [];
+      cumulativeComparison.forEachIndexed((index, el) {
+        final spots = el.entries.toList().mapIndexed(
+          (i, entry) => FlSpot(i.toDouble(), entry.value),
+        );
+        if (spots.elementAtOrNull(indicatorIndex) != null) {
+          barSpots.add(
+            LineBarSpot(LineChartBarData(), index, spots.elementAt(indicatorIndex)),
+          );
+        }
+      });
+      return ShowingTooltipIndicators(barSpots);
+    }
+
     return Container(
-      height: 180,
+      height: 200,
       padding: EdgeInsets.only(top: 12),
       child:
           isEmpty
               ? const NoDataChartSection()
               : LineChart(
-                curve: Curves.easeOut,
+                duration: Duration.zero,
+                // curve: Curves.easeOut,
                 LineChartData(
                   maxX: context.chartMod.xRange.toDouble(),
-                  titlesData: titleData ?? FlTitlesData(),
+                  titlesData: widget.titleData ?? FlTitlesData(),
                   minY: metric != ChartMetric.balance ? 0 : null,
                   borderData: FlBorderData(show: false),
                   lineTouchData: getCustomLineTouchData(
+                    enabled: false,
                     context: context,
+                    touchCallback: (event, response) {
+                      setState(() {
+                        if (event.isInterestedForInteractions) {
+                          _touchedIndex = response?.lineBarSpots?.first.spotIndex;
+                        } else {
+                          _touchedIndex = null;
+                        }
+                      });
+                    },
                     getTooltipItems:
                         (touchedSpots) =>
                             touchedSpots.map(
                               (spot) {
-                                final isPrev = spot.barIndex == 0;
+                                final isPrev = spot.barIndex == 1;
 
                                 final String curDate = context.chartMod.getFormatLabel(
-                                  cumulativeComparison
-                                      .elementAtOrNull(1)
-                                      ?.entries
+                                  cumulativeComparison.firstOrNull?.entries
                                       .elementAtOrNull(spot.x.round())
                                       ?.key,
                                 );
                                 final String prevDate = context.chartMod.getFormatLabel(
-                                  cumulativeComparison
-                                      .elementAtOrNull(0)
-                                      ?.entries
+                                  cumulativeComparison.lastOrNull?.entries
                                       .elementAtOrNull(spot.x.round())
                                       ?.key,
                                 );
                                 return LineTooltipItem(
-                                  "${isPrev ? prevDate : curDate}: ${context.chartMod.currencyFormat(spot.y, abbreviated: true, compact: true, showSymbol: false)}",
+                                  "${isPrev ? prevDate : curDate}: ${context.chartMod.compactCurrencyFormat(spot.y)}",
                                   context.customTt.numberFontSmall!.copyWith(
-                                    fontSize: 10,
+                                    fontSize: 9,
+                                    height: 1.2,
                                     color:
                                         isPrev
                                             ? context.chartMod.accentColors.previous
                                             : context.chartMod.accentColors.current,
                                   ),
-                                  textAlign: TextAlign.right,
+                                  textAlign: TextAlign.center,
                                 );
                               },
                             ).toList(),
                   ),
-                  extraLinesData: ExtraLinesData(
-                    horizontalLines: [
-                      HorizontalLine(
-                        y: 0,
-                        dashArray: [2, 10],
-                        color: context.customCs.fadeColor2,
-                        strokeWidth: 1,
-                      ),
+                  extraLinesData: getHorizontalExtraLines(
+                    context,
+                    y: [0, if (yLine != null) yLine],
+                    showYLabel: [false, true],
+                    dash: [true, false],
+                    texts: [
+                      null,
+                      if (yLine != null)
+                        "${context.chartMod.curDisplayPeriod}: ${context.chartMod.currencyFormat(yLine, compact: true, showSymbol: false)}",
                     ],
+                    x: indicatorIndex != null ? [indicatorIndex.toDouble()] : [],
                   ),
+                  showingTooltipIndicators: [getTooltipIndicator()],
                   gridData: customGrid,
                   lineBarsData:
-                      cumulativeComparison.mapIndexed((i, element) {
-                        final bool isPrev = i == 0;
+                      cumulativeComparison.reversed.mapIndexed((i, element) {
+                        final bool isPrev = showPrevious ? i == 0 : false;
                         final Color mainColor =
-                            isPrev ? Colors.blue.shade300 : context.cs.secondary;
+                            isPrev
+                                ? context.chartMod.accentColors.previous
+                                : context.chartMod.accentColors.current;
                         return getCustomLineChartBarData(
-                          showingIndicators: [0],
+                          showingIndicators: indicatorIndex != null ? [indicatorIndex] : [],
                           dashArray: isPrev ? [2, 10] : null,
                           color: mainColor,
                           dotData: FlDotData(
@@ -995,11 +1126,17 @@ class NewCumulativeLineChart extends StatelessWidget {
   }
 }
 
-class NewAverageCumulativeLineChart extends StatelessWidget {
+class NewAverageCumulativeLineChart extends StatefulWidget {
   const NewAverageCumulativeLineChart({super.key, this.titleData});
 
   final FlTitlesData? titleData;
 
+  @override
+  State<NewAverageCumulativeLineChart> createState() => _NewAverageCumulativeLineChartState();
+}
+
+class _NewAverageCumulativeLineChartState extends State<NewAverageCumulativeLineChart> {
+  int? _touchedIndex;
   @override
   Widget build(BuildContext context) {
     final cumulativeComparison = context.select(
@@ -1009,7 +1146,30 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
     final metric = context.select((ChartViewModel state) => state.chartMetric);
     final curRangeStart = context.select((ChartViewModel state) => state.rangeStart);
     final showMonths = context.select((ChartViewModel state) => state.showMonths);
+    final showPrevious = context.select((ChartViewModel state) => state.showPrevious);
+    final indicatorIndex = _touchedIndex ?? context.chartMod.defaultIndicatorIndex;
+    final yLine =
+        _touchedIndex != null
+            ? cumulativeComparison.first.values.elementAtOrNull(_touchedIndex!)
+            : null;
     final now = DateTime.now().standard;
+
+    ShowingTooltipIndicators getTooltipIndicator() {
+      if (indicatorIndex == null) return ShowingTooltipIndicators([]);
+      final List<LineBarSpot> barSpots = [];
+      cumulativeComparison.forEachIndexed((index, el) {
+        final spots = el.entries.toList().mapIndexed(
+          (i, entry) => FlSpot(i.toDouble(), entry.value),
+        );
+        if (spots.elementAtOrNull(indicatorIndex) != null) {
+          barSpots.add(
+            LineBarSpot(LineChartBarData(), index, spots.elementAt(indicatorIndex)),
+          );
+        }
+      });
+      return ShowingTooltipIndicators(barSpots);
+    }
+
     return Container(
       height: 180,
       padding: EdgeInsets.only(top: 12),
@@ -1017,38 +1177,66 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
           isEmpty
               ? const NoDataChartSection()
               : LineChart(
+                duration: Duration.zero,
                 LineChartData(
                   maxX: context.chartMod.xRange.toDouble(),
                   minY: metric != ChartMetric.balance ? 0 : null,
-                  extraLinesData: getExtraLines(context, y: [0]),
-                  titlesData: titleData ?? FlTitlesData(),
+                  extraLinesData: getHorizontalExtraLines(
+                    context,
+                    x: indicatorIndex != null ? [indicatorIndex.toDouble()] : [],
+                    y: [0, if (yLine != null) yLine],
+                    showYLabel: [false, true],
+                    dash: [true, false],
+                    texts: [
+                      null,
+                      "${context.chartMod.curDisplayPeriod}: ${yLine != null ? context.chartMod.currencyFormat(
+                            yLine,
+                            compact: true,
+                            showSymbol: false,
+                          ) : "0"}",
+                    ],
+                  ),
+                  titlesData: widget.titleData ?? FlTitlesData(),
                   borderData: FlBorderData(show: false),
                   lineTouchData: getCustomLineTouchData(
+                    enabled: false,
                     context: context,
+                    touchCallback: (event, response) {
+                      setState(() {
+                        if (event.isInterestedForInteractions) {
+                          _touchedIndex = response?.lineBarSpots?.first.spotIndex;
+                        } else {
+                          _touchedIndex = null;
+                        }
+                      });
+                    },
                     getTooltipItems:
                         (touchedSpots) =>
                             touchedSpots.map(
                               (spot) {
-                                final isPrev = spot.barIndex == 0;
+                                final isPrev = spot.barIndex == 1;
 
-                                final String curDate = context.chartMod.getFormatLabel(
-                                  cumulativeComparison
-                                      .elementAtOrNull(1)
-                                      ?.entries
-                                      .elementAtOrNull(spot.x.round())
-                                      ?.key,
+                                final date2 =
+                                    cumulativeComparison.lastOrNull?.entries
+                                        .elementAtOrNull(spot.x.round())
+                                        ?.key;
+                                final date1 =
+                                    cumulativeComparison.firstOrNull?.entries
+                                        .elementAtOrNull(spot.x.round())
+                                        ?.key;
+
+                                final String curDateString = context.chartMod.getFormatLabel(
+                                  date1,
                                 );
-                                final String prevDate = context.chartMod.getFormatLabel(
-                                  cumulativeComparison
-                                      .elementAtOrNull(0)
-                                      ?.entries
-                                      .elementAtOrNull(spot.x.round())
-                                      ?.key,
+                                final String prevDateString = context.chartMod.getFormatLabel(
+                                  date2,
                                 );
+
                                 return LineTooltipItem(
-                                  "${isPrev ? prevDate : curDate}: ${context.chartMod.currencyFormat(spot.y, abbreviated: true, compact: true, showSymbol: false)}",
+                                  "${isPrev ? prevDateString : curDateString}: ${context.chartMod.compactCurrencyFormat(spot.y)}",
                                   context.customTt.numberFontSmall!.copyWith(
-                                    fontSize: 10,
+                                    fontSize: 9,
+                                    height: 1.2,
                                     color:
                                         isPrev
                                             ? context.chartMod.accentColors.previous
@@ -1059,13 +1247,17 @@ class NewAverageCumulativeLineChart extends StatelessWidget {
                               },
                             ).toList(),
                   ),
+                  showingTooltipIndicators: [getTooltipIndicator()],
                   gridData: customGrid,
                   lineBarsData:
-                      cumulativeComparison.mapIndexed((i, element) {
-                        final bool isPrev = i == 0;
+                      cumulativeComparison.reversed.mapIndexed((i, element) {
+                        final bool isPrev = showPrevious ? i == 0 : false;
                         final Color mainColor =
-                            isPrev ? Colors.blue.shade300 : context.cs.secondary;
+                            isPrev
+                                ? context.chartMod.accentColors.previous
+                                : context.chartMod.accentColors.current;
                         return getCustomLineChartBarData(
+                          showingIndicators: indicatorIndex != null ? [indicatorIndex] : [],
                           spots: [
                             ...element.entries.map(
                               (entry) {
@@ -1176,7 +1368,7 @@ class YearMonthOverview extends StatelessWidget {
             child: LineChart(
               duration: Duration.zero,
               LineChartData(
-                extraLinesData: getExtraLines(context, y: [0]),
+                extraLinesData: getHorizontalExtraLines(context, y: [0]),
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(show: false),
                 titlesData: getCustomChartTitleData(

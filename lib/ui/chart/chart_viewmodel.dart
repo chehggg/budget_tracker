@@ -67,8 +67,12 @@ class ChartViewModel extends ChangeNotifier {
   bool _isInitalized = false;
   bool get ready => _isInitalized;
 
+  bool _showPrevious = true;
+  bool get showPrevious => _showPrevious && _period != ChartPeriod.custom;
+
+
   bool get showMonths => _period == ChartPeriod.year;
-  bool get showPrevious => _rangeType != DateRangeType.custom;
+  // bool get showPrevious => _period != ChartPeriod.custom;
 
   ChartPeriod _period = ChartPeriod.month;
   ChartPeriod get period => _period;
@@ -88,7 +92,7 @@ class ChartViewModel extends ChangeNotifier {
   Map<DateTime, CostMetric> _daySummary = {};
   Map<DateTime, CostMetric> _monthSummary = {};
 
-  ChartMetric _chartMetric = ChartMetric.balance;
+  ChartMetric _chartMetric = ChartMetric.expense;
   ChartMetric get chartMetric => _chartMetric;
 
   static List<String> get weekdayInitials => [
@@ -116,6 +120,11 @@ class ChartViewModel extends ChangeNotifier {
     "Dec",
   ];
 
+  void toggleShowPrevious() {
+    _showPrevious = !_showPrevious;
+    notifyListeners();
+  }
+
   String getInitials(int index, {bool useInitials = false, bool useDotForMonth = false}) {
     switch (_period) {
       case ChartPeriod.month:
@@ -136,7 +145,7 @@ class ChartViewModel extends ChangeNotifier {
   String get curDisplayPeriod {
     switch (_period) {
       case ChartPeriod.month:
-        return DateFormat('MMM yyyy').format(_periodStart);
+        return DateFormat('MMMM yyyy').format(_periodStart);
       case ChartPeriod.week:
         return "${_curRange.end.year}, W${_periodStart.weekNumber}";
       case ChartPeriod.year:
@@ -252,8 +261,6 @@ class ChartViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  DateRangeType _rangeType = DateRangeType.thisMonth;
-  DateRangeType get rangeType => _rangeType;
 
   DateTimeRange _curRange = DateTimeRange(
     start: DateTime.now().startOfMonth,
@@ -302,6 +309,9 @@ class ChartViewModel extends ChangeNotifier {
     int? decimalDigits,
   })
   get currencyFormat => _currencyRepo.formatCurrency;
+
+  String compactCurrencyFormat(double value) =>
+      _currencyRepo.formatCurrency(value, abbreviated: true, compact: true, showSymbol: false);
 
   Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({
     bool curRange = true,
@@ -388,6 +398,19 @@ class ChartViewModel extends ChangeNotifier {
     type: _breakdownType,
     sortBy: _categorySortBy,
   );
+
+  int? get defaultIndicatorIndex {
+    final date = DateTime.now().standard;
+    if (date.isWithinRange(_curRange)) {
+      if (showMonths) {
+        debugPrint("Showmonth");
+        return (date.month) - (_curRange.start.month);
+      } else {
+        return date.difference(_curRange.start).inDays;
+      }
+    }
+    return null;
+  }
 
   Map<CostItemCategory, CostMetric> get simplifiedCurRangeCategorySummary =>
       getCategorySummary(curRange: true, simplified: true);
@@ -556,22 +579,46 @@ class ChartViewModel extends ChangeNotifier {
         : "";
   }
 
-  List<Map<DateTime, CostMetric>> get dayToDayComparison {
+  List<Map<DateTime, CostMetric>> get dailyCost {
     final maxLength = max(prevRangeOverview.length, curRangeOverview.length);
     List<Map<DateTime, CostMetric>> result = [];
     for (int i = 0; i < maxLength; i++) {
       List<MapEntry<DateTime, CostMetric>> entries = [];
       final prevData = prevRangeOverview.entries.elementAtOrNull(i);
-      if (prevData != null) {
+      final curData = curRangeOverview.entries.elementAtOrNull(i);
+      if (prevData != null && _showPrevious) {
         entries.add(prevData);
       }
-      final curData = curRangeOverview.entries.elementAtOrNull(i);
       if (curData != null) {
         entries.add(curData);
       }
       result.add(Map.fromEntries(entries));
     }
     return result;
+  }
+
+  double get dailyRangeMax {
+    final curRangeMax = curRangeOverview.values.fold(double.negativeInfinity, (init, metric) {
+      final value = _chartMetric.getCostMetric(metric);
+      return max((value ?? double.negativeInfinity), init);
+    });
+    final prevRangeMax = prevRangeOverview.values.fold(double.negativeInfinity, (init, metric) {
+      final value = _chartMetric.getCostMetric(metric);
+      return max((value ?? double.negativeInfinity), init);
+    });
+    return max(curRangeMax, prevRangeMax);
+  }
+
+  double get dailyRangeMin {
+    final curRangeMin = curRangeOverview.values.fold(double.infinity, (init, metric) {
+      final value = _chartMetric.getCostMetric(metric);
+      return min((value ?? double.infinity), init);
+    });
+    final prevRangeMin = prevRangeOverview.values.fold(double.infinity, (init, metric) {
+      final value = _chartMetric.getCostMetric(metric);
+      return min((value ?? double.infinity), init);
+    });
+    return min(curRangeMin, prevRangeMin);
   }
 
   Map<DateTime, CostMetric> calculateCumulativeMetric({bool isCurrent = true}) {
@@ -609,8 +656,13 @@ class ChartViewModel extends ChangeNotifier {
   }
 
   List<Map<DateTime, double>> get cumulativeComparison => [
-    calculateCumulative(isCurrent: false, type: _chartMetric),
     calculateCumulative(isCurrent: true, type: _chartMetric),
+    if (showPrevious) calculateCumulative(isCurrent: false, type: _chartMetric),
+  ];
+
+  List<Map<DateTime, double>> get avgCumulativeComparison => [
+    calculateAverageCumulative(isCurrent: true, type: _chartMetric),
+    if (showPrevious)  calculateAverageCumulative(isCurrent: false, type: _chartMetric),
   ];
 
   Map<int, Map<String, double?>> getPercentageChange({
@@ -663,10 +715,7 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
-  List<Map<DateTime, double>> get avgCumulativeComparison => [
-    calculateAverageCumulative(isCurrent: false, type: _chartMetric),
-    calculateAverageCumulative(isCurrent: true, type: _chartMetric),
-  ];
+  
 
   CostMetric get prevRangeToDayCumulative {
     final cumulative = calculateCumulativeMetric(isCurrent: false);

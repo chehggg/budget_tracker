@@ -57,36 +57,82 @@ class CustomChartDetailTitleBar extends StatelessWidget {
 }
 
 class LabelIndicator extends StatelessWidget {
-  const LabelIndicator({super.key, required this.text, this.color, this.fade = false});
+  const LabelIndicator({
+    super.key,
+    required this.text,
+    this.color,
+    this.fade = false,
+    this.fadeAll = false,
+  });
 
   final String text;
   final Color? color;
   final bool fade;
+  final bool fadeAll;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: color,
+    return Opacity(
+      opacity: fadeAll ? 0.5 : 1,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: color,
+            ),
           ),
-        ),
-        SizedBox(width: 6),
-        Text(
-          text,
-          style: context.tt.bodyMedium!.copyWith(
-            fontSize: 12,
-            color: fade ? context.customCs.fadeColor1 : context.cs.primary,
+          SizedBox(width: 6),
+          Text(
+            text,
+            style: context.tt.bodyMedium!.copyWith(
+              fontSize: 12,
+              color: fade ? context.customCs.fadeColor1 : context.cs.primary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
+class ChartBottomTitleLabel extends StatelessWidget {
+  const ChartBottomTitleLabel({
+    super.key,
+    required this.value,
+    this.isMatch = false,
+    this.useChartModel = false,
+  });
+
+  final bool isMatch;
+  final bool useChartModel;
+  final double value;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Transform.scale(
+        scale: isMatch ? 1.2 : 1,
+        alignment: Alignment.center,
+        child: Text(
+          useChartModel
+              ? context.chartMod.getInitials(
+                value.round(),
+                useInitials: true,
+                useDotForMonth: true,
+              )
+              : "•",
+          style: context.tt.bodyMedium!.copyWith(
+            fontSize: 10,
+            color: context.cs.primary.withAlpha(isMatch ? 250 : 100),
+            fontWeight: FontWeight(600),
+          ),
+        ),
+      ),
+    );
+  }
+}

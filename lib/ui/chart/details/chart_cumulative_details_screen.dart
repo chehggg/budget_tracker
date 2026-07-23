@@ -410,7 +410,7 @@ class PercentageChangeLineChart extends StatelessWidget {
           gridData: customGrid,
           borderData: FlBorderData(show: false),
           maxX: change.length - 1,
-          extraLinesData: getExtraLines(context, y: [0]),
+          extraLinesData: getHorizontalExtraLines(context, y: [0]),
           lineBarsData: [
             LineChartBarData(
               barWidth: 1,

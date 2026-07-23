@@ -96,6 +96,20 @@ class Goal {
     }
   }
 
+  double? getMetric(CostMetric? metric) {
+    if (metric == null) return null;
+    switch (goalType) {
+      case GoalType.budget:
+        return metric.expense ?? 0;
+      case GoalType.savings:
+        return max(0,metric.balance);
+      case GoalType.payment:
+        return metric.balance;
+      default:
+        return null;
+    }
+  }
+
   StringFilter? get filter =>
       filterString != null && matchType != null
           ? StringFilter(matchType: matchType!, query: filterString!)
@@ -199,6 +213,7 @@ class GoalProgress {
         return 0;
     }
   }
+
 
   double get progress => max(0, value / (target ?? 1));
 

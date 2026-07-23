@@ -110,7 +110,7 @@ class GoalInfoViewModel extends ChangeNotifier {
           ? chartStartDate.formatMonthLonger()
           : "Last 7 weeks";
 
-  Map<DateTime, CostMetric?> get dailyData => Map.fromEntries(
+  Map<DateTime, double?> get dailyData => Map.fromEntries(
     List.generate(
       dataCount,
       (i) {
@@ -123,24 +123,30 @@ class GoalInfoViewModel extends ChangeNotifier {
         } else {
           metric = CostMetric.fromCostItemList(items.toList());
         }
-        return MapEntry(date, metric);
+        return MapEntry(date, goal.getMetric(metric));
       },
     ),
   );
+
   Map<int, double> get indexedDailyData {
     final indexedMap = dailyData.entries.indexed;
     final filteredItem = indexedMap.where((listItem) => listItem.$2.value != null);
     return Map.fromEntries(
-      filteredItem.map((listItem) => MapEntry(listItem.$1, listItem.$2.value!.expense ?? 0)),
+      filteredItem.map((listItem) => MapEntry(listItem.$1, listItem.$2.value ?? 0)),
     );
+  }
+
+  bool matchLabelDate(int index) {
+    final date = lineChartCumulativeData.keys.elementAtOrNull(index);
+    if (date == null) return false;
+    return DateTime.now().standard.isAtSameMomentAs(date);
   }
 
   int get targetReachingDays =>
       dailyData.entries
           .where(
             (entry) =>
-                (entry.value != null) &&
-                ((entry.value?.expense ?? 0) < (_goal.target! / dayinCurrentMonth)),
+                (entry.value != null) && ((entry.value ?? 0) < (_goal.target! / dayinCurrentMonth)),
           )
           .length;
   double get targetReachingPercentage => targetReachingDays / currentDay;
@@ -151,16 +157,16 @@ class GoalInfoViewModel extends ChangeNotifier {
     return remainingValue / remainingDays;
   }
 
-  Map<DateTime, CostMetric?> get lineChartData {
-    CostMetric metric = CostMetric();
-    List<MapEntry<DateTime, CostMetric?>> mapEntries = [];
+  Map<DateTime, double?> get lineChartCumulativeData {
+    List<MapEntry<DateTime, double?>> mapEntries = [];
+    double cumulative = 0;
     for (int i = 0; i < dailyData.length; i++) {
       final entry = dailyData.entries.elementAt(i);
-      metric = metric.combineWith(entry.value ?? CostMetric());
+      cumulative += entry.value ?? 0;
       mapEntries.add(
         MapEntry(
           entry.key,
-          entry.value == null ? null : metric,
+          entry.value == null ? null : cumulative,
         ),
       );
     }
@@ -196,6 +202,14 @@ class GoalInfoViewModel extends ChangeNotifier {
     bool showSymbol,
   })
   get currencyFormat => _currencyRepo.formatCurrency;
+
+  String compactCurrencyFormat(double value, {bool? showSign}) => _currencyRepo.formatCurrency(
+    value,
+    compact: true,
+    abbreviated: true,
+    showSymbol: false,
+    alwaysShowSign: showSign ?? false,
+  );
 
   @override
   void dispose() {

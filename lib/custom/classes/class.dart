@@ -57,7 +57,7 @@ class CostItem {
       lastModified = DateTime.tryParse(json['lastModified'] ?? "") ?? DateTime.now();
 
   bool get isExpense => costType == CostType.expense;
-  double get absoluteAmount => costType == CostType.expense ? 0 - (amount?? 0) : (amount?? 0);
+  double get absoluteAmount => costType == CostType.expense ? 0 - (amount ?? 0) : (amount ?? 0);
 
   // double get signedAmount => isExpense ? 0 - amount : amount;
 
@@ -209,54 +209,67 @@ class CostMetric {
 }
 
 class StringFilter {
-  StringFilter({required this.query, required this.matchType});
+  StringFilter({required this.query, required this.matchType, this.matchCase = false});
 
   final String query;
   final StringMatchType matchType;
+  final bool matchCase;
 
   Map<String, dynamic> toMap() {
     return <String, dynamic>{
       'query': query,
       'matchType': matchType.name,
+      'matchCase': matchCase,
     };
   }
 
-  factory StringFilter.initial() => StringFilter(query: "", matchType: StringMatchType.contain);
+  factory StringFilter.initial() => StringFilter(
+    query: "",
+    matchType: StringMatchType.contain,
+    matchCase: false,
+  );
 
   factory StringFilter.fromMap(Map<String, dynamic> map) {
     return StringFilter(
       query: map['query'] as String,
       matchType: StringMatchType.values.byName(['matchType'] as String),
+      matchCase: ['matchCase'] as bool? ?? false,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  StringFilter copyWith({StringMatchType? type, String? newQuery}) {
-    return StringFilter(matchType: type ?? this.matchType, query: newQuery ?? this.query);
+  StringFilter copyWith({StringMatchType? type, String? newQuery, bool? matchCase}) {
+    return StringFilter(
+      matchType: type ?? this.matchType,
+      query: newQuery ?? this.query,
+      matchCase: matchCase ?? this.matchCase,
+    );
   }
 
   factory StringFilter.fromJson(String source) =>
       StringFilter.fromMap(json.decode(source) as Map<String, dynamic>);
 
   bool checkMatch(String text) {
+    final finalQuery = matchCase ? query : query.toLowerCase();
+    final finalText = matchCase ? text : text.toLowerCase();
     switch (matchType) {
       case StringMatchType.contain:
-        return text.contains(query);
+        return finalText.contains(finalQuery);
       case StringMatchType.notContain:
-        return !text.contains(query);
+        return !finalText.contains(finalQuery);
       case StringMatchType.match:
-        return text == query;
+        return finalText == finalQuery;
       case StringMatchType.notMatch:
-        return text != query;
+        return finalText != finalQuery;
       case StringMatchType.startWith:
-        return text.startsWith(query);
+        return finalText.startsWith(finalQuery);
       case StringMatchType.notStartWith:
-        return !text.startsWith(query);
+        return !finalText.startsWith(finalQuery);
       case StringMatchType.endWith:
-        return text.endsWith(query);
+        return finalText.endsWith(finalQuery);
       case StringMatchType.notEndWith:
-        return !text.endsWith(query);
+        return !finalText.endsWith(finalQuery);
     }
   }
 }
