@@ -10,7 +10,7 @@ Color hexToColor(String code) {
   
   // Ensure the hex code is the correct length (6 digits for RRGGBB)
   if (hexCode.length == 6) {
-    hexCode = 'FF' + hexCode; // Add full opacity (AA)
+    hexCode = 'FF$hexCode'; // Add full opacity (AA)
   }
   
   // Parse the hex string as an integer with radix 16

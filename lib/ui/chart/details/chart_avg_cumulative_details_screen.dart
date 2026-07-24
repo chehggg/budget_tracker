@@ -43,6 +43,20 @@ class _AvgCumulativeBalanceDetailScreenState extends State<AvgCumulativeBalanceD
             sliver: SliverToBoxAdapter(
               child: CustomChartDetailTitleBar(
                 title: "Cumulative Average",
+                dialogTitle: "Cumulative Graph",
+                dialogDescription: Text.rich(
+                  TextSpan(
+                    text:
+                        "This chart tracks the running average of costs across your selected date range."
+                        "The value is calculated by dividing the cumulative total by the number of days elapsed up to that point."
+                        "\n- Ongoing ranges: from start date up until today."
+                        "\n- Completed ranges: from start date up until end of the period."
+                        "\nThe change graph compares the current cumulative data against the same points in previous period."
+                        "For example, when viewing monthly data for July 2026, the change compares the data between 1 July with 1 Jun, 2 July with 2 Jun, etc."
+                        "\n- Expense: Positive change implies higher cost in current period (undesirable)"
+                        "\n- Income & Balance: Positive change indicates a higher balance in current period (desirable).",
+                  ),
+                ),
               ),
             ),
           ),

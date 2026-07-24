@@ -1,9 +1,11 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
+import 'package:budget_tracker/models/navigator_model.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class CustomMainScaffold extends StatelessWidget {
   const CustomMainScaffold({super.key, required this.shell});
@@ -11,15 +13,23 @@ class CustomMainScaffold extends StatelessWidget {
   final StatefulNavigationShell shell;
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      body: shell, // This renders the active branch screen
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: shell.currentIndex,
-        onTap: shell.goBranch,
+    final navWatch = context.watch<NavigatorModel>();
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        debugPrint("pop detected at nav shell, do something");
+      },
+      child: Scaffold(
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        body: shell, // This renders the active branch screen
+        bottomNavigationBar: navWatch.showFab ? CustomBottomNavBar(
+          currentIndex: shell.currentIndex,
+          onTap: shell.goBranch,
+        ): null,
+        resizeToAvoidBottomInset: true,
+        floatingActionButton: navWatch.showFab ? CustomFAB() : null,
       ),
-      resizeToAvoidBottomInset: true,
-      floatingActionButton: CustomFAB(),
     );
   }
 }

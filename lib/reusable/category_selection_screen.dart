@@ -75,7 +75,7 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
       actions: [
         IconButton(
           onPressed: () {
-            debugPrint('are all selected :${areAllSelected}');
+            debugPrint('are all selected :$areAllSelected');
             context.pop(areAllSelected ? () => null : () => selectedCategories);
           },
           icon: FaIcon(

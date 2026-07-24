@@ -35,6 +35,19 @@ class _DailySpendDetailsScreenState extends State<DailySpendDetailsScreen> {
             sliver: SliverToBoxAdapter(
               child: CustomChartDetailTitleBar(
                 title: "Daily Spend",
+                dialogTitle: "Trend Graph",
+                dialogDescription: Text.rich(
+                  TextSpan(
+                    text:
+                        "This chart tracks the individual costs in your selected date range."
+                        "\n- Ongoing ranges: from start date up until today."
+                        "\n- Completed ranges: from start date up until end of the period."
+                        "\nThe change graph compares the current data against the same points in previous period."
+                        "For example, when viewing monthly data for July 2026, the change compares the data between 1 July with 1 Jun, 2 July with 2 Jun, etc."
+                        "\n- Expense: Positive change implies higher cost in current period (undesirable)"
+                        "\n- Income & Balance: Positive change indicates a higher balance in current period (desirable).",
+                  ),
+                ),
               ),
             ),
           ),

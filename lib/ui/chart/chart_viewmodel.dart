@@ -77,7 +77,7 @@ class ChartViewModel extends ChangeNotifier {
   ChartPeriod _period = ChartPeriod.month;
   ChartPeriod get period => _period;
 
-  YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now());
+  final YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now());
   YearMonth get yearMonth => _yearMonth;
 
   CostType _type = CostType.expense;
@@ -806,7 +806,7 @@ class ChartViewModel extends ChangeNotifier {
     alignment =
         (isCurrentLarger ? curRangeSummary.balance : prevRangeToDayCumulative.balance) /
         (isLargerNegative ? expenseMax : incomeMax);
-    debugPrint('alignment: ${alignment}');
+    debugPrint('alignment: $alignment');
 
     debugPrint('altered alignment: ${curve(alignment.abs()) * (isLargerNegative ? -1 : 1)}');
     return curve(alignment.abs()) * (isLargerNegative ? -1 : 1);

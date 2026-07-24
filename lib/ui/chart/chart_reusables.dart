@@ -1,11 +1,19 @@
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 class CustomChartDetailTitleBar extends StatelessWidget {
-  const CustomChartDetailTitleBar({super.key, this.title = ""});
+  const CustomChartDetailTitleBar({
+    super.key,
+    this.title = "",
+    this.dialogTitle = "",
+    this.dialogDescription,
+  });
   final String title;
+  final String dialogTitle;
+  final Text? dialogDescription;
 
   @override
   Widget build(BuildContext context) {
@@ -19,12 +27,29 @@ class CustomChartDetailTitleBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
       children: [
-        Text(
-          title,
-          style: context.customTt.numberFontLarge?.copyWith(
-            fontSize: 36,
-            height: 1.2,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: context.customTt.numberFontLarge?.copyWith(
+                  fontSize: 36,
+                  height: 1.2,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(title: Text(dialogTitle), content: dialogDescription);
+                  },
+                );
+              },
+              icon: FaIcon(FontAwesomeIcons.circleQuestion),
+            ),
+          ],
         ),
         Row(
           spacing: 12,

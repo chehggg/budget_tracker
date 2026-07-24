@@ -22,10 +22,10 @@ class CategoryFormViewModel extends ChangeNotifier {
     init();
   }
 
-  CostItemCategory? _initCategory;
-  CategoryRepository _categoryRepo;
-  CostItemRepository _costItemRepo;
-  CurrencyRepository _currencyRepo;
+  final CostItemCategory? _initCategory;
+  final CategoryRepository _categoryRepo;
+  final CostItemRepository _costItemRepo;
+  final CurrencyRepository _currencyRepo;
 
   CostItemCategory _draft = CostItemCategory(id: Uuid().v7());
   CostItemCategory get draft => _draft;
@@ -35,7 +35,7 @@ class CategoryFormViewModel extends ChangeNotifier {
 
   bool get inEditMode => _initCategory != null;
 
-  bool _isCostItemLoaded = false;
+  final bool _isCostItemLoaded = false;
   bool get costItemReady => _isCostItemLoaded;
 
   void init() async {

@@ -659,7 +659,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
               children: [
                 // ignore: prefer_interpolation_to_compose_strings
                 TextSpan(
-                  text: targetReachingDays.toString() + "/" + daysWithData.toString(),
+                  text: "$targetReachingDays/$daysWithData",
                   style: context.customTt.numberFontSmall!.copyWith(
                     fontSize: 14,
                     color: context.cs.secondary,
@@ -1039,7 +1039,7 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
         showValues.add(index);
       }
     }
-    return Container(
+    return SizedBox(
       height: 200,
       child: BarChart(
         duration: Duration.zero,

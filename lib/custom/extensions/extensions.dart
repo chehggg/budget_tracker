@@ -231,14 +231,14 @@ class MyTexts extends ThemeExtension<MyTexts> {
   @override
   MyTexts copyWith({TextStyle? numberFont, TextStyle? numberLabel}) {
     return MyTexts(
-      numberFontLarge: numberFont ?? this.numberFontLarge,
-      numberFontMedium: numberFont ?? this.numberFontMedium,
-      numberFontSmall: numberFont ?? this.numberFontSmall,
+      numberFontLarge: numberFont ?? numberFontLarge,
+      numberFontMedium: numberFont ?? numberFontMedium,
+      numberFontSmall: numberFont ?? numberFontSmall,
       numberLabel: numberLabel ?? this.numberLabel,
-      dateLabel: dateLabel ?? this.dateLabel,
-      paragraphText: paragraphText ?? this.paragraphText,
-      paragraphTextSmall: paragraphTextSmall ?? this.paragraphTextSmall,
-      paragraphTitle: paragraphTitle ?? this.paragraphTitle,
+      dateLabel: dateLabel ?? dateLabel,
+      paragraphText: paragraphText ?? paragraphText,
+      paragraphTextSmall: paragraphTextSmall ?? paragraphTextSmall,
+      paragraphTitle: paragraphTitle ?? paragraphTitle,
     );
   }
 
@@ -293,10 +293,10 @@ class MyColors extends ThemeExtension<MyColors> {
     return MyColors(
       flipCardColor: flipCardColor ?? this.flipCardColor,
       onFlipCard: onFlipCard ?? this.onFlipCard,
-      fadeColor1: fadeColor1 ?? this.fadeColor1,
-      fadeColor2: fadeColor2 ?? this.fadeColor2,
-      fadeColor3: fadeColor3 ?? this.fadeColor3,
-      fadeColor4: fadeColor4 ?? this.fadeColor4,
+      fadeColor1: fadeColor1 ?? fadeColor1,
+      fadeColor2: fadeColor2 ?? fadeColor2,
+      fadeColor3: fadeColor3 ?? fadeColor3,
+      fadeColor4: fadeColor4 ?? fadeColor4,
     );
   }
 

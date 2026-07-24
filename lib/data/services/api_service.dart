@@ -1,4 +1,4 @@
-import 'package:budget_tracker/constants/api_key.dart';
+// import 'package:budget_tracker/constants/api_key.dart';
 import 'package:budget_tracker/custom/classes/exchange_rate_class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/utils/result.dart';
@@ -16,7 +16,7 @@ class ApiServices {
   Future<Result<ExchangeRateResponse>> getExchangeRate() async {
     try {
       final String? cache = await pref.getString("exchangeRate");
-      debugPrint("Exchange rate cache: ${cache}");
+      debugPrint("Exchange rate cache: $cache");
       if (cache != null) {
         final response = ExchangeRateResponse.fromJson(cache);
         if (response.date?.isBefore(DateTime.now().standard) ?? false) {
@@ -42,7 +42,7 @@ class ApiServices {
         "https://api.exchangeratesapi.io/v1/latest",
       );
       final uri = baseUri.replace(
-        queryParameters: {"access_key": exchangeRateKey},
+        // queryParameters: {"access_key": exchangeRateKey},
       );
       final http.Response response = await http.get(uri);
       final body = ExchangeRateResponse.fromJson(response.body);
@@ -55,7 +55,7 @@ class ApiServices {
         return Result.error(Exception("${body.error?['code']}: ${body.error?['message']}"));
       }
     } on Exception catch (e) {
-      debugPrint("cannot retrieve exchange rate in api service, ${e}");
+      debugPrint("cannot retrieve exchange rate in api service, $e");
       return Result.error(e);
     }
   }

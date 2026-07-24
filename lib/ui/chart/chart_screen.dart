@@ -473,7 +473,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                     BarChartData(
                       extraLinesData: getHorizontalExtraLines(context, y: [0]),
                       alignment: BarChartAlignment.spaceBetween,
-                      maxY: context.chartMod.dailyRangeMax ,
+                      maxY: context.chartMod.dailyRangeMax,
                       // groupsSpace: 20,
                       barTouchData: BarTouchData(
                         touchExtraThreshold: EdgeInsets.all(20),
@@ -515,13 +515,13 @@ class _DailyBarChartState extends State<DailyBarChart> {
                               textAlign: TextAlign.end,
                               children: [
                                 if (showPrevious)
-                                TextSpan(
-                                  text:
-                                      "\n$prevDate: ${context.chartMod.compactCurrencyFormat(group.barRods[1].toY)}",
-                                  style: TextStyle(
-                                    color: context.chartMod.accentColors.previous,
+                                  TextSpan(
+                                    text:
+                                        "\n$prevDate: ${context.chartMod.compactCurrencyFormat(group.barRods[1].toY)}",
+                                    style: TextStyle(
+                                      color: context.chartMod.accentColors.previous,
+                                    ),
                                   ),
-                                ),
                               ],
                             );
                           },
@@ -641,7 +641,7 @@ class SummaryData extends StatelessWidget {
                         style: context.tt.bodyMedium!.copyWith(fontSize: 12),
                       ),
                       Text(
-                        "${symbol} ${changePercentage.formatCompactPercentage().replaceAll('-', '')}",
+                        "$symbol ${changePercentage.formatCompactPercentage().replaceAll('-', '')}",
                         style: context.customTt.numberFontSmall!.copyWith(
                           fontSize: 12,
                           color: color,
@@ -1292,12 +1292,19 @@ class _NewAverageCumulativeLineChartState extends State<NewAverageCumulativeLine
   }
 }
 
-class YearMonthOverview extends StatelessWidget {
+class YearMonthOverview extends StatefulWidget {
   const YearMonthOverview({super.key});
 
   @override
+  State<YearMonthOverview> createState() => _YearMonthOverviewState();
+}
+
+class _YearMonthOverviewState extends State<YearMonthOverview> {
+  int? _touchedIndex;
+  @override
   Widget build(BuildContext context) {
     final overview = context.select((ChartViewModel state) => state.rangeOverview);
+    final indicatorIndex = _touchedIndex ?? 4;
     return Container(
       height: 180,
       padding: EdgeInsets.only(bottom: 12),
@@ -1368,7 +1375,11 @@ class YearMonthOverview extends StatelessWidget {
             child: LineChart(
               duration: Duration.zero,
               LineChartData(
-                extraLinesData: getHorizontalExtraLines(context, y: [0]),
+                extraLinesData: getHorizontalExtraLines(
+                  context,
+                  y: [0],
+                  x: [indicatorIndex.toDouble()],
+                ),
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(show: false),
                 titlesData: getCustomChartTitleData(
@@ -1384,7 +1395,17 @@ class YearMonthOverview extends StatelessWidget {
                   ),
                 ),
                 lineTouchData: getCustomLineTouchData(
+                  enabled: false,
                   context: context,
+                  touchCallback: (event, response) {
+                    setState(() {
+                      if (event.isInterestedForInteractions) {
+                        _touchedIndex = response?.lineBarSpots?.first.spotIndex;
+                      } else {
+                        _touchedIndex = null;
+                      }
+                    });
+                  },
                   getTooltipItems:
                       (touchedSpots) =>
                           touchedSpots.map(
@@ -1392,21 +1413,21 @@ class YearMonthOverview extends StatelessWidget {
                               final i = el.spotIndex;
                               final metric = overview.entries.elementAt(i);
                               return LineTooltipItem(
-                                "${metric.key.formatMonth()}: ${context.chartMod.currencyFormat(metric.value.balance, abbreviated: true, compact: true)}",
+                                "${metric.key.formatMonth()}: ${context.chartMod.compactCurrencyFormat(metric.value.balance)}",
                                 context.customTt.numberFontSmall!.copyWith(fontSize: 10),
                                 children: [
                                   TextSpan(
                                     text:
                                         "\n+${context.chartMod.currencyFormat(metric.value.income ?? 0, abbreviated: true, compact: true)}",
                                     style: TextStyle(
-                                      color: context.chartMod.getChangePercentageColor(1),
+                                      color: context.chartMod.accentColors.positive,
                                     ),
                                   ),
                                   TextSpan(
                                     text:
                                         " -${context.chartMod.currencyFormat(metric.value.expense ?? 0, abbreviated: true, compact: true)}",
                                     style: TextStyle(
-                                      color: context.chartMod.getChangePercentageColor(-1),
+                                      color: context.chartMod.accentColors.negative,
                                     ),
                                   ),
                                 ],
@@ -1414,8 +1435,12 @@ class YearMonthOverview extends StatelessWidget {
                             },
                           ).toList(),
                 ),
+                showingTooltipIndicators: [
+                  ShowingTooltipIndicators([LineBarSpot(LineChartBarData(), 0, FlSpot(4, 10))]),
+                ],
                 lineBarsData: [
                   getCustomLineChartBarData(
+                    showingIndicators: [indicatorIndex],
                     color: context.cs.primary,
                     barWidth: 1,
                     dashArray: [2, 5],

@@ -174,7 +174,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
           _isFormOpened = true;
           _isFormExpanded = true;
         });
-        debugPrint("called show postframe, formOpen = ${_isFormOpened}");
+        debugPrint("called show postframe, formOpen = $_isFormOpened");
       });
     }
 

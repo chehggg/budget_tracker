@@ -200,8 +200,8 @@ class CostMetric {
 
   CostMetric combineWith(CostMetric otherMetric) {
     return CostMetric(
-      expense: (this.expense ?? 0) + (otherMetric.expense ?? 0),
-      income: (this.income ?? 0) + (otherMetric.income ?? 0),
+      expense: (expense ?? 0) + (otherMetric.expense ?? 0),
+      income: (income ?? 0) + (otherMetric.income ?? 0),
     );
   }
 
@@ -241,8 +241,8 @@ class StringFilter {
 
   StringFilter copyWith({StringMatchType? type, String? newQuery, bool? matchCase}) {
     return StringFilter(
-      matchType: type ?? this.matchType,
-      query: newQuery ?? this.query,
+      matchType: type ?? matchType,
+      query: newQuery ?? query,
       matchCase: matchCase ?? this.matchCase,
     );
   }

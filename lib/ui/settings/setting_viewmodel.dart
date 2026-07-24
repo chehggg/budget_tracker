@@ -60,7 +60,7 @@ class SettingsViewModel extends ChangeNotifier {
   bool _isInit = false;
   bool get ready => _isInit;
 
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool get loading => _isLoading;
 
   Future<void> exportCostItemData() async {

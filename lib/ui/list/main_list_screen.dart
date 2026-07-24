@@ -176,7 +176,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ],
         title: Text(
-          "Selected: ${selectedItemLength}",
+          "Selected: $selectedItemLength",
           style: context.customTt.numberFontMedium!,
         ),
       );
@@ -188,7 +188,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         leading: BackButton(
           onPressed: () {
             context.listMod.toggleSearch(false);
-            context.navMod.customHideBottom(false);
+            context.navMod.toggleFab(show: true);
           },
         ),
         title: Row(
@@ -206,7 +206,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
           IconButton(
             onPressed: () {
               context.listMod.toggleSearch();
-              context.navMod.customHideBottom(true);
+              context.navMod.toggleFab(show: false);
             },
             icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
           ),
@@ -418,16 +418,37 @@ class ItemFilterChips extends StatelessWidget {
               horizontal: 12.0,
             ),
             onTap: () async {
-              final response = await showDialog<Map<String, dynamic>?>(
+              // final response = await showDialog<Map<String, dynamic>?>(
+              //   context: context,
+              //   builder: (dialogContext) {
+              //     return RangeSliderAlertDialog(
+              //       items: context.listMod.items,
+              //       initRange: context.listMod.priceRange,
+              //       initCostTypes: context.listMod.types,
+              //     );
+              //   },
+              // );
+              final response = await showModalBottomSheet(
                 context: context,
-                builder: (dialogContext) {
-                  return RangeSliderAlertDialog(
-                    items: context.listMod.items,
-                    initRange: context.listMod.priceRange,
-                    initCostTypes: context.listMod.types,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
+                constraints: BoxConstraints(maxHeight: 350),
+                builder: (sheetContext) {
+                  return ChangeNotifierProvider.value(
+                    value: context.listMod,
+                    child: SliderBottomSheet(),
                   );
                 },
               );
+              // <Map<String, dynamic>?>(
+              //   context: context,
+              //   builder: (dialogContext) {
+              //     return RangeSliderAlertDialog(
+              //       items: context.listMod.items,
+              //       initRange: context.listMod.priceRange,
+              //       initCostTypes: context.listMod.types,
+              //     );
+              //   },
+              // );
               if (response != null && context.mounted) {
                 context.listMod.updateRangeFilter(
                   range: response['range'],
@@ -450,6 +471,249 @@ class ItemFilterChips extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class SliderBottomSheet extends StatefulWidget {
+  const SliderBottomSheet({
+    super.key,
+    this.expenseRange,
+    this.incomeRange,
+  });
+
+  final RangeValues? expenseRange;
+  final RangeValues? incomeRange;
+  @override
+  State<SliderBottomSheet> createState() => _SliderBottomSheetState();
+}
+
+class _SliderBottomSheetState extends State<SliderBottomSheet> {
+  RangeValues _expenseRange = RangeValues(0, 1);
+  RangeValues _incomeRange = RangeValues(0, 1);
+  RangeValues _defaultExpenseRange = RangeValues(0, 1);
+  RangeValues _defaultIncomeRange = RangeValues(0, 1);
+
+  @override
+  void initState() {
+    super.initState();
+    double expenseMin = 0, expenseMax = 1, incomeMin = 0, incomeMax = 1;
+    final items = context.listMod.items;
+    for (final item in items) {
+      final amount = item.amount ?? 0;
+      if (item.isExpense) {
+        expenseMin = amount < expenseMin ? amount : expenseMin;
+        expenseMax = amount > expenseMax ? amount : expenseMax;
+      } else {
+        incomeMin = amount < incomeMin ? amount : incomeMin;
+        incomeMax = amount > incomeMax ? amount : incomeMax;
+      }
+    }
+    _defaultExpenseRange = RangeValues(expenseMin, expenseMax);
+    _defaultIncomeRange = RangeValues(incomeMin, incomeMax);
+
+    _expenseRange = widget.expenseRange ?? _defaultExpenseRange;
+    _incomeRange = widget.incomeRange ?? _defaultIncomeRange;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint("bottom sheet rebuild");
+    return Theme(
+      data: Theme.of(context).copyWith(
+        sliderTheme: SliderThemeData(
+          trackHeight: 2,
+          activeTrackColor: context.cs.secondary,
+          rangeThumbShape: RoundRangeSliderThumbShape(
+            enabledThumbRadius: 8,
+            pressedElevation: 0,
+          ),
+          showValueIndicator: ShowValueIndicator.alwaysVisible,
+          valueIndicatorTextStyle: context.customTt.numberFontSmall!.copyWith(
+            fontSize: 12,
+            color: context.cs.surface,
+          ),
+          valueIndicatorColor: context.cs.primary,
+        ),
+      ),
+      child: BottomSheet(
+        onClosing: () {},
+        builder:
+            (context) => Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text("Expense"),
+                  CostSlider(
+                    range: _defaultExpenseRange,
+                    selectedRange: _expenseRange,
+                    onChanged: (value) {
+                      setState(() {
+                        _expenseRange = value;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  Text("Income"),
+                  CostSlider(
+                    range: _defaultIncomeRange,
+                    selectedRange: _incomeRange,
+                    onChanged: (value) {
+                      setState(() {
+                        _incomeRange = value;
+                      });
+                    },
+                  ),
+                  SizedBox(height: 30),
+                  Container(
+                    alignment: Alignment.centerRight,
+                    child: AffirmativeTextButton(
+                      onTap: () {
+                        context.pop();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ),
+    );
+  }
+}
+
+class CostSlider extends StatefulWidget {
+  const CostSlider({super.key, required this.range, required this.selectedRange, this.onChanged});
+  final RangeValues range;
+  final RangeValues selectedRange;
+  final ValueChanged<RangeValues>? onChanged;
+  @override
+  State<CostSlider> createState() => _CostSliderState();
+}
+
+class _CostSliderState extends State<CostSlider> {
+  late final TextEditingController _rangeMinController;
+  late final TextEditingController _rangeMaxController;
+  String? _rangeError;
+
+  bool get hasError => _rangeError != null && _rangeError != "";
+
+  @override
+  void initState() {
+    super.initState();
+
+    _rangeMinController = TextEditingController(text: widget.selectedRange.start.toStringAsFixed(0))
+      ..addListener(() {
+        checkError(_rangeMinController.text, isStart: true);
+        if (!hasError) {
+          widget.onChanged?.call(
+            RangeValues(double.parse(_rangeMinController.text), widget.selectedRange.end),
+          );
+        }
+      });
+    _rangeMaxController = TextEditingController(text: widget.selectedRange.end.toStringAsFixed(0))
+      ..addListener(() {
+        checkError(_rangeMaxController.text, isStart: false);
+        if (!hasError) {
+          widget.onChanged?.call(
+            RangeValues(widget.selectedRange.start, double.parse(_rangeMaxController.text)),
+          );
+        }
+      });
+  }
+
+  void checkError(String text, {required bool isStart}) {
+    setState(() {
+      if (double.tryParse(text) == null) {
+        _rangeError = "This value format is unsupported";
+      } else {
+        final value = double.parse(text);
+        if (isStart) {
+          if (value > widget.selectedRange.end || value < 0) {
+            _rangeError = "This value is out of bound. Change the value.";
+          } else {
+            _rangeError = null;
+          }
+        } else {
+          if (value < widget.selectedRange.start || value > widget.range.end) {
+            _rangeError = "This value is out of bound. Change the value.";
+          } else {
+            _rangeError = null;
+          }
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        RangeSlider(
+          values: widget.selectedRange,
+          // labels: RangeLabels(
+          //   widget.selectedRange.start.round().toString(),
+          //   widget.selectedRange.end.round().toString(),
+          // ),
+          divisions: max(
+            1,
+            (widget.range.end - widget.range.start).round(),
+          ),
+          min: widget.range.start,
+          max: widget.range.end,
+          onChanged: (value) {
+            widget.onChanged?.call(value);
+            setState(() {
+              _rangeMinController.value = _rangeMinController.value.copyWith(
+                text: value.start.toStringAsFixed(0),
+              );
+              _rangeMaxController.value = _rangeMaxController.value.copyWith(
+                text: value.end.toStringAsFixed(0),
+              );
+            });
+          },
+        ),
+        Row(
+          spacing: 20,
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _rangeMinController,
+                decoration: InputDecoration(
+                  visualDensity: VisualDensity(vertical: -1),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 13, horizontal: 10),
+                ),
+                style: context.tt.bodyMedium,
+                keyboardType: TextInputType.numberWithOptions(),
+              ),
+            ),
+            SizedBox(width: 100),
+            Expanded(
+              child: TextFormField(
+                controller: _rangeMaxController,
+                textAlign: TextAlign.end,
+                decoration: InputDecoration(
+                  visualDensity: VisualDensity(vertical: -1),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 13, horizontal: 10),
+                ),
+                style: context.tt.bodyMedium,
+                keyboardType: TextInputType.numberWithOptions(),
+              ),
+            ),
+          ],
+        ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: Text(
+              _rangeError ?? "",
+              style: context.customTt.paragraphTextSmall!.copyWith(color: Colors.red),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -512,7 +776,7 @@ class CostEntryList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Column(
                 children: [
-                  Container(
+                  SizedBox(
                     height: 40,
                     // decoration: BoxDecoration(border: BoxBorder.all(color: Colors.white)),
                     child: Padding(
@@ -1123,13 +1387,13 @@ class _RangeSliderAlertDialogState extends State<RangeSliderAlertDialog> {
   }
 
   double get minimum {
-    return filteredItems.length == 0
+    return filteredItems.isEmpty
         ? 0
         : filteredItems.fold(double.infinity, (initial, item) => min(initial, item.absoluteAmount));
   }
 
   double get maximum {
-    return filteredItems.length == 0
+    return filteredItems.isEmpty
         ? 0
         : filteredItems.fold(
           double.negativeInfinity,

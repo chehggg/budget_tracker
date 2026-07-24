@@ -66,10 +66,10 @@ class GoalFormViewModel extends ChangeNotifier {
 
   StreamSubscription<bool>? _subscription;
 
-  TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
   TextEditingController get startDateController => _startDateController;
 
-  TextEditingController _endDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
   TextEditingController get endDateController => _endDateController;
 
   Goal _draftedGoal = Goal();
