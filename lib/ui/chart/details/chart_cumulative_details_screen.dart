@@ -29,8 +29,8 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
     final overview = context.select((ChartViewModel state) => state.cumulativeComparison);
     final maxLength = context.chartMod.xRange;
     final change = context.chartMod.getPercentageChange(
-      current: overview.last,
-      previous: overview.first,
+      current: overview.first,
+      previous: overview.last,
     );
     final columns = [
       "Day",
@@ -216,8 +216,8 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                     }).toList(),
                 rows:
                     List.generate(maxLength, (index) {
-                      final prev = overview.first.entries.elementAtOrNull(index);
-                      final current = overview.last.entries.elementAtOrNull(index);
+                      final prev = overview.last.entries.elementAtOrNull(index);
+                      final current = overview.first.entries.elementAtOrNull(index);
 
                       final el = [prev, current];
                       final currentVal = change.values.elementAt(index);
@@ -239,11 +239,8 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                                     Text(
                                       entry == null
                                           ? "-"
-                                          : context.chartMod.currencyFormat(
+                                          : context.chartMod.compactCurrencyFormat(
                                             entry.value,
-                                            abbreviated: true,
-                                            compact: true,
-                                            showSymbol: false,
                                           ),
                                     ),
                                     if (entry != null)
@@ -267,12 +264,8 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                                   Text(
                                     currentChange == null
                                         ? "-"
-                                        : context.chartMod.currencyFormat(
+                                        : context.chartMod.compactCurrencyFormat(
                                           currentChange,
-                                          abbreviated: true,
-                                          compact: true,
-                                          alwaysShowSign: true,
-                                          showSymbol: false,
                                         ),
                                   ),
                                   if (currentPercentage != null)
