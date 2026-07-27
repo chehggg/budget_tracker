@@ -45,7 +45,7 @@ class ChartScreen extends StatelessWidget {
       }
     }
 
-    final displayPeriod = context.chartMod.curDisplayPeriod;
+    final displayPeriod = context.chartMod.curHeaderDisplayPeriod;
     final displayDetailsPeriod = context.chartMod.displayDetailsPeriodDuration;
 
     final FlTitlesData chartTitleData = getCustomChartTitleData(
@@ -327,9 +327,9 @@ class CategoryBreakdownChart extends StatelessWidget {
     final total = context.select((ChartViewModel state) => state.curRangeSummary);
     final isEmpty = context.chartMod.noCurData;
     return Padding(
-      padding: const EdgeInsets.only(left: 12.0, right: 12, bottom: 12),
+      padding: const EdgeInsets.only(left: 12.0, right: 12, bottom: 6),
       child: SizedBox(
-        height: 150,
+        height: 180,
         child:
             isEmpty
                 ? const NoDataChartSection()
@@ -337,10 +337,10 @@ class CategoryBreakdownChart extends StatelessWidget {
                   spacing: 30,
                   children: [
                     SizedBox(
-                      width: 140,
+                      width: 150,
                       child: PieChart(
                         PieChartData(
-                          centerSpaceRadius: 60,
+                          centerSpaceRadius: 65,
                           startDegreeOffset: -90,
                           sections: [
                             ...data.entries.map(
@@ -362,13 +362,21 @@ class CategoryBreakdownChart extends StatelessWidget {
                       flex: 1,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         spacing: 8,
                         children: [
+                          Text(
+                            "Top Categories",
+                            style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
+                          ),
+                          SizedBox(
+                            height: 2,
+                          ),
                           ...data.entries.map(
                             (e) {
                               final percentage = e.value.expense! / total.expense!;
                               return Row(
-                                spacing: 8,
+                                spacing: 4,
                                 children: [
                                   Flexible(
                                     flex: 2,
@@ -404,7 +412,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                                       "(${NumberFormat.percentPattern().format(percentage)})",
                                       style: context.tt.bodyMedium!.copyWith(
                                         fontSize: 12,
-                                        color: context.cs.primary,
+                                        color: context.customCs.fadeColor1,
                                       ),
                                       textAlign: TextAlign.end,
                                       maxLines: 1,
@@ -446,6 +454,9 @@ class _DailyBarChartState extends State<DailyBarChart> {
       (ChartViewModel state) => state.dailyCost,
     );
     final indicatorIndex = _touchedIndex ?? context.chartMod.defaultIndicatorIndex;
+    final yLine = _touchedIndex != null ? data.elementAtOrNull(_touchedIndex!)?.entries.last : null;
+    final yLineValue =
+        yLine != null ? context.chartMod.chartMetric.getCostMetric(yLine.value) : null;
     final isEmpty = context.chartMod.noData;
     final curRangeStart = context.chartMod.rangeStart;
     final showPrevious = context.select((ChartViewModel state) => state.showPrevious);
@@ -461,7 +472,19 @@ class _DailyBarChartState extends State<DailyBarChart> {
                     // duration: Durations.medium1,
                     duration: Duration.zero,
                     BarChartData(
-                      extraLinesData: getHorizontalExtraLines(context, y: [0]),
+                      extraLinesData: getHorizontalExtraLines(
+                        context,
+                        y: [
+                          0,
+                          if (yLineValue != null) yLineValue,
+                        ],
+                        dash: [false, false],
+                        showYLabel: [false, true],
+                        texts: [
+                          null,
+                          "${yLine?.key.formatMonthLonger()}: ${yLineValue != null ? context.chartMod.currencyFormat(yLineValue, compact: true, showSymbol: false) : 0}",
+                        ],
+                      ),
                       alignment: BarChartAlignment.spaceBetween,
                       maxY: context.chartMod.dailyRangeMax,
                       // groupsSpace: 20,
@@ -480,7 +503,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                           });
                         },
                         touchTooltipData: BarTouchTooltipData(
-                          getTooltipColor: (group) => context.cs.surface,
+                          getTooltipColor: (group) => context.cs.surface.withAlpha(200),
                           tooltipMargin: 1000,
                           tooltipHorizontalOffset: 0,
                           tooltipHorizontalAlignment: FLHorizontalAlignment.left,
@@ -499,7 +522,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                               context.tt.bodyMedium!.copyWith(
                                 fontSize: 9,
                                 fontWeight: FontWeight(600),
-                                height: 1.2,
+                                height: 1.6,
                                 color: context.chartMod.accentColors.current,
                               ),
                               textAlign: TextAlign.end,
@@ -534,6 +557,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                                   final value =
                                       context.chartMod.chartMetric.getCostMetric(entry.value) ?? 0;
                                   return BarChartRodData(
+                                    borderRadius: BorderRadius.circular(2),
                                     backDrawRodData: BackgroundBarChartRodData(
                                       toY: context.chartMod.dailyRangeMax,
                                       color: Colors.transparent,
@@ -1296,7 +1320,7 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
     final overview = context.select((ChartViewModel state) => state.rangeOverview);
     final indicatorIndex = _touchedIndex ?? 4;
     return Container(
-      height: 180,
+      height: 200,
       padding: EdgeInsets.only(bottom: 12),
       child: Stack(
         alignment: Alignment.center,
@@ -1318,6 +1342,7 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
                     reservedSize: 32,
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
+                      final date = overview.keys.elementAt(value.round());
                       return Padding(
                         padding: const EdgeInsets.only(top: 20.0, right: 10),
                         child: Transform.rotate(
@@ -1325,9 +1350,14 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
                           angle: -0.5,
                           child: Text(
                             context.chartMod.getDisplayPeriodLabel(
-                              overview.keys.elementAt(value.round()),
+                              date,
                             ),
-                            style: context.tt.bodyMedium!.copyWith(fontSize: 10),
+                            style: context.tt.bodyMedium!.copyWith(
+                              fontSize: 10,
+                              color: Colors.white.withAlpha(
+                                context.chartMod.matchItem(date) ? 250 : 100,
+                              ),
+                            ),
                           ),
                         ),
                       );
@@ -1338,6 +1368,7 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
               barGroups:
                   overview.entries.mapIndexed((i, el) {
                     return BarChartGroupData(
+                      barsSpace: 0.5,
                       x: i,
                       barRods:
                           [
@@ -1346,6 +1377,7 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
                           ].mapIndexed((metricIndex, e) {
                             final isExpense = metricIndex == 0;
                             return BarChartRodData(
+                              borderRadius: BorderRadius.circular(2),
                               width: 6,
                               toY: e.getCostMetric(el.value) ?? 0,
                               color: (isExpense
@@ -1378,7 +1410,7 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
                   context: context,
                   bottomTitle: AxisTitles(
                     sideTitles: SideTitles(
-                      reservedSize: 40,
+                      reservedSize: 32,
                       showTitles: true,
                       getTitlesWidget: (value, meta) => SizedBox.shrink(),
                     ),
@@ -1400,33 +1432,38 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
                       (touchedSpots) =>
                           touchedSpots.map(
                             (el) {
-                              final i = el.spotIndex;
-                              final metric = overview.entries.elementAt(i);
+                              final i = el.x;
+                              final metric = overview.entries.elementAtOrNull(i.round());
+                              // final metric = overview.entries.elementAtOrNull(i);
                               return LineTooltipItem(
-                                "${metric.key.formatMonth()}: ${context.chartMod.compactCurrencyFormat(metric.value.balance)}",
+                                "${metric?.key.formatMonth()}: ${context.chartMod.compactCurrencyFormat(metric?.value.balance ?? 0)}",
                                 context.customTt.numberFontSmall!.copyWith(fontSize: 10),
                                 children: [
                                   TextSpan(
                                     text:
-                                        "\n+${context.chartMod.currencyFormat(metric.value.income ?? 0, abbreviated: true, compact: true)}",
+                                        "\n+${context.chartMod.currencyFormat(metric?.value.income ?? 0, abbreviated: true, compact: true)}",
                                     style: TextStyle(
                                       color: context.chartMod.accentColors.positive,
                                     ),
                                   ),
                                   TextSpan(
                                     text:
-                                        " -${context.chartMod.currencyFormat(metric.value.expense ?? 0, abbreviated: true, compact: true)}",
+                                        " -${context.chartMod.currencyFormat(metric?.value.expense ?? 0, abbreviated: true, compact: true)}",
                                     style: TextStyle(
                                       color: context.chartMod.accentColors.negative,
                                     ),
                                   ),
                                 ],
                               );
+                              // return LineTooltipItem(i.toString(), context.tt.bodyMedium!);
+                              // return LineTooltipItem(metric?.key.formatMonth() ?? "Nothing", context.tt.bodyMedium!);
                             },
                           ).toList(),
                 ),
                 showingTooltipIndicators: [
-                  ShowingTooltipIndicators([LineBarSpot(LineChartBarData(), 0, FlSpot(4, 10))]),
+                  ShowingTooltipIndicators([
+                    LineBarSpot(LineChartBarData(), 0, FlSpot(indicatorIndex.toDouble(), 10)),
+                  ]),
                 ],
                 lineBarsData: [
                   getCustomLineChartBarData(

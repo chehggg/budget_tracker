@@ -863,19 +863,7 @@ class GoalCumulativeChart extends StatefulWidget {
 }
 
 class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
-  int _index = 0;
-  bool _isTouched = false;
-  int defaultIndex = 0;
-  @override
-  void initState() {
-    super.initState();
-    defaultIndex =
-        context.goalInfoMod.lineChartCumulativeData.entries
-            .where((entry) => entry.value != null)
-            .length -
-        1;
-    _index = defaultIndex;
-  }
+  int? _index;
 
   @override
   Widget build(BuildContext context) {
@@ -902,6 +890,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
       final diff = (currentY - targetY);
       return FlSpot(index.toDouble(), diff);
     });
+    final indicatorIndex = _index ?? defaultIndex;
 
     return Container(
       padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
@@ -1010,7 +999,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                 LineBarSpot(
                   LineChartBarData(),
                   2,
-                  diffSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                  diffSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
                 ),
             ]),
             // ShowingTooltipIndicators([
@@ -1032,7 +1021,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                   return DateTime.now().standard == date;
                 },
               ),
-              showingIndicators: [_index],
+              showingIndicators: [indicatorIndex],
               isCurved: false,
               color: context.cs.secondary,
               spots: cumulativeSpots.toList(),
@@ -1043,7 +1032,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                   return false;
                 },
               ),
-              showingIndicators: [_index],
+              showingIndicators: [indicatorIndex],
               isCurved: false,
               showGradient: true,
               color: Colors.lightGreen,
@@ -1088,7 +1077,6 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
 
   @override
   Widget build(BuildContext context) {
-    final goal = context.goalInfoMod.goal;
     final dailyData = context.goalInfoMod.dailyData.entries;
     final maxData = dailyData.fold(0.0, (init, entry) => max(init, entry.value ?? 0));
     final dailyTarget = context.goalInfoMod.targetSpendPerDay;

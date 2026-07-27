@@ -23,6 +23,12 @@ class GoalScreen extends StatelessWidget {
       actions: [
         IconButton(
           onPressed: () {
+            context.goalMod.toggleSearch(value: true);
+          },
+          icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
+        ),
+        IconButton(
+          onPressed: () {
             context.push("/goals/new-goal");
           },
           icon: FaIcon(FontAwesomeIcons.layerGroup, size: 20),

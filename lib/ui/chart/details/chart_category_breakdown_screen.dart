@@ -82,6 +82,7 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
               sliver: SliverToBoxAdapter(
                 child: Row(
+                  spacing: 8,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
@@ -90,12 +91,8 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                         style: context.customTt.dateLabel,
                       ),
                     ),
-                    Text(
-                      breakdownSortDisplay,
-                      style: context.customTt.paragraphTextSmall,
-                    ),
-                    IconButton(
-                      onPressed: () async {
+                    GestureDetector(
+                      onTap: () async {
                         final response = await showDialog<CategoryBreakdownSort?>(
                           context: context,
                           builder: (dialogContext) {
@@ -108,7 +105,18 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                           context.chartMod.updateCategorySort(response);
                         }
                       },
-                      icon: FaIcon(FontAwesomeIcons.sort, size: 18),
+                      child: Row(
+                        spacing: 8,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            breakdownSortDisplay,
+                            style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
+                          ),
+                          FaIcon(FontAwesomeIcons.arrowDownAZ, size: 20),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -166,7 +174,7 @@ class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text("Sort Breakdown List"),
+      title: Text("Sort List"),
       content: Column(
         spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -276,22 +284,33 @@ class CategoryPieChart extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         Column(
+          spacing: 4,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(type.name.capitalize(), style: context.customTt.numberFontSmall),
             Text(
-              NumberFormat.currency(
-                symbol: "RM",
-                decimalDigits: 0,
-              ).format(type == CostType.expense ? total.expense : total.income),
-              style: context.customTt.elegantLabelLarge,
+              type.name.capitalize(),
+              style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
+            ),
+            Text(
+              context.chartMod.currencyFormat(
+                type == CostType.expense ? total.expense ?? 0 : total.income ?? 0,
+                compact: true,
+                abbreviated: true,
+              ),
+              style: context.customTt.numberFontLarge!.copyWith(fontSize: 44, height: 1.2),
+            ),
+            Text(
+              context.chartMod.currencyFormat(
+                type == CostType.expense ? total.expense ?? 0 : total.income ?? 0,
+              ),
+              style: context.tt.bodyMedium!.copyWith(fontSize: 14),
             ),
           ],
         ),
         PieChart(
           PieChartData(
             startDegreeOffset: -90,
-            centerSpaceRadius: 100,
+            centerSpaceRadius: 110,
             sections:
                 data.entries.map(
                   (entry) {
@@ -303,34 +322,34 @@ class CategoryPieChart extends StatelessWidget {
                     return PieChartSectionData(
                       cornerRadius: 12,
                       value: type == CostType.expense ? value.expense : value.income,
-                      radius: 12,
+                      radius: 10,
                       color: entry.key.color,
                       badgeWidget:
                           percentage > 0.1
                               ? Container(
-                                padding: EdgeInsets.all(4),
+                                padding: EdgeInsets.all(6),
                                 constraints: BoxConstraints(minWidth: 50),
                                 decoration: BoxDecoration(
-                                  color: context.cs.primary,
+                                  color: context.cs.surfaceContainerHigh,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Column(
-                                  // spacing: 10,
+                                child: Row(
+                                  spacing: 4,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
                                       entry.key.name!.capitalize(),
-                                      style: context.customTt.numberFontSmall!.copyWith(
-                                        color: context.cs.surface,
+                                      style: context.tt.bodyMedium!.copyWith(
+                                        color: context.cs.primary,
                                         fontSize: 10,
                                       ),
                                     ),
                                     Text(
                                       NumberFormat.percentPattern().format(percentage),
                                       style: context.customTt.numberFontSmall!.copyWith(
-                                        color: context.cs.surface,
+                                        color: context.cs.primary,
                                         fontWeight: FontWeight(700),
-                                        fontSize: 12,
+                                        fontSize: 10,
                                       ),
                                     ),
                                   ],
@@ -412,6 +431,8 @@ class _CategoryTileState extends State<CategoryTile> {
 
   @override
   Widget build(BuildContext context) {
+    final total = context.select((ChartViewModel state) => state.curRangeSummary);
+    final type = context.select((ChartViewModel state) => state.breakdownType);
     final bool isHidden = context.select(
       (ChartViewModel state) => state.hiddenCategories?.contains(widget.category) ?? false,
     );
@@ -443,7 +464,7 @@ class _CategoryTileState extends State<CategoryTile> {
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
-                  spacing: 4,
+                  spacing: 6,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -451,22 +472,24 @@ class _CategoryTileState extends State<CategoryTile> {
                       children: [
                         Text(
                           (widget.category.name ?? "").capitalize(),
-                          style: context.tt.bodyMedium!.copyWith(
-                            fontSize: 16,
-                            color: isHidden ? context.customCs.fadeColor1 : null,
+                          style: context.customTt.numberFontSmall!.copyWith(
+                            fontSize: 14,
+                            color: isHidden ? context.customCs.fadeColor1 : Colors.white,
                           ),
                         ),
                         SizedBox(
-                          height: 16,
+                          height: 14,
                           child: IconButton(
-                            iconSize: 14,
+                            iconSize: 12,
                             padding: EdgeInsets.zero,
                             splashColor: Colors.transparent,
                             visualDensity: VisualDensity(vertical: -4),
                             onPressed: () {
                               context.chartMod.toggleHideCategory(widget.category);
                             },
-                            icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility),
+                            icon: FaIcon(
+                              isHidden ? FontAwesomeIcons.eyeSlash : FontAwesomeIcons.eye,
+                            ),
                           ),
                         ),
                         Expanded(
@@ -479,10 +502,18 @@ class _CategoryTileState extends State<CategoryTile> {
                                   compact: true,
                                   showSymbol: false,
                                 ),
-                                style: context.customTt.numberFontSmall?.copyWith(
+                                style: context.tt.bodyMedium?.copyWith(
                                   color: isHidden ? context.customCs.fadeColor1 : null,
                                 ),
                               ),
+                              SizedBox(width: 4,),
+                              Text(
+                                "(${(widget.value! / (type == CostType.expense ? total.expense ?? 1 : total.income ?? 1)).formatCompactPercentage()})",
+                                style: context.tt.bodyMedium?.copyWith(
+                                  color: context.customCs.fadeColor1,
+                                ),
+                              ),
+                              SizedBox(width: 2,),
                               Icon(
                                 _expanded ? Icons.expand_less : Icons.expand_more,
                                 size: 20,
@@ -496,9 +527,9 @@ class _CategoryTileState extends State<CategoryTile> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: context.customCs.fadeColor2,
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      height: 10,
+                      height: 8,
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: widget.percentage.isNaN ? 0 : widget.percentage.clamp(0, 1),

@@ -1,5 +1,3 @@
-import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/custom/classes/navigator_argument.dart';
 import 'package:flutter/material.dart';
 
 class NavigatorModel extends ChangeNotifier {
@@ -10,6 +8,14 @@ class NavigatorModel extends ChangeNotifier {
     _showFab = show ?? !_showFab;
     notifyListeners();
   } 
+
+  bool get canPop => _listSearchMode;
+  bool _listSearchMode = false;
+
+  void toggleListSearch({bool? value}) {
+    _listSearchMode = value ?? !_listSearchMode;
+    notifyListeners();
+  }
   // NavigatorModel() {
   //   init();
   // }

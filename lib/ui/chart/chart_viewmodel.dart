@@ -142,6 +142,19 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
+  String getDisplayPeriodLabel(DateTime date) {
+    switch (_period) {
+      case ChartPeriod.month:
+        return DateFormat('MMM yy').format(date);
+      case ChartPeriod.week:
+        return "${_curRange.end.year % 100} W${date.weekNumber}";
+      case ChartPeriod.year:
+        return DateFormat('yyyy').format(date);
+      case ChartPeriod.custom:
+        return "Custom";
+    }
+  }
+
   String get curDisplayPeriod {
     switch (_period) {
       case ChartPeriod.month:
@@ -155,18 +168,19 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
-  String getDisplayPeriodLabel(DateTime date) {
+  String get curHeaderDisplayPeriod {
     switch (_period) {
       case ChartPeriod.month:
-        return DateFormat('MMM yy').format(date);
+        return DateFormat('MMM yyyy').format(_periodStart);
       case ChartPeriod.week:
-        return "${_curRange.end.year % 100} W${date.weekNumber}";
+        return "${_curRange.end.year}, W${_periodStart.weekNumber}";
       case ChartPeriod.year:
-        return DateFormat('yyyy').format(date);
+        return DateFormat('yyyy').format(_periodStart);
       case ChartPeriod.custom:
         return "Custom";
     }
   }
+
 
   String get prevDisplayPeriod {
     switch (_period) {
