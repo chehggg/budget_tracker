@@ -252,6 +252,14 @@ final goRouter = GoRouter(
                         child: const GoalDetailsScreen(),
                       ),
                 ),
+                GoRoute(
+                  path: '/details-past',
+                  builder:
+                      (context, state) => ChangeNotifierProvider.value(
+                        value: context.read<GoalInfoViewModel>(),
+                        child: GoalPastDetailsScreen(date: state.extra as DateTime),
+                      ),
+                ),
               ],
             ),
           ],

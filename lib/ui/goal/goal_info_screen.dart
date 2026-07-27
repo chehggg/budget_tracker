@@ -18,6 +18,61 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+class GoalPastDetailsScreen extends StatefulWidget {
+  const GoalPastDetailsScreen({super.key, required this.date});
+
+  final DateTime date;
+
+  @override
+  State<GoalPastDetailsScreen> createState() => _GoalPastDetailsScreenState();
+}
+
+class _GoalPastDetailsScreenState extends State<GoalPastDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<GoalInfoViewModel>().updatePreviousDate(widget.date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // final goal = context.select((GoalInfoViewModel state) => state.goal);
+    final ready = context.select((GoalInfoViewModel state) => state.ready);
+    return CustomScaffold(
+      appBarTitle: Text("Goal Past Details - ${widget.date.formatMonth()}"),
+      padHorizontal: true,
+      actions: [
+        // IconButton(
+        //   onPressed: () async {
+        //     final response = await showDialog(
+        //       context: context,
+        //       builder: (context) => DeleteItemDialog(),
+        //     );
+        //     if (response == null) return;
+        //     if (response && context.mounted) {
+        //       await context.goalInfoMod.deleteGoal();
+        //       if (context.mounted) {
+        //         context.pop();
+        //       }
+        //     }
+        //   },
+        //   icon: Icon(Icons.delete),
+        // ),
+        // IconButton(
+        //   onPressed: () {
+        //     context.push('/goals/edit-goal', extra: goal);
+        //   },
+        //   icon: Icon(Icons.edit),
+        // ),
+      ],
+      ready: ready,
+      child: const GoalInfoBody(
+        showPrevious: true,
+      ),
+    );
+  }
+}
+
 class GoalDetailsScreen extends StatelessWidget {
   const GoalDetailsScreen({super.key});
 
@@ -59,18 +114,24 @@ class GoalDetailsScreen extends StatelessWidget {
 }
 
 class GoalInfoBody extends StatelessWidget {
-  const GoalInfoBody({super.key});
+  const GoalInfoBody({super.key, this.showPrevious = false});
+
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
     final pastProgress = context.select((GoalInfoViewModel state) => state.pastProgress.reversed);
-    final curProgress = context.select((GoalInfoViewModel state) => state.currentGoalProgress);
+    final curProgress = context.select(
+      (GoalInfoViewModel state) =>
+          showPrevious ? state.currentViewedPastGoalProgress : state.currentGoalProgress,
+    );
     final progress = curProgress.progress;
+    final streak = context.goalInfoMod.streak;
     final chartProgress = progress.clamp(0.0, 1.0);
     final extraProgress = (1 - progress).abs();
-
     final dividerPercentage = progress * 0.008;
-    debugPrint('goal progress: ${pastProgress.length}');
+    // debugPrint('goal progress: ${pastProgress.length}');
+    
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -155,7 +216,7 @@ class GoalInfoBody extends StatelessWidget {
                   ),
                   Text(
                     "${curProgress.value.formatRoundedString()} / ${curProgress.target?.formatRoundedString()}",
-                    style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
+                    style: context.tt.bodyMedium!.copyWith(fontSize: 14),
                   ),
                 ],
               ),
@@ -262,7 +323,7 @@ class GoalInfoBody extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Text("History", style: context.customTt.dateLabel),
               ),
-              if (context.goalInfoMod.streak > 0)
+              if (streak > 0)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: ReusableContainer(
@@ -277,7 +338,7 @@ class GoalInfoBody extends StatelessWidget {
                           color: Colors.red,
                         ),
                         Text(
-                          "${context.goalInfoMod.streak} streak, keep it up!",
+                          "$streak streak${streak.getPlural()}, keep it up!",
                           style: context.customTt.numberLabel!.copyWith(color: context.cs.surface),
                         ),
                       ],
@@ -285,66 +346,70 @@ class GoalInfoBody extends StatelessWidget {
                   ),
                 ),
               ...pastProgress.map(
-                (progress) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8.0,
-                    ),
-                    child: Column(
-                      spacing: 4,
-                      children: [
-                        Row(
-                          spacing: 12,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                progress.date?.formatMonthLonger() ?? "No date",
-                                style: context.customTt.numberFontSmall,
+                (progress) => GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => context.push('/goals//details-past', extra: progress.date),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                      ),
+                      child: Column(
+                        spacing: 4,
+                        children: [
+                          Row(
+                            spacing: 12,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  progress.date?.formatMonthLonger() ?? "No date",
+                                  style: context.customTt.numberFontSmall,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          spacing: 10,
-                          children: [
-                            Container(
-                              height: 10,
-                              width: 10,
-                              decoration: BoxDecoration(
-                                color:
-                                    progress.achieved
-                                        ? context.goalInfoMod.accentColors.positive
-                                        : context.goalInfoMod.accentColors.negative,
-                                borderRadius: BorderRadius.circular(8),
+                            ],
+                          ),
+                          Row(
+                            spacing: 10,
+                            children: [
+                              Container(
+                                height: 10,
+                                width: 10,
+                                decoration: BoxDecoration(
+                                  color:
+                                      progress.achieved
+                                          ? context.goalInfoMod.accentColors.positive
+                                          : context.goalInfoMod.accentColors.negative,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
-                            ),
-                            Expanded(
-                              child: Text(progress.status, style: context.customTt.paragraphText),
-                            ),
-                            Text(
-                              // ignore: prefer_interpolation_to_compose_strings, prefer_adjacent_string_concatenation
-                              context.goalInfoMod.compactCurrencyFormat(progress.value) +
-                                  // ignore: prefer_interpolation_to_compose_strings
-                                  " / " +
-                                  context.goalInfoMod.compactCurrencyFormat(
-                                    progress.target ?? 0,
-                                  ),
-                              style: context.customTt.paragraphText,
-                            ),
-                            Text(
-                              "(${progress.progress.formatCompactPercentage()})",
-                              style: context.customTt.numberFontSmall!.copyWith(
-                                fontSize: 14,
-                                color:
-                                    progress.achieved
-                                        ? context.goalInfoMod.accentColors.positive
-                                        : context.goalInfoMod.accentColors.negative,
+                              Expanded(
+                                child: Text(progress.status, style: context.customTt.paragraphText),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              Text(
+                                // ignore: prefer_interpolation_to_compose_strings, prefer_adjacent_string_concatenation
+                                context.goalInfoMod.compactCurrencyFormat(progress.value) +
+                                    // ignore: prefer_interpolation_to_compose_strings
+                                    " / " +
+                                    context.goalInfoMod.compactCurrencyFormat(
+                                      progress.target ?? 0,
+                                    ),
+                                style: context.customTt.paragraphText,
+                              ),
+                              Text(
+                                "(${progress.progress.formatCompactPercentage()})",
+                                style: context.customTt.numberFontSmall!.copyWith(
+                                  fontSize: 14,
+                                  color:
+                                      progress.achieved
+                                          ? context.goalInfoMod.accentColors.positive
+                                          : context.goalInfoMod.accentColors.negative,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -693,6 +758,7 @@ class GoalInfoLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final goalProgress = context.goalInfoMod.currentGoalProgress;
+    final showAvg = context.select((GoalInfoViewModel state) => state.showAvgLine);
     final achieved = goalProgress.achieved;
     final days = context.goalInfoMod.displayDayTitle;
 
@@ -735,27 +801,18 @@ class GoalInfoLineChart extends StatelessWidget {
                   child: Row(
                     spacing: 6,
                     children: [
-                      Container(
-                        height: 8,
-                        width: 8,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: Colors.blue.shade800,
-                        ),
+                      LabelIndicator(
+                        text: "Spend",
+                        color: context.goalInfoMod.accentColors.current,
+                        fade: true,
                       ),
-                      Text("Limit", style: context.customTt.paragraphTextSmall),
-                      SizedBox(
-                        width: 10,
+                      LabelIndicator(
+                        text: "Target Daily Average",
+                        color: Colors.lightGreen,
+                        fade: true,
+                        showVisibleSymbol: true,
+                        enabled: showAvg,
                       ),
-                      Container(
-                        height: 8,
-                        width: 8,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          color: context.cs.secondary,
-                        ),
-                      ),
-                      Text("Spend", style: context.customTt.paragraphTextSmall),
                     ],
                   ),
                 ),
@@ -774,8 +831,8 @@ class GoalInfoLineChart extends StatelessWidget {
                       style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
                       children: [
                         TextSpan(
-                          text: context.goalInfoMod.remainingValueOverDay.customCurrencyFormat(
-                            "RM",
+                          text: context.goalInfoMod.currencyFormat(
+                            context.goalInfoMod.remainingValueOverDay,
                           ),
                           style: context.customTt.numberFontSmall!.copyWith(
                             fontSize: 14,
@@ -811,26 +868,25 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
   @override
   Widget build(BuildContext context) {
     final target = context.goalInfoMod.goal.target;
+    final showAvgLine = context.goalInfoMod.showAvgLine;
     final progress = context.goalInfoMod.currentGoalProgress;
-    final goals = context.goalInfoMod.lineChartCumulativeData.entries.where(
-      (entry) => entry.value != null,
-    );
-    final defaultIndex = goals.length - 1;
-    final goalSpots = goals.mapIndexed(
-      (index, el) {
-        return FlSpot((index + 1).toDouble(), el.value ?? 0);
-      },
-    );
-    final targetPerDaySpots = List.generate(
+    final cumulativeSpots = context.goalInfoMod.lineChartCumulativeData.entries
+        .where((entry) => entry.value != null)
+        .mapIndexed(
+          (index, el) {
+            return FlSpot((index + 1).toDouble(), (el.value ?? 0).clamp(0, double.infinity));
+          },
+        );
+    final dailyAvgSpots = List.generate(
       context.goalInfoMod.dataCount,
       (i) {
         final target = (i + 1) * context.goalInfoMod.targetSpendPerDay;
         return FlSpot((i + 1).toDouble(), target);
       },
     );
-    final diffSpots = goalSpots.mapIndexed((index, el) {
+    final diffSpots = cumulativeSpots.mapIndexed((index, el) {
       final currentY = el.y;
-      final targetY = targetPerDaySpots.elementAt(index).y;
+      final targetY = dailyAvgSpots.elementAt(index).y;
       final diff = (currentY - targetY);
       return FlSpot(index.toDouble(), diff);
     });
@@ -860,16 +916,18 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
             enabled: false,
             context: context,
             touchCallback: (event, response) {
-              setState(() {
-                if (!event.isInterestedForInteractions ||
-                    response == null ||
-                    response.lineBarSpots == null) {
-                  setState(() {
-                    _index = defaultIndex;
-                  });
-                  return;
-                }
+              if (!event.isInterestedForInteractions ||
+                  response == null ||
+                  response.lineBarSpots == null) {
+                setState(() {
+                  _isTouched = false; // Reset touch state
+                  _index = defaultIndex;
+                });
+                return;
+              }
 
+              setState(() {
+                _isTouched = true;
                 _index = response.lineBarSpots?.first.x.round() ?? defaultIndex;
               });
             },
@@ -925,18 +983,19 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
           showingTooltipIndicators: [
             // ShowingTooltipIndicators([LineBarSpot(LineChartBarData(), 1, spots.elementAtOrNull(8) ?? FlSpot(0, 0))]),
             ShowingTooltipIndicators([
-              if (goalSpots.elementAtOrNull(indicatorIndex) != null)
+              if (cumulativeSpots.elementAtOrNull(_index) != null)
                 LineBarSpot(
                   LineChartBarData(),
                   0,
-                  goalSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
+                  cumulativeSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
                 ),
-              LineBarSpot(
-                LineChartBarData(),
-                1,
-                targetPerDaySpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
-              ),
-              if (goalSpots.elementAtOrNull(indicatorIndex) != null)
+              if (showAvgLine)
+                LineBarSpot(
+                  LineChartBarData(),
+                  1,
+                  dailyAvgSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                ),
+              if (cumulativeSpots.elementAtOrNull(_index) != null && showAvgLine)
                 LineBarSpot(
                   LineChartBarData(),
                   2,
@@ -965,7 +1024,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
               showingIndicators: [indicatorIndex],
               isCurved: false,
               color: context.cs.secondary,
-              spots: goalSpots.toList(),
+              spots: cumulativeSpots.toList(),
             ),
             getCustomLineChartBarData(
               dotData: FlDotData(
@@ -978,7 +1037,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
               showGradient: true,
               color: Colors.lightGreen,
               dashArray: [1, 15],
-              spots: [...targetPerDaySpots],
+              spots: [...dailyAvgSpots],
             ),
           ],
         ),
@@ -1022,6 +1081,7 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
     final maxData = dailyData.fold(0.0, (init, entry) => max(init, entry.value ?? 0));
     final dailyTarget = context.goalInfoMod.targetSpendPerDay;
     final List<int> showValues = [];
+    final isBudget = goal.goalType == GoalType.budget;
     for (final (index, entry) in dailyData.indexed) {
       if ((entry.value ?? 0) > dailyTarget) {
         showValues.add(index);
@@ -1072,7 +1132,7 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
                       style: TextStyle(
                         color: context.goalInfoMod.accentColors.getColorByValue(
                           value - dailyTarget,
-                          reversed: true,
+                          reversed: goal.goalType == GoalType.budget,
                         ),
                       ),
                     ),
@@ -1115,13 +1175,13 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
                       color: Colors.transparent,
                     ),
                     toY: value,
-                    color: context.goalInfoMod.accentColors.negative,
+                    color: context.goalInfoMod.accentColors.getColorByValue(-1, reversed: isBudget),
                     width: 4,
                     rodStackItems: [
                       BarChartRodStackItem(
                         0,
                         dailyTarget,
-                        context.goalInfoMod.accentColors.positive,
+                        context.goalInfoMod.accentColors.getColorByValue(1, reversed: isBudget),
                       ),
                     ],
                     label: BarChartRodLabel(
@@ -1129,7 +1189,10 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
                       text: '\n${(value / dailyTarget).formatCompactPercentage()}',
                       style: context.customTt.paragraphTextSmall!.copyWith(
                         fontSize: 9,
-                        color: context.goalInfoMod.accentColors.negative,
+                        color: context.goalInfoMod.accentColors.getColorByValue(
+                          -1,
+                          reversed: isBudget,
+                        ),
                       ),
                       offset: Offset(0, 10),
                     ),
@@ -1183,7 +1246,10 @@ class SpendBelowDialog extends StatelessWidget {
                 TextSpan(
                   text: "Your current budget is ",
                 ),
-                TextSpan(text: target.customCurrencyFormat("RM"), style: highlightFontStyle),
+                TextSpan(
+                  text: context.goalInfoMod.currencyFormat(target),
+                  style: highlightFontStyle,
+                ),
                 TextSpan(
                   text: ".\n\nYour spend till today (",
                 ),
@@ -1192,14 +1258,16 @@ class SpendBelowDialog extends StatelessWidget {
                   text: ") is ",
                 ),
                 TextSpan(
-                  text: context.goalInfoMod.currentGoalProgress.value.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(
+                    context.goalInfoMod.currentGoalProgress.value,
+                  ),
                   style: highlightFontStyle,
                 ),
                 TextSpan(
                   text: ".\n\nTo prevent budget overrun, you would need to spend below ",
                 ),
                 TextSpan(
-                  text: context.goalInfoMod.remainingValue.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(context.goalInfoMod.remainingValue),
                   style: highlightFontStyle,
                 ),
                 TextSpan(
@@ -1213,7 +1281,9 @@ class SpendBelowDialog extends StatelessWidget {
                   text: " days, which, if distrubuted evenly, is equivalent to ",
                 ),
                 TextSpan(
-                  text: context.goalInfoMod.remainingValueOverDay.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(
+                    context.goalInfoMod.remainingValueOverDay,
+                  ),
                   style: highlightFontStyle,
                 ),
                 TextSpan(
@@ -1476,7 +1546,7 @@ class HeatmapDialog extends StatelessWidget {
                       "If your budget is distributed evenly across the month, your spend per day limit is ",
                 ),
                 TextSpan(
-                  text: context.goalInfoMod.targetSpendPerDay.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(context.goalInfoMod.targetSpendPerDay),
                   style: highlightFontStyle,
                 ),
                 TextSpan(text: ".\n\nUp till today, you have spend within the limit for "),
@@ -1573,12 +1643,14 @@ class SpendPerDayDialog extends StatelessWidget {
                       "as it means that your spending are exceeding limit on average.\n\nIf your budget is distributed evenly across the month, your spend per day limit is ",
                 ),
                 TextSpan(
-                  text: context.goalInfoMod.targetSpendPerDay.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(context.goalInfoMod.targetSpendPerDay),
                   style: highlightFontStyle,
                 ),
                 TextSpan(text: ".\n\nThis month, you have spent "),
                 TextSpan(
-                  text: context.goalInfoMod.currentGoalProgress.value.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(
+                    context.goalInfoMod.currentGoalProgress.value,
+                  ),
                   style: highlightFontStyle,
                 ),
                 TextSpan(text: " across "),
@@ -1588,7 +1660,7 @@ class SpendPerDayDialog extends StatelessWidget {
                 ),
                 TextSpan(text: " days, which is equivalent to "),
                 TextSpan(
-                  text: context.goalInfoMod.currentSpendPerDay.customCurrencyFormat("RM"),
+                  text: context.goalInfoMod.currencyFormat(context.goalInfoMod.currentSpendPerDay),
                   style: highlightFontStyle,
                 ),
                 TextSpan(text: " per day.\n\n"),

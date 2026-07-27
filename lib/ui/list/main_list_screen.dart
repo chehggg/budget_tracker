@@ -422,8 +422,9 @@ class ItemFilterChips extends StatelessWidget {
             onTap: () async {
               final response = await showModalBottomSheet(
                 context: context,
+                isScrollControlled: true,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
-                constraints: BoxConstraints(maxHeight: 400),
+                // constraints: BoxConstraints(maxHeight: 350),
                 builder: (sheetContext) {
                   return ChangeNotifierProvider.value(
                     value: context.listMod,
@@ -510,7 +511,7 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("bottom sheet rebuild");
+    // debugPrint("bottom sheet rebuild");
     return Theme(
       data: Theme.of(context).copyWith(
         sliderTheme: SliderThemeData(
@@ -530,60 +531,46 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
           valueIndicatorColor: context.cs.primary,
         ),
       ),
-      child: BottomSheet(
-        onClosing: () {},
-        builder:
-            (context) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        "Price Range",
-                        style: context.customTt.dateLabel,
-                      ),
-                      AffirmativeTextButton(
-                        onTap: () {
-                          context.pop();
-                        },
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: 16,
-                  ),
-                  Text("Expense"),
-                  CostSlider(
-                    range: _defaultExpenseRange,
-                    selectedRange: _expenseRange,
-                    onChanged: (value) {
-                      setState(() {
-                        _expenseRange = value;
-                      });
-                    },
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 20, bottom: 20),
-                    child: Divider(),
-                  ),
-                  Text("Income"),
-                  CostSlider(
-                    range: _defaultIncomeRange,
-                    selectedRange: _incomeRange,
-                    onChanged: (value) {
-                      setState(() {
-                        _incomeRange = value;
-                      });
-                    },
-                  ),
-                ],
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text("Expense"),
+              CostSlider(
+                range: _defaultExpenseRange,
+                selectedRange: _expenseRange,
+                onChanged: (value) {
+                  setState(() {
+                    _expenseRange = value;
+                  });
+                },
               ),
-            ),
+              SizedBox(height: 20),
+              Text("Income"),
+              CostSlider(
+                range: _defaultIncomeRange,
+                selectedRange: _incomeRange,
+                onChanged: (value) {
+                  setState(() {
+                    _incomeRange = value;
+                  });
+                },
+              ),
+              SizedBox(height: 30),
+              Container(
+                alignment: Alignment.centerRight,
+                child: AffirmativeTextButton(
+                  onTap: () {
+                    context.pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

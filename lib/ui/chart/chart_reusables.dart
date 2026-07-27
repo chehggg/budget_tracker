@@ -88,24 +88,28 @@ class LabelIndicator extends StatelessWidget {
     this.color,
     this.fade = false,
     this.fadeAll = false,
+    this.enabled = true,
+    this.showVisibleSymbol = false,
   });
 
   final String text;
   final Color? color;
   final bool fade;
   final bool fadeAll;
+  final bool enabled;
+  final bool showVisibleSymbol;
 
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: fadeAll ? 0.5 : 1,
+      opacity: enabled ? 1 : 0.5,
       child: Row(
         children: [
           Container(
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(4),
               color: color,
             ),
           ),
@@ -119,6 +123,14 @@ class LabelIndicator extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+          if (showVisibleSymbol)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: FaIcon(
+                showVisibleSymbol && enabled ? FontAwesomeIcons.eye : FontAwesomeIcons.eyeSlash,
+                size: 10,
+              ),
+            ),
         ],
       ),
     );
