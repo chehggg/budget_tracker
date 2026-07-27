@@ -102,9 +102,9 @@ class Goal {
       case GoalType.budget:
         return metric.expense ?? 0;
       case GoalType.savings:
-        return max(0,metric.balance);
-      case GoalType.payment:
         return metric.balance;
+      case GoalType.payment:
+        return metric.balance.abs();
       default:
         return null;
     }
@@ -214,17 +214,16 @@ class GoalProgress {
     }
   }
 
-
-  double get progress => max(0, value / (target ?? 1));
+  double get progress => (value / (target ?? 1)).clamp(0, double.infinity);
 
   bool get achieved {
     switch (goalType) {
       case GoalType.budget:
         return progress < 1;
       case GoalType.savings:
-        return progress > 1;
+        return progress >= 1;
       case GoalType.payment:
-        return progress > 1;
+        return progress >= 1;
       default:
         return false;
     }

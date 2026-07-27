@@ -9,6 +9,7 @@ import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 
 class GoalInfoViewModel extends ChangeNotifier {
@@ -47,6 +48,7 @@ class GoalInfoViewModel extends ChangeNotifier {
           _goal.isEnded ? goal.endDate! : DateTime.now(),
         )!;
     _isInit = true;
+    _showAvgLine = _goal.goalType == GoalType.budget;
 
     _subscription = _goalRepo.streamValue.listen((_) {
       notifyListeners();
@@ -63,7 +65,8 @@ class GoalInfoViewModel extends ChangeNotifier {
 
   final int dayinCurrentMonth = DateTime.now().dayinCurrentMonth;
 
-  bool get showHistory => _pastProgress.isNotEmpty;
+  DateTime? _previousDate;
+  bool get showHistory => _pastProgress.isNotEmpty || _previousDate != null;
 
   final Goal _goal;
   Goal get goal => _goal;
@@ -82,6 +85,11 @@ class GoalInfoViewModel extends ChangeNotifier {
 
   GoalProgress _currentGoalProgress = GoalProgress();
   GoalProgress get currentGoalProgress => _currentGoalProgress;
+  GoalProgress get currentViewedPastGoalProgress =>
+      _pastProgress.firstWhereOrNull((el) => el.date == _previousDate) ?? GoalProgress();
+
+  bool _showAvgLine = false;
+  bool get showAvgLine => _showAvgLine;
 
   int get currentDay => DateTime.now().day;
   double get targetSpendPerDay => (_goal.target ?? 0) / dayinCurrentMonth;
@@ -191,6 +199,11 @@ class GoalInfoViewModel extends ChangeNotifier {
     await _goalRepo.deleteGoal(_goal);
   }
 
+  void toggleShowAvgLine({bool? value}) {
+    _showAvgLine = !_showAvgLine;
+    notifyListeners();
+  }
+
   AccentColor get accentColors => _sharedElementRepo.accentColors;
 
   String Function(
@@ -210,6 +223,11 @@ class GoalInfoViewModel extends ChangeNotifier {
     showSymbol: false,
     alwaysShowSign: showSign ?? false,
   );
+
+  void updatePreviousDate(DateTime date) {
+    _previousDate = date;
+    notifyListeners();
+  }
 
   @override
   void dispose() {

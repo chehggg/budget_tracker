@@ -22,7 +22,7 @@ extension DayExtension on DateTime {
 
   /// format datetime in "dd MMM" format
   String formatShorter() => DateFormat('dd MMM').format(this);
-  
+
   /// format datetime in "d MMM" format
   String formatEvenShorter() => DateFormat('d MMM').format(this);
 
@@ -39,7 +39,8 @@ extension DayExtension on DateTime {
     }
     return DateFormat('E, d MMM', locale?.toString()).format(this);
   }
-  String formatPrettyShort({Locale? locale})  => DateFormat('d MMM yyyy').format(this);
+
+  String formatPrettyShort({Locale? locale}) => DateFormat('d MMM yyyy').format(this);
   // String formatPretty({Locale? locale}) => DateFormat('E, d MMM', locale.toString()).format(this);
 
   DateTime toSOM(int addMonth) => DateTime(year, month + addMonth, 1);
@@ -60,7 +61,7 @@ extension DayExtension on DateTime {
   bool isWithinRange(DateTimeRange range, {bool inclusive = true, bool setEndToEoM = false}) {
     final realEnd = setEndToEoM ? range.end.endOfMonth : range.end;
     if (!inclusive) {
-    return isBefore(realEnd) && isAfter(range.start);
+      return isBefore(realEnd) && isAfter(range.start);
     }
     return (isBefore(realEnd) || isAtSameMomentAs(realEnd)) && isAfter(range.start) ||
         isAtSameMomentAs(range.start);
@@ -91,9 +92,8 @@ extension DayExtension on DateTime {
 
 extension DateTimeRangeExtension on DateTimeRange {
   String formatYearMonth() {
-    return "${start.formatMonth()} - ${end.formatMonth()}"; 
+    return "${start.formatMonth()} - ${end.formatMonth()}";
   }
-
 }
 
 extension DoubleExtension on double {
@@ -340,4 +340,14 @@ extension VisualDensityExtension on VisualDensity {
 
 extension CurrencyExtension on Currency {
   bool get symbolOnLeft => pattern.startsWith("S");
+}
+
+extension IntegerExtension on int {
+  String getPlural({String? customPlural}) {
+    if (this >= 2) {
+      return customPlural ?? "s";
+    } else {
+      return "";
+    }
+  }
 }

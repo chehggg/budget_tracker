@@ -293,27 +293,17 @@ class ChartSection extends StatelessWidget {
                           fade: true,
                         ),
                       if (showPreviousLabel)
-                        Opacity(
-                          opacity: showPrevious ? 1 : 0.5,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: () {
-                              context.chartMod.toggleShowPrevious();
-                            },
-                            child: Row(
-                              spacing: 8,
-                              children: [
-                                LabelIndicator(
-                                  text: context.chartMod.prevDisplayPeriod,
-                                  color: context.chartMod.accentColors.previous,
-                                  fade: true,
-                                ),
-                                FaIcon(
-                                  showPrevious ? FontAwesomeIcons.eye : FontAwesomeIcons.eyeSlash,
-                                  size: 10,
-                                ),
-                              ],
-                            ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () {
+                            context.chartMod.toggleShowPrevious();
+                          },
+                          child: LabelIndicator(
+                            text: context.chartMod.prevDisplayPeriod,
+                            color: context.chartMod.accentColors.previous,
+                            fade: true,
+                            enabled: showPrevious,
+                            showVisibleSymbol: true,
                           ),
                         ),
                     ],
