@@ -517,7 +517,6 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                               context.pop();
                             }
                           }
-
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -567,12 +566,13 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                       dense: true,
                       title: "Use Range",
                       onSelected: (value) {
+                        final prevDate2 = _yearMonth.date2;
                         setState(
                           () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
                         );
                         if (!_yearMonth.useRange) {
                           context.listMod.updateYearMonth(
-                            YearMonth(useRange: false, date1: _yearMonth.date1),
+                            YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
                           );
                           context.pop();
                         }

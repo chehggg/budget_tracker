@@ -806,31 +806,21 @@ class GoalCumulativeChart extends StatefulWidget {
 }
 
 class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
-  int _index = 0;
-  bool _isTouched = false;
-  int defaultIndex = 0;
-  @override
-  void initState() {
-    super.initState();
-    defaultIndex =
-        context.goalInfoMod.lineChartCumulativeData.entries
-            .where((entry) => entry.value != null)
-            .length -
-        1;
-    _index = defaultIndex;
-  }
+  int? _index;
 
   @override
   Widget build(BuildContext context) {
     final target = context.goalInfoMod.goal.target;
     final progress = context.goalInfoMod.currentGoalProgress;
-    final goalSpots = context.goalInfoMod.lineChartCumulativeData.entries
-        .where((entry) => entry.value != null)
-        .mapIndexed(
-          (index, el) {
-            return FlSpot((index + 1).toDouble(), el.value ?? 0);
-          },
-        );
+    final goals = context.goalInfoMod.lineChartCumulativeData.entries.where(
+      (entry) => entry.value != null,
+    );
+    final defaultIndex = goals.length - 1;
+    final goalSpots = goals.mapIndexed(
+      (index, el) {
+        return FlSpot((index + 1).toDouble(), el.value ?? 0);
+      },
+    );
     final targetPerDaySpots = List.generate(
       context.goalInfoMod.dataCount,
       (i) {
@@ -844,6 +834,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
       final diff = (currentY - targetY);
       return FlSpot(index.toDouble(), diff);
     });
+    final indicatorIndex = _index ?? defaultIndex;
 
     return Container(
       padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
@@ -874,13 +865,11 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                     response == null ||
                     response.lineBarSpots == null) {
                   setState(() {
-                    _isTouched = false; // Reset touch state
                     _index = defaultIndex;
                   });
                   return;
                 }
 
-                _isTouched = true;
                 _index = response.lineBarSpots?.first.x.round() ?? defaultIndex;
               });
             },
@@ -936,22 +925,22 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
           showingTooltipIndicators: [
             // ShowingTooltipIndicators([LineBarSpot(LineChartBarData(), 1, spots.elementAtOrNull(8) ?? FlSpot(0, 0))]),
             ShowingTooltipIndicators([
-              if (goalSpots.elementAtOrNull(_index) != null)
+              if (goalSpots.elementAtOrNull(indicatorIndex) != null)
                 LineBarSpot(
                   LineChartBarData(),
                   0,
-                  goalSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                  goalSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
                 ),
               LineBarSpot(
                 LineChartBarData(),
                 1,
-                targetPerDaySpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                targetPerDaySpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
               ),
-              if (goalSpots.elementAtOrNull(_index) != null)
+              if (goalSpots.elementAtOrNull(indicatorIndex) != null)
                 LineBarSpot(
                   LineChartBarData(),
                   2,
-                  diffSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                  diffSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
                 ),
             ]),
             // ShowingTooltipIndicators([
@@ -973,7 +962,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                   return DateTime.now().standard == date;
                 },
               ),
-              showingIndicators: [_index],
+              showingIndicators: [indicatorIndex],
               isCurved: false,
               color: context.cs.secondary,
               spots: goalSpots.toList(),
@@ -984,7 +973,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                   return false;
                 },
               ),
-              showingIndicators: [_index],
+              showingIndicators: [indicatorIndex],
               isCurved: false,
               showGradient: true,
               color: Colors.lightGreen,
@@ -1029,7 +1018,6 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
 
   @override
   Widget build(BuildContext context) {
-    final goal = context.goalInfoMod.goal;
     final dailyData = context.goalInfoMod.dailyData.entries;
     final maxData = dailyData.fold(0.0, (init, entry) => max(init, entry.value ?? 0));
     final dailyTarget = context.goalInfoMod.targetSpendPerDay;

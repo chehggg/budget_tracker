@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -559,6 +560,19 @@ class YearMonth {
       date2: useRange == false ? null : (date2 != null ? date2.call() : this.date2),
     );
   }
+
+  @override
+  bool operator ==(covariant YearMonth other) {
+    if (identical(this, other)) return true;
+  
+    return 
+      other.useRange == useRange &&
+      other.date1 == date1 &&
+      other.date2 == date2;
+  }
+
+  @override
+  int get hashCode => useRange.hashCode ^ date1.hashCode ^ date2.hashCode;
 }
 
 sealed class YearMonthResult {}

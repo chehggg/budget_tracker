@@ -27,7 +27,7 @@ class GoalViewModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _goalRepo.ready;
     await _sharedElementRepo.ready;
-    
+
     _isInit = true;
 
     _subscription = _goalRepo.streamValue.listen((_) {
@@ -37,7 +37,6 @@ class GoalViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
-    debugPrint('goal view model done');
     notifyListeners();
   }
 
@@ -47,8 +46,23 @@ class GoalViewModel extends ChangeNotifier {
   bool _isInit = false;
   bool get ready => _isInit;
 
+  String _searchText = "";
+  String get searchText => _searchText;
+
+  bool _searchOn = false;
+  bool get searchOn => _searchOn;
+
+  List<Goal> get _filteredGoals =>
+      _goalRepo.goals.where((goal) {
+        if (_searchText.isNotEmpty) {
+          return goal.title?.toLowerCase().contains(_searchText.toLowerCase()) ?? false;
+        } else {
+          return true;
+        }
+      }).toList();
+
   Map<Goal, GoalProgress> get goalOverview => Map.fromEntries(
-    _goalRepo.goals.map(
+    _filteredGoals.map(
       (goal) => MapEntry(
         goal,
         goal.getGoalProgress(
@@ -60,6 +74,16 @@ class GoalViewModel extends ChangeNotifier {
   );
 
   AccentColor get accentColors => _sharedElementRepo.accentColors;
+
+  void updateSearch(String text) {
+    _searchText = text;
+    notifyListeners();
+  }
+
+  void toggleSearch({bool? value}) {
+    _searchOn = value ?? !_searchOn;
+    notifyListeners();
+  }
 
   @override
   void dispose() {

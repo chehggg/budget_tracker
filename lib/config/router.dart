@@ -76,7 +76,7 @@ final goRouter = GoRouter(
                         currencyRepo: context.read(),
                         sharedRepo: context.read(),
                       ),
-                  child: CostListScreen(),
+                  child: CostListScreenWrapper(),
                 );
               },
               routes: [

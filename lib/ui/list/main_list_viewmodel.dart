@@ -37,9 +37,12 @@ class ListViewModel extends ChangeNotifier {
 
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
       _refresh = DateTime.now().millisecondsSinceEpoch;
-      updateYearMonth(YearMonth(useRange: false, date1: value.date ?? DateTime.now()));
+      final prevYearMonth = _yearMonth;
+      updateYearMonth(YearMonth(useRange: false, date1: value.date?.startOfMonth ?? DateTime.now()));
       if (!value.showMonth) {
         getScrollPosition(value.date ?? DateTime.now());
+        _resetScroll = prevYearMonth != _yearMonth;
+        debugPrint("update scroll position, position: ${_scrollPosition}, reset: ${_resetScroll}");
       } else {
         _scrollPosition = 0;
       }
@@ -88,6 +91,10 @@ class ListViewModel extends ChangeNotifier {
 
   double _scrollPosition = 0;
   double get scrollPosition => _scrollPosition;
+
+  bool _resetScroll = false;
+  bool get resetScroll => _resetScroll;
+
   // NumRangeMatchType? _rangeMatch;
   // NumRangeMatchType? get numberRange => _rangeMatch;
 

@@ -28,9 +28,11 @@ class CostListScreenWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
     return ScreenWrapper(
-      canPop: false,
+      canPop: !isSearchOpened,
       popAction: (didPop, result) {
+        debugPrint("child screen pop fired");
         if (isSearchOpened) {
+          context.navMod.toggleFab(show: true);
           context.listMod.toggleSearch(false);
         }
       },
@@ -53,9 +55,7 @@ class CostListScreen extends StatefulWidget {
 class _CostListScreenState extends State<CostListScreen> {
   late final ScrollController _controller;
   bool expanded = true;
-  // double _curPosition = 0;
   int _refresh = 0;
-  // bool _loadingReady = true;
   OverlayEntry? _overlay;
 
   void addOverlay() {
@@ -70,7 +70,9 @@ class _CostListScreenState extends State<CostListScreen> {
 
   void scrollToPosition(double position) {
     if (_controller.hasClients) {
-      _controller.jumpTo(0);
+      if (context.listMod.resetScroll) {
+        _controller.jumpTo(0);
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _controller.animateTo(position, duration: Durations.medium1, curve: Curves.easeOutCirc);
       });
@@ -418,20 +420,10 @@ class ItemFilterChips extends StatelessWidget {
               horizontal: 12.0,
             ),
             onTap: () async {
-              // final response = await showDialog<Map<String, dynamic>?>(
-              //   context: context,
-              //   builder: (dialogContext) {
-              //     return RangeSliderAlertDialog(
-              //       items: context.listMod.items,
-              //       initRange: context.listMod.priceRange,
-              //       initCostTypes: context.listMod.types,
-              //     );
-              //   },
-              // );
               final response = await showModalBottomSheet(
                 context: context,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
-                constraints: BoxConstraints(maxHeight: 350),
+                constraints: BoxConstraints(maxHeight: 400),
                 builder: (sheetContext) {
                   return ChangeNotifierProvider.value(
                     value: context.listMod,
@@ -522,7 +514,9 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
     return Theme(
       data: Theme.of(context).copyWith(
         sliderTheme: SliderThemeData(
-          trackHeight: 2,
+          padding: EdgeInsets.symmetric(vertical: 14),
+          trackHeight: 1,
+          overlayColor: Colors.transparent,
           activeTrackColor: context.cs.secondary,
           rangeThumbShape: RoundRangeSliderThumbShape(
             enabledThumbRadius: 8,
@@ -540,10 +534,29 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
         onClosing: () {},
         builder:
             (context) => Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        "Price Range",
+                        style: context.customTt.dateLabel,
+                      ),
+                      AffirmativeTextButton(
+                        onTap: () {
+                          context.pop();
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    height: 16,
+                  ),
                   Text("Expense"),
                   CostSlider(
                     range: _defaultExpenseRange,
@@ -554,7 +567,10 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
                       });
                     },
                   ),
-                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(top: 20, bottom: 20),
+                    child: Divider(),
+                  ),
                   Text("Income"),
                   CostSlider(
                     range: _defaultIncomeRange,
@@ -564,15 +580,6 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
                         _incomeRange = value;
                       });
                     },
-                  ),
-                  SizedBox(height: 30),
-                  Container(
-                    alignment: Alignment.centerRight,
-                    child: AffirmativeTextButton(
-                      onTap: () {
-                        context.pop();
-                      },
-                    ),
                   ),
                 ],
               ),
