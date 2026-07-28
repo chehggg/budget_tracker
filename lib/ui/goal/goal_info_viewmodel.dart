@@ -41,32 +41,50 @@ class GoalInfoViewModel extends ChangeNotifier {
     await _categoryRepo.ready;
     await _sharedElementRepo.ready;
 
+    _getInitValue();
+    _isInit = true;
+    _showAvgLine = _goal.goalType == GoalType.budget;
+
+    _subscription = _goalRepo.streamValue.listen((_) {
+      _getInitValue();
+      notifyListeners();
+    });
+
+    _sharedElementSubscription = _sharedElementRepo.sharedStream.listen((_) {
+      _getInitValue();
+      notifyListeners();
+    });
+
+    _costItemSubscription = _costItemRepo.valueStream.listen((_) {
+      _getInitValue();
+      notifyListeners();
+    });
+
+    _isInit = true;
+    notifyListeners();
+  }
+
+  void _getInitValue() {
     _pastProgress = _goal.getPastGoalProgress(_costItemRepo.costItems);
     _currentGoalProgress =
         _goal.getGoalProgress(
           _costItemRepo.costItems,
           _goal.isEnded ? goal.endDate! : DateTime.now(),
         )!;
-    _isInit = true;
+
     _showAvgLine = _goal.goalType == GoalType.budget;
-
-    _subscription = _goalRepo.streamValue.listen((_) {
-      notifyListeners();
-    });
-    _sharedElementSubscription = _sharedElementRepo.sharedStream.listen((_) {
-      notifyListeners();
-    });
-
     notifyListeners();
   }
 
   StreamSubscription<bool>? _subscription;
+  StreamSubscription? _costItemSubscription;
   StreamSubscription<bool>? _sharedElementSubscription;
 
   final int dayinCurrentMonth = DateTime.now().dayinCurrentMonth;
 
   DateTime? _previousDate;
-  bool get showHistory => _pastProgress.isNotEmpty || _previousDate != null;
+  DateTime? get prevDate => _previousDate;
+  bool get showHistory => _pastProgress.isNotEmpty && _previousDate != null;
 
   final Goal _goal;
   Goal get goal => _goal;
@@ -110,34 +128,48 @@ class GoalInfoViewModel extends ChangeNotifier {
     }
   }
 
+  DateTime getOutputChartStartDate({bool previous = false}) =>
+      previous ? _previousDate! : chartStartDate;
+
   int get dataCount =>
       _goal.goalTracking == GoalTrackingPeriod.monthly ? DateTime.now().dayinCurrentMonth : 49;
+
+  int get previousDateDataCount => _previousDate?.dayinCurrentMonth ?? 1;
+
+  // int getOutputDataCount({bool previous = false}) => previous ? previousDateDataCount : dataCount;
 
   String get displayDayTitle =>
       goal.goalTracking == GoalTrackingPeriod.monthly
           ? chartStartDate.formatMonthLonger()
           : "Last 7 weeks";
 
-  Map<DateTime, double?> get dailyData => Map.fromEntries(
-    List.generate(
-      dataCount,
-      (i) {
-        final date = chartStartDate.addDay(i);
-        final CostMetric? metric;
-        final items =
-            currentGoalProgress.items?.where((item) => item.date!.isAtSameMomentAs(date)) ?? [];
-        if (date.isAfter(DateTime.now().standard) && items.isEmpty) {
-          metric = null;
-        } else {
-          metric = CostMetric.fromCostItemList(items.toList());
-        }
-        return MapEntry(date, goal.getMetric(metric));
-      },
-    ),
-  );
+  Map<DateTime, double?> get previousDailyData => getDailyData(previous: true);
 
-  Map<int, double> get indexedDailyData {
-    final indexedMap = dailyData.entries.indexed;
+  Map<DateTime, double?> get currentDailyData => getDailyData(previous: false);
+
+  Map<DateTime, double?> getDailyData({bool previous = false}) {
+    final progress = previous ? currentViewedPastGoalProgress : currentGoalProgress;
+    return Map.fromEntries(
+      List.generate(
+        progress.totalData,
+        (i) {
+          final date = progress.date?.addDay(i) ?? DateTime.now();
+          final CostMetric? metric;
+          final items = progress.items?.where((item) => item.date!.isAtSameMomentAs(date)) ?? [];
+          if (items.isEmpty) {
+            metric = null;
+          } else {
+            metric = CostMetric.fromCostItemList(items.toList());
+          }
+          return MapEntry(date, goal.getMetric(metric));
+        },
+      ),
+    );
+  }
+
+  Map<int, double> getIndexedDailyData({bool previous = false}) {
+    final indexedMap =
+        previous ? previousDailyData.entries.indexed : currentDailyData.entries.indexed;
     final filteredItem = indexedMap.where((listItem) => listItem.$2.value != null);
     return Map.fromEntries(
       filteredItem.map((listItem) => MapEntry(listItem.$1, listItem.$2.value ?? 0)),
@@ -145,13 +177,13 @@ class GoalInfoViewModel extends ChangeNotifier {
   }
 
   bool matchLabelDate(int index) {
-    final date = lineChartCumulativeData.keys.elementAtOrNull(index);
+    final date = getLineChartCumulativeData().keys.elementAtOrNull(index);
     if (date == null) return false;
     return DateTime.now().standard.isAtSameMomentAs(date);
   }
 
   int get targetReachingDays =>
-      dailyData.entries
+      currentDailyData.entries
           .where(
             (entry) =>
                 (entry.value != null) && ((entry.value ?? 0) < (_goal.target! / dayinCurrentMonth)),
@@ -165,16 +197,19 @@ class GoalInfoViewModel extends ChangeNotifier {
     return remainingValue / remainingDays;
   }
 
-  Map<DateTime, double?> get lineChartCumulativeData {
+  Map<DateTime, double?> getLineChartCumulativeData({bool previous = false}) {
     List<MapEntry<DateTime, double?>> mapEntries = [];
     double cumulative = 0;
-    for (int i = 0; i < dailyData.length; i++) {
-      final entry = dailyData.entries.elementAt(i);
+    final progress = previous ? currentViewedPastGoalProgress : currentGoalProgress;
+    final data = previous ? previousDailyData : currentDailyData;
+    for (int i = 0; i < progress.displayedDataCount; i++) {
+      final entry = data.entries.elementAtOrNull(i);
+      if (entry == null) continue;
       cumulative += entry.value ?? 0;
       mapEntries.add(
         MapEntry(
           entry.key,
-          entry.value == null ? null : cumulative,
+          cumulative,
         ),
       );
     }
@@ -229,10 +264,20 @@ class GoalInfoViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateEndDate() {
+    final newGoal = goal.copyWith(
+      endDate: DateTime.now().startOfMonth.addMonth(-1),
+      lastModified: DateTime.now(),
+    );
+    _goalRepo.updateGoal(newGoal);
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     super.dispose();
     _subscription?.cancel();
     _sharedElementSubscription?.cancel();
+    _costItemSubscription?.cancel();
   }
 }

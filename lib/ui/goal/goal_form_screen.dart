@@ -27,6 +27,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final goalCategories = defaultGoalCategories.where((category) => category.type == _goalType);
+    
     return CustomScaffold(
       padHorizontal: true,
       appBarTitle: Text("New Goal"),
@@ -39,12 +40,12 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
               children: [
                 // Text("Page 1 of 2"),
                 Text(
-                  "What kind of goal do you want to set?",
+                  "What goal do you want to set?",
                   style: context.customTt.elegantLabelLarge,
                 ),
                 SegmentedButton(
                   style: SegmentedButton.styleFrom(
-                    visualDensity: VisualDensity(vertical: 0),
+                    visualDensity: VisualDensity(vertical: -1),
                     selectedBackgroundColor: context.cs.primary,
                     selectedForegroundColor: context.cs.surface,
                     textStyle: context.tt.labelSmall!.copyWith(fontSize: 18),
@@ -70,17 +71,17 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                   selected: {_goalType},
                   onSelectionChanged: (val) => setState(() => _goalType = val.first),
                 ),
-                Text(
-                  _goalType.description,
-                  style: context.customTt.paragraphText,
-                ),
+                // Text(
+                //   _goalType.description,
+                //   style: context.customTt.paragraphText,
+                // ),
               ],
             ),
           ),
           SliverList.builder(
-            itemCount: goalCategories.length,
+            itemCount: goalCategories.length + 1,
             itemBuilder: (context, index) {
-              final category = goalCategories.elementAt(index);
+              final category = goalCategories.elementAtOrNull(index);
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -92,7 +93,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                     spacing: 20,
                     children: [
                       FaIcon(
-                        category.icon,
+                        category?.icon ?? FontAwesomeIcons.sliders,
                         size: 36,
                       ),
                       Expanded(
@@ -101,12 +102,13 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                           spacing: 4,
                           children: [
                             Text(
-                              category.title,
+                              category?.title ?? "Custom",
                               textAlign: TextAlign.left,
                               style: context.customTt.paragraphTitle,
                             ),
                             Text(
-                              category.description,
+                              category?.description ??
+                                  "Create a custom ${_goalType.name} goal.",
                               textAlign: TextAlign.left,
                               style: context.customTt.paragraphText,
                             ),

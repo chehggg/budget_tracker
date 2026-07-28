@@ -182,7 +182,7 @@ final goRouter = GoRouter(
                             (context) => GoalFormViewModel(
                               categoryRepo: context.read(),
                               goalRepo: context.read(),
-                              goalCategory: state.extra as GoalCategory,
+                              goalCategory: state.extra as GoalCategory?,
                               initGoal: null,
                             ),
                         child: const GoalFormInfoScreen(),
@@ -254,11 +254,12 @@ final goRouter = GoRouter(
                 ),
                 GoRoute(
                   path: '/details-past',
-                  builder:
-                      (context, state) => ChangeNotifierProvider.value(
-                        value: context.read<GoalInfoViewModel>(),
-                        child: GoalPastDetailsScreen(date: state.extra as DateTime),
-                      ),
+                  builder: (context, state) {
+                    return ChangeNotifierProvider.value(
+                      value: state.extra as GoalInfoViewModel,
+                      child: GoalPastDetailsScreen(),
+                    );
+                  },
                 ),
               ],
             ),

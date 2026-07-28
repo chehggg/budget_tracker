@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
-import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/reusable/reusable_chart_component.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_reusables.dart';
@@ -18,53 +17,17 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class GoalPastDetailsScreen extends StatefulWidget {
-  const GoalPastDetailsScreen({super.key, required this.date});
-
-  final DateTime date;
-
-  @override
-  State<GoalPastDetailsScreen> createState() => _GoalPastDetailsScreenState();
-}
-
-class _GoalPastDetailsScreenState extends State<GoalPastDetailsScreen> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<GoalInfoViewModel>().updatePreviousDate(widget.date);
-  }
+class GoalPastDetailsScreen extends StatelessWidget {
+  const GoalPastDetailsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // final goal = context.select((GoalInfoViewModel state) => state.goal);
     final ready = context.select((GoalInfoViewModel state) => state.ready);
+    final prevDate = context.select((GoalInfoViewModel state) => state.prevDate);
     return CustomScaffold(
-      appBarTitle: Text("Goal Past Details - ${widget.date.formatMonth()}"),
-      padHorizontal: true,
-      actions: [
-        // IconButton(
-        //   onPressed: () async {
-        //     final response = await showDialog(
-        //       context: context,
-        //       builder: (context) => DeleteItemDialog(),
-        //     );
-        //     if (response == null) return;
-        //     if (response && context.mounted) {
-        //       await context.goalInfoMod.deleteGoal();
-        //       if (context.mounted) {
-        //         context.pop();
-        //       }
-        //     }
-        //   },
-        //   icon: Icon(Icons.delete),
-        // ),
-        // IconButton(
-        //   onPressed: () {
-        //     context.push('/goals/edit-goal', extra: goal);
-        //   },
-        //   icon: Icon(Icons.edit),
-        // ),
-      ],
+      appBarTitle: Text("Goal Past Details - ${prevDate?.formatMonth()}"),
+      // padHorizontal: true,
+      actions: [],
       ready: ready,
       child: const GoalInfoBody(
         showPrevious: true,
@@ -82,7 +45,7 @@ class GoalDetailsScreen extends StatelessWidget {
     final ready = context.select((GoalInfoViewModel state) => state.ready);
     return CustomScaffold(
       appBarTitle: Text("Goal Details"),
-      padHorizontal: true,
+      // padHorizontal: true,
       actions: [
         IconButton(
           onPressed: () async {
@@ -98,13 +61,42 @@ class GoalDetailsScreen extends StatelessWidget {
               }
             }
           },
-          icon: Icon(Icons.delete),
+          icon: FaIcon(
+            FontAwesomeIcons.trash,
+            size: 18,
+          ),
+        ),
+        IconButton(
+          onPressed: () async {
+            final response = await showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: Text("End Goal"),
+                  content: Text(
+                    "Mark this goal as completed? This month's progress will be discarded, but previous goal progress will still be visible.",
+                  ),
+                  actions: [
+                    DismissTextButton(
+                      onTap: () => context.pop(false),
+                    ),
+                    AffirmativeTextButton(onTap: () => context.pop(true)),
+                  ],
+                );
+              },
+            );
+            if (response == true) {
+              context.goalInfoMod.updateEndDate();
+              context.pop();
+            }
+          },
+          icon: FaIcon(FontAwesomeIcons.calendarCheck, size: 20),
         ),
         IconButton(
           onPressed: () {
             context.push('/goals/edit-goal', extra: goal);
           },
-          icon: Icon(Icons.edit),
+          icon: FaIcon(FontAwesomeIcons.pencil, size: 18),
         ),
       ],
       ready: ready,
@@ -117,6 +109,15 @@ class GoalInfoBody extends StatelessWidget {
   const GoalInfoBody({super.key, this.showPrevious = false});
 
   final bool showPrevious;
+
+  Widget get sliverPad {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      sliver: SliverToBoxAdapter(
+        child: Divider(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,11 +132,16 @@ class GoalInfoBody extends StatelessWidget {
     final extraProgress = (1 - progress).abs();
     final dividerPercentage = progress * 0.008;
     // debugPrint('goal progress: ${pastProgress.length}');
-    
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: const GoalInfoTitleContainer(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GoalInfoTitleContainer(
+              showPrevious: showPrevious,
+            ),
+          ),
         ),
         SliverToBoxAdapter(
           child: Stack(
@@ -176,10 +182,10 @@ class GoalInfoBody extends StatelessWidget {
                             radius: 10,
                             showTitle: false,
                             color:
-                                curProgress.achieved
-                                    ? context.customCs.fadeColor2
-                                    : curProgress.goalType == GoalType.budget
-                                    ? context.goalInfoMod.accentColors.negative.withAlpha(100)
+                                curProgress.isBudget && !curProgress.achieved
+                                    ? context.goalInfoMod.accentColors.negative.withAlpha(150)
+                                    : !curProgress.isBudget && curProgress.achieved
+                                    ? context.goalInfoMod.accentColors.positive.withAlpha(150)
                                     : context.customCs.fadeColor2,
                           ),
                           PieChartSectionData(
@@ -201,31 +207,53 @@ class GoalInfoBody extends StatelessWidget {
                 spacing: 4,
                 children: [
                   Text(
-                    curProgress.date?.formatMonthLonger() ?? "",
-                    style: context.customTt.paragraphTitle,
+                    curProgress.currentStatus,
+                    style: context.tt.bodyMedium!.copyWith(
+                      fontSize: 16,
+                      height: 1.1,
+                      fontWeight: FontWeight(600),
+                      color:
+                          curProgress.currentStatus == "Pending"
+                              ? context.cs.secondary.withAlpha(250)
+                              : curProgress.achieved
+                              ? context.goalInfoMod.accentColors.positive.withAlpha(
+                                250,
+                              )
+                              : context.goalInfoMod.accentColors.negative.withAlpha(
+                                250,
+                              ),
+                    ),
                   ),
+                  // Text(
+                  //   curProgress.date?.formatMonthLonger() ?? "",
+                  //   style: context.customTt.paragraphTitle,
+                  // ),
                   SizedBox(
                     height: 4,
                   ),
                   Text(
                     curProgress.progress.formatDecimalPercentage(),
-                    style: context.customTt.dateLabel!.copyWith(fontSize: 48, height: 1),
-                  ),
-                  SizedBox(
-                    height: 1,
+                    style: context.customTt.dateLabel!.copyWith(fontSize: 48, height: 1.1),
                   ),
                   Text(
                     "${curProgress.value.formatRoundedString()} / ${curProgress.target?.formatRoundedString()}",
-                    style: context.tt.bodyMedium!.copyWith(fontSize: 14),
+                    style: context.tt.bodyMedium!.copyWith(
+                      fontSize: 14,
+                      color: context.customCs.fadeColor1,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
         ),
-        SliverToBoxAdapter(
-          child: GoalDetailsExpansionTile(),
-        ),
+        if (!showPrevious)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GoalDetailsExpansionTile(),
+            ),
+          ),
         SliverToBoxAdapter(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -279,12 +307,7 @@ class GoalInfoBody extends StatelessWidget {
             ],
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          sliver: SliverToBoxAdapter(
-            child: Divider(),
-          ),
-        ),
+        sliverPad,
         // SliverPadding(
         //   padding: const EdgeInsets.symmetric(vertical: 12.0),
         //   sliver: SliverToBoxAdapter(
@@ -292,21 +315,23 @@ class GoalInfoBody extends StatelessWidget {
         //   ),
         // ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
-            child: GoalInfoLineChart(),
+            child: GoalInfoLineChart(showPrevious: showPrevious),
           ),
         ),
+        sliverPad,
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
-            child: GoalAvgTargetInfoChart(),
+            child: GoalAvgTargetInfoChart(showPrevious: showPrevious),
           ),
         ),
+        sliverPad,
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
-            child: GoalInfoHeatmapChart(),
+            child: GoalInfoHeatmapChart(showPrevious: showPrevious),
           ),
         ),
         if (context.goalInfoMod.showHistory)
@@ -320,12 +345,12 @@ class GoalInfoBody extends StatelessWidget {
           SliverList(
             delegate: SliverChildListDelegate([
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
                 child: Text("History", style: context.customTt.dateLabel),
               ),
               if (streak > 0)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
                   child: ReusableContainer(
                     padding: EdgeInsets.all(12),
                     filled: true,
@@ -348,9 +373,15 @@ class GoalInfoBody extends StatelessWidget {
               ...pastProgress.map(
                 (progress) => GestureDetector(
                   behavior: HitTestBehavior.translucent,
-                  onTap: () => context.push('/goals//details-past', extra: progress.date),
+                  onTap: () {
+                    context.goalInfoMod.updatePreviousDate(progress.date!);
+                    context.push(
+                      '/goals/details-past',
+                      extra: context.goalInfoMod,
+                    );
+                  },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         vertical: 8.0,
@@ -423,9 +454,9 @@ class GoalInfoBody extends StatelessWidget {
 }
 
 class GoalInfoTitleContainer extends StatelessWidget {
-  const GoalInfoTitleContainer({
-    super.key,
-  });
+  const GoalInfoTitleContainer({super.key, required this.showPrevious});
+
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
@@ -438,98 +469,99 @@ class GoalInfoTitleContainer extends StatelessWidget {
         spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            spacing: 8,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // FaIcon(
-              //   goal.goalType == GoalType.budget
-              //       ? FontAwesomeIcons.coins
-              //       : goal.goalType == GoalType.savings
-              //       ? FontAwesomeIcons.piggyBank
-              //       : FontAwesomeIcons.creditCard,
-              //   size: 12,
-              // ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  border: BoxBorder.all(color: Colors.white.withAlpha(50)),
-                  color: context.cs.primary.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  spacing: 8,
-                  children: [
-                    FaIcon(
-                      goal.goalType == GoalType.budget
-                          ? FontAwesomeIcons.coins
-                          : goal.goalType == GoalType.savings
-                          ? FontAwesomeIcons.piggyBank
-                          : FontAwesomeIcons.creditCard,
-                      size: 12,
-                    ),
-                    Text(
-                      goal.goalType!.name.capitalize(),
-                      style: context.customTt.paragraphText?.copyWith(
-                        // fontSize: 40,
-                        fontSize: 12,
-
-                        color: context.cs.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Container(
-              //   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              //   decoration: BoxDecoration(
-              //     border: BoxBorder.all(color: Colors.white.withAlpha(50)),
-              //     color:
-              //         curProgress.currentStatus == "Pending"
-              //             ? context.cs.secondary.withAlpha(60)
-              //             : curProgress.achieved
-              //             ? context.goalInfoMod.accentColors.positive.withAlpha(60)
-              //             : context.goalInfoMod.accentColors.negative.withAlpha(60),
-              //     borderRadius: BorderRadius.circular(8),
-              //   ),
-              //   child: Text(
-              //     curProgress.currentStatus,
-              //     style: context.customTt.paragraphText?.copyWith(
-              //       // fontSize: 40,
-              //       fontSize: 12,
-              //       color: context.cs.primary,
-              //     ),
-              //   ),
-              // ),
-              if (streak > 0)
+          if (!showPrevious)
+            Row(
+              spacing: 8,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // FaIcon(
+                //   goal.goalType == GoalType.budget
+                //       ? FontAwesomeIcons.coins
+                //       : goal.goalType == GoalType.savings
+                //       ? FontAwesomeIcons.piggyBank
+                //       : FontAwesomeIcons.creditCard,
+                //   size: 12,
+                // ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     border: BoxBorder.all(color: Colors.white.withAlpha(50)),
-                    color: Colors.deepOrange.withAlpha(20),
+                    color: context.cs.primary.withAlpha(30),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     spacing: 8,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       FaIcon(
-                        FontAwesomeIcons.fire,
-                        color: Colors.red,
+                        goal.goalType == GoalType.budget
+                            ? FontAwesomeIcons.coins
+                            : goal.goalType == GoalType.savings
+                            ? FontAwesomeIcons.piggyBank
+                            : FontAwesomeIcons.creditCard,
                         size: 12,
                       ),
                       Text(
-                        "$streak",
+                        goal.goalType!.name.capitalize(),
                         style: context.customTt.paragraphText?.copyWith(
+                          // fontSize: 40,
                           fontSize: 12,
+
                           color: context.cs.primary,
                         ),
                       ),
                     ],
                   ),
                 ),
-            ],
-          ),
+                // Container(
+                //   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                //   decoration: BoxDecoration(
+                //     border: BoxBorder.all(color: Colors.white.withAlpha(50)),
+                //     color:
+                //         curProgress.currentStatus == "Pending"
+                //             ? context.cs.secondary.withAlpha(60)
+                //             : curProgress.achieved
+                //             ? context.goalInfoMod.accentColors.positive.withAlpha(60)
+                //             : context.goalInfoMod.accentColors.negative.withAlpha(60),
+                //     borderRadius: BorderRadius.circular(8),
+                //   ),
+                //   child: Text(
+                //     curProgress.currentStatus,
+                //     style: context.customTt.paragraphText?.copyWith(
+                //       // fontSize: 40,
+                //       fontSize: 12,
+                //       color: context.cs.primary,
+                //     ),
+                //   ),
+                // ),
+                if (streak > 0)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: BoxBorder.all(color: Colors.white.withAlpha(50)),
+                      color: Colors.deepOrange.withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      spacing: 8,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FaIcon(
+                          FontAwesomeIcons.fire,
+                          color: Colors.red,
+                          size: 12,
+                        ),
+                        Text(
+                          "$streak",
+                          style: context.customTt.paragraphText?.copyWith(
+                            fontSize: 12,
+                            color: context.cs.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           Text(
             goal.title ?? "",
             maxLines: 3,
@@ -540,12 +572,13 @@ class GoalInfoTitleContainer extends StatelessWidget {
               // color: context.cs.surface,
             ),
           ),
-          Text(
-            goal.description ?? "",
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: context.tt.bodyMedium,
-          ),
+          if (!showPrevious)
+            Text(
+              goal.description ?? "",
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: context.tt.bodyMedium,
+            ),
         ],
       ),
     );
@@ -610,13 +643,18 @@ class GoalDetailsExpansionTile extends StatelessWidget {
 class GoalInfoHeatmapChart extends StatelessWidget {
   const GoalInfoHeatmapChart({
     super.key,
+    required this.showPrevious,
   });
+
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
     final dailSpendPercent = context.goalInfoMod.targetReachingPercentage;
-    final dailyData = context.goalInfoMod.dailyData.entries;
-    final days = context.goalInfoMod.displayDayTitle;
+    final dailyData =
+        showPrevious
+            ? context.goalInfoMod.previousDailyData.entries
+            : context.goalInfoMod.currentDailyData.entries;
     final daysWithData = dailyData.where((entry) => entry.value != null).length;
     final targetReachingDays = context.goalInfoMod.targetReachingDays;
     final dailyTarget = context.goalInfoMod.targetSpendPerDay;
@@ -628,7 +666,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                "Spend Heatmap - $days",
+                "Spend Heatmap",
                 style: context.customTt.dateLabel,
               ),
             ),
@@ -693,8 +731,12 @@ class GoalInfoHeatmapChart extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
           child: HeatmapGraph(
+            isBudget: context.goalInfoMod.currentGoalProgress.isBudget,
             target: dailyTarget,
-            totalCount: context.goalInfoMod.dataCount,
+            totalCount:
+                showPrevious
+                    ? context.goalInfoMod.previousDateDataCount
+                    : context.goalInfoMod.dataCount,
             getTooltipMessage: (index) {
               final dayData = dailyData.elementAtOrNull(index);
               if (dayData == null) {
@@ -712,7 +754,10 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                     "${dayData.value != null ? " (${percentage.formatCompactPercentage()})" : ""}";
               }
             },
-            data: context.goalInfoMod.indexedDailyData,
+            data:
+                showPrevious
+                    ? context.goalInfoMod.previousDailyData
+                    : context.goalInfoMod.currentDailyData,
           ),
         ),
         Padding(
@@ -751,9 +796,9 @@ class GoalInfoHeatmapChart extends StatelessWidget {
 }
 
 class GoalInfoLineChart extends StatelessWidget {
-  const GoalInfoLineChart({
-    super.key,
-  });
+  const GoalInfoLineChart({super.key, required this.showPrevious});
+
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
@@ -799,19 +844,24 @@ class GoalInfoLineChart extends StatelessWidget {
                 child: FractionallySizedBox(
                   widthFactor: 0.6,
                   child: Row(
-                    spacing: 6,
+                    spacing: 12,
                     children: [
                       LabelIndicator(
                         text: "Spend",
                         color: context.goalInfoMod.accentColors.current,
                         fade: true,
                       ),
-                      LabelIndicator(
-                        text: "Target Daily Average",
-                        color: Colors.lightGreen,
-                        fade: true,
-                        showVisibleSymbol: true,
-                        enabled: showAvg,
+                      GestureDetector(
+                        onTap: () {
+                          context.goalInfoMod.toggleShowAvgLine();
+                        },
+                        child: LabelIndicator(
+                          text: "Target Daily Average",
+                          color: Colors.lightGreen,
+                          fade: true,
+                          showVisibleSymbol: true,
+                          enabled: showAvg,
+                        ),
                       ),
                     ],
                   ),
@@ -820,7 +870,7 @@ class GoalInfoLineChart extends StatelessWidget {
             ),
           ],
         ),
-        GoalCumulativeChart(),
+        GoalCumulativeChart(showPrevious: showPrevious),
         Padding(
           padding: const EdgeInsets.only(bottom: 8.0, top: 12),
           child:
@@ -854,9 +904,9 @@ class GoalInfoLineChart extends StatelessWidget {
 }
 
 class GoalCumulativeChart extends StatefulWidget {
-  const GoalCumulativeChart({
-    super.key,
-  });
+  const GoalCumulativeChart({super.key, this.showPrevious = false});
+
+  final bool showPrevious;
 
   @override
   State<GoalCumulativeChart> createState() => _GoalCumulativeChartState();
@@ -867,51 +917,68 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
+    final contextWatch = context.watch<GoalInfoViewModel>();
     final target = context.goalInfoMod.goal.target;
     final showAvgLine = context.goalInfoMod.showAvgLine;
-    final progress = context.goalInfoMod.currentGoalProgress;
-    final cumulativeSpots = context.goalInfoMod.lineChartCumulativeData.entries
-        .where((entry) => entry.value != null)
+    final curViewedProgress = context.select(
+      (GoalInfoViewModel state) =>
+          widget.showPrevious ? state.currentViewedPastGoalProgress : state.currentGoalProgress,
+    );
+    final cumulativeSpots = context.goalInfoMod
+        .getLineChartCumulativeData(previous: widget.showPrevious)
+        .entries
+        // .where((entry) => entry.value != null)
         .mapIndexed(
           (index, el) {
-            return FlSpot((index + 1).toDouble(), (el.value ?? 0).clamp(0, double.infinity));
+            return FlSpot(index.toDouble(), (el.value ?? 0).clamp(0, double.infinity));
           },
         );
+    final dailyAvg = curViewedProgress.dailyTarget;
     final dailyAvgSpots = List.generate(
-      context.goalInfoMod.dataCount,
-      (i) {
-        final target = (i + 1) * context.goalInfoMod.targetSpendPerDay;
-        return FlSpot((i + 1).toDouble(), target);
-      },
+      curViewedProgress.totalData,
+      (i) => FlSpot(i.toDouble(), dailyAvg * (i + 1)),
     );
+    final int defaultIndex = (cumulativeSpots.length - 1).clamp(0, double.infinity).round();
     final diffSpots = cumulativeSpots.mapIndexed((index, el) {
       final currentY = el.y;
       final targetY = dailyAvgSpots.elementAt(index).y;
       final diff = (currentY - targetY);
       return FlSpot(index.toDouble(), diff);
     });
-    final indicatorIndex = _index ?? defaultIndex;
-
+    final int indicatorIndex = _index ?? defaultIndex;
     return Container(
       padding: EdgeInsets.only(top: 12, left: 4, right: 4, bottom: 12),
       height: 200,
       child: LineChart(
+        duration: Duration.zero,
         LineChartData(
           titlesData: getCustomChartTitleData(
             context: context,
             bottomTitle: AxisTitles(
               sideTitles: SideTitles(
-                interval: 1,
+                interval: cumulativeSpots.length > 50 ? null : 1,
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   return ChartBottomTitleLabel(value: value);
                 },
               ),
             ),
+            showLeft: true,
+            showRight: true,
           ),
-          extraLinesData: getHorizontalExtraLines(context, y: [target ?? 0], showYLabel: [true]),
-          maxY: ((progress.value * 1.4) > (target ?? 0)) ? progress.value * 1.4 : null,
+          extraLinesData: getHorizontalExtraLines(
+            context,
+            y: [target ?? 0],
+            showYLabel: [true],
+            x: [indicatorIndex.toDouble()],
+          ),
+          maxY:
+              ((curViewedProgress.value * 1.4) > (target ?? 0))
+                  ? curViewedProgress.value * 1.4
+                  : null,
           minY: 0,
+          maxX: dailyAvgSpots.length - 1,
           lineTouchData: getCustomLineTouchData(
             enabled: false,
             context: context,
@@ -920,14 +987,12 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                   response == null ||
                   response.lineBarSpots == null) {
                 setState(() {
-                  _isTouched = false; // Reset touch state
                   _index = defaultIndex;
                 });
                 return;
               }
 
               setState(() {
-                _isTouched = true;
                 _index = response.lineBarSpots?.first.x.round() ?? defaultIndex;
               });
             },
@@ -937,8 +1002,8 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map(
                 (spot) {
-                  final startDate = context.goalInfoMod.chartStartDate.addDay(
-                    spot.x.round() - 1,
+                  final startDate = (curViewedProgress.date ?? DateTime.now().standard).addDay(
+                    spot.x.round(),
                   );
                   final label = switch (spot.barIndex) {
                     0 => startDate.formatEvenShorter(),
@@ -949,10 +1014,10 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                   final color = switch (spot.barIndex) {
                     0 => context.goalInfoMod.accentColors.current,
                     1 => Colors.lightGreen,
-                    2 => context.read<SharedElementRepository>().accentColors.getColorByValue(
-                      spot.y,
-                      reversed: progress.goalType == GoalType.budget,
-                    ),
+                    2 =>
+                      (curViewedProgress.compareValueWithTarget(value: spot.y, target: 0))
+                          ? context.goalInfoMod.accentColors.positive
+                          : context.goalInfoMod.accentColors.negative,
                     _ => Colors.transparent,
                   };
                   final data = switch (spot.barIndex) {
@@ -963,7 +1028,6 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
                           ),
                     _ => context.goalInfoMod.compactCurrencyFormat(spot.y),
                   };
-                  // == 0 ? "Limit" : startDate.formatShorter();
                   return LineTooltipItem(
                     "$label: $data",
                     context.tt.bodyMedium!.copyWith(
@@ -981,43 +1045,32 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
           borderData: FlBorderData(show: false),
           gridData: customGrid,
           showingTooltipIndicators: [
-            // ShowingTooltipIndicators([LineBarSpot(LineChartBarData(), 1, spots.elementAtOrNull(8) ?? FlSpot(0, 0))]),
             ShowingTooltipIndicators([
-              if (cumulativeSpots.elementAtOrNull(_index) != null)
+              if (cumulativeSpots.elementAtOrNull(indicatorIndex) != null)
                 LineBarSpot(
                   LineChartBarData(),
                   0,
-                  cumulativeSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                  cumulativeSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
                 ),
               if (showAvgLine)
                 LineBarSpot(
                   LineChartBarData(),
                   1,
-                  dailyAvgSpots.elementAtOrNull(_index) ?? FlSpot(0, 0),
+                  dailyAvgSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
                 ),
-              if (cumulativeSpots.elementAtOrNull(_index) != null && showAvgLine)
+              if (cumulativeSpots.elementAtOrNull(indicatorIndex) != null && showAvgLine)
                 LineBarSpot(
                   LineChartBarData(),
                   2,
                   diffSpots.elementAtOrNull(indicatorIndex) ?? FlSpot(0, 0),
                 ),
             ]),
-            // ShowingTooltipIndicators([
-            //   LineBarSpot(LineChartBarData(), 0, FlSpot(0, target ?? 0)),
-            // ]),
           ],
           lineBarsData: [
-            // getCustomLineChartBarData(
-            //   isCurved: false,
-            //   showGradient: true,
-            //   color: Colors.white,
-            //   dashArray: [2, 8],
-            //   spots: targetSpots,
-            // ),
             getCustomLineChartBarData(
               dotData: FlDotData(
                 checkToShowDot: (spot, barData) {
-                  final date = context.goalInfoMod.chartStartDate.addDay(spot.x.round() - 1);
+                  final date = curViewedProgress.date?.addDay(spot.x.round());
                   return DateTime.now().standard == date;
                 },
               ),
@@ -1026,19 +1079,20 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
               color: context.cs.secondary,
               spots: cumulativeSpots.toList(),
             ),
-            getCustomLineChartBarData(
-              dotData: FlDotData(
-                checkToShowDot: (spot, barData) {
-                  return false;
-                },
+            if (showAvgLine)
+              getCustomLineChartBarData(
+                dotData: FlDotData(
+                  checkToShowDot: (spot, barData) {
+                    return false;
+                  },
+                ),
+                showingIndicators: [indicatorIndex],
+                isCurved: false,
+                showGradient: true,
+                color: Colors.lightGreen,
+                dashArray: [1, 15],
+                spots: [...dailyAvgSpots],
               ),
-              showingIndicators: [indicatorIndex],
-              isCurved: false,
-              showGradient: true,
-              color: Colors.lightGreen,
-              dashArray: [1, 15],
-              spots: [...dailyAvgSpots],
-            ),
           ],
         ),
       ),
@@ -1047,7 +1101,9 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
 }
 
 class GoalAvgTargetInfoChart extends StatelessWidget {
-  const GoalAvgTargetInfoChart({super.key});
+  const GoalAvgTargetInfoChart({super.key, required this.showPrevious});
+
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
@@ -1059,29 +1115,44 @@ class GoalAvgTargetInfoChart extends StatelessWidget {
           "Daily Spend",
           style: context.customTt.dateLabel,
         ),
-        GoalAvgTargetBarChart(),
+        GoalProgressDailyBarChart(
+          showPrevious: showPrevious,
+        ),
       ],
     );
   }
 }
 
-class GoalAvgTargetBarChart extends StatefulWidget {
-  const GoalAvgTargetBarChart({super.key});
+class GoalProgressDailyBarChart extends StatefulWidget {
+  const GoalProgressDailyBarChart({super.key, required this.showPrevious});
+
+  final bool showPrevious;
 
   @override
-  State<GoalAvgTargetBarChart> createState() => _GoalAvgTargetBarChartState();
+  State<GoalProgressDailyBarChart> createState() => _GoalProgressDailyBarChartState();
 }
 
-class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
+class _GoalProgressDailyBarChartState extends State<GoalProgressDailyBarChart> {
   int? _touchedIndex;
 
   @override
   Widget build(BuildContext context) {
-    final dailyData = context.goalInfoMod.dailyData.entries;
+    // ignore: unused_local_variable
+    final contextWatch = context.watch<GoalInfoViewModel>();
+    final curViewedProgress =
+        widget.showPrevious
+            ? context.goalInfoMod.currentViewedPastGoalProgress
+            : context.goalInfoMod.currentGoalProgress;
+    // final dailyData = context.goalInfoMod.cu;
+    final dailyData = context.select(
+      (GoalInfoViewModel state) =>
+          widget.showPrevious ? state.previousDailyData.entries : state.currentDailyData.entries,
+    );
     final maxData = dailyData.fold(0.0, (init, entry) => max(init, entry.value ?? 0));
-    final dailyTarget = context.goalInfoMod.targetSpendPerDay;
+    final dailyTarget = curViewedProgress.dailyTarget;
+    final showAvgLine = context.select((GoalInfoViewModel state) => state.showAvgLine);
     final List<int> showValues = [];
-    final isBudget = goal.goalType == GoalType.budget;
+    final isBudget = curViewedProgress.isBudget;
     for (final (index, entry) in dailyData.indexed) {
       if ((entry.value ?? 0) > dailyTarget) {
         showValues.add(index);
@@ -1132,7 +1203,7 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
                       style: TextStyle(
                         color: context.goalInfoMod.accentColors.getColorByValue(
                           value - dailyTarget,
-                          reversed: goal.goalType == GoalType.budget,
+                          reversed: curViewedProgress.isBudget,
                         ),
                       ),
                     ),
@@ -1151,14 +1222,21 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
             context: context,
             bottomTitle: AxisTitles(
               sideTitles: SideTitles(
+                interval: dailyData.length > 50 ? null : 1,
                 showTitles: true,
                 getTitlesWidget: (value, meta) {
                   return ChartBottomTitleLabel(value: value);
                 },
               ),
             ),
+            showLeft: true,
+            showRight: true,
           ),
-          extraLinesData: getHorizontalExtraLines(context, y: [dailyTarget], showYLabel: [true]),
+          extraLinesData: getHorizontalExtraLines(
+            context,
+            y: [0, if (showAvgLine) dailyTarget],
+            showYLabel: [false, true],
+          ),
           barGroups: [
             ...dailyData.mapIndexed((index, el) {
               final value = el.value ?? 0;
@@ -1175,24 +1253,31 @@ class _GoalAvgTargetBarChartState extends State<GoalAvgTargetBarChart> {
                       color: Colors.transparent,
                     ),
                     toY: value,
-                    color: context.goalInfoMod.accentColors.getColorByValue(-1, reversed: isBudget),
+                    // color: context.goalInfoMod.accentColors.negative,
+                    color:
+                        isBudget
+                            ? context.goalInfoMod.accentColors.negative
+                            : context.goalInfoMod.accentColors.positive,
                     width: 4,
                     rodStackItems: [
                       BarChartRodStackItem(
-                        0,
-                        dailyTarget,
-                        context.goalInfoMod.accentColors.getColorByValue(1, reversed: isBudget),
+                        isBudget ? 0 : double.maxFinite * -1,
+                        isBudget ? dailyTarget : 0,
+                        isBudget
+                            ? context.goalInfoMod.accentColors.positive
+                            : context.goalInfoMod.accentColors.negative,
                       ),
                     ],
                     label: BarChartRodLabel(
                       show: showValues.contains(index),
-                      text: '\n${(value / dailyTarget).formatCompactPercentage()}',
+                      text:
+                          '\n${context.goalInfoMod.currencyFormat(value, compact: true, abbreviated: true, showSymbol: false, decimalDigits: 0)}',
                       style: context.customTt.paragraphTextSmall!.copyWith(
                         fontSize: 9,
-                        color: context.goalInfoMod.accentColors.getColorByValue(
-                          -1,
-                          reversed: isBudget,
-                        ),
+                        color:
+                            isBudget
+                                ? context.goalInfoMod.accentColors.negative
+                                : context.goalInfoMod.accentColors.positive,
                       ),
                       offset: Offset(0, 10),
                     ),
@@ -1308,14 +1393,16 @@ class HeatmapGraph extends StatefulWidget {
   const HeatmapGraph({
     super.key,
     this.target,
+    this.isBudget = true,
     required this.totalCount,
     required this.data,
     this.getTooltipMessage,
   });
 
+  final bool isBudget;
   final double? target;
   final int totalCount;
-  final Map<int, double> data;
+  final Map<DateTime, double?> data;
   final String Function(int)? getTooltipMessage;
 
   @override
@@ -1356,15 +1443,22 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
         Color color;
         if (value != null) {
           if (widget.target != null) {
-            if (value > widget.target!) {
-              color = context.goalInfoMod.accentColors.negative;
+            if (widget.isBudget) {
+              if (value > widget.target!) {
+                color = context.goalInfoMod.accentColors.negative;
+              } else {
+                color =
+                    Color.lerp(
+                      context.goalInfoMod.accentColors.positive,
+                      context.cs.secondary,
+                      (value) / widget.target!,
+                    )!;
+              }
             } else {
-              color =
-                  Color.lerp(
-                    context.goalInfoMod.accentColors.positive,
-                    context.cs.secondary,
-                    (value) / widget.target!,
-                  )!;
+              color = context.goalInfoMod.accentColors.getColorByValue(
+                value - widget.target!,
+                reversed: widget.isBudget,
+              );
             }
           } else {
             color = context.goalInfoMod.accentColors.positive;

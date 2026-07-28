@@ -18,37 +18,63 @@ class GoalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((GoalViewModel state) => state.ready);
-    return CustomScaffold(
-      appBarTitle: Text("GOALS"),
-      actions: [
-        IconButton(
-          onPressed: () {
-            context.goalMod.toggleSearch(value: true);
-          },
-          icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
-        ),
-        IconButton(
-          onPressed: () {
-            context.push("/goals/new-goal");
-          },
-          icon: FaIcon(FontAwesomeIcons.layerGroup, size: 20),
-        ),
-        IconButton(
-          onPressed: () {
-            //TODO: Implement filter
-            context.push("/goals/new-goal");
-          },
-          icon: FaIcon(FontAwesomeIcons.filter, size: 20),
-        ),
-        IconButton(
-          onPressed: () {
-            context.push("/goals/new-goal");
-          },
-          icon: FaIcon(FontAwesomeIcons.plus, size: 20),
-        ),
-      ],
-      ready: ready,
-      child: const GoalBody(),
+    final searchEnabled = context.select((GoalViewModel state) => state.searchOn);
+    return PopScope(
+      canPop: searchEnabled,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.goalMod.toggleSearch(value: false);
+      },
+      child: CustomScaffold(
+        appBarTitle:
+            searchEnabled
+                ? Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        context.goalMod.toggleSearch(value: false);
+                      },
+                      icon: FaIcon(FontAwesomeIcons.arrowLeft),
+                    ),
+                    TextFormField(
+                      onChanged: context.goalMod.updateSearch,
+                    ),
+                  ],
+                )
+                : Text("GOALS"),
+        actions:
+            searchEnabled
+                ? []
+                : [
+                  IconButton(
+                    onPressed: () {
+                      context.goalMod.toggleSearch(value: true);
+                    },
+                    icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      context.push("/goals/new-goal");
+                    },
+                    icon: FaIcon(FontAwesomeIcons.layerGroup, size: 20),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      //TODO: Implement filter
+                      context.push("/goals/new-goal");
+                    },
+                    icon: FaIcon(FontAwesomeIcons.filter, size: 20),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      context.push("/goals/new-goal");
+                    },
+                    icon: FaIcon(FontAwesomeIcons.plus, size: 20),
+                  ),
+                ],
+        ready: ready,
+        child: const GoalBody(),
+      ),
     );
   }
 }
@@ -69,7 +95,8 @@ class GoalBody extends StatelessWidget {
       ...goals.entries.where((entry) => entry.key.isEnded),
       ...goals.entries.where((entry) => !entry.key.isStarted),
     ];
-    
+
+    debugPrint("update goal screen");
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -186,7 +213,12 @@ class GoalBody extends StatelessWidget {
                               },
                               child: Column(
                                 children: [
-                                  Text(entry.key.title ?? ""),
+                                  Text(
+                                    entry.key.title ?? "",
+                                    style: context.tt.bodyMedium!.copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
                                   Text(
                                     entry.key.isEnded
                                         ? "Ended on ${entry.key.endDate?.formatMonthLonger() ?? ""}"
@@ -223,6 +255,7 @@ class GoalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<GoalViewModel>();
     final clampedProgress = goalProgress.progress.clamp(0.0, 1.0);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

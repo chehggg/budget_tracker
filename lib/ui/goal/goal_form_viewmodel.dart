@@ -32,7 +32,7 @@ class GoalFormViewModel extends ChangeNotifier {
   Future<void> init() async {
     if (_initGoal != null) {
       _draftedGoal = _initGoal;
-      debugPrint("found init goals, title: ${_initGoal.title}");
+      // debugPrint("found init goals, title: ${_initGoal.title}");
     } else {
       _draftedGoal = Goal(id: Uuid().v4());
 

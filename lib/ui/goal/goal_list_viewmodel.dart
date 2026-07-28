@@ -33,6 +33,9 @@ class GoalViewModel extends ChangeNotifier {
     _subscription = _goalRepo.streamValue.listen((_) {
       notifyListeners();
     });
+    _costItemSubscription = _costItemRepo.valueStream.listen((_) {
+      notifyListeners();
+    });
     _sharedElementSubscription = _sharedElementRepo.sharedStream.listen((_) {
       notifyListeners();
     });
@@ -41,6 +44,7 @@ class GoalViewModel extends ChangeNotifier {
   }
 
   StreamSubscription<bool>? _subscription;
+  StreamSubscription? _costItemSubscription;
   StreamSubscription<bool>? _sharedElementSubscription;
 
   bool _isInit = false;
@@ -54,24 +58,28 @@ class GoalViewModel extends ChangeNotifier {
 
   List<Goal> get _filteredGoals =>
       _goalRepo.goals.where((goal) {
-        if (_searchText.isNotEmpty) {
-          return goal.title?.toLowerCase().contains(_searchText.toLowerCase()) ?? false;
-        } else {
-          return true;
-        }
-      }).toList();
+          if (_searchText.isNotEmpty) {
+            return goal.title?.toLowerCase().contains(_searchText.toLowerCase()) ?? false;
+          } else {
+            return true;
+          }
+        }).toList()
+        ..sort((a, b) => a.lastCreated!.compareTo(b.lastCreated!));
 
-  Map<Goal, GoalProgress> get goalOverview => Map.fromEntries(
-    _filteredGoals.map(
-      (goal) => MapEntry(
-        goal,
-        goal.getGoalProgress(
-          _costItemRepo.costItems,
-          goal.isEnded ? goal.endDate! : DateTime.now(),
-        )!,
-      ),
-    ),
-  );
+  Map<Goal, GoalProgress> get goalOverview {
+    Map<Goal, GoalProgress> result = {};
+
+    for (final goal in _filteredGoals) {
+      final progress = goal.getGoalProgress(
+        _costItemRepo.costItems,
+        goal.isEnded ? (goal.endDate ?? DateTime.now()) : DateTime.now(),
+      );
+      if (progress != null) {
+        result.addEntries([MapEntry(goal, progress)]);
+      }
+    }
+    return result;
+  }
 
   AccentColor get accentColors => _sharedElementRepo.accentColors;
 
@@ -90,5 +98,6 @@ class GoalViewModel extends ChangeNotifier {
     super.dispose();
     _subscription?.cancel();
     _sharedElementSubscription?.cancel();
+    _costItemSubscription?.cancel();
   }
 }

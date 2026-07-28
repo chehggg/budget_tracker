@@ -843,10 +843,13 @@ class CostEntryList extends StatelessWidget {
                             ),
                             Expanded(
                               child: Text(
-                                "${costItem.name}",
+                                "${costItem.name == "" ? "[no desc]" : costItem.name}",
                                 // maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
-                                style: context.tt.bodyMedium,
+                                style: context.tt.bodyMedium!.copyWith(
+                                  color: costItem.name == "" ? context.customCs.fadeColor2 : null,
+                                  fontStyle: costItem.name == "" ? FontStyle.italic : null,
+                                ),
                               ),
                             ),
                             HideableText(

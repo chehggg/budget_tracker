@@ -5,6 +5,7 @@ import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:collection/collection.dart';
 
 class Goal {
   Goal({
@@ -122,13 +123,14 @@ class Goal {
     final filteredItems =
         items.where((item) {
           final categoryQuery = categories?.contains(item.categoryId) ?? true;
-          final nameQuery = filter?.checkMatch(item.name!) ?? true;
+          final nameQuery = item.name != null ? (filter?.checkMatch(item.name!) ?? true) : true;
           return categoryQuery && nameQuery;
         }).toList();
 
     if (goalTracking == GoalTrackingPeriod.monthly) {
       return GoalProgress(
         date: yearMonth.startOfMonth,
+        goalTracking: goalTracking,
         items:
             filteredItems.where((item) {
               return item.date!.isInSameYearMonthAs(yearMonth);
@@ -139,6 +141,8 @@ class Goal {
     } else if (goalTracking == GoalTrackingPeriod.overall) {
       return GoalProgress(
         date: startDate!,
+        endDate: endDate ?? DateTime.now().add(Duration(days: 1000)),
+        goalTracking: goalTracking,
         items:
             filteredItems
                 .where(
@@ -191,14 +195,18 @@ class Goal {
 class GoalProgress {
   GoalProgress({
     this.date,
+    this.endDate,
     this.items,
     this.goalType,
+    this.goalTracking,
     this.target,
   });
 
   final DateTime? date;
+  final DateTime? endDate;
   final List<CostItem>? items;
   final GoalType? goalType;
+  final GoalTrackingPeriod? goalTracking;
   final double? target;
 
   double get value {
@@ -208,7 +216,7 @@ class GoalProgress {
       case GoalType.savings:
         return max(0, CostMetric.fromCostItemList(items ?? []).balance);
       case GoalType.payment:
-        return max(0, CostMetric.fromCostItemList(items ?? []).balance);
+        return max(0, CostMetric.fromCostItemList(items ?? []).balance.abs());
       default:
         return 0;
     }
@@ -252,6 +260,50 @@ class GoalProgress {
         return achieved ? "Achieved" : "Pending";
       default:
         return "";
+    }
+  }
+
+  int get displayedDataCount {
+    if (date == null) return 1;
+    final lastDate = items?.sorted((a, b) => b.date!.compareTo(a.date!)).firstOrNull?.date ?? DateTime.now().standard;
+    final finalDate = lastDate.isAfter(DateTime.now().standard) ? lastDate : DateTime.now().standard;
+    return finalDate.difference(date!).inDays + 1;
+  }
+
+  int get totalData {
+    if (date == null) return 1;
+    switch (goalTracking) {
+      case GoalTrackingPeriod.monthly:
+        return date!.getTotalDayInMonth();
+      case GoalTrackingPeriod.overall:
+        return endDate?.difference(date!).inDays ?? 1;
+      default:
+        return 1;
+    }
+  }
+
+  bool get isBudget => goalType == GoalType.budget;
+
+  double get dailyTarget => (target ?? 0) / totalData;
+
+  bool compareValueWithTarget({required double value, required double target}) {
+    if (goalType == GoalType.budget) {
+      return value <= target;
+    } else {
+      return value >= target;
+    }
+  }
+
+  bool isWithinDailyTarget(double value) {
+    switch (goalType) {
+      case GoalType.budget:
+        return value <= dailyTarget;
+      case GoalType.savings:
+        return value >= dailyTarget;
+      case GoalType.payment:
+        return value >= dailyTarget;
+      default:
+        return true;
     }
   }
 }

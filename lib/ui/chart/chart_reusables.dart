@@ -125,10 +125,11 @@ class LabelIndicator extends StatelessWidget {
           ),
           if (showVisibleSymbol)
             Padding(
-              padding: const EdgeInsets.only(right: 8.0),
+              padding: const EdgeInsets.only(left: 8.0),
               child: FaIcon(
                 showVisibleSymbol && enabled ? FontAwesomeIcons.eye : FontAwesomeIcons.eyeSlash,
                 size: 10,
+                color: context.customCs.fadeColor1,
               ),
             ),
         ],

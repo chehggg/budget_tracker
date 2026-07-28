@@ -40,7 +40,7 @@ class CostItem {
     'costType': costType?.name,
     'categoryId': categoryId,
     'amount': amount,
-    'name': name,
+    'name': name ?? "",
     'image': image,
     'lastCreated': lastCreated?.toString(),
     'lastModified': lastModified?.toString(),
@@ -48,7 +48,7 @@ class CostItem {
 
   CostItem.fromJson(Map<String, dynamic> json)
     : uuid = json['uuid'] as String?,
-      name = json['name'] as String?,
+      name = json['name'] as String? ?? "",
       amount = json['amount'] as double?,
       image = json['image'] as String?,
       categoryId = json['categoryId'] as String?,
@@ -564,11 +564,8 @@ class YearMonth {
   @override
   bool operator ==(covariant YearMonth other) {
     if (identical(this, other)) return true;
-  
-    return 
-      other.useRange == useRange &&
-      other.date1 == date1 &&
-      other.date2 == date2;
+
+    return other.useRange == useRange && other.date1 == date1 && other.date2 == date2;
   }
 
   @override

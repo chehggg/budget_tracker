@@ -72,7 +72,7 @@ class FormViewModel extends ChangeNotifier {
       _formGroup =
           _initCostItem.costType == CostType.expense ? FormGroup.expense : FormGroup.income;
     } else {
-      _draftedItem = CostItem(uuid: Uuid().v4(), date: DateTime.now().standard);
+      _draftedItem = CostItem(uuid: Uuid().v4(), date: DateTime.now().standard, name: "");
     }
   }
 
