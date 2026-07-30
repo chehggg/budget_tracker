@@ -211,8 +211,6 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
             shape: WidgetStatePropertyAll(
               RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(8)),
             ),
-            // shadowColor: WidgetStatePropertyAll(context.cs.primary.withAlpha(100)),
-            // elevation: WidgetStatePropertyAll(10),
             padding: WidgetStatePropertyAll(EdgeInsets.all(8)),
             visualDensity: VisualDensity(vertical: -3),
             backgroundColor: WidgetStatePropertyAll(context.cs.surfaceContainerHighest),

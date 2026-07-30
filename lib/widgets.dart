@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/ui/form/form_screen.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -424,180 +425,216 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
   Widget build(BuildContext context) {
     final monthlyOverview = context.listMod.monthlyOverview;
 
-    return AlertDialog(
-      content: SizedBox(
-        width: MediaQuery.sizeOf(context).width * 0.7,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Column(
-              spacing: 12,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      child: Column(
+        spacing: 12,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            spacing: 12,
+            children: [
+              Flexible(
+                flex: 2,
+                fit: FlexFit.tight,
+                child: Text(
+                  "Month",
+                  style: context.customTt.dateLabel,
+                ),
+              ),
+              ActionChip(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                visualDensity: VisualDensity(vertical: 0),
+                backgroundColor: _yearMonth.useRange ? context.customCs.fadeColor2 : context.cs.surfaceContainerHigh,
+                onPressed: () {
+                  final prevDate2 = _yearMonth.date2;
+                  setState(
+                    () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
+                  );
+                  if (!_yearMonth.useRange) {
+                    context.listMod.updateYearMonth(
+                      YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
+                    );
+                    context.pop();
+                  }
+                },
+                avatar: FaIcon(FontAwesomeIcons.calendarWeek, size: 14,),
+                label: Text("Range"),
+              ),
+              IconButton(
+                // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                // backgroundColor: context.cs.surfaceContainerHigh,
+                // visualDensity: VisualDensity(vertical: 0),
+                onPressed: () {
+                 context.listMod.updateYearMonth(
+                    YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+                  );
+                  context.pop();
+                },
+                icon: FaIcon(FontAwesomeIcons.clockRotateLeft, size: 18,),
+                // label: Text("Current"),
+              ),
+            ],
+          ),
+          Divider(),
+          GestureDetector(
+            child: Row(
               children: [
-                GestureDetector(
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedDateTime = _selectedDateTime.addYear(-1);
-                          });
-                        },
-                        icon: Icon(
-                          Icons.chevron_left_rounded,
-                          size: 30,
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            _selectedDateTime.year.toString(),
-                            style: context.customTt.dateLabel!.copyWith(fontSize: 30),
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedDateTime = _selectedDateTime.addYear(1);
-                          });
-                        },
-                        icon: Icon(Icons.chevron_right_rounded, size: 30),
-                      ),
-                    ],
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateTime = _selectedDateTime.addYear(-1);
+                    });
+                  },
+                  icon: Icon(
+                    Icons.chevron_left_rounded,
+                    size: 30,
                   ),
                 ),
-                GridView(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    childAspectRatio: 1.1,
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _selectedDateTime.year.toString(),
+                      style: context.customTt.dateLabel!.copyWith(fontSize: 30),
+                    ),
                   ),
-                  children: [
-                    ...List.generate(12, (i) => i + 1).map((value) {
-                      final date = DateTime(_selectedDateTime.year, value, 1);
-                      final balance = monthlyOverview[date]?.balance ?? 0;
-                      final displayText =
-                          monthlyOverview.containsKey(date)
-                              ? context.listMod.currencyFormat(balance, abbreviated: true)
-                              : "N/A";
-                      final color =
-                          _yearMonth.isInYearMonth(date) ? context.customCs.fadeColor4 : null;
-                      final innerColor =
-                          _yearMonth.isWithin(date) && !_yearMonth.isInYearMonth(date)
-                              ? context.customCs.fadeColor3
-                              : null;
-
-                      return GestureDetector(
-                        onTap: () {
-                          if (!_yearMonth.useRange) {
-                            setState(() {
-                              _yearMonth = _yearMonth.copyWith(date1: date);
-                            });
-                            context.listMod.updateYearMonth(_yearMonth);
-                            context.pop();
-                          } else {
-                            if (_yearMonth.date2 != null) {
-                              setState(() {
-                                _yearMonth = _yearMonth.copyWith(date1: date, date2: () => null);
-                              });
-                              debugPrint("end date is not null, select new date");
-                              debugPrint("new year month: ${_yearMonth.date2}");
-                            } else if (date.isBefore(_yearMonth.date1)) {
-                              debugPrint("start date before select date, select new date");
-                              setState(() {
-                                _yearMonth = _yearMonth.copyWith(date1: date, date2: () => null);
-                              });
-                            } else {
-                              setState(() {
-                                _yearMonth = _yearMonth.copyWith(date2: () => date);
-                              });
-                              context.listMod.updateYearMonth(_yearMonth);
-                              context.pop();
-                            }
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: AnimatedContainer(
-                            duration: Duration(milliseconds: 200),
-                            curve: Curves.easeOut,
-                            padding: EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(color: innerColor),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    DateFormat('MMM').format(date),
-                                    style: context.customTt.dateLabel!.copyWith(fontSize: 20),
-                                  ),
-                                  Text(
-                                    displayText,
-                                    style: context.customTt.numberFontSmall!.copyWith(
-                                      fontSize: 12,
-                                      color:
-                                          balance < 0
-                                              ? context.listMod.accentColors.negative
-                                              : balance > 0
-                                              ? context.listMod.accentColors.positive
-                                              : context.customCs.fadeColor1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
                 ),
-                Divider(),
-                Column(
-                  spacing: 4,
-                  children: [
-                    CustomSwitchListTile(
-                      dense: true,
-                      title: "Use Range",
-                      onSelected: (value) {
-                        final prevDate2 = _yearMonth.date2;
-                        setState(
-                          () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
-                        );
-                        if (!_yearMonth.useRange) {
-                          context.listMod.updateYearMonth(
-                            YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
-                          );
-                          context.pop();
-                        }
-                      },
-                      value: _yearMonth.useRange,
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                      title: Text(
-                        "Select Current Month",
-                        style: context.tt.bodyMedium,
-                      ),
-                      onTap: () {
-                        context.listMod.updateYearMonth(
-                          YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
-                        );
-                        context.pop();
-                      },
-                    ),
-                  ],
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateTime = _selectedDateTime.addYear(1);
+                    });
+                  },
+                  icon: Icon(Icons.chevron_right_rounded, size: 30),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          ),
+          GridView(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              mainAxisSpacing: 2,
+              crossAxisCount: 4,
+              childAspectRatio: 1.2,
+            ),
+            children: [
+              ...List.generate(12, (i) => i + 1).map((value) {
+                final date = DateTime(_selectedDateTime.year, value, 1);
+                final balance = monthlyOverview[date]?.balance ?? 0;
+                final displayText =
+                    monthlyOverview.containsKey(date)
+                        ? context.listMod.currencyFormat(
+                          balance,
+                          abbreviated: true,
+                          alwaysShowSign: true,
+                          showSymbol: false,
+                        )
+                        : "N/A";
+                final color = _yearMonth.isInYearMonth(date) ? context.customCs.fadeColor4 : null;
+                final innerColor =
+                    _yearMonth.isWithin(date) && !_yearMonth.isInYearMonth(date)
+                        ? context.customCs.fadeColor3
+                        : null;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (!_yearMonth.useRange) {
+                        _yearMonth = _yearMonth.copyWith(date1: date);
+                        context.listMod.updateYearMonth(_yearMonth);
+                        context.pop();
+                      } else {
+                        if (_yearMonth.date2 != null) {
+                          _yearMonth = _yearMonth.copyWith(date1: date, date2: () => null);
+                        } else if (date.isBefore(_yearMonth.date1)) {
+                          _yearMonth = _yearMonth.copyWith(date1: date, date2: () => null);
+                        } else {
+                          _yearMonth = _yearMonth.copyWith(date2: () => date);
+                          context.listMod.updateYearMonth(_yearMonth);
+                          context.pop();
+                        }
+                      }
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 200),
+                      curve: Curves.easeOut,
+                      padding: EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(color: innerColor),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              DateFormat('MMM').format(date),
+                              style: context.customTt.dateLabel!.copyWith(fontSize: 24),
+                            ),
+                            Text(
+                              displayText,
+                              style: context.customTt.numberFontSmall!.copyWith(
+                                fontSize: 14,
+                                color:
+                                    balance < 0
+                                        ? context.listMod.accentColors.negative
+                                        : balance > 0
+                                        ? context.listMod.accentColors.positive
+                                        : context.customCs.fadeColor1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          // Divider(),
+          // Column(
+          //   spacing: 4,
+          //   children: [
+          //     CustomSwitchListTile(
+          //       dense: true,
+          //       title: "Use Range",
+          //       onSelected: (value) {
+          //         final prevDate2 = _yearMonth.date2;
+          //         setState(
+          //           () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
+          //         );
+          //         if (!_yearMonth.useRange) {
+          //           context.listMod.updateYearMonth(
+          //             YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
+          //           );
+          //           context.pop();
+          //         }
+          //       },
+          //       value: _yearMonth.useRange,
+          //     ),
+          //     ListTile(
+          //       contentPadding: EdgeInsets.symmetric(horizontal: 12),
+          //       title: Text(
+          //         "Select Current Month",
+          //         style: context.tt.bodyMedium,
+          //       ),
+          //       onTap: () {
+          //         context.listMod.updateYearMonth(
+          //           YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+          //         );
+          //         context.pop();
+          //       },
+          //     ),
+          //   ],
+          // ),
+        ],
       ),
     );
   }
@@ -805,10 +842,12 @@ class CustomSwitchListTile extends StatelessWidget {
       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 0 : 6),
       title: Text(
         title,
+        textAlign: TextAlign.left,
         style: context.tt.bodyMedium,
       ),
       trailing: Transform.scale(
-        scale: 0.8,
+        alignment: Alignment.centerRight,
+        scale: 0.7,
         // width: width,
         child: Switch(
           padding: EdgeInsets.zero,
@@ -917,6 +956,60 @@ class CustomSpacedScrollView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class CustomMenuAnchor extends StatelessWidget {
+  const CustomMenuAnchor({super.key, this.animated = false, required this.items});
+
+  final bool animated;
+  final List<MenuChild> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      animated: animated,
+      builder: (context, controller, child) {
+        return IconButton(
+          iconSize: 20,
+          onPressed: () {
+            controller.isOpen ? controller.close() : controller.open();
+          },
+          icon: FaIcon(
+            FontAwesomeIcons.ellipsisVertical,
+            size: 18,
+          ),
+        );
+      },
+      style: MenuStyle(
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(8)),
+        ),
+        padding: WidgetStatePropertyAll(EdgeInsets.all(4)),
+        visualDensity: VisualDensity(vertical: -4),
+        backgroundColor: WidgetStatePropertyAll(context.cs.surfaceContainerHighest),
+      ),
+      menuChildren:
+          items.map((el) {
+            return ListTile(
+              onTap: el.onTap,
+              title: Row(
+                spacing: 12,
+                children: [
+                  FaIcon(
+                    el.icon,
+                    size: 16,
+                    color: el.color,
+                  ),
+                  Text(
+                    el.name,
+                    style: context.tt.bodyMedium!.copyWith(color: el.color),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 }

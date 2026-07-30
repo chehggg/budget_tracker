@@ -210,13 +210,13 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
               context.listMod.toggleSearch();
               context.navMod.toggleFab(show: false);
             },
-            icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
+            icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 18),
           ),
           IconButton(
             onPressed: context.listMod.toggleBlur,
             icon: FaIcon(
               !isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash,
-              size: 20,
+              size: 18,
             ),
           ),
           // IconButton(
@@ -238,15 +238,18 @@ class DateBreadcrumb extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        showDialog(
+      onTap: () async {
+        context.navMod.toggleFab(show: false);
+        await showModalBottomSheet(
           context: context,
+          isScrollControlled: true,
           builder:
               (_) => ChangeNotifierProvider.value(
                 value: context.listMod,
                 child: const MonthSelectorDialog(),
               ),
         );
+        context.navMod.toggleFab(show: true);
       },
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity == null) return;
@@ -335,8 +338,9 @@ class ItemFilterChips extends StatelessWidget {
                 }
               },
               onTap: () async {
-                await showDialog(
+                await showModalBottomSheet(
                   context: context,
+                  isScrollControlled: true,
                   builder:
                       (_) => ChangeNotifierProvider.value(
                         value: context.listMod,
@@ -533,43 +537,75 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text("Expense"),
-              CostSlider(
-                range: _defaultExpenseRange,
-                selectedRange: _expenseRange,
-                onChanged: (value) {
-                  setState(() {
-                    _expenseRange = value;
-                  });
-                },
-              ),
-              SizedBox(height: 20),
-              Text("Income"),
-              CostSlider(
-                range: _defaultIncomeRange,
-                selectedRange: _incomeRange,
-                onChanged: (value) {
-                  setState(() {
-                    _incomeRange = value;
-                  });
-                },
-              ),
-              SizedBox(height: 30),
-              Container(
-                alignment: Alignment.centerRight,
-                child: AffirmativeTextButton(
-                  onTap: () {
-                    context.pop();
+        child: Column(
+          spacing: 8,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text("Cost Filter", style: context.customTt.dateLabel)),
+                IconButton(
+                  onPressed: () {
+                    context.pop(true);
+                  },
+                  icon: FaIcon(
+                    FontAwesomeIcons.check,
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Divider(),
+            ),
+            Column(
+              spacing: 4,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text("Expense", style: context.customTt.dateLabel!.copyWith(fontSize: 20),),
+                CostSlider(
+                  range: _defaultExpenseRange,
+                  selectedRange: _expenseRange,
+                  onChanged: (value) {
+                    setState(() {
+                      _expenseRange = value;
+                    });
                   },
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              // child: Divider(),
+            ),
+            Column(
+              spacing: 4,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text("Income", style: context.customTt.dateLabel!.copyWith(fontSize: 20)),
+                CostSlider(
+                  range: _defaultIncomeRange,
+                  selectedRange: _incomeRange,
+                  onChanged: (value) {
+                    setState(() {
+                      _incomeRange = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            // Container(
+            //   alignment: Alignment.centerRight,
+            //   child: AffirmativeTextButton(
+            //     onTap: () {
+            //       context.pop();
+            //     },
+            //   ),
+            // ),
+          ],
         ),
       ),
     );
@@ -642,6 +678,7 @@ class _CostSliderState extends State<CostSlider> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      spacing: 4,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         RangeSlider(

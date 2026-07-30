@@ -86,7 +86,7 @@ class Goal {
     }
     if (goalTracking == GoalTrackingPeriod.monthly) {
       return List.generate(
-        max(1, end.month - startDate!.month),
+        max(1, (end.year * 12 + end.month) - (startDate!.year * 12 + startDate!.month)),
         (i) {
           final month = startDate!.addMonth(i);
           return getGoalProgress(items, month)!;
@@ -144,13 +144,14 @@ class Goal {
         endDate: endDate ?? DateTime.now().add(Duration(days: 1000)),
         goalTracking: goalTracking,
         items:
-            filteredItems
-                .where(
-                  (item) =>
-                      (item.date!.isAfterOrSameMoment(startDate!)) &&
-                      (item.date!.isBeforeOrSameMoment(endDate ?? DateTime.now().standard)),
-                )
-                .toList(),
+            filteredItems.where(
+              (item) {
+                return (item.date!.isAfterOrSameMoment(startDate!)) &&
+                    (item.date!.isBeforeOrSameMoment(
+                      endDate?.endOfMonth ?? DateTime.now().standard,
+                    ));
+              },
+            ).toList(),
         goalType: goalType,
         target: target,
       );
@@ -265,8 +266,11 @@ class GoalProgress {
 
   int get displayedDataCount {
     if (date == null) return 1;
-    final lastDate = items?.sorted((a, b) => b.date!.compareTo(a.date!)).firstOrNull?.date ?? DateTime.now().standard;
-    final finalDate = lastDate.isAfter(DateTime.now().standard) ? lastDate : DateTime.now().standard;
+    final lastDate =
+        items?.sorted((a, b) => b.date!.compareTo(a.date!)).firstOrNull?.date ??
+        DateTime.now().standard;
+    final finalDate =
+        lastDate.isAfter(DateTime.now().standard) ? lastDate : DateTime.now().standard;
     return finalDate.difference(date!).inDays + 1;
   }
 
@@ -276,7 +280,7 @@ class GoalProgress {
       case GoalTrackingPeriod.monthly:
         return date!.getTotalDayInMonth();
       case GoalTrackingPeriod.overall:
-        return endDate?.difference(date!).inDays ?? 1;
+        return (endDate?.endOfMonth.difference(date!).inDays ?? 0) + 1;
       default:
         return 1;
     }

@@ -307,6 +307,7 @@ class ListViewModel extends ChangeNotifier {
     double value, {
     bool abbreviated,
     bool alwaysShowSign,
+    bool showSymbol,
     bool compact,
     int? decimalDigits,
   })

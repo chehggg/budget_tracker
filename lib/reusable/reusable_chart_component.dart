@@ -198,8 +198,9 @@ LineTouchData getCustomLineTouchData({
     },
     touchSpotThreshold: 50,
     touchTooltipData: LineTouchTooltipData(
-      tooltipMargin: 400,
-      tooltipHorizontalAlignment: FLHorizontalAlignment.left,
+      tooltipMargin: 0,
+      showOnTopOfTheChartBoxArea:true,
+      tooltipHorizontalAlignment: FLHorizontalAlignment.center,
       getTooltipColor:
           getTooltipColor ??
           (touchedSpot) {
@@ -207,9 +208,10 @@ LineTouchData getCustomLineTouchData({
           },
       getTooltipItems: getTooltipItems ?? defaultLineTooltipItem,
       tooltipHorizontalOffset: 0,
-      fitInsideVertically: true,
+      // fitInsideVertically: true,
       fitInsideHorizontally: true,
       // showOnTopOfTheChartBoxArea: true,
     ),
   );
 }
+

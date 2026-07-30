@@ -11,6 +11,7 @@ import 'package:budget_tracker/data/repos/goal_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 class GoalInfoViewModel extends ChangeNotifier {
   GoalInfoViewModel({
@@ -65,7 +66,7 @@ class GoalInfoViewModel extends ChangeNotifier {
   }
 
   void _getInitValue() {
-    _pastProgress = _goal.getPastGoalProgress(_costItemRepo.costItems);
+    _pastProgress = _goal.getPastGoalProgress(_costItemRepo.costItems).reversed.toList();
     _currentGoalProgress =
         _goal.getGoalProgress(
           _costItemRepo.costItems,
@@ -84,7 +85,7 @@ class GoalInfoViewModel extends ChangeNotifier {
 
   DateTime? _previousDate;
   DateTime? get prevDate => _previousDate;
-  bool get showHistory => _pastProgress.isNotEmpty && _previousDate != null;
+  bool get showHistory => _pastProgress.isNotEmpty;
 
   final Goal _goal;
   Goal get goal => _goal;
@@ -95,10 +96,13 @@ class GoalInfoViewModel extends ChangeNotifier {
   List<GoalProgress> _pastProgress = [];
   List<GoalProgress> get pastProgress => _pastProgress;
 
+  GoalProgress getDynamicProgress({bool previous = false}) =>
+      previous ? currentViewedPastGoalProgress : currentGoalProgress;
+      
   int get streak {
-    final index = _pastProgress.lastIndexWhere((progress) => !progress.achieved);
+    final index = _pastProgress.indexWhere((progress) => !progress.achieved);
     if (index == -1) return _pastProgress.length;
-    return _pastProgress.length - (index + 1);
+    return index;
   }
 
   GoalProgress _currentGoalProgress = GoalProgress();
@@ -270,6 +274,29 @@ class GoalInfoViewModel extends ChangeNotifier {
       lastModified: DateTime.now(),
     );
     _goalRepo.updateGoal(newGoal);
+    notifyListeners();
+  }
+
+  void createDuplicate() {
+    String newTitle;
+
+    final regexMatch = RegExp(r'\((\d+)\)$');
+    final title = goal.title;
+    final match = regexMatch.firstMatch(title ?? "");
+    if (match != null) {
+      int value = int.parse(match.group(1) ?? "0") + 1;
+      newTitle = "$title ($value)";
+    } else {
+      newTitle = "$title (1)";
+    }
+
+    final newGoal = goal.copyWith(
+      id: Uuid().v4(),
+      title: newTitle,
+      lastCreated: DateTime.now(),
+      lastModified: DateTime.now(),
+    );
+    _goalRepo.addGoal(newGoal);
     notifyListeners();
   }
 

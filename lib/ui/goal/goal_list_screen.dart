@@ -20,24 +20,37 @@ class GoalScreen extends StatelessWidget {
     final ready = context.select((GoalViewModel state) => state.ready);
     final searchEnabled = context.select((GoalViewModel state) => state.searchOn);
     return PopScope(
-      canPop: searchEnabled,
+      canPop: !searchEnabled,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         context.goalMod.toggleSearch(value: false);
+        context.navMod.toggleFab(show: true);
       },
       child: CustomScaffold(
         appBarTitle:
             searchEnabled
                 ? Row(
                   children: [
-                    IconButton(
+                    BackButton(
                       onPressed: () {
                         context.goalMod.toggleSearch(value: false);
+                        context.navMod.toggleFab(show: true);
                       },
-                      icon: FaIcon(FontAwesomeIcons.arrowLeft),
                     ),
-                    TextFormField(
-                      onChanged: context.goalMod.updateSearch,
+                    Expanded(
+                      child: TextFormField(
+                        style: context.tt.bodyMedium,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          filled: false,
+                          hintText: "Search for goals via text or description...",
+                          hintStyle: context.customTt.paragraphText,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                        ),
+                        onChanged: context.goalMod.updateSearch,
+                      ),
                     ),
                   ],
                 )
@@ -49,6 +62,7 @@ class GoalScreen extends StatelessWidget {
                   IconButton(
                     onPressed: () {
                       context.goalMod.toggleSearch(value: true);
+                      context.navMod.toggleFab(show: false);
                     },
                     icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
                   ),
@@ -164,15 +178,12 @@ class GoalBody extends StatelessWidget {
                   children: [
                     Text("In Progress", style: context.customTt.dateLabel),
                     Text(
-                      "(${(goalsInProgress.length)} goal${goalsInProgress.length > 1 ? 's' : ""})",
+                      "(${(goalsInProgress.length)} goal${goalsInProgress.length.getPlural()})",
                       style: context.customTt.paragraphText,
                     ),
                   ],
                 ),
-                tilePadding: EdgeInsets.only(
-                  left: 12,
-                  right: 12,
-                ),
+                tilePadding: EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 children: [
                   ...goalsInProgress.map((goalEntry) {
                     final goalProgress = goalEntry.value;
@@ -186,16 +197,24 @@ class GoalBody extends StatelessWidget {
         if (finishedGoals.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.only(top: 20),
+              padding: EdgeInsets.only(top: 0),
               child: Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
-                  initiallyExpanded: true,
-                  title: Text("Not In Progress", style: context.customTt.dateLabel),
-                  tilePadding: EdgeInsets.only(
-                    left: 12,
-                    right: 12,
+                  initiallyExpanded: false,
+                  title: Row(
+                    spacing: 8,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text("Not In Progress", style: context.customTt.dateLabel),
+                      Text(
+                        "(${(finishedGoals.length)} goal${finishedGoals.length.getPlural()})",
+                        style: context.customTt.paragraphText,
+                      ),
+                    ],
                   ),
+                  tilePadding: EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                   childrenPadding: EdgeInsets.only(top: 0),
                   dense: true,
                   children: [
@@ -204,18 +223,21 @@ class GoalBody extends StatelessWidget {
                         children: [
                           Padding(
                             padding: EdgeInsets.symmetric(
-                              vertical: 8.0,
-                              // horizontal: 8.0,
+                              vertical: 16.0,
+                              horizontal: 12.0,
                             ),
                             child: GestureDetector(
                               onTap: () {
                                 context.push('/goals/details', extra: entry.key);
                               },
+                              behavior: HitTestBehavior.translucent,
                               child: Column(
+                                spacing: 8,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Text(
                                     entry.key.title ?? "",
-                                    style: context.tt.bodyMedium!.copyWith(
+                                    style: context.customTt.paragraphTitle!.copyWith(
                                       decoration: TextDecoration.lineThrough,
                                     ),
                                   ),
@@ -223,12 +245,18 @@ class GoalBody extends StatelessWidget {
                                     entry.key.isEnded
                                         ? "Ended on ${entry.key.endDate?.formatMonthLonger() ?? ""}"
                                         : "Will start on ${entry.key.startDate?.formatMonthLonger() ?? ""}",
+                                    style: context.customTt.paragraphTextSmall!.copyWith(
+                                      // decoration: TextDecoration.lineThrough,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                          Divider(),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Divider(),
+                          ),
                         ],
                       );
                     }),
@@ -237,7 +265,7 @@ class GoalBody extends StatelessWidget {
               ),
             ),
           ),
-        SliverToBoxAdapter(child: SizedBox(height: 20)),
+        SliverToBoxAdapter(child: SizedBox(height: 30)),
       ],
     );
   }
@@ -359,7 +387,7 @@ class GoalTile extends StatelessWidget {
                     Column(
                       children: [
                         SizedBox(
-                          height: 32,
+                          height: 36,
                         ),
                         Container(
                           // padding: EdgeInsets.only(right: 10),
@@ -369,6 +397,7 @@ class GoalTile extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.only(top: 16.0),
                             child: PieChart(
+                              duration: Duration.zero,
                               PieChartData(
                                 centerSpaceRadius: 44,
                                 startDegreeOffset: -180,

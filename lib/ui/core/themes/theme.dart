@@ -182,7 +182,6 @@ ThemeData getAppTheme(Locale locale) {
         shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
       ),
     ),
-
     inputDecorationTheme: InputDecorationThemeData(
       filled: true,
       border: border,

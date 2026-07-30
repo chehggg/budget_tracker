@@ -583,3 +583,12 @@ class YearMonthRange extends YearMonthResult {
   final DateTimeRange dateRange;
   YearMonthRange(this.dateRange);
 }
+
+class MenuChild {
+  MenuChild({required this.icon, required this.name, this.onTap, this.color});
+
+  final FaIconData icon;
+  final String name;
+  final Color? color;
+  final void Function()? onTap;
+}

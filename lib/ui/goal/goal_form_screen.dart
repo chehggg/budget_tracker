@@ -27,55 +27,58 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     final goalCategories = defaultGoalCategories.where((category) => category.type == _goalType);
-    
+
     return CustomScaffold(
       padHorizontal: true,
       appBarTitle: Text("New Goal"),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: Column(
-              spacing: 8,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Text("Page 1 of 2"),
-                Text(
-                  "What goal do you want to set?",
-                  style: context.customTt.elegantLabelLarge,
-                ),
-                SegmentedButton(
-                  style: SegmentedButton.styleFrom(
-                    visualDensity: VisualDensity(vertical: -1),
-                    selectedBackgroundColor: context.cs.primary,
-                    selectedForegroundColor: context.cs.surface,
-                    textStyle: context.tt.labelSmall!.copyWith(fontSize: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadiusGeometry.circular(8),
-                    ),
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                spacing: 4,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Text("Page 1 of 2"),
+                  Text(
+                    "What goal do you want to set?",
+                    style: context.customTt.elegantLabelLarge,
                   ),
-                  expandedInsets: EdgeInsets.only(top: 12),
-                  segments:
-                      GoalType.values
-                          .map(
-                            (type) => ButtonSegment(
-                              value: type,
-                              label: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  type.name.capitalize(),
+                  SegmentedButton(
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity(vertical: 0),
+                      selectedBackgroundColor: context.cs.primary,
+                      selectedForegroundColor: context.cs.surface,
+                      textStyle: context.tt.labelSmall!.copyWith(fontSize: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadiusGeometry.circular(12),
+                      ),
+                    ),
+                    expandedInsets: EdgeInsets.only(top: 12),
+                    segments:
+                        GoalType.values
+                            .map(
+                              (type) => ButtonSegment(
+                                value: type,
+                                label: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    type.name.capitalize(),
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                          .toList(),
-                  selected: {_goalType},
-                  onSelectionChanged: (val) => setState(() => _goalType = val.first),
-                ),
-                // Text(
-                //   _goalType.description,
-                //   style: context.customTt.paragraphText,
-                // ),
-              ],
+                            )
+                            .toList(),
+                    selected: {_goalType},
+                    onSelectionChanged: (val) => setState(() => _goalType = val.first),
+                  ),
+                  // Text(
+                  //   _goalType.description,
+                  //   style: context.customTt.paragraphText,
+                  // ),
+                ],
+              ),
             ),
           ),
           SliverList.builder(
@@ -107,8 +110,7 @@ class _GoalTypeSelectionScreenState extends State<GoalTypeSelectionScreen> {
                               style: context.customTt.paragraphTitle,
                             ),
                             Text(
-                              category?.description ??
-                                  "Create a custom ${_goalType.name} goal.",
+                              category?.description ?? "Create a custom ${_goalType.name} goal.",
                               textAlign: TextAlign.left,
                               style: context.customTt.paragraphText,
                             ),

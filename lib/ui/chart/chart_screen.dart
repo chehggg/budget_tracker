@@ -100,7 +100,7 @@ class ChartScreen extends StatelessWidget {
           onPressed: () => context.chartMod.resetPeriod(),
           icon: FaIcon(
             FontAwesomeIcons.arrowRotateLeft,
-            size: 20,
+            size: 18,
           ),
         ),
       ],
@@ -506,10 +506,12 @@ class _DailyBarChartState extends State<DailyBarChart> {
                           getTooltipColor: (group) => context.cs.surface.withAlpha(200),
                           tooltipMargin: 1000,
                           tooltipHorizontalOffset: 0,
-                          tooltipHorizontalAlignment: FLHorizontalAlignment.left,
+                          tooltipHorizontalAlignment: FLHorizontalAlignment.center,
                           direction: TooltipDirection.top,
                           fitInsideHorizontally: true,
                           fitInsideVertically: true,
+                          //       tooltipMargin: 0,
+                          // tooltipHorizontalAlignment: FLHorizontalAlignment.center,
                           getTooltipItem: (group, groupIndex, rod, rodIndex) {
                             final String curDate = context.chartMod.getFormatLabel(
                               data.elementAtOrNull(groupIndex)?.entries.lastOrNull?.key,
@@ -685,6 +687,7 @@ class SummaryData extends StatelessWidget {
                   touchTooltipData: BarTouchTooltipData(
                     tooltipPadding: EdgeInsets.only(top: 20),
                     direction: TooltipDirection.bottom,
+                    tooltipMargin: 0,
                     tooltipHorizontalAlignment: FLHorizontalAlignment.center,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem("", context.tt.bodyMedium!);
@@ -1434,9 +1437,8 @@ class _YearMonthOverviewState extends State<YearMonthOverview> {
                             (el) {
                               final i = el.x;
                               final metric = overview.entries.elementAtOrNull(i.round());
-                              // final metric = overview.entries.elementAtOrNull(i);
                               return LineTooltipItem(
-                                "${metric?.key.formatMonth()}: ${context.chartMod.compactCurrencyFormat(metric?.value.balance ?? 0)}",
+                                "${context.chartMod.getDisplayPeriodLabel(metric?.key ?? DateTime.now())}: ${context.chartMod.compactCurrencyFormat(metric?.value.balance ?? 0)}",
                                 context.customTt.numberFontSmall!.copyWith(fontSize: 10),
                                 children: [
                                   TextSpan(

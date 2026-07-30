@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:budget_tracker/custom/classes/class.dart';
+import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
@@ -47,56 +49,106 @@ class GoalDetailsScreen extends StatelessWidget {
       appBarTitle: Text("Goal Details"),
       // padHorizontal: true,
       actions: [
-        IconButton(
-          onPressed: () async {
-            final response = await showDialog(
-              context: context,
-              builder: (context) => DeleteItemDialog(),
-            );
-            if (response == null) return;
-            if (response && context.mounted) {
-              await context.goalInfoMod.deleteGoal();
-              if (context.mounted) {
-                context.pop();
-              }
-            }
-          },
-          icon: FaIcon(
-            FontAwesomeIcons.trash,
-            size: 18,
-          ),
-        ),
-        IconButton(
-          onPressed: () async {
-            final response = await showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: Text("End Goal"),
-                  content: Text(
-                    "Mark this goal as completed? This month's progress will be discarded, but previous goal progress will still be visible.",
-                  ),
-                  actions: [
-                    DismissTextButton(
-                      onTap: () => context.pop(false),
-                    ),
-                    AffirmativeTextButton(onTap: () => context.pop(true)),
-                  ],
-                );
-              },
-            );
-            if (response == true) {
-              context.goalInfoMod.updateEndDate();
-              context.pop();
-            }
-          },
-          icon: FaIcon(FontAwesomeIcons.calendarCheck, size: 20),
-        ),
+        // IconButton(
+        //   onPressed: () async {
+        //     final response = await showDialog(
+        //       context: context,
+        //       builder: (context) => DeleteItemDialog(),
+        //     );
+        //     if (response == null) return;
+        //     if (response && context.mounted) {
+        //       await context.goalInfoMod.deleteGoal();
+        //       if (context.mounted) {
+        //         context.pop();
+        //       }
+        //     }
+        //   },
+        //   icon: FaIcon(
+        //     FontAwesomeIcons.trash,
+        //     size: 18,
+        //   ),
+        // ),
         IconButton(
           onPressed: () {
             context.push('/goals/edit-goal', extra: goal);
           },
           icon: FaIcon(FontAwesomeIcons.pencil, size: 18),
+        ),
+        CustomMenuAnchor(
+          animated: true,
+          items: [
+            MenuChild(
+              icon: FontAwesomeIcons.copy,
+              name: "Duplicate",
+              onTap: () async {
+                final response = await showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text("Copy Goal"),
+                      content: Text(
+                        "Create a copy of this goal?",
+                      ),
+                      actions: [
+                        DismissTextButton(
+                          onTap: () => context.pop(false),
+                        ),
+                        AffirmativeTextButton(onTap: () => context.pop(true)),
+                      ],
+                    );
+                  },
+                );
+                if (response == true) {
+                  context.goalInfoMod.createDuplicate();
+                  context.pop();
+                }
+              },
+            ),
+            MenuChild(
+              icon: FontAwesomeIcons.calendarCheck,
+              name: "Mark as done",
+              onTap: () async {
+                final response = await showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text("End Goal"),
+                      content: Text(
+                        "Mark this goal as completed? \nThis month's progress will be discarded, but previous goal progress will still be visible.",
+                      ),
+                      actions: [
+                        DismissTextButton(
+                          onTap: () => context.pop(false),
+                        ),
+                        AffirmativeTextButton(onTap: () => context.pop(true)),
+                      ],
+                    );
+                  },
+                );
+                if (response == true) {
+                  context.goalInfoMod.updateEndDate();
+                  context.pop();
+                }
+              },
+            ),
+            MenuChild(
+              onTap: () async {
+                final response = await showDialog(
+                  context: context,
+                  builder: (context) {
+                    return DeleteItemDialog();
+                  },
+                );
+                if (response == true) {
+                  context.goalInfoMod.deleteGoal();
+                  context.pop();
+                }
+              },
+              color: Colors.red,
+              icon: FontAwesomeIcons.trash,
+              name: "Delete",
+            ),
+          ],
         ),
       ],
       ready: ready,
@@ -334,121 +386,191 @@ class GoalInfoBody extends StatelessWidget {
             child: GoalInfoHeatmapChart(showPrevious: showPrevious),
           ),
         ),
-        if (context.goalInfoMod.showHistory)
+        if (context.goalInfoMod.showHistory && !showPrevious)
           SliverPadding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             sliver: SliverToBoxAdapter(
               child: Divider(),
             ),
           ),
-        if (context.goalInfoMod.showHistory)
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
-                child: Text("History", style: context.customTt.dateLabel),
-              ),
-              if (streak > 0)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
-                  child: ReusableContainer(
-                    padding: EdgeInsets.all(12),
-                    filled: true,
-                    highlight: true,
-                    child: Row(
-                      spacing: 12,
-                      children: [
-                        FaIcon(
-                          FontAwesomeIcons.fire,
-                          color: Colors.red,
-                        ),
-                        Text(
-                          "$streak streak${streak.getPlural()}, keep it up!",
-                          style: context.customTt.numberLabel!.copyWith(color: context.cs.surface),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ...pastProgress.map(
-                (progress) => GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    context.goalInfoMod.updatePreviousDate(progress.date!);
-                    context.push(
-                      '/goals/details-past',
-                      extra: context.goalInfoMod,
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8.0,
-                      ),
-                      child: Column(
-                        spacing: 4,
-                        children: [
-                          Row(
-                            spacing: 12,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  progress.date?.formatMonthLonger() ?? "No date",
-                                  style: context.customTt.numberFontSmall,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            spacing: 10,
-                            children: [
-                              Container(
-                                height: 10,
-                                width: 10,
-                                decoration: BoxDecoration(
-                                  color:
-                                      progress.achieved
-                                          ? context.goalInfoMod.accentColors.positive
-                                          : context.goalInfoMod.accentColors.negative,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(progress.status, style: context.customTt.paragraphText),
-                              ),
-                              Text(
-                                // ignore: prefer_interpolation_to_compose_strings, prefer_adjacent_string_concatenation
-                                context.goalInfoMod.compactCurrencyFormat(progress.value) +
-                                    // ignore: prefer_interpolation_to_compose_strings
-                                    " / " +
-                                    context.goalInfoMod.compactCurrencyFormat(
-                                      progress.target ?? 0,
-                                    ),
-                                style: context.customTt.paragraphText,
-                              ),
-                              Text(
-                                "(${progress.progress.formatCompactPercentage()})",
-                                style: context.customTt.numberFontSmall!.copyWith(
-                                  fontSize: 14,
-                                  color:
-                                      progress.achieved
-                                          ? context.goalInfoMod.accentColors.positive
-                                          : context.goalInfoMod.accentColors.negative,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ]),
+        if (context.goalInfoMod.showHistory && !showPrevious)
+          PaginatedPastProgressList(
+            itemPerPage: 6,
           ),
         SliverToBoxAdapter(child: SizedBox(height: 20)),
       ],
+    );
+  }
+}
+
+class PaginatedPastProgressList extends StatefulWidget {
+  const PaginatedPastProgressList({
+    super.key,
+    required this.itemPerPage,
+  });
+
+  final int itemPerPage;
+
+  @override
+  State<PaginatedPastProgressList> createState() => _PaginatedPastProgressListState();
+}
+
+class _PaginatedPastProgressListState extends State<PaginatedPastProgressList> {
+  int _curPage = 1;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slicedItems = context.goalInfoMod.pastProgress.slices(widget.itemPerPage);
+    final pagedItems = slicedItems.elementAt(_curPage - 1);
+    final streak = context.goalInfoMod.streak;
+
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
+                child: Text("History", style: context.customTt.dateLabel),
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  if (_curPage > 1) {
+                    _curPage--;
+                  }
+                });
+              },
+              icon: FaIcon(
+                FontAwesomeIcons.angleLeft,
+                size: 16,
+              ),
+            ),
+            Row(
+              children: [
+                Text("$_curPage "),
+                Text(
+                  "of ${slicedItems.length}",
+                  style: context.customTt.paragraphText,
+                ),
+              ],
+            ),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  if (_curPage < slicedItems.length) {
+                    _curPage++;
+                  }
+                });
+              },
+              icon: FaIcon(FontAwesomeIcons.angleRight, size: 16),
+            ),
+          ],
+        ),
+        if (streak > 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
+            child: ReusableContainer(
+              padding: EdgeInsets.all(12),
+              filled: true,
+              highlight: true,
+              child: Row(
+                spacing: 12,
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.fire,
+                    color: Colors.red,
+                  ),
+                  Text(
+                    "$streak streak${streak.getPlural()}, keep it up!",
+                    style: context.customTt.numberLabel!.copyWith(color: context.cs.surface),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ...pagedItems.map(
+          (progress) => GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              context.goalInfoMod.updatePreviousDate(progress.date!);
+              context.push(
+                '/goals/details-past',
+                extra: context.goalInfoMod,
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8.0,
+                ),
+                child: Column(
+                  spacing: 4,
+                  children: [
+                    Row(
+                      spacing: 12,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            progress.date?.formatMonthLonger() ?? "No date",
+                            style: context.customTt.numberFontSmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      spacing: 10,
+                      children: [
+                        Container(
+                          height: 10,
+                          width: 10,
+                          decoration: BoxDecoration(
+                            color:
+                                progress.achieved
+                                    ? context.goalInfoMod.accentColors.positive
+                                    : context.goalInfoMod.accentColors.negative,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(progress.status, style: context.customTt.paragraphText),
+                        ),
+                        Text(
+                          // ignore: prefer_interpolation_to_compose_strings, prefer_adjacent_string_concatenation
+                          context.goalInfoMod.compactCurrencyFormat(progress.value) +
+                              // ignore: prefer_interpolation_to_compose_strings
+                              " / " +
+                              context.goalInfoMod.compactCurrencyFormat(
+                                progress.target ?? 0,
+                              ),
+                          style: context.customTt.paragraphText,
+                        ),
+                        Text(
+                          "(${progress.progress.formatCompactPercentage()})",
+                          style: context.customTt.numberFontSmall!.copyWith(
+                            fontSize: 14,
+                            color:
+                                progress.achieved
+                                    ? context.goalInfoMod.accentColors.positive
+                                    : context.goalInfoMod.accentColors.negative,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
@@ -655,7 +777,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
         showPrevious
             ? context.goalInfoMod.previousDailyData.entries
             : context.goalInfoMod.currentDailyData.entries;
-    final daysWithData = dailyData.where((entry) => entry.value != null).length;
+    final dataCount = context.goalInfoMod.getDynamicProgress(previous: showPrevious).displayedDataCount;
     final targetReachingDays = context.goalInfoMod.targetReachingDays;
     final dailyTarget = context.goalInfoMod.targetSpendPerDay;
     return Column(
@@ -729,7 +851,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 8.0),
+          padding: const EdgeInsets.only(top: 8),
           child: HeatmapGraph(
             isBudget: context.goalInfoMod.currentGoalProgress.isBudget,
             target: dailyTarget,
@@ -764,12 +886,12 @@ class GoalInfoHeatmapChart extends StatelessWidget {
           padding: const EdgeInsets.only(top: 12, right: 12.0),
           child: Text.rich(
             TextSpan(
-              text: "You have spent below the daily spend limit for ",
+              text: "You spent below the daily spend limit for ",
               style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
               children: [
                 // ignore: prefer_interpolation_to_compose_strings
                 TextSpan(
-                  text: "$targetReachingDays/$daysWithData",
+                  text: "$targetReachingDays/$dataCount",
                   style: context.customTt.numberFontSmall!.copyWith(
                     fontSize: 14,
                     color: context.cs.secondary,
@@ -783,7 +905,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                     color: context.cs.secondary,
                   ),
                 ),
-                TextSpan(text: ") this month."),
+                TextSpan(text: ")."),
               ],
             ),
             // "You have spent below the daily spend limit for ${context.goalInfoMod.targetReachingDays}/${dailyData.where((entry) => entry.value != null).length} days (${dailSpendPercent.formatCompactPercentage()}) this month.",
@@ -817,7 +939,7 @@ class GoalInfoLineChart extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    "Cumulative - $days",
+                    "Cumulative",
                     style: context.customTt.dateLabel,
                   ),
                 ),
@@ -997,7 +1119,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
               });
             },
             getTooltipColor: (barSpot) {
-              return context.cs.surface;
+              return context.cs.surface.withAlpha(200);
             },
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map(
