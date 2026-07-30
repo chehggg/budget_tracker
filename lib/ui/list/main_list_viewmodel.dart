@@ -38,7 +38,9 @@ class ListViewModel extends ChangeNotifier {
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
       _refresh = DateTime.now().millisecondsSinceEpoch;
       final prevYearMonth = _yearMonth;
-      updateYearMonth(YearMonth(useRange: false, date1: value.date?.startOfMonth ?? DateTime.now()));
+      updateYearMonth(
+        YearMonth(useRange: false, date1: value.date?.startOfMonth ?? DateTime.now()),
+      );
       if (!value.showMonth) {
         getScrollPosition(value.date ?? DateTime.now());
         _resetScroll = prevYearMonth != _yearMonth;
@@ -98,8 +100,10 @@ class ListViewModel extends ChangeNotifier {
   // NumRangeMatchType? _rangeMatch;
   // NumRangeMatchType? get numberRange => _rangeMatch;
 
-  RangeValues? _priceRange;
-  RangeValues? get priceRange => _priceRange;
+  RangeValues? _expenseRange;
+  RangeValues? get expenseRange => _expenseRange;
+  RangeValues? _incomeRange;
+  RangeValues? get incomeRange => _incomeRange;
 
   final List<CostItem> _selectedItems = [];
   UnmodifiableListView<CostItem> get selectedItems => UnmodifiableListView(_selectedItems);
@@ -140,9 +144,9 @@ class ListViewModel extends ChangeNotifier {
         key,
         value.where((item) {
           final bool rangeQuery =
-              (_priceRange != null
-                  ? ((item.absoluteAmount) <= _priceRange!.end &&
-                      (item.absoluteAmount) >= _priceRange!.start)
+              (_expenseRange != null
+                  ? ((item.absoluteAmount) <= _expenseRange!.end &&
+                      (item.absoluteAmount) >= _expenseRange!.start)
                   : true);
           final bool searchQuery =
               (_searchText.isNotEmpty
@@ -245,7 +249,7 @@ class ListViewModel extends ChangeNotifier {
     if (!_isSearchOpened) {
       _searchText = "";
       _filteredCategories = null;
-      _priceRange = null;
+      _expenseRange = null;
     }
     notifyListeners();
   }
@@ -295,9 +299,10 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateRangeFilter({required RangeValues range, required Set<CostType> types}) {
-    _priceRange = range;
-    _types = types;
+  void updateRangeFilter(({RangeValues expense, RangeValues income}) value) {
+    _expenseRange = value.expense;
+    _incomeRange = value.income;
+    // _types = types;
     notifyListeners();
   }
 

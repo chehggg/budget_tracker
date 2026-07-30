@@ -72,7 +72,7 @@ class CategoryIconContainer extends StatelessWidget {
     this.inverse = false,
     this.fade,
     this.padding = 0,
-    this.radius = 12
+    this.radius = 12,
   });
 
   final double size;
@@ -86,7 +86,7 @@ class CategoryIconContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final finalSize = containerSize ?? size + 20;  
+    final finalSize = containerSize ?? size + 20;
 
     final iconChild =
         category.iconName != null
@@ -122,4 +122,24 @@ class CategoryIconContainer extends StatelessWidget {
       return Center(child: iconChild);
     }
   }
+}
+
+Future<T?> showCustomModalSheet<T>({
+  required BuildContext context,
+  required Widget Function(BuildContext) builder,
+  bool updateFab = true,
+}) async {
+  if (updateFab) {
+    context.navMod.toggleFab(show: false);
+  }
+  final response = await showModalBottomSheet<T?>(
+    isScrollControlled: true,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
+    context: context,
+    builder: builder,
+  );
+  if (updateFab && context.mounted) {
+    context.navMod.toggleFab(show: true);
+  }
+  return response;
 }

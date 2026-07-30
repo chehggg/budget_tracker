@@ -239,17 +239,14 @@ class DateBreadcrumb extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () async {
-        context.navMod.toggleFab(show: false);
-        await showModalBottomSheet(
+        await showCustomModalSheet(
           context: context,
-          isScrollControlled: true,
           builder:
               (_) => ChangeNotifierProvider.value(
                 value: context.listMod,
-                child: const MonthSelectorDialog(),
+                child: const MonthSelectorSheet(),
               ),
         );
-        context.navMod.toggleFab(show: true);
       },
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity == null) return;
@@ -338,13 +335,13 @@ class ItemFilterChips extends StatelessWidget {
                 }
               },
               onTap: () async {
-                await showModalBottomSheet(
+                await showCustomModalSheet(
+                  updateFab: false,
                   context: context,
-                  isScrollControlled: true,
                   builder:
                       (_) => ChangeNotifierProvider.value(
                         value: context.listMod,
-                        child: const MonthSelectorDialog(),
+                        child: const MonthSelectorSheet(),
                       ),
                 );
               },
@@ -423,34 +420,25 @@ class ItemFilterChips extends StatelessWidget {
             padding: EdgeInsets.symmetric(
               horizontal: 12.0,
             ),
+            customColor:
+                context.listMod.incomeRange != null || context.listMod.expenseRange != null
+                    ? context.customCs.fadeColor2
+                    : null,
             onTap: () async {
-              final response = await showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
-                // constraints: BoxConstraints(maxHeight: 350),
-                builder: (sheetContext) {
-                  return ChangeNotifierProvider.value(
-                    value: context.listMod,
-                    child: SliderBottomSheet(),
+              final response =
+                  await showCustomModalSheet<({RangeValues expense, RangeValues income})?>(
+                    updateFab: false,
+                    context: context,
+                    // constraints: BoxConstraints(maxHeight: 350),
+                    builder: (sheetContext) {
+                      return ChangeNotifierProvider.value(
+                        value: context.listMod,
+                        child: SliderBottomSheet(),
+                      );
+                    },
                   );
-                },
-              );
-              // <Map<String, dynamic>?>(
-              //   context: context,
-              //   builder: (dialogContext) {
-              //     return RangeSliderAlertDialog(
-              //       items: context.listMod.items,
-              //       initRange: context.listMod.priceRange,
-              //       initCostTypes: context.listMod.types,
-              //     );
-              //   },
-              // );
               if (response != null && context.mounted) {
-                context.listMod.updateRangeFilter(
-                  range: response['range'],
-                  types: response['types'],
-                );
+                context.listMod.updateRangeFilter(response);
               }
             },
             child: Row(
@@ -458,11 +446,6 @@ class ItemFilterChips extends StatelessWidget {
               spacing: 12,
               children: [
                 FaIcon(FontAwesomeIcons.moneyBill, size: 14),
-                // if (hasValue)
-                //   Text(
-                //     " (${categories.length})",
-                //     style: TextStyle(color: Colors.black, fontSize: 12),
-                //   ),
               ],
             ),
           ),
@@ -513,6 +496,11 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
     _incomeRange = widget.incomeRange ?? _defaultIncomeRange;
   }
 
+  ({RangeValues expense, RangeValues income}) get result => (
+    expense: _expenseRange,
+    income: _incomeRange,
+  );
+
   @override
   Widget build(BuildContext context) {
     // debugPrint("bottom sheet rebuild");
@@ -547,7 +535,7 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
                 Expanded(child: Text("Cost Filter", style: context.customTt.dateLabel)),
                 IconButton(
                   onPressed: () {
-                    context.pop(true);
+                    context.pop(result);
                   },
                   icon: FaIcon(
                     FontAwesomeIcons.check,
@@ -564,7 +552,10 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
               spacing: 4,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text("Expense", style: context.customTt.dateLabel!.copyWith(fontSize: 20),),
+                Text(
+                  "Expense",
+                  style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                ),
                 CostSlider(
                   range: _defaultExpenseRange,
                   selectedRange: _expenseRange,

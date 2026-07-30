@@ -403,14 +403,14 @@ class HideableText extends StatelessWidget {
 
 // Month select dialog for changing to another month quickly
 // using the date selector top bar
-class MonthSelectorDialog extends StatefulWidget {
-  const MonthSelectorDialog({super.key});
+class MonthSelectorSheet extends StatefulWidget {
+  const MonthSelectorSheet({super.key});
 
   @override
-  State<MonthSelectorDialog> createState() => _MonthSelectorDialogState();
+  State<MonthSelectorSheet> createState() => _MonthSelectorSheetState();
 }
 
-class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
+class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
   late DateTime _selectedDateTime;
   late YearMonth _yearMonth;
 
@@ -446,7 +446,10 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
               ActionChip(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 visualDensity: VisualDensity(vertical: 0),
-                backgroundColor: _yearMonth.useRange ? context.customCs.fadeColor2 : context.cs.surfaceContainerHigh,
+                backgroundColor:
+                    _yearMonth.useRange
+                        ? context.customCs.fadeColor2
+                        : context.cs.surfaceContainerHigh,
                 onPressed: () {
                   final prevDate2 = _yearMonth.date2;
                   setState(
@@ -459,7 +462,10 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                     context.pop();
                   }
                 },
-                avatar: FaIcon(FontAwesomeIcons.calendarWeek, size: 14,),
+                avatar: FaIcon(
+                  FontAwesomeIcons.calendarWeek,
+                  size: 14,
+                ),
                 label: Text("Range"),
               ),
               IconButton(
@@ -467,12 +473,15 @@ class _MonthSelectorDialogState extends State<MonthSelectorDialog> {
                 // backgroundColor: context.cs.surfaceContainerHigh,
                 // visualDensity: VisualDensity(vertical: 0),
                 onPressed: () {
-                 context.listMod.updateYearMonth(
+                  context.listMod.updateYearMonth(
                     YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
                   );
                   context.pop();
                 },
-                icon: FaIcon(FontAwesomeIcons.clockRotateLeft, size: 18,),
+                icon: FaIcon(
+                  FontAwesomeIcons.clockRotateLeft,
+                  size: 18,
+                ),
                 // label: Text("Current"),
               ),
             ],
@@ -762,9 +771,10 @@ class CustomDropDownMenu<T> extends StatelessWidget {
       textStyle: context.tt.bodyMedium,
       textAlign: textAlign ?? TextAlign.start,
       inputDecorationTheme: InputDecorationThemeData(
-        visualDensity: VisualDensity(vertical: -4),
+        visualDensity: VisualDensity(vertical: -3),
         constraints: BoxConstraints(maxHeight: 40),
         filled: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         fillColor: context.customCs.fadeColor4,
         border: border,
         enabledBorder: border,
@@ -823,6 +833,7 @@ class CustomSwitchListTile extends StatelessWidget {
     required this.title,
     required this.value,
     this.onSelected,
+    this.customStyle,
     this.enabled = true,
     this.dense = false,
   });
@@ -830,6 +841,7 @@ class CustomSwitchListTile extends StatelessWidget {
   final ValueChanged<bool>? onSelected;
   final bool value;
   final String title;
+  final TextStyle? customStyle;
   final bool enabled;
   final bool dense;
 
@@ -843,7 +855,7 @@ class CustomSwitchListTile extends StatelessWidget {
       title: Text(
         title,
         textAlign: TextAlign.left,
-        style: context.tt.bodyMedium,
+        style: customStyle ?? context.tt.bodyMedium,
       ),
       trailing: Transform.scale(
         alignment: Alignment.centerRight,
@@ -870,6 +882,7 @@ class CustomScaffold extends StatelessWidget {
     this.safeAreaPadding,
     this.resizeInset,
     this.customAppBar,
+    this.bottomSheet,
   });
 
   final Widget child;
@@ -880,6 +893,7 @@ class CustomScaffold extends StatelessWidget {
   final EdgeInsets? safeAreaPadding;
   final bool? resizeInset;
   final PreferredSizeWidget? customAppBar;
+  final Widget? bottomSheet;
 
   @override
   Widget build(BuildContext context) {
@@ -910,6 +924,7 @@ class CustomScaffold extends StatelessWidget {
           ],
         ),
       ),
+      bottomSheet: bottomSheet,
     );
   }
 }

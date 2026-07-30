@@ -175,6 +175,21 @@ final goRouter = GoRouter(
               routes: [
                 GoRoute(
                   parentNavigatorKey: _rootNavigator,
+                  path: '/goal-amount',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => GoalFormViewModel(
+                              categoryRepo: context.read(),
+                              goalRepo: context.read(),
+                              goalCategory: state.extra as GoalCategory?,
+                              initGoal: null,
+                            ),
+                        child: const GoalFormAmountPage(),
+                      ),
+                ),
+                GoRoute(
+                  parentNavigatorKey: _rootNavigator,
                   path: '/new-goal-detail',
                   builder:
                       (context, state) => ChangeNotifierProvider(
@@ -233,7 +248,8 @@ final goRouter = GoRouter(
                 GoRoute(
                   path: '/new-goal',
                   parentNavigatorKey: _rootNavigator,
-                  builder: (context, state) => const GoalTypeSelectionScreen(),
+                  builder:
+                      (context, state) => GoalTypeSelectionScreen(),
                 ),
                 GoRoute(
                   // parentNavigatorKey: _rootNavigator,

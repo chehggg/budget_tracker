@@ -67,17 +67,17 @@ class GoalScreen extends StatelessWidget {
                     icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
                   ),
                   IconButton(
-                    onPressed: () {
-                      context.push("/goals/new-goal");
+                    onPressed: () async {
+                      final response = await showCustomModalSheet(
+                        context: context,
+                        builder: (context) {
+                          return GoalListFilterSheet();
+                        },
+                      );
+                      if (response == null) return;
+                      // context.push("/goals/new-goal");
                     },
                     icon: FaIcon(FontAwesomeIcons.layerGroup, size: 20),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      //TODO: Implement filter
-                      context.push("/goals/new-goal");
-                    },
-                    icon: FaIcon(FontAwesomeIcons.filter, size: 20),
                   ),
                   IconButton(
                     onPressed: () {
@@ -88,6 +88,71 @@ class GoalScreen extends StatelessWidget {
                 ],
         ready: ready,
         child: const GoalBody(),
+      ),
+    );
+  }
+}
+
+class GoalListFilterSheet extends StatelessWidget {
+  const GoalListFilterSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 30),
+      child: Column(
+        spacing: 8,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "List View",
+                  style: context.customTt.dateLabel,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  context.pop();
+                },
+                icon: FaIcon(
+                  FontAwesomeIcons.check,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+          Divider(
+            height: 20,
+          ),
+          Text(
+            "Group by",
+            style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+          ),
+          CustomDropDownMenu(
+            entries:
+                [
+                  "Progress",
+                  "Tracking Type",
+                  "Goal Type",
+                ].map((el) => DropdownMenuEntry(value: el, label: el)).toList(),
+          ),
+          Text(
+            "Sort by",
+            style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+          ),
+          CustomDropDownMenu(
+            entries:
+                [
+                  "Progress",
+                  "Name",
+                  "Last Created",
+                  "Last Modified",
+                ].map((el) => DropdownMenuEntry(value: el, label: el)).toList(),
+          ),
+        ],
       ),
     );
   }

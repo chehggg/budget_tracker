@@ -24,7 +24,14 @@ class TextSelectionViewmodel extends ChangeNotifier {
     await _itemRepo.ready;
     await _categoryRepo.ready;
 
-    _items = List.from(_itemRepo.costItems.sublist(_itemRepo.costItems.length - 200));
+    final itemLength = 200;
+    if (_itemRepo.costItems.length < itemLength) {
+      _items = _itemRepo.costItems;
+    } else {
+      _items = List.from(
+        _itemRepo.costItems.sublist((_itemRepo.costItems.length - 200)),
+      );
+    }
 
     if (initFilter != null) {
       _filter = initFilter!;

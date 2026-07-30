@@ -7,6 +7,8 @@ class GoalCategory {
     required this.description,
     required this.type,
     required this.trackingPeriod,
+    required this.showItemFilter,
+    required this.showDateFilter,
     required this.icon,
   });
 
@@ -14,6 +16,8 @@ class GoalCategory {
   final String description;
   final GoalType type;
   final GoalTrackingPeriod trackingPeriod;
+  final bool showItemFilter;
+  final bool showDateFilter;
   final FaIconData icon;
 }
 
@@ -23,6 +27,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Track your expenses in a completely monthly plan.",
     type: GoalType.budget,
     trackingPeriod: GoalTrackingPeriod.monthly,
+    showItemFilter: false,
+    showDateFilter: false,
     icon: FontAwesomeIcons.piggyBank,
   ),
   GoalCategory(
@@ -30,6 +36,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Set a monthly limit for selected categories or items.",
     type: GoalType.budget,
     trackingPeriod: GoalTrackingPeriod.monthly,
+    showItemFilter: true,
+    showDateFilter: false,
     icon: FontAwesomeIcons.magnifyingGlassDollar,
   ),
   GoalCategory(
@@ -37,6 +45,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Track total spendings across a certain period of time (e.g., travel, event).",
     type: GoalType.budget,
     trackingPeriod: GoalTrackingPeriod.overall,
+    showItemFilter: true,
+    showDateFilter: true,
     icon: FontAwesomeIcons.wallet,
   ),
   GoalCategory(
@@ -44,6 +54,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Save up a financial safety net for unexpected expenses and rainy days.",
     type: GoalType.savings,
     trackingPeriod: GoalTrackingPeriod.overall,
+    showItemFilter: false,
+    showDateFilter: false,
     icon: FontAwesomeIcons.sackDollar,
   ),
   GoalCategory(
@@ -51,6 +63,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Commit to saving a fixed amount of money every month to build a habit.",
     type: GoalType.savings,
     trackingPeriod: GoalTrackingPeriod.monthly,
+    showItemFilter: false,
+    showDateFilter: false,
     icon: FontAwesomeIcons.chartLine,
   ),
   GoalCategory(
@@ -59,6 +73,8 @@ const List<GoalCategory> defaultGoalCategories = [
         "Commit to saving for a specific long-term milestone, like a vacation, vehicle, or home.",
     type: GoalType.savings,
     trackingPeriod: GoalTrackingPeriod.overall,
+    showItemFilter: false,
+    showDateFilter: true,
     icon: FontAwesomeIcons.houseChimney,
   ),
   GoalCategory(
@@ -66,6 +82,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Keep track of short term debt payment (e.g., credit card, borrowed money etc.).",
     type: GoalType.payment,
     trackingPeriod: GoalTrackingPeriod.overall,
+    showItemFilter: true,
+    showDateFilter: false,
     icon: FontAwesomeIcons.commentDollar,
   ),
   GoalCategory(
@@ -73,6 +91,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Keep track of regular recurring payments like a mortgage or car loan.",
     type: GoalType.payment,
     trackingPeriod: GoalTrackingPeriod.monthly,
+    showItemFilter: true,
+    showDateFilter: false,
     icon: FontAwesomeIcons.landmark,
   ),
   GoalCategory(
@@ -80,6 +100,8 @@ const List<GoalCategory> defaultGoalCategories = [
     description: "Set aside a fixed monthly amount to build up your wealth.",
     type: GoalType.payment,
     trackingPeriod: GoalTrackingPeriod.monthly,
+    showItemFilter: true,
+    showDateFilter: false,
     icon: FontAwesomeIcons.percent,
   ),
 ];

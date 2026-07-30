@@ -134,32 +134,46 @@ class GoalFormInfoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Goal details"),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final error = context.goalFormMod.validateForm();
-              if (error != null) {
-                context.showErrorNotification(message: error);
-              } else {
-                await context.goalFormMod.submitGoal();
+    void submitGoal() async {
+      final error = context.goalFormMod.validateForm();
+      if (error != null) {
+        context.showErrorNotification(message: error);
+      } else {
+        await context.goalFormMod.submitGoal();
 
-                if (context.mounted) {
-                  context.go('/goals');
-                }
-                // if (context.goalFormMod.isEditMode) {
-                //   context.showSuccessNotification(message: "Goal updated!");
-                // } else {
-                //   if (context.mounted) {
-                //     context.showSuccessNotification(message: "New goal created!");
-                //   }
-                // }
-              }
-            },
-            icon: Icon(Icons.check),
-          ),
+        if (context.mounted) {
+          context.go('/goals');
+        }
+      }
+    }
+
+    return CustomScaffold(
+      bottomSheet: BottomSheet(
+        enableDrag: false,
+        onClosing: () {},
+        builder: (context) {
+          return SizedBox(
+            child: Row(
+              children: [
+                Expanded(
+                  child: AffirmativeTextButton(
+                    onTap: submitGoal,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      appBarTitle: Text("Goal details"),
+      actions: [
+        IconButton(
+          onPressed: () async {
+            submitGoal();
+          },
+          icon: Icon(Icons.check),
+        ),
+        if (context.goalFormMod.isEditMode)
           IconButton(
             onPressed: () async {
               await context.goalFormMod.deleteGoal();
@@ -170,11 +184,42 @@ class GoalFormInfoScreen extends StatelessWidget {
             },
             icon: Icon(Icons.delete),
           ),
-        ],
+      ],
+      child: const GoalInfoFormBody(),
+    );
+  }
+}
+
+class GoalFormAmountPage extends StatelessWidget {
+  const GoalFormAmountPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScaffold(
+      bottomSheet: BottomSheet(
+        enableDrag: false,
+        onClosing: () {},
+        builder: (context) {
+          return SizedBox(
+            child: Row(
+              children: [Expanded(child: AffirmativeTextButton())],
+            ),
+          );
+        },
       ),
-      body: SafeArea(
-        minimum: EdgeInsets.fromLTRB(12, 12, 12, 12),
-        child: const GoalInfoFormBody(),
+      child: CustomScrollView(
+        slivers: [
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Image.asset(
+                '/images/piggy.svg',
+                fit: BoxFit.cover,
+              ),
+              Text("Amount to save"),
+              TextFormField(),
+            ]),
+          ),
+        ],
       ),
     );
   }
@@ -189,6 +234,9 @@ class GoalInfoFormBody extends StatefulWidget {
 
 class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
   bool _openAdvanced = false;
+  bool _openDate = false;
+  bool _openFilter = false;
+
   late final TextEditingController _titleController;
   late final TextEditingController _targetController;
   late final TextEditingController _descController;
@@ -198,6 +246,8 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
     super.initState();
 
     final draftedGoal = context.goalFormMod.draftGoal;
+    _openDate = context.goalFormMod.showDateFilter;
+    _openFilter = context.goalFormMod.showCategoryFilter;
 
     _titleController = TextEditingController(
       text: draftedGoal.title,
@@ -216,6 +266,13 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
     });
   }
 
+  Widget get customDivider => SliverPadding(
+    padding: EdgeInsets.symmetric(vertical: 12),
+    sliver: SliverToBoxAdapter(
+      child: Divider(),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final draftedGoal = context.select((GoalFormViewModel state) => state.draftGoal);
@@ -233,11 +290,23 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
 
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Text('Basic Infomation', style: context.customTt.dateLabel),
-        ),
+        // SliverToBoxAdapter(
+        //   child: Text('Basic Infomation', style: context.customTt.dateLabel),
+        // ),
+        if (!context.goalFormMod.isEditMode)
+          SliverPadding(
+            padding: const EdgeInsets.all(12),
+            sliver: SliverToBoxAdapter(
+              child: Image.asset(
+                height: 100,
+                width: 100,
+                '/assets/images/piggy.svg',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
         SliverPadding(
-          padding: EdgeInsets.symmetric(vertical: 12.0),
+          padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
             child: ReusableContainer(
               padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
@@ -280,17 +349,17 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
             child: GoalsTextField(
               fieldLabel: "Name",
-              hintText: "Give this goal a title...",
+              hintText: "Name this goal...",
               controller: _titleController,
             ),
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
             child: GoalsTextField(
               fieldLabel: "Description",
@@ -300,105 +369,108 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          sliver: SliverToBoxAdapter(
-            child: Row(
-              spacing: 10,
-              children: [
-                Expanded(
-                  child: GoalTapTextField(
-                    controller: startDateController,
-                    fieldLabel: "From",
-                    onTap: () async {
-                      final DateTime? response = await showDialog(
-                        context: context,
-                        builder: (_) {
-                          return DateDialog(
-                            initDate: draftedGoal.startDate,
-                          );
-                        },
-                      );
-                      if (response != null) {
-                        context.goalFormMod.updateStartDate(response);
-                      }
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: GoalTapTextField(
-                    controller: endDateController,
-                    checkbox: true,
-                    checkboxVal: endDateCheck,
-                    onCheckboxChanged: context.goalFormMod.checkEndDate,
-                    fieldLabel: "End",
-                    onTap: () async {
-                      final DateTime? response = await showDialog(
-                        context: context,
-                        builder: (_) {
-                          return DateDialog(
-                            initDate: draftedGoal.endDate,
-                          );
-                        },
-                      );
-                      if (response != null) {
-                        context.goalFormMod.updateEndDate(response);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
+        customDivider,
+        SliverToBoxAdapter(
+          child: CustomSwitchListTile(
+            dense: true,
+            title: "Custom Month",
+            customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+            value: _openDate,
+            onSelected: (value) {
+              setState(() {
+                _openDate = value;
+              });
+            },
           ),
         ),
-        SliverToBoxAdapter(
-          child: Row(
-            children: [
-              Transform.scale(
-                scale: 0.7,
-                alignment: Alignment.centerLeft,
-                child: Switch(
-                  value: _openAdvanced,
-                  onChanged: (val) {
-                    setState(() {
-                      _openAdvanced = val;
-                    });
-                  },
+        if (_openDate)
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            sliver: SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  spacing: 20,
+                  children: [
+                    Expanded(
+                      child: GoalTapTextField(
+                        controller: startDateController,
+
+                        fieldLabel: "From",
+                        onTap: () async {
+                          final DateTime? response = await showDialog(
+                            context: context,
+                            builder: (_) {
+                              return DateDialog(
+                                initDate: draftedGoal.startDate,
+                              );
+                            },
+                          );
+                          if (response != null) {
+                            context.goalFormMod.updateStartDate(response);
+                          }
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: GoalTapTextField(
+                        controller: endDateController,
+                        checkbox: true,
+                        checkboxVal: endDateCheck,
+                        onCheckboxChanged: context.goalFormMod.checkEndDate,
+                        fieldLabel: "End",
+                        onTap: () async {
+                          final DateTime? response = await showDialog(
+                            context: context,
+                            builder: (_) {
+                              return DateDialog(
+                                initDate: draftedGoal.endDate,
+                              );
+                            },
+                          );
+                          if (response != null) {
+                            context.goalFormMod.updateEndDate(response);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text("Show advanced settings"),
-            ],
-          ),
-        ),
-        if (_openAdvanced)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            sliver: SliverToBoxAdapter(
-              child: const GoalFormTrackingSection(),
             ),
           ),
-        if (_openAdvanced)
+        customDivider,
+        SliverToBoxAdapter(
+          child: CustomSwitchListTile(
+            dense: true,
+            title: "Item Filter",
+            customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+            value: _openFilter,
+            onSelected: (value) {
+              setState(() {
+                _openFilter = value;
+              });
+            },
+          ),
+        ),
+        if (_openFilter)
           SliverPadding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            padding: const EdgeInsets.fromLTRB(12,0,12,12),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Divider(),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Text(
-                    'Conditions',
-                    style: context.customTt.dateLabel,
-                    textAlign: TextAlign.left,
-                  ),
-                  Text(
-                    'Apply a filter to only include item that you want to keep track within this budget.',
-                    style: context.customTt.paragraphText,
-                    textAlign: TextAlign.left,
-                  ),
-                  SizedBox(height: 12),
+                  // Text(
+                  //   'Conditions',
+                  //   style: context.customTt.dateLabel,
+                  //   textAlign: TextAlign.left,
+                  // ),
+                  // Text(
+                  //   'Apply a filter to only include item that you want to keep track within this budget.',
+                  //   style: context.customTt.paragraphText,
+                  //   textAlign: TextAlign.left,
+                  // ),
+                  // SizedBox(height: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: 12,
@@ -409,6 +481,55 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
                   ),
                 ],
               ),
+            ),
+          ),
+        customDivider,
+        SliverToBoxAdapter(
+          child: CustomSwitchListTile(
+            dense: true,
+            title: "Show Advanced",
+            customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+            value: _openAdvanced,
+            onSelected: (value) {
+              setState(() {
+                _openAdvanced = value;
+              });
+            },
+          ),
+        ),
+        if (_openAdvanced)
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                CustomDropdownListTile(
+                  initSelection: context.goalFormMod.draftGoal.goalTracking,
+                  onSelected: (value) {
+                    if (value != null) {
+                      context.goalFormMod.updateTracking(value);
+                    }
+                  },
+                  entries:
+                      GoalTrackingPeriod.values
+                          .map((el) => DropdownMenuEntry(value: el, label: el.title))
+                          .toList(),
+                  title: "Goal Tracking",
+                ),
+                CustomSwitchListTile(
+                  value: true,
+                  // initSelection: context.goalFormMod.draftGoal.goalTracking,
+                  onSelected: (value) {
+                    if (value != null) {
+                      // context.goalFormMod.update(value);
+                    }
+                  },
+                  // entries:
+                  //     GoalTrackingPeriod.values
+                  //         .map((el) => DropdownMenuEntry(value: el, label: el.title))
+                  //         .toList(),
+                  title: "Track goal against daily target",
+                ),
+              ]),
             ),
           ),
         SliverToBoxAdapter(
@@ -552,10 +673,6 @@ class GoalFormTrackingSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         // spacing: 8,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Divider(),
-          ),
           Row(
             children: [
               Text(
@@ -638,7 +755,9 @@ class GoalsTextField extends StatelessWidget {
     final inputDecoration = InputDecoration(
       filled: true,
       hintText: hintText,
+      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       isDense: true,
+      visualDensity: VisualDensity(vertical: -2),
     );
 
     return Column(
@@ -690,7 +809,9 @@ class GoalTapTextField extends StatelessWidget {
     final inputDecoration = InputDecoration(
       filled: active,
       hintText: hintText,
+      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       isDense: true,
+      visualDensity: VisualDensity(vertical: -2),
     );
 
     return Column(
@@ -726,6 +847,7 @@ class GoalTapTextField extends StatelessWidget {
             fontSize: 14,
             color: active ? null : context.customCs.fadeColor2,
           ),
+
           decoration: inputDecoration,
           controller: controller,
           minLines: minLines ?? 1,

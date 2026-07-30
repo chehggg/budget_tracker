@@ -93,14 +93,16 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        final response = await showDialog<CategoryBreakdownSort?>(
+                        context.navMod.toggleFab(show: false);
+                        final response = await showCustomModalSheet<CategoryBreakdownSort?>(
                           context: context,
                           builder: (dialogContext) {
-                            return BreakdownSortDialog(
+                            return BreakdownSortSheet(
                               init: context.chartMod.breakdownSort,
                             );
                           },
                         );
+                        context.navMod.toggleFab(show: true);
                         if (response != null && context.mounted) {
                           context.chartMod.updateCategorySort(response);
                         }
@@ -135,8 +137,8 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
   }
 }
 
-class BreakdownSortDialog extends StatefulWidget {
-  const BreakdownSortDialog({
+class BreakdownSortSheet extends StatefulWidget {
+  const BreakdownSortSheet({
     super.key,
     required this.init,
   });
@@ -144,10 +146,10 @@ class BreakdownSortDialog extends StatefulWidget {
   final CategoryBreakdownSort init;
 
   @override
-  State<BreakdownSortDialog> createState() => _BreakdownSortDialogState();
+  State<BreakdownSortSheet> createState() => _BreakdownSortSheetState();
 }
 
-class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
+class _BreakdownSortSheetState extends State<BreakdownSortSheet> {
   SortType _categoryOrder = SortType.asc;
   SortType _itemOrder = SortType.asc;
 
@@ -173,16 +175,39 @@ class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text("Sort List"),
-      content: Column(
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 30),
+      // title: Text("Sort List"),
+      child: Column(
         spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+            children: [
+              Expanded(child: Text("Sort Category List", style: context.customTt.dateLabel)),
+              IconButton(
+                onPressed: () {
+                  context.pop(
+                    CategoryBreakdownSort(
+                      categoryOrder: _categoryOrder,
+                      categorySortBy: _categorySortBy,
+                      itemOrder: _itemOrder,
+                      itemSortBy: _itemSortBy,
+                    ),
+                  );
+                },
+                icon: FaIcon(
+                  FontAwesomeIcons.check,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+          Divider(height: 20),
           Text("Sort Category"),
           Row(
-            spacing: 8,
+            spacing: 12,
             children: [
               Flexible(
                 flex: 2,
@@ -201,15 +226,28 @@ class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
                           .toList(),
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _categoryOrder = _categoryOrder == SortType.asc ? SortType.dsc : SortType.asc;
-                  });
-                },
-                icon: FaIcon(
-                  getIcon(_categoryOrder),
-                  size: 20,
+              Flexible(
+                flex: 1,
+                child: CustomDropDownMenu(
+                  onSelected: (value) {
+                    setState(() {
+                      _categoryOrder = value ?? _categoryOrder;
+                    });
+                  },
+                  initSelection: _categoryOrder,
+                  entries:
+                      SortType.values
+                          .map(
+                            (el) => DropdownMenuEntry(
+                              value: el,
+                              label: el.name.toUpperCase(),
+                              leadingIcon: FaIcon(
+                                getIcon(el),
+                                size: 14,
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
             ],
@@ -219,7 +257,7 @@ class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
           ),
           Text("Sort Item"),
           Row(
-            spacing: 8,
+            spacing: 12,
             children: [
               Flexible(
                 flex: 2,
@@ -238,37 +276,50 @@ class _BreakdownSortDialogState extends State<BreakdownSortDialog> {
                           .toList(),
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _itemOrder = _itemOrder == SortType.asc ? SortType.dsc : SortType.asc;
-                  });
-                },
-                icon: FaIcon(
-                  getIcon(_itemOrder),
-                  size: 20,
+              Flexible(
+                flex: 1,
+                child: CustomDropDownMenu(
+                  onSelected: (value) {
+                    setState(() {
+                      _itemOrder = value ?? _itemOrder;
+                    });
+                  },
+                  initSelection: _itemOrder,
+                  entries:
+                      SortType.values
+                          .map(
+                            (el) => DropdownMenuEntry(
+                              value: el,
+                              label: el.name.toUpperCase(),
+                              leadingIcon: FaIcon(
+                                getIcon(el),
+                                size: 14,
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
             ],
           ),
         ],
       ),
-      actions: [
-        DismissTextButton(
-          onTap: () => context.pop(null),
-        ),
-        AffirmativeTextButton(
-          onTap:
-              () => context.pop(
-                CategoryBreakdownSort(
-                  categoryOrder: _categoryOrder,
-                  categorySortBy: _categorySortBy,
-                  itemOrder: _itemOrder,
-                  itemSortBy: _itemSortBy,
-                ),
-              ),
-        ),
-      ],
+      // actions: [
+      //   DismissTextButton(
+      //     onTap: () => context.pop(null),
+      //   ),
+      //   AffirmativeTextButton(
+      //     onTap:
+      //         () => context.pop(
+      //           CategoryBreakdownSort(
+      //             categoryOrder: _categoryOrder,
+      //             categorySortBy: _categorySortBy,
+      //             itemOrder: _itemOrder,
+      //             itemSortBy: _itemSortBy,
+      //           ),
+      //         ),
+      //   ),
+      // ],
     );
   }
 }
@@ -506,14 +557,18 @@ class _CategoryTileState extends State<CategoryTile> {
                                   color: isHidden ? context.customCs.fadeColor1 : null,
                                 ),
                               ),
-                              SizedBox(width: 4,),
+                              SizedBox(
+                                width: 4,
+                              ),
                               Text(
                                 "(${(widget.value! / (type == CostType.expense ? total.expense ?? 1 : total.income ?? 1)).formatCompactPercentage()})",
                                 style: context.tt.bodyMedium?.copyWith(
                                   color: context.customCs.fadeColor1,
                                 ),
                               ),
-                              SizedBox(width: 2,),
+                              SizedBox(
+                                width: 2,
+                              ),
                               Icon(
                                 _expanded ? Icons.expand_less : Icons.expand_more,
                                 size: 20,

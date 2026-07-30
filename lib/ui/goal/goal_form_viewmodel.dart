@@ -96,6 +96,12 @@ class GoalFormViewModel extends ChangeNotifier {
   bool _isEndChecked = false;
   bool get isEndChecked => _isEndChecked;
 
+  bool get showCategoryFilter =>
+      _goalCategory?.showItemFilter ?? false || _initGoal?.categories != null;
+  
+  bool get showDateFilter =>
+      _goalCategory?.showDateFilter ?? false || _initGoal?.endDate != null;
+
   CostItemCategory getCatById(String id) {
     return _categoryRepo.getCategoryById(id);
   }
