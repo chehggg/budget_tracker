@@ -118,6 +118,7 @@ ThemeData getAppTheme(Locale locale) {
   // GoRouter
   final MyColors customColorExtension = MyColors(
     flipCardColor: Color(0xffF0EBE0),
+    dropdownColor: Color.fromARGB(255, 55, 54, 58),
     onFlipCard: Color(0xff0A0A0C),
     fadeColor1: Color(0xffF0EBE0).withAlpha(150),
     fadeColor2: Color(0xffF0EBE0).withAlpha(60),

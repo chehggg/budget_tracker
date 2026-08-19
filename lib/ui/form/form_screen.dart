@@ -29,14 +29,15 @@ class CostFormScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ready = context.select((FormViewModel state) => state.ready);
-    final editMode = context.select((FormViewModel state) => state.editCategory);
+    final editCat = context.select((FormViewModel state) => state.editCategory);
+    final inEditMode = context.select((FormViewModel state) => state.inEditMode);
     final selectedCategory = context.select((FormViewModel state) => state.selectedCategory);
     final formGroup = context.select((FormViewModel state) => state.formGroup);
 
     return Scaffold(
       appBar: AppBar(
         actionsPadding: EdgeInsets.only(right: 8),
-        title: Text(editMode ? "Edit Item" : "New Item"),
+        title: Text(inEditMode ? "Edit Item" : "New Item"),
         actions: [
           if (formGroup != FormGroup.favorite)
             IconButton(
@@ -61,7 +62,7 @@ class CostFormScreen extends StatelessWidget {
                 }
               },
               icon: FaIcon(
-                editMode ? FontAwesomeIcons.xmark : FontAwesomeIcons.solidPenToSquare,
+                editCat ? FontAwesomeIcons.xmark : FontAwesomeIcons.solidPenToSquare,
                 size: 20,
               ),
             ),
@@ -97,6 +98,9 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
   bool _isFormExpanded = false;
   bool _isFormOpened = false;
   late DateTime _selectedDate;
+
+  final double expandedHeight = 520.0;
+  final double openedHeight = 120.0;
 
   @override
   void initState() {
@@ -291,8 +295,8 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
             !_isFormOpened
                 ? 0
                 : _isFormExpanded
-                ? 480
-                : 120,
+                ? expandedHeight
+                : openedHeight,
         decoration: BoxDecoration(
           color: context.cs.primary,
           borderRadius: BorderRadius.only(
@@ -577,6 +581,32 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         border: InputBorder.none,
+                      ),
+                    ),
+                    SizedBox(
+                      height: 60,
+                      child: CustomScrollView(
+                        scrollDirection: Axis.horizontal,
+                        slivers: [
+                          SliverList(
+                            delegate: SliverChildListDelegate(
+                              context.formMod.suggestedDesc.map((desc) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ActionChip(
+                                    padding: EdgeInsets.all(4),
+                                    visualDensity: VisualDensity(vertical: 0),
+                                    label: Text(
+                                      desc,
+                                      style: context.customTt.paragraphTextSmall,
+                                    ),
+                                    onPressed: () => context.formMod.updateNameFromSuggestion(desc),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Expanded(
@@ -879,24 +909,26 @@ class SavedItemSelectionView extends StatelessWidget {
             crossAxisCount: 1,
             mainAxisSpacing: 0,
             crossAxisSpacing: 12,
-            mainAxisExtent: 92,
+            mainAxisExtent: 100,
           ),
           itemCount: savedItems.length,
           itemBuilder: (context, index) {
             final SavedItem item = savedItems.elementAt(index);
             final CostItemCategory cat = context.formMod.getSavedItemCatById(item);
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
               child: ReusableContainer(
+                // showSplash: false,
+                showBorder: true,
                 onTap: () => context.formMod.selectSavedItem(item),
-                padding: EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
                 child: Column(
+                  spacing: 2,
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: 4,
                   children: [
                     Row(
-                      spacing: 20,
+                      spacing: 12,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         CategoryIconContainer(
@@ -907,7 +939,7 @@ class SavedItemSelectionView extends StatelessWidget {
                         Expanded(
                           child: Text(
                             item.title ?? "Untitled",
-                            style: context.customTt.dateLabel!.copyWith(fontSize: 18),
+                            style: context.customTt.numberFontMedium!.copyWith(fontSize: 14),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -926,15 +958,15 @@ class SavedItemSelectionView extends StatelessWidget {
                             }
                             context.formMod.refresh();
                           },
-                          icon: Icon(
-                            Icons.edit,
+                          icon: FaIcon(
+                            FontAwesomeIcons.pencil,
                             size: 16,
                           ),
                         ),
                       ],
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0, top: 0),
+                      padding: const EdgeInsets.only(bottom: 8, top: 0),
                       child: Row(
                         spacing: 10,
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -951,6 +983,7 @@ class SavedItemSelectionView extends StatelessWidget {
                         ],
                       ),
                     ),
+                    // Divider(),
                   ],
                 ),
               ),

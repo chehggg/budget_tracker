@@ -145,6 +145,35 @@ class FormViewModel extends ChangeNotifier {
     }
   }
 
+  List<String> get suggestedDesc {
+    List<CostItem> resultItems = [];
+    List<CostItem> amountMatchItems = [];
+    List<CostItem> otherItems = [];
+
+    final initMatchedItems = _costItemRepo.costItems
+        .where((el) {
+          final catQuery = draft.categoryId == el.categoryId;
+          final nameQuery =
+              el.name?.toLowerCase().contains(descriptionController.text.toLowerCase()) ?? true;
+          return catQuery && nameQuery;
+        })
+        .sorted((a, b) => b.date!.compareTo(a.date!));
+
+    for (final item in initMatchedItems) {
+      if ((draft.amount ?? 0) > 0 && (draft.amount == item.amount)) {
+        amountMatchItems.add(item);
+      } else {
+        otherItems.add(item);
+      }
+    }
+    resultItems = [...amountMatchItems, ...otherItems];
+    return resultItems
+        .map((el) => el.name?.toLowerCase() ?? "")
+        .toSet()
+        .map((el) => el.capitalize())
+        .toList();
+  }
+
   void toggleEditCategory([bool? value]) {
     _editCategory = value ?? !_editCategory;
 
@@ -170,9 +199,7 @@ class FormViewModel extends ChangeNotifier {
   }
 
   void updateImage(String? imageString) {
-    _draftedItem = _draftedItem.copyWith(
-      image: () => imageString
-    );
+    _draftedItem = _draftedItem.copyWith(image: () => imageString);
     notifyListeners();
   }
 
@@ -216,6 +243,12 @@ class FormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateNameFromSuggestion(String newName) {
+    updateName(newName);
+    _updateControllerValue();
+    notifyListeners();
+  }
+
   void updateSavedItemTitle(String value) {
     _savedTitle = value;
     notifyListeners();
@@ -248,7 +281,7 @@ class FormViewModel extends ChangeNotifier {
     final finalItem = _draftedItem.copyWith(
       lastModified: DateTime.now(),
       lastCreated: DateTime.now(),
-      uuid: Uuid().v4()
+      uuid: Uuid().v4(),
     );
     await _costItemRepo.createCostItem(finalItem);
   }

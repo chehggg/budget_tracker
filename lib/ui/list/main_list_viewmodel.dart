@@ -143,11 +143,25 @@ class ListViewModel extends ChangeNotifier {
       (key, value) => MapEntry(
         key,
         value.where((item) {
-          final bool rangeQuery =
-              (_expenseRange != null
-                  ? ((item.absoluteAmount) <= _expenseRange!.end &&
-                      (item.absoluteAmount) >= _expenseRange!.start)
-                  : true);
+          bool rangeQuery = true;
+          if (item.isExpense) {
+            rangeQuery =
+                (_expenseRange != null
+                    ? ((item.amount ?? 0) <= _expenseRange!.end &&
+                        (item.amount ?? 0) >= _expenseRange!.start)
+                    : true);
+          } else {
+            rangeQuery =
+                (_incomeRange != null
+                    ? ((item.amount ?? 0) <= _incomeRange!.end &&
+                        (item.amount ?? 0) >= _incomeRange!.start)
+                    : true);
+          }
+          // final bool rangeQuery =
+          //     (_expenseRange != null
+          //         ? ((item.absoluteAmount) <= _expenseRange!.end &&
+          //             (item.absoluteAmount) >= _expenseRange!.start)
+          //         : true);
           final bool searchQuery =
               (_searchText.isNotEmpty
                   ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) ?? false
@@ -250,6 +264,7 @@ class ListViewModel extends ChangeNotifier {
       _searchText = "";
       _filteredCategories = null;
       _expenseRange = null;
+      _incomeRange = null;
     }
     notifyListeners();
   }
@@ -299,7 +314,7 @@ class ListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateRangeFilter(({RangeValues expense, RangeValues income}) value) {
+  void updateRangeFilter(({RangeValues? expense, RangeValues? income}) value) {
     _expenseRange = value.expense;
     _incomeRange = value.income;
     // _types = types;

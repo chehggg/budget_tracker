@@ -109,19 +109,19 @@ class GoalListFilterSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  "List View",
+                  "Goal List - Sort View",
                   style: context.customTt.dateLabel,
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  context.pop();
-                },
-                icon: FaIcon(
-                  FontAwesomeIcons.check,
-                  size: 18,
-                ),
-              ),
+              // IconButton(
+              //   onPressed: () {
+              //     context.pop();
+              //   },
+              //   icon: FaIcon(
+              //     FontAwesomeIcons.check,
+              //     size: 18,
+              //   ),
+              // ),
             ],
           ),
           Divider(
@@ -129,7 +129,7 @@ class GoalListFilterSheet extends StatelessWidget {
           ),
           Text(
             "Group by",
-            style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+            style: context.customTt.numberFontSmall,
           ),
           CustomDropDownMenu(
             entries:
@@ -139,19 +139,45 @@ class GoalListFilterSheet extends StatelessWidget {
                   "Goal Type",
                 ].map((el) => DropdownMenuEntry(value: el, label: el)).toList(),
           ),
+          SizedBox(
+            height: 4,
+          ),
           Text(
             "Sort by",
-            style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+            style: context.customTt.numberFontSmall,
           ),
-          CustomDropDownMenu(
-            entries:
-                [
-                  "Progress",
-                  "Name",
-                  "Last Created",
-                  "Last Modified",
-                ].map((el) => DropdownMenuEntry(value: el, label: el)).toList(),
+          Row(
+            spacing: 12,
+            children: [
+              Flexible(
+                flex: 2,
+                fit: FlexFit.tight,
+                child: CustomDropDownMenu(
+                  entries:
+                      [
+                        "Progress",
+                        "Name",
+                        "Last Created",
+                        "Last Modified",
+                      ].map((el) => DropdownMenuEntry(value: el, label: el)).toList(),
+                ),
+              ),
+              Flexible(
+                flex: 1,
+                fit: FlexFit.tight,
+                child: CustomDropDownMenu(
+                  entries:
+                      SortType.values
+                          .map((el) => DropdownMenuEntry(value: el, label: el.name.toUpperCase()))
+                          .toList(),
+                ),
+              ),
+            ],
           ),
+          Divider(
+            height: 30,
+          ),
+          BottomSheetButtons(popResult: true,)
         ],
       ),
     );

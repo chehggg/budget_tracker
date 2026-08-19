@@ -10,6 +10,7 @@ import 'package:budget_tracker/widgets.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -149,14 +150,44 @@ class GoalFormInfoScreen extends StatelessWidget {
 
     return CustomScaffold(
       bottomSheet: BottomSheet(
+        backgroundColor: context.cs.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
         enableDrag: false,
         onClosing: () {},
         builder: (context) {
-          return SizedBox(
+          return Container(
+            padding: EdgeInsets.all(30),
             child: Row(
+              spacing: 12,
               children: [
-                Expanded(
-                  child: AffirmativeTextButton(
+                if (context.goalFormMod.isEditMode)
+                  Flexible(
+                    fit: FlexFit.tight,
+                    flex: 1,
+                    child: CustomTextButton(
+                      bgColor: Colors.red.shade800.withAlpha(50),
+                      fgColor: Colors.red,
+                      borderColor: Colors.red.shade800,
+                      inverse: false,
+                      icon: FontAwesomeIcons.trash,
+                      text: "Delete",
+                      onTap: () async {
+                        await context.goalFormMod.deleteGoal();
+                        if (context.mounted) {
+                          context.go('/goals');
+                          context.showSuccessNotification(message: "Goal deleted!");
+                        }
+                      },
+                    ),
+                  ),
+                Flexible(
+                  fit: FlexFit.tight,
+                  flex: 2,
+                  child: CustomTextButton(
+                    bgColor: context.cs.secondary,
+                    inverse: true,
+                    icon: FontAwesomeIcons.solidFloppyDisk,
+                    text: context.goalFormMod.isEditMode ? "Update Goal" : "Create Goal",
                     onTap: submitGoal,
                   ),
                 ),
@@ -211,10 +242,10 @@ class GoalFormAmountPage extends StatelessWidget {
         slivers: [
           SliverList(
             delegate: SliverChildListDelegate([
-              Image.asset(
-                '/images/piggy.svg',
-                fit: BoxFit.cover,
-              ),
+              // Image.asset(
+              //   '/images/piggy.svg',
+              //   fit: BoxFit.cover,
+              // ),
               Text("Amount to save"),
               TextFormField(),
             ]),
@@ -297,11 +328,11 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
           SliverPadding(
             padding: const EdgeInsets.all(12),
             sliver: SliverToBoxAdapter(
-              child: Image.asset(
-                height: 100,
-                width: 100,
-                '/assets/images/piggy.svg',
-                fit: BoxFit.cover,
+              child: SvgPicture.asset(
+                'assets/images/piggy.svg',
+                height: 300,
+                // width: 100,
+                fit: BoxFit.contain,
               ),
             ),
           ),
@@ -310,8 +341,10 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
           sliver: SliverToBoxAdapter(
             child: ReusableContainer(
               padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
-              filled: true,
-              highlight: true,
+              // filled: true,
+              // highlight: true,
+              showBorder: false,
+              filled: false,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -348,6 +381,7 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
             ),
           ),
         ),
+        customDivider,
         SliverPadding(
           padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
           sliver: SliverToBoxAdapter(
@@ -455,7 +489,7 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
         ),
         if (_openFilter)
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(12,0,12,12),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -534,7 +568,7 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
           ),
         SliverToBoxAdapter(
           child: SizedBox(
-            height: 40,
+            height: 100,
           ),
         ),
       ],

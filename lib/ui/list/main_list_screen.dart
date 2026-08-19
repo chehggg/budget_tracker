@@ -426,9 +426,10 @@ class ItemFilterChips extends StatelessWidget {
                     : null,
             onTap: () async {
               final response =
-                  await showCustomModalSheet<({RangeValues expense, RangeValues income})?>(
+                  await showCustomModalSheet<({RangeValues? expense, RangeValues? income})?>(
                     updateFab: false,
                     context: context,
+                    animated: false,
                     // constraints: BoxConstraints(maxHeight: 350),
                     builder: (sheetContext) {
                       return ChangeNotifierProvider.value(
@@ -458,12 +459,7 @@ class ItemFilterChips extends StatelessWidget {
 class SliderBottomSheet extends StatefulWidget {
   const SliderBottomSheet({
     super.key,
-    this.expenseRange,
-    this.incomeRange,
   });
-
-  final RangeValues? expenseRange;
-  final RangeValues? incomeRange;
   @override
   State<SliderBottomSheet> createState() => _SliderBottomSheetState();
 }
@@ -492,13 +488,18 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
     _defaultExpenseRange = RangeValues(expenseMin, expenseMax);
     _defaultIncomeRange = RangeValues(incomeMin, incomeMax);
 
-    _expenseRange = widget.expenseRange ?? _defaultExpenseRange;
-    _incomeRange = widget.incomeRange ?? _defaultIncomeRange;
+    _expenseRange = context.listMod.expenseRange ?? _defaultExpenseRange;
+    _incomeRange = context.listMod.incomeRange ?? _defaultIncomeRange;
   }
 
-  ({RangeValues expense, RangeValues income}) get result => (
+  ({RangeValues? expense, RangeValues? income}) get result => (
     expense: _expenseRange,
     income: _incomeRange,
+  );
+
+  ({RangeValues? expense, RangeValues? income}) get resetResult => (
+    expense: null,
+    income: null,
   );
 
   @override
@@ -524,37 +525,21 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
         child: Column(
           spacing: 8,
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(child: Text("Cost Filter", style: context.customTt.dateLabel)),
-                IconButton(
-                  onPressed: () {
-                    context.pop(result);
-                  },
-                  icon: FaIcon(
-                    FontAwesomeIcons.check,
-                    size: 18,
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Divider(),
-            ),
+            Text("Cost Filter", style: context.customTt.dateLabel),
+            Divider(height: 20),
             Column(
               spacing: 4,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   "Expense",
-                  style: context.customTt.dateLabel!.copyWith(fontSize: 20),
+                  style: context.customTt.numberFontSmall!,
                 ),
                 CostSlider(
                   range: _defaultExpenseRange,
@@ -575,7 +560,7 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
               spacing: 4,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text("Income", style: context.customTt.dateLabel!.copyWith(fontSize: 20)),
+                Text("Income", style: context.customTt.numberFontSmall!),
                 CostSlider(
                   range: _defaultIncomeRange,
                   selectedRange: _incomeRange,
@@ -587,15 +572,11 @@ class _SliderBottomSheetState extends State<SliderBottomSheet> {
                 ),
               ],
             ),
-            SizedBox(height: 20),
-            // Container(
-            //   alignment: Alignment.centerRight,
-            //   child: AffirmativeTextButton(
-            //     onTap: () {
-            //       context.pop();
-            //     },
-            //   ),
-            // ),
+            Divider(height: 30),
+            BottomSheetButtons(
+              popResult: result,
+              popResultFalse: resetResult,
+            ),
           ],
         ),
       ),
@@ -885,6 +866,7 @@ class CostEntryList extends StatelessWidget {
                                 costItem.absoluteAmount,
                                 alwaysShowSign: true,
                                 compact: true,
+                                showSymbol: false,
                               ),
                               textStyle: context.customTt.numberFontSmall!.copyWith(
                                 color:

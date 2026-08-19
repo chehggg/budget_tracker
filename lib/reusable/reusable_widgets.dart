@@ -19,6 +19,7 @@ class ReusableContainer extends StatelessWidget {
     this.filled = false,
     this.showBorder = true,
     this.highlight = false,
+    this.showSplash = true,
   });
 
   final EdgeInsets padding;
@@ -26,6 +27,7 @@ class ReusableContainer extends StatelessWidget {
   final Widget? child;
   final bool filled;
   final bool showBorder;
+  final bool showSplash;
 
   final Color? customColor;
   final bool highlight;
@@ -36,6 +38,7 @@ class ReusableContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
+      splashFactory: !showSplash ? NoSplash.splashFactory: null,
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -128,12 +131,15 @@ Future<T?> showCustomModalSheet<T>({
   required BuildContext context,
   required Widget Function(BuildContext) builder,
   bool updateFab = true,
+  bool? animated,
 }) async {
   if (updateFab) {
     context.navMod.toggleFab(show: false);
   }
+  final customAnimated = animated ?? !updateFab;
   final response = await showModalBottomSheet<T?>(
     isScrollControlled: true,
+    sheetAnimationStyle: customAnimated ? null : AnimationStyle(reverseDuration: Duration.zero),
     shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(20)),
     context: context,
     builder: builder,

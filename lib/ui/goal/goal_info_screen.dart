@@ -762,7 +762,7 @@ class GoalDetailsExpansionTile extends StatelessWidget {
   }
 }
 
-class GoalInfoHeatmapChart extends StatelessWidget {
+class GoalInfoHeatmapChart extends StatefulWidget {
   const GoalInfoHeatmapChart({
     super.key,
     required this.showPrevious,
@@ -771,15 +771,36 @@ class GoalInfoHeatmapChart extends StatelessWidget {
   final bool showPrevious;
 
   @override
+  State<GoalInfoHeatmapChart> createState() => _GoalInfoHeatmapChartState();
+}
+
+class _GoalInfoHeatmapChartState extends State<GoalInfoHeatmapChart> {
+  DateTime _initDate = DateTime.now().startOfMonth;
+
+  @override
   Widget build(BuildContext context) {
     final dailSpendPercent = context.goalInfoMod.targetReachingPercentage;
+    final isOverall = context.goalInfoMod.goal.goalTracking == GoalTrackingPeriod.overall;
     final dailyData =
-        showPrevious
-            ? context.goalInfoMod.previousDailyData.entries
-            : context.goalInfoMod.currentDailyData.entries;
-    final dataCount = context.goalInfoMod.getDynamicProgress(previous: showPrevious).displayedDataCount;
+        widget.showPrevious
+            ? context.goalInfoMod.previousDailyData
+            : Map.fromEntries(
+              context.goalInfoMod.currentDailyData.entries.where(
+                (el) => isOverall ? el.key.isInSameYearMonthAs(_initDate) : true,
+              ),
+            );
+    final dataCount =
+        context.goalInfoMod.getDynamicProgress(previous: widget.showPrevious).displayedDataCount;
     final targetReachingDays = context.goalInfoMod.targetReachingDays;
+    final dateCount = _initDate.dayinCurrentMonth;
     final dailyTarget = context.goalInfoMod.targetSpendPerDay;
+    // final date = widget.showPrevious
+    //                 ? context.goalInfoMod.previousDailyData
+    //                 : Map.fromEntries(
+    //                   context.goalInfoMod.currentDailyData.entries.where(
+    //                     (el) => isOverall ? el.key.isInSameYearMonthAs(_initDate) : true,
+    //                   ),
+    //                 );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       // spacing: 4,
@@ -792,21 +813,46 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                 style: context.customTt.dateLabel,
               ),
             ),
-            IconButton(
-              iconSize: 16,
-
-              visualDensity: VisualDensity(vertical: -4, horizontal: -4),
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => HeatmapDialog(context: context),
-                );
-              },
-              icon: Icon(
-                Icons.help_outline,
+            if (isOverall)
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _initDate = _initDate.addMonth(-1);
+                      });
+                    },
+                    icon: FaIcon(
+                      FontAwesomeIcons.angleLeft,
+                      size: 14,
+                    ),
+                  ),
+                  Text(_initDate.formatMonthLonger()),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _initDate = _initDate.addMonth(1);
+                      });
+                    },
+                    icon: FaIcon(FontAwesomeIcons.angleRight, size: 14),
+                  ),
+                ],
               ),
-            ),
+            // IconButton(
+            //   iconSize: 16,
+
+            //   visualDensity: VisualDensity(vertical: -4, horizontal: -4),
+            //   padding: EdgeInsets.zero,
+            //   onPressed: () {
+            //     showDialog(
+            //       context: context,
+            //       builder: (_) => HeatmapDialog(context: context),
+            //     );
+            //   },
+            //   icon: Icon(
+            //     Icons.help_outline,
+            //   ),
+            // ),
           ],
         ),
         Align(
@@ -855,12 +901,9 @@ class GoalInfoHeatmapChart extends StatelessWidget {
           child: HeatmapGraph(
             isBudget: context.goalInfoMod.currentGoalProgress.isBudget,
             target: dailyTarget,
-            totalCount:
-                showPrevious
-                    ? context.goalInfoMod.previousDateDataCount
-                    : context.goalInfoMod.dataCount,
+            totalCount: isOverall ? _initDate.dayinCurrentMonth : dataCount,
             getTooltipMessage: (index) {
-              final dayData = dailyData.elementAtOrNull(index);
+              final dayData = dailyData.entries.elementAtOrNull(index);
               if (dayData == null) {
                 return "No data";
               } else {
@@ -876,10 +919,7 @@ class GoalInfoHeatmapChart extends StatelessWidget {
                     "${dayData.value != null ? " (${percentage.formatCompactPercentage()})" : ""}";
               }
             },
-            data:
-                showPrevious
-                    ? context.goalInfoMod.previousDailyData
-                    : context.goalInfoMod.currentDailyData,
+            data: dailyData,
           ),
         ),
         Padding(
@@ -1002,15 +1042,15 @@ class GoalInfoLineChart extends StatelessWidget {
                       text: "Spend below ",
                       style: context.customTt.paragraphTextSmall!.copyWith(fontSize: 14),
                       children: [
-                        TextSpan(
-                          text: context.goalInfoMod.currencyFormat(
-                            context.goalInfoMod.remainingValueOverDay,
-                          ),
-                          style: context.customTt.numberFontSmall!.copyWith(
-                            fontSize: 14,
-                            color: context.cs.secondary,
-                          ),
-                        ),
+                        // TextSpan(
+                        //   text: context.goalInfoMod.currencyFormat(
+                        //     context.goalInfoMod.remainingValueOverDay,
+                        //   ),
+                        //   style: context.customTt.numberFontSmall!.copyWith(
+                        //     fontSize: 14,
+                        //     color: context.cs.secondary,
+                        //   ),
+                        // ),
                         TextSpan(text: " per day to achieve this goal."),
                       ],
                     ),
@@ -1098,7 +1138,7 @@ class _GoalCumulativeChartState extends State<GoalCumulativeChart> {
           maxY:
               ((curViewedProgress.value * 1.4) > (target ?? 0))
                   ? curViewedProgress.value * 1.4
-                  : null,
+                  : target,
           minY: 0,
           maxX: dailyAvgSpots.length - 1,
           lineTouchData: getCustomLineTouchData(
@@ -1550,77 +1590,123 @@ class _HeatmapGraphState extends State<HeatmapGraph> {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 7,
-        mainAxisExtent: 36,
-      ),
-      itemCount: widget.totalCount,
-      itemBuilder: (context, index) {
-        final expanded = index == _expandedIndex;
-        final value = widget.data.values.elementAtOrNull(index);
-        final message = widget.getTooltipMessage == null ? "" : widget.getTooltipMessage!(index);
-        Color color;
-        if (value != null) {
-          if (widget.target != null) {
-            if (widget.isBudget) {
-              if (value > widget.target!) {
-                color = context.goalInfoMod.accentColors.negative;
-              } else {
-                color =
-                    Color.lerp(
-                      context.goalInfoMod.accentColors.positive,
-                      context.cs.secondary,
-                      (value) / widget.target!,
-                    )!;
-              }
-            } else {
-              color = context.goalInfoMod.accentColors.getColorByValue(
-                value - widget.target!,
-                reversed: widget.isBudget,
-              );
-            }
-          } else {
-            color = context.goalInfoMod.accentColors.positive;
-          }
-        } else {
-          color = context.customCs.fadeColor2!;
-        }
-        return Tooltip(
-          enableTapToDismiss: false,
-          textStyle: context.tt.bodyMedium!.copyWith(
-            fontSize: 9,
-            color: Color.lerp(color, Colors.white, 1),
-            fontWeight: FontWeight(500),
-          ),
-          decoration: BoxDecoration(
-            color: context.cs.surface,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          onTriggered: () => tapHeatmap(index),
-          message: message,
-          textAlign: TextAlign.center,
-          triggerMode: TooltipTriggerMode.tap,
-          preferBelow: false,
-          // waitDuration: Durations.medium1,
-          // showDuration: ,
-          child: Align(
-            alignment: Alignment.center,
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 400),
-              curve: Curves.easeInOutCubic,
-              height: expanded ? 24 : 18,
-              width: expanded ? 24 : 18,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
+    final count = (widget.totalCount / 7).ceil();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Column(
+          children:
+              List.generate(count, (el) {
+                return Container(
+                  height: 36,
+                  child: Center(
+                    child: Text(
+                      "${(7 * el) + 1}",
+                      style: context.customTt.paragraphText!.copyWith(fontSize: 12),
+                    ),
+                  ),
+                );
+              }).toList(),
+        ),
+        Expanded(
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisExtent: 36,
             ),
+            itemCount: widget.totalCount,
+            itemBuilder: (context, index) {
+              final expanded = index == _expandedIndex;
+              final value = widget.data.values.elementAtOrNull(index);
+              final date = widget.data.keys.elementAtOrNull(index);
+              final message =
+                  widget.getTooltipMessage == null ? "" : widget.getTooltipMessage!(index);
+              Color color;
+              if (value != null) {
+                if (widget.target != null) {
+                  if (widget.isBudget) {
+                    if (value > widget.target!) {
+                      color = context.goalInfoMod.accentColors.negative;
+                    } else {
+                      color =
+                          Color.lerp(
+                            context.goalInfoMod.accentColors.positive,
+                            context.cs.secondary,
+                            (value) / widget.target!,
+                          )!;
+                    }
+                  } else {
+                    color = context.goalInfoMod.accentColors.getColorByValue(
+                      value - widget.target!,
+                      reversed: widget.isBudget,
+                    );
+                  }
+                } else {
+                  color = context.goalInfoMod.accentColors.positive;
+                }
+              } else {
+                if (date?.isBefore(DateTime.now()) ?? false) {
+                  color =
+                      widget.isBudget
+                          ? context.goalInfoMod.accentColors.positive
+                          : context.goalInfoMod.accentColors.negative;
+                } else {
+                  color = context.customCs.fadeColor2!;
+                }
+              }
+              return Tooltip(
+                enableTapToDismiss: false,
+                textStyle: context.tt.bodyMedium!.copyWith(
+                  fontSize: 9,
+                  color: Color.lerp(color, Colors.white, 1),
+                  fontWeight: FontWeight(500),
+                ),
+                decoration: BoxDecoration(
+                  color: context.cs.surface,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                onTriggered: () => tapHeatmap(index),
+                message: message,
+                textAlign: TextAlign.center,
+                triggerMode: TooltipTriggerMode.tap,
+                preferBelow: false,
+                // waitDuration: Durations.medium1,
+                // showDuration: ,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 400),
+                    curve: Curves.easeInOutCubic,
+                    height: expanded ? 24 : 18,
+                    width: expanded ? 24 : 18,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+        Column(
+          children:
+              List.generate(count, (el) {
+                return Container(
+                  height: 36,
+                  child: Center(
+                    child: Text(
+                      "${7 * (el + 1)}",
+                      style: context.customTt.paragraphText!.copyWith(fontSize: 12),
+                    ),
+                  ),
+                );
+              }).toList(),
+        ),
+      ],
     );
   }
 }

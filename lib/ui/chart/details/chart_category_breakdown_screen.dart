@@ -93,8 +93,8 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        context.navMod.toggleFab(show: false);
                         final response = await showCustomModalSheet<CategoryBreakdownSort?>(
+                          animated: false,
                           context: context,
                           builder: (dialogContext) {
                             return BreakdownSortSheet(
@@ -102,7 +102,6 @@ class ChartCategoryBreakdownScreen extends StatelessWidget {
                             );
                           },
                         );
-                        context.navMod.toggleFab(show: true);
                         if (response != null && context.mounted) {
                           context.chartMod.updateCategorySort(response);
                         }
@@ -185,27 +184,11 @@ class _BreakdownSortSheetState extends State<BreakdownSortSheet> {
         children: [
           Row(
             children: [
-              Expanded(child: Text("Sort Category List", style: context.customTt.dateLabel)),
-              IconButton(
-                onPressed: () {
-                  context.pop(
-                    CategoryBreakdownSort(
-                      categoryOrder: _categoryOrder,
-                      categorySortBy: _categorySortBy,
-                      itemOrder: _itemOrder,
-                      itemSortBy: _itemSortBy,
-                    ),
-                  );
-                },
-                icon: FaIcon(
-                  FontAwesomeIcons.check,
-                  size: 20,
-                ),
-              ),
+              Text("Sort Category List", style: context.customTt.dateLabel),
             ],
           ),
           Divider(height: 20),
-          Text("Sort Category"),
+          Text("Sort Category", style: context.customTt.numberFontSmall,),
           Row(
             spacing: 12,
             children: [
@@ -253,9 +236,9 @@ class _BreakdownSortSheetState extends State<BreakdownSortSheet> {
             ],
           ),
           SizedBox(
-            height: 4,
+            height: 8,
           ),
-          Text("Sort Item"),
+          Text("Sort Item", style: context.customTt.numberFontSmall),
           Row(
             spacing: 12,
             children: [
@@ -301,6 +284,21 @@ class _BreakdownSortSheetState extends State<BreakdownSortSheet> {
                 ),
               ),
             ],
+          ),
+          Divider(height: 30),
+          BottomSheetButtons(
+            popResult: CategoryBreakdownSort(
+              categoryOrder: _categoryOrder,
+              categorySortBy: _categorySortBy,
+              itemOrder: _itemOrder,
+              itemSortBy: _itemSortBy,
+            ),
+            popResultFalse: CategoryBreakdownSort(
+              categoryOrder: SortType.dsc,
+              categorySortBy: "Amount",
+              itemOrder: SortType.dsc,
+              itemSortBy: "Amount",
+            ),
           ),
         ],
       ),

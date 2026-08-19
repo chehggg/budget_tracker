@@ -264,6 +264,7 @@ class MyTexts extends ThemeExtension<MyTexts> {
 class MyColors extends ThemeExtension<MyColors> {
   const MyColors({
     this.flipCardColor,
+    this.dropdownColor,
     this.onFlipCard,
     this.fadeColor1,
     this.fadeColor2,
@@ -279,6 +280,7 @@ class MyColors extends ThemeExtension<MyColors> {
   // final TextStyle? numberFontMedium;
   // final TextStyle? numberFontSmall;
   final Color? flipCardColor;
+  final Color? dropdownColor;
   final Color? onFlipCard;
   final Color? fadeColor1;
   final Color? fadeColor2;
@@ -292,6 +294,7 @@ class MyColors extends ThemeExtension<MyColors> {
   MyColors copyWith({Color? flipCardColor, Color? onFlipCard}) {
     return MyColors(
       flipCardColor: flipCardColor ?? this.flipCardColor,
+      dropdownColor: dropdownColor ?? this.dropdownColor,
       onFlipCard: onFlipCard ?? this.onFlipCard,
       fadeColor1: fadeColor1 ?? fadeColor1,
       fadeColor2: fadeColor2 ?? fadeColor2,
@@ -307,6 +310,7 @@ class MyColors extends ThemeExtension<MyColors> {
     }
     return MyColors(
       flipCardColor: Color.lerp(flipCardColor, other.flipCardColor, t),
+      dropdownColor: Color.lerp(dropdownColor, other.dropdownColor, t),
       onFlipCard: Color.lerp(onFlipCard, other.onFlipCard, t),
       fadeColor1: Color.lerp(fadeColor1, other.fadeColor1, t),
       fadeColor2: Color.lerp(fadeColor2, other.fadeColor2, t),

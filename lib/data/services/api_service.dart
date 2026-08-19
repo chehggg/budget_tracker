@@ -1,4 +1,4 @@
-// import 'package:budget_tracker/constants/api_key.dart';
+import 'package:budget_tracker/constants/api_key.dart';
 import 'package:budget_tracker/custom/classes/exchange_rate_class.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/utils/result.dart';
@@ -42,7 +42,7 @@ class ApiServices {
         "https://api.exchangeratesapi.io/v1/latest",
       );
       final uri = baseUri.replace(
-        // queryParameters: {"access_key": exchangeRateKey},
+        queryParameters: {"access_key": exchangeRateKey},
       );
       final http.Response response = await http.get(uri);
       final body = ExchangeRateResponse.fromJson(response.body);

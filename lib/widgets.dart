@@ -426,9 +426,9 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
     final monthlyOverview = context.listMod.monthlyOverview;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
       child: Column(
-        spacing: 12,
+        spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -468,25 +468,9 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                 ),
                 label: Text("Range"),
               ),
-              IconButton(
-                // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                // backgroundColor: context.cs.surfaceContainerHigh,
-                // visualDensity: VisualDensity(vertical: 0),
-                onPressed: () {
-                  context.listMod.updateYearMonth(
-                    YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
-                  );
-                  context.pop();
-                },
-                icon: FaIcon(
-                  FontAwesomeIcons.clockRotateLeft,
-                  size: 18,
-                ),
-                // label: Text("Current"),
-              ),
             ],
           ),
-          Divider(),
+          Divider(height: 20),
           GestureDetector(
             child: Row(
               children: [
@@ -524,9 +508,9 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              mainAxisSpacing: 2,
+              // mainAxisSpacing: 2,
               crossAxisCount: 4,
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.3,
             ),
             children: [
               ...List.generate(12, (i) => i + 1).map((value) {
@@ -591,11 +575,9 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                               style: context.customTt.numberFontSmall!.copyWith(
                                 fontSize: 14,
                                 color:
-                                    balance < 0
-                                        ? context.listMod.accentColors.negative
-                                        : balance > 0
-                                        ? context.listMod.accentColors.positive
-                                        : context.customCs.fadeColor1,
+                                    balance == 0
+                                        ? context.customCs.fadeColor1
+                                        : context.listMod.accentColors.getColorByValue(balance),
                               ),
                             ),
                           ],
@@ -607,41 +589,28 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
               }),
             ],
           ),
-          // Divider(),
-          // Column(
-          //   spacing: 4,
-          //   children: [
-          //     CustomSwitchListTile(
-          //       dense: true,
-          //       title: "Use Range",
-          //       onSelected: (value) {
-          //         final prevDate2 = _yearMonth.date2;
-          //         setState(
-          //           () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
-          //         );
-          //         if (!_yearMonth.useRange) {
-          //           context.listMod.updateYearMonth(
-          //             YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
-          //           );
-          //           context.pop();
-          //         }
-          //       },
-          //       value: _yearMonth.useRange,
-          //     ),
-          //     ListTile(
-          //       contentPadding: EdgeInsets.symmetric(horizontal: 12),
-          //       title: Text(
-          //         "Select Current Month",
-          //         style: context.tt.bodyMedium,
-          //       ),
-          //       onTap: () {
-          //         context.listMod.updateYearMonth(
-          //           YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
-          //         );
-          //         context.pop();
-          //       },
-          //     ),
-          //   ],
+          // Divider(
+          //   height: 30,
+          // ),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextButton(
+                  icon: FontAwesomeIcons.rotateLeft,
+                  text: "Reset",
+                  onTap: () {
+                    context.listMod.updateYearMonth(
+                      YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+                    );
+                    context.pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+          // BottomSheetButtons(
+          //   popResult: YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+          //   popResultFalse: YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
           // ),
         ],
       ),
@@ -784,7 +753,7 @@ class CustomDropDownMenu<T> extends StatelessWidget {
         padding: WidgetStatePropertyAll(EdgeInsets.zero),
         visualDensity: VisualDensity.comfortable,
         backgroundColor: WidgetStatePropertyAll(
-          context.cs.surfaceContainerHigh,
+          context.customCs.dropdownColor,
         ),
       ),
     );
@@ -1025,6 +994,98 @@ class CustomMenuAnchor extends StatelessWidget {
               ),
             );
           }).toList(),
+    );
+  }
+}
+
+class CustomTextButton extends StatelessWidget {
+  const CustomTextButton({
+    super.key,
+    this.borderColor,
+    this.bgColor,
+    this.fgColor,
+    this.inverse = false,
+    this.icon,
+    this.iconSize = 14,
+    this.text = "",
+    this.onTap,
+  });
+
+  final Color? borderColor;
+  final Color? bgColor;
+  final Color? fgColor;
+  final bool inverse;
+  final FaIconData? icon;
+  final double iconSize;
+  final String text;
+  final void Function()? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      style: TextButton.styleFrom(
+        backgroundColor: bgColor ?? context.customCs.fadeColor3,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: borderColor ?? context.customCs.fadeColor2!),
+          borderRadius: BorderRadiusGeometry.circular(12),
+        ),
+        visualDensity: VisualDensity(vertical: -3),
+        padding: EdgeInsets.all(24),
+        foregroundColor: fgColor ?? (inverse ? context.cs.surface : context.cs.primary),
+      ),
+      onPressed: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          FaIcon(
+            icon ?? FontAwesomeIcons.elementor,
+            size: iconSize,
+          ),
+          Text(
+            text,
+            style: context.customTt.numberFontMedium!.copyWith(fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BottomSheetButtons extends StatelessWidget {
+  const BottomSheetButtons({super.key, this.popResult, this.popResultFalse});
+
+  final dynamic popResult;
+  final dynamic popResultFalse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: 12,
+      children: [
+        Flexible(
+          fit: FlexFit.tight,
+          flex: 1,
+          child: CustomTextButton(
+            text: "Reset",
+            icon: FontAwesomeIcons.rotateLeft,
+            onTap: () => context.pop(popResultFalse),
+          ),
+        ),
+        Flexible(
+          fit: FlexFit.tight,
+          flex: 2,
+          child: CustomTextButton(
+            text: "Save",
+            icon: FontAwesomeIcons.solidFloppyDisk,
+            bgColor: context.cs.secondary,
+            borderColor: Colors.transparent,
+            inverse: true,
+            iconSize: 16,
+            onTap: () => context.pop(popResult),
+          ),
+        ),
+      ],
     );
   }
 }
