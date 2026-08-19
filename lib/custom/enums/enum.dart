@@ -37,7 +37,7 @@ enum GoalTrackingPeriod {
   const GoalTrackingPeriod(this.title, this.description);
 }
 
-enum ChartPeriod { week, month, year, custom }
+enum ChartPeriod { day, week, month, year, custom }
 
 enum KeyboardButtonType { char, delete, done, date }
 

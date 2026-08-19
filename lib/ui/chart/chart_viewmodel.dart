@@ -70,7 +70,6 @@ class ChartViewModel extends ChangeNotifier {
   bool _showPrevious = true;
   bool get showPrevious => _showPrevious && _period != ChartPeriod.custom;
 
-
   bool get showMonths => _period == ChartPeriod.year;
   // bool get showPrevious => _period != ChartPeriod.custom;
 
@@ -133,6 +132,12 @@ class ChartViewModel extends ChangeNotifier {
         } else {
           return (index + 1).toString();
         }
+      case ChartPeriod.day:
+        if (useDotForMonth) {
+          return "•";
+        } else {
+          return (index + 1).toString();
+        }
       case ChartPeriod.week:
         return weekdayInitials.elementAtOrNull(index)?.substring(0, useInitials ? 1 : null) ?? "";
       case ChartPeriod.year:
@@ -144,6 +149,8 @@ class ChartViewModel extends ChangeNotifier {
 
   String getDisplayPeriodLabel(DateTime date) {
     switch (_period) {
+      case ChartPeriod.day:
+        return date.formatShort();
       case ChartPeriod.month:
         return DateFormat('MMM yy').format(date);
       case ChartPeriod.week:
@@ -157,6 +164,8 @@ class ChartViewModel extends ChangeNotifier {
 
   String get curDisplayPeriod {
     switch (_period) {
+      case ChartPeriod.day:
+        return _periodStart.formatShort();
       case ChartPeriod.month:
         return DateFormat('MMMM yyyy').format(_periodStart);
       case ChartPeriod.week:
@@ -170,6 +179,8 @@ class ChartViewModel extends ChangeNotifier {
 
   String get curHeaderDisplayPeriod {
     switch (_period) {
+      case ChartPeriod.day:
+        return _periodStart.formatShort();
       case ChartPeriod.month:
         return DateFormat('MMM yyyy').format(_periodStart);
       case ChartPeriod.week:
@@ -181,9 +192,10 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
-
   String get prevDisplayPeriod {
     switch (_period) {
+      case ChartPeriod.day:
+        return _prevRange.start.formatShort();
       case ChartPeriod.month:
         return DateFormat('MMMM yyyy').format(_prevRange.start);
       case ChartPeriod.week:
@@ -242,15 +254,23 @@ class ChartViewModel extends ChangeNotifier {
         );
       case ChartPeriod.custom:
         return {};
+      case ChartPeriod.day:
+        return Map.fromEntries([
+          _costItemRepo.daySummary.entries.firstWhere(
+            (entry) => entry.key.isAtSameMomentAs(rangeStart),
+          ),
+        ]);
     }
   }
 
   bool matchItem(DateTime date) {
     switch (_period) {
-      case ChartPeriod.month:
-        return _periodStart.isInSameYearMonthAs(date);
+      case ChartPeriod.day:
+        return _periodStart.isAtSameMomentAs(date);
       case ChartPeriod.week:
         return date.year == _periodStart.year && date.weekNumber == _periodStart.weekNumber;
+      case ChartPeriod.month:
+        return _periodStart.isInSameYearMonthAs(date);
       // return _periodStart.isInSameYearMonthAs(date);
       // return "${_curRange.end.year}, Week ${_prevRange.start.weekNumber}";
       case ChartPeriod.year:
@@ -275,7 +295,6 @@ class ChartViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-
   DateTimeRange _curRange = DateTimeRange(
     start: DateTime.now().startOfMonth,
     end: DateTime.now().endOfMonth,
@@ -287,6 +306,11 @@ class ChartViewModel extends ChangeNotifier {
 
   DateTimeRange get _prevRange {
     switch (_period) {
+      case ChartPeriod.day:
+        return DateTimeRange(
+          start: rangeStart.addDay(-1),
+          end: rangeStart,
+        );
       case ChartPeriod.month:
         return DateTimeRange(
           start: rangeStart.addMonth(-1),
@@ -303,10 +327,12 @@ class ChartViewModel extends ChangeNotifier {
 
   int get xRange {
     switch (_period) {
-      case ChartPeriod.month:
-        return max(rangeStart.dayinCurrentMonth, prevRangeStart.dayinCurrentMonth) - 1;
+      case ChartPeriod.day:
+        return 0;
       case ChartPeriod.week:
         return 6;
+      case ChartPeriod.month:
+        return max(rangeStart.dayinCurrentMonth, prevRangeStart.dayinCurrentMonth) - 1;
       case ChartPeriod.year:
         return 11;
       case ChartPeriod.custom:
@@ -676,7 +702,7 @@ class ChartViewModel extends ChangeNotifier {
 
   List<Map<DateTime, double>> get avgCumulativeComparison => [
     calculateAverageCumulative(isCurrent: true, type: _chartMetric),
-    if (showPrevious)  calculateAverageCumulative(isCurrent: false, type: _chartMetric),
+    if (showPrevious) calculateAverageCumulative(isCurrent: false, type: _chartMetric),
   ];
 
   Map<int, Map<String, double?>> getPercentageChange({
@@ -722,14 +748,14 @@ class ChartViewModel extends ChangeNotifier {
             : curMTD.addMonth(-1).endOfMonth;
       case ChartPeriod.week:
         return curMTD.addDay(-7);
+      case ChartPeriod.day:
+        return curMTD.addDay(-1);
       case ChartPeriod.year:
         return curMTD.addYear(-1);
       case ChartPeriod.custom:
         return curMTD.addYear(-1);
     }
   }
-
-  
 
   CostMetric get prevRangeToDayCumulative {
     final cumulative = calculateCumulativeMetric(isCurrent: false);
@@ -847,12 +873,17 @@ class ChartViewModel extends ChangeNotifier {
         _curRange = DateTimeRange(start: _periodStart.startOfWeek, end: _periodStart.endOfWeek);
       case ChartPeriod.year:
         _curRange = DateTimeRange(start: _periodStart.startOfYear, end: _periodStart.endOfYear);
-      case ChartPeriod.custom:
-        _curRange = DateTimeRange(start: _periodStart.startOfYear, end: _periodStart.endOfYear);
+      default:
     }
 
     notifyListeners();
-    // debugPrint("log range, $_curRange, $_prevRange");
+  }
+
+  void updateCustomPeriod({required DateTime start, required DateTime end}) {
+    _period = ChartPeriod.custom;
+    _curRange = DateTimeRange(start: start, end: end);
+
+    notifyListeners();
   }
 
   void resetPeriod() {
@@ -865,6 +896,8 @@ class ChartViewModel extends ChangeNotifier {
     switch (_period) {
       case ChartPeriod.month:
         _periodStart = _periodStart.addMonth(increase ? 1 : -1);
+      case ChartPeriod.day:
+        _periodStart = _periodStart.addDay(increase ? 1 : -1);
       case ChartPeriod.week:
         _periodStart = _periodStart.addDay(increase ? 7 : -7);
       case ChartPeriod.year:

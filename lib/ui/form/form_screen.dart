@@ -936,31 +936,15 @@ class SavedItemSelectionView extends StatelessWidget {
                           size: 20,
                           inContainer: false,
                         ),
+                        Text(
+                          item.title ?? "Untitled",
+                          style: context.customTt.numberFontMedium!.copyWith(fontSize: 16),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         Expanded(
                           child: Text(
-                            item.title ?? "Untitled",
-                            style: context.customTt.numberFontMedium!.copyWith(fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            final response = await context.push<bool?>(
-                              '/form/edit-saved-item',
-                              extra: {'initSavedItem': item, 'initCostItem': null},
-                              // arguments: item,
-                            );
-                            if (response == null) return;
-                            if (response) {
-                              context.showSuccessNotification(message: "Saved item updated!");
-                              context.formMod.updateFormGroup(FormGroup.favorite);
-                            }
-                            context.formMod.refresh();
-                          },
-                          icon: FaIcon(
-                            FontAwesomeIcons.pencil,
-                            size: 16,
+                            context.formMod.currencyFormat(item.amount ?? 0, showSymbol: false),
                           ),
                         ),
                       ],
@@ -968,17 +952,55 @@ class SavedItemSelectionView extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8, top: 0),
                       child: Row(
-                        spacing: 10,
+                        spacing: 8,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            "${item.description ?? "[Default Desc]"} | ${item.amount != null ? NumberFormat.currency(symbol: "RM").format(item.amount) : "[Default Amount]"} | ${item.date != null ? item.date!.formatShort() : "[Default Date]"}",
-                            maxLines: 2,
+                            item.description ?? "[No Desc]",
+                            style: context.tt.bodyMedium!.copyWith(
+                              color: context.customCs.fadeColor1,
+                              fontStyle: item.description == null ? FontStyle.italic : null,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            " | ",
                             style: context.tt.bodyMedium!.copyWith(
                               color: context.customCs.fadeColor1,
                               fontSize: 12,
                             ),
                             overflow: TextOverflow.ellipsis,
+                          ),
+                          Expanded(
+                            child: Text(
+                              item.date != null ? item.date!.formatShort() : "[Current Date]",
+                              style: context.tt.bodyMedium!.copyWith(
+                                color: context.customCs.fadeColor1,
+                                fontStyle: item.date == null ? FontStyle.italic : null,
+                                fontSize: 12,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              final response = await context.push<bool?>(
+                                '/form/edit-saved-item',
+                                extra: {'initSavedItem': item, 'initCostItem': null},
+                                // arguments: item,
+                              );
+                              if (response == null) return;
+                              if (response) {
+                                context.showSuccessNotification(message: "Saved item updated!");
+                                context.formMod.updateFormGroup(FormGroup.favorite);
+                              }
+                              context.formMod.refresh();
+                            },
+                            icon: FaIcon(
+                              FontAwesomeIcons.pencil,
+                              size: 14,
+                            ),
                           ),
                         ],
                       ),

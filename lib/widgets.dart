@@ -439,7 +439,7 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                 flex: 2,
                 fit: FlexFit.tight,
                 child: Text(
-                  "Month",
+                  "Month Selector",
                   style: context.customTt.dateLabel,
                 ),
               ),
@@ -463,10 +463,10 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                   }
                 },
                 avatar: FaIcon(
-                  FontAwesomeIcons.calendarWeek,
+                  _yearMonth.useRange ? FontAwesomeIcons.check : FontAwesomeIcons.calendarWeek,
                   size: 14,
                 ),
-                label: Text("Range"),
+                label: Text("Use Range"),
               ),
             ],
           ),

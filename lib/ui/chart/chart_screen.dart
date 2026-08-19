@@ -206,7 +206,23 @@ class ChartFilterButtons extends StatelessWidget {
               textStyle: context.customTt.dateLabel?.copyWith(fontSize: 20),
             ),
             showSelectedIcon: false,
-            onSelectionChanged: (value) => context.chartMod.updatePeriod(value.first),
+            onSelectionChanged: (value) async {
+              if (value.first == ChartPeriod.custom) {
+                DateTime selected = DateTime.now();
+                showCustomModalSheet(
+                  context: context,
+                  builder: (context) {
+                    return CustomPeriodBottomSheet();
+                  },
+                );
+                context.chartMod.updateCustomPeriod(
+                  start: DateTime.now(),
+                  end: DateTime.now(),
+                );
+              } else {
+                context.chartMod.updatePeriod(value.first);
+              }
+            },
             segments:
                 ChartPeriod.values
                     .map(
@@ -222,6 +238,128 @@ class ChartFilterButtons extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class CustomPeriodBottomSheet extends StatelessWidget {
+  const CustomPeriodBottomSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+      child: Column(
+        spacing: 8,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            spacing: 12,
+            children: [
+              Flexible(
+                flex: 2,
+                fit: FlexFit.tight,
+                child: DropdownMenu(
+                  dropdownMenuEntries:
+                      [
+                        ChartPeriod.day,
+                        ChartPeriod.week,
+                        ChartPeriod.month,
+                        ChartPeriod.year,
+                      ].map((el) => DropdownMenuEntry(value: el, label: el.name)).toList(),
+                ),
+                //  Do(
+                //   "Month",
+                //   style: context.customTt.dateLabel,
+                // ),
+              ),
+              // ActionChip(
+              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              //   visualDensity: VisualDensity(vertical: 0),
+              //   backgroundColor:
+              //       _yearMonth.useRange
+              //           ? context.customCs.fadeColor2
+              //           : context.cs.surfaceContainerHigh,
+              //   onPressed: () {
+              //     final prevDate2 = _yearMonth.date2;
+              //     setState(
+              //       () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
+              //     );
+              //     if (!_yearMonth.useRange) {
+              //       context.listMod.updateYearMonth(
+              //         YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
+              //       );
+              //       context.pop();
+              //     }
+              //   },
+              //   avatar: FaIcon(
+              //     FontAwesomeIcons.calendarWeek,
+              //     size: 14,
+              //   ),
+              //   label: Text("Range"),
+              // ),
+            ],
+          ),
+          Divider(height: 20),
+          GestureDetector(
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateTime = _selectedDateTime.addYear(-1);
+                    });
+                  },
+                  icon: Icon(
+                    Icons.chevron_left_rounded,
+                    size: 30,
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _selectedDateTime.year.toString(),
+                      style: context.customTt.dateLabel!.copyWith(fontSize: 30),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateTime = _selectedDateTime.addYear(1);
+                    });
+                  },
+                  icon: Icon(Icons.chevron_right_rounded, size: 30),
+                ),
+              ],
+            ),
+          ),
+          // Divider(
+          //   height: 30,
+          // ),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextButton(
+                  icon: FontAwesomeIcons.rotateLeft,
+                  text: "Reset",
+                  onTap: () {
+                    context.listMod.updateYearMonth(
+                      YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+                    );
+                    context.pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+          // BottomSheetButtons(
+          //   popResult: YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+          //   popResultFalse: YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
+          // ),
+        ],
+      ),
     );
   }
 }
