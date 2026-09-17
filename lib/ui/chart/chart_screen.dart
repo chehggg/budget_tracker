@@ -9,6 +9,7 @@ import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/chart/chart_reusables.dart';
 import 'package:budget_tracker/ui/chart/chart_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
+import 'package:week_number/iso.dart';
 
 class ChartScreen extends StatelessWidget {
   const ChartScreen({super.key});
@@ -57,7 +59,7 @@ class ChartScreen extends StatelessWidget {
           interval: 1,
           reservedSize: 30,
           getTitlesWidget: (value, meta) {
-            final isMatch = context.chartMod.matchLabelDate(value.round());
+            final isMatch = context.chartMod.matchLabelDate(value.round().clamp(0, 10000));
             return Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Transform.scale(
@@ -142,7 +144,7 @@ class ChartScreen extends StatelessWidget {
                   pathName: '/chart/daily-spend',
                   showLabelSubtitle: true,
                   showCurrentLabel: !currentEmpty,
-                  showPreviousLabel: !prevEmpty,
+                  showPreviousLabel: !prevEmpty && period != ChartPeriod.custom,
                   child: DailyBarChart(
                     titleData: chartTitleData,
                   ),
@@ -152,7 +154,7 @@ class ChartScreen extends StatelessWidget {
                   title: "Cumulative ${chartMetric.name.capitalize()}",
                   showLabelSubtitle: true,
                   showCurrentLabel: !currentEmpty,
-                  showPreviousLabel: !prevEmpty,
+                  showPreviousLabel: !prevEmpty && period != ChartPeriod.custom,
                   pathName: '/chart/cumulative-balance',
                   child: NewCumulativeLineChart(
                     titleData: chartTitleData,
@@ -164,7 +166,7 @@ class ChartScreen extends StatelessWidget {
                   pathName: '/chart/cumulative-avg',
                   showLabelSubtitle: true,
                   showCurrentLabel: !currentEmpty,
-                  showPreviousLabel: !prevEmpty,
+                  showPreviousLabel: !prevEmpty && period != ChartPeriod.custom,
                   child: NewAverageCumulativeLineChart(
                     titleData: chartTitleData,
                   ),
@@ -188,6 +190,25 @@ class ChartFilterButtons extends StatelessWidget {
     super.key,
   });
 
+  Future<void> openCustomRangeBottomSheet(BuildContext context) async {
+    final Map? result = await showCustomModalSheet(
+      context: context,
+      builder: (_) {
+        return ChangeNotifierProvider.value(
+          value: context.chartMod,
+          child: CustomPeriodBottomSheet(),
+        );
+      },
+    );
+    if (context.mounted && result != null) {
+      context.chartMod.updateCustomPeriod(
+        range: result['range'],
+        period: result['period'],
+      );
+    }
+    ;
+  }
+
   @override
   Widget build(BuildContext context) {
     final period = context.select((ChartViewModel state) => state.period);
@@ -205,20 +226,15 @@ class ChartFilterButtons extends StatelessWidget {
               visualDensity: VisualDensity(vertical: 0),
               textStyle: context.customTt.dateLabel?.copyWith(fontSize: 20),
             ),
+            emptySelectionAllowed: true,
             showSelectedIcon: false,
             onSelectionChanged: (value) async {
-              if (value.first == ChartPeriod.custom) {
-                DateTime selected = DateTime.now();
-                showCustomModalSheet(
-                  context: context,
-                  builder: (context) {
-                    return CustomPeriodBottomSheet();
-                  },
-                );
-                context.chartMod.updateCustomPeriod(
-                  start: DateTime.now(),
-                  end: DateTime.now(),
-                );
+              if (value.isEmpty) {
+                if (period == ChartPeriod.custom) {
+                  await openCustomRangeBottomSheet(context);
+                }
+              } else if (value.first == ChartPeriod.custom) {
+                await openCustomRangeBottomSheet(context);
               } else {
                 context.chartMod.updatePeriod(value.first);
               }
@@ -242,8 +258,318 @@ class ChartFilterButtons extends StatelessWidget {
   }
 }
 
-class CustomPeriodBottomSheet extends StatelessWidget {
+class CustomPeriodBottomSheet extends StatefulWidget {
   const CustomPeriodBottomSheet({super.key});
+
+  @override
+  State<CustomPeriodBottomSheet> createState() => _CustomPeriodBottomSheetState();
+}
+
+class _CustomPeriodBottomSheetState extends State<CustomPeriodBottomSheet> {
+  ChartPeriod _chartPeriod = ChartPeriod.month;
+  final CarouselSliderController _startYearController = CarouselSliderController();
+  final CarouselSliderController _endYearController = CarouselSliderController();
+  final CarouselSliderController _startWeekController = CarouselSliderController();
+  final CarouselSliderController _endWeekController = CarouselSliderController();
+  final CarouselSliderController _startMonthController = CarouselSliderController();
+  final CarouselSliderController _endMonthController = CarouselSliderController();
+
+  int _startYearIndex = 0;
+  int _startWeekIndex = 0;
+  int _startMonthIndex = 0;
+  int _startDayIndex = 0;
+  int _endYearIndex = 0;
+  int _endWeekIndex = 0;
+  int _endMonthIndex = 0;
+  int _endDayIndex = 0;
+  late DateTime _start, _end;
+  late final int _constStartYear, _constEndYear;
+
+  @override
+  void dispose() {
+    super.dispose();
+    // _yearController.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _chartPeriod = context.chartMod.customPeriod ?? context.chartMod.period;
+    _start = context.chartMod.rangeStart;
+    _end = context.chartMod.rangeEnd;
+
+    _constStartYear = context.chartMod.rangeStart.year - 5;
+    _constEndYear = _constStartYear;
+    _startYearIndex = _start.year - _constStartYear;
+    _endYearIndex = _end.year - _constEndYear;
+
+    _startMonthIndex = _start.month - 1;
+    _endMonthIndex = _end.month - 1;
+
+    _startWeekIndex = _start.weekNumber;
+    _endWeekIndex = _end.weekNumber;
+
+  }
+
+  String get displayPeriod {
+    switch (_chartPeriod) {
+      case ChartPeriod.month:
+        return "${_start.formatMonth()} - ${_end.formatMonth()}";
+      case ChartPeriod.year:
+        return "${_start.year} - ${_end.year}";
+      case ChartPeriod.week:
+        return "${_start.formatPrettyShort()} (W${_start.weekNumber}) - ${_end.formatPrettyShort()} (W${_end.weekNumber})";
+      default:
+        return "";
+    }
+  }
+
+  void setStartDateTime() {
+    setState(() {
+      switch (_chartPeriod) {
+        case ChartPeriod.month:
+          _start = DateTime(_startYearIndex + _constStartYear, _startMonthIndex + 1, 1);
+          if (_start.isAfter(_end)) {
+            _end = _start;
+            _endYearIndex = _startYearIndex;
+            _endMonthIndex = _startMonthIndex;
+            _endYearController.animateToPage(_endYearIndex);
+            _endMonthController.animateToPage(_endMonthIndex);
+          }
+        case ChartPeriod.year:
+          _start = DateTime(_startYearIndex + _constStartYear, 1, 1);
+          if (_start.isAfter(_end)) {
+            _end = _start;
+            _endYearIndex = _startYearIndex;
+            _endYearController.animateToPage(_endYearIndex);
+          }
+        case ChartPeriod.week:
+          _start = dateTimeFromWeekNumber(_startYearIndex + _constStartYear, _startWeekIndex + 1);
+          if (_start.isAfter(_end)) {
+            _end = _start;
+            _endYearIndex = _startYearIndex;
+            _endWeekIndex = _startWeekIndex;
+            _endYearController.animateToPage(_endYearIndex);
+            _endWeekController.animateToPage(_endWeekIndex);
+          }
+        default:
+          _start = DateTime(_startYearIndex + _constStartYear, 1, 1);
+      }
+    });
+  }
+
+  void setEndDateTime() {
+    setState(() {
+      switch (_chartPeriod) {
+        case ChartPeriod.month:
+          _end = DateTime(_endYearIndex + _constStartYear, _endMonthIndex + 1, 1);
+          if (_end.isBefore(_start)) {
+            _start = _end;
+            _startYearIndex = _endYearIndex;
+            _startMonthIndex = _endMonthIndex;
+            _startYearController.animateToPage(_startYearIndex);
+            _startMonthController.animateToPage(_startMonthIndex);
+          }
+        case ChartPeriod.year:
+          _end = DateTime(_endYearIndex + _constStartYear, 1, 1);
+          if (_end.isBefore(_start)) {
+            _start = _end;
+            _startYearIndex = _endYearIndex;
+            _startYearController.animateToPage(_startYearIndex);
+          }
+        case ChartPeriod.week:
+          _end = dateTimeFromWeekNumber(_endYearIndex + _constStartYear, _endWeekIndex + 1);
+          if (_end.isBefore(_start)) {
+            _start = _end;
+            _startYearIndex = _endYearIndex;
+            _startWeekIndex = _endWeekIndex;
+            _startYearController.animateToPage(_startYearIndex);
+            _startWeekController.animateToPage(_startWeekIndex);
+          }
+        default:
+          _end = DateTime(_endYearIndex + _constStartYear, 1, 1);
+      }
+    });
+  }
+
+  RotateCarousel getYearCarousel({required bool start, Key? key}) {
+    return RotateCarousel(
+      key: key,
+      controller: start ? _startYearController : _endYearController,
+      infiniteScroll: false,
+      itemList: List.generate(9, (i) {
+        if (start) {
+          return (_constStartYear + i).toString();
+        } else {
+          return (_constStartYear + i).toString();
+        }
+      }),
+      currentIndex: start ? _startYearIndex : _endYearIndex,
+      onChanged: (index, reason) {
+        if (start) {
+          setState(() {
+            _startYearIndex = index;
+          });
+          setStartDateTime();
+        } else {
+          setState(() {
+            _endYearIndex = index;
+          });
+          setEndDateTime();
+        }
+      },
+    );
+  }
+
+  RotateCarousel getWeekCarousel({required bool start}) {
+    return RotateCarousel(
+      controller: start ? _startWeekController : _endWeekController,
+      itemList: List.generate(53, (i) => "W${i + 1}"),
+      currentIndex: start ? _startWeekIndex : _endWeekIndex,
+      onChanged: (index, reason) {
+        final init = start ? _startWeekIndex : _endWeekIndex;
+        if ((init == 0 && index == 52)) {
+          if (start) {
+            _startWeekIndex = (_startWeekIndex - 1).clamp(0, 9);
+            _startWeekController.animateToPage(_startWeekIndex);
+          } else {
+            _endWeekIndex = (_endWeekIndex - 1).clamp(0, 9);
+            _endWeekController.animateToPage(_endWeekIndex);
+          }
+        } else if (init == 52 && index == 0) {
+          if (start) {
+            _startWeekIndex = (_startWeekIndex + 1).clamp(0, 8);
+            _startWeekController.animateToPage(_startWeekIndex);
+          } else {
+            _endWeekIndex = (_endWeekIndex + 1).clamp(0, 9);
+            _endWeekController.animateToPage(_endWeekIndex);
+          }
+        }
+        if (start) {
+          setState(() {
+            _startWeekIndex = index;
+          });
+          setStartDateTime();
+        } else {
+          setState(() {
+            _endWeekIndex = index;
+          });
+          setEndDateTime();
+        }
+      },
+    );
+  }
+
+  RotateCarousel getMonthCarousel({required bool start}) {
+    return RotateCarousel(
+      controller: start ? _startMonthController : _endMonthController,
+      infiniteScroll: true,
+      itemList: [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ],
+      currentIndex: start ? _startMonthIndex : _endMonthIndex,
+      onChanged: (index, reason) {
+        setState(() {
+          final init = start ? _startMonthIndex : _endMonthIndex;
+          if ((init == 0 && index == 11)) {
+            if (start) {
+              _startYearIndex = (_startYearIndex - 1).clamp(0, 9);
+              _startYearController.animateToPage(_startYearIndex);
+            } else {
+              _endYearIndex = (_endYearIndex - 1).clamp(0, 9);
+              _endYearController.animateToPage(_endYearIndex);
+            }
+          } else if (init == 11 && index == 0) {
+            if (start) {
+              _startYearIndex = (_startYearIndex + 1).clamp(0, 8);
+              _startYearController.animateToPage(_startYearIndex);
+            } else {
+              _endYearIndex = (_endYearIndex + 1).clamp(0, 9);
+              _endYearController.animateToPage(_endYearIndex);
+            }
+          }
+          if (start) {
+            _startMonthIndex = index;
+            setStartDateTime();
+          } else {
+            _endMonthIndex = index;
+            setEndDateTime();
+          }
+        });
+      },
+    );
+  }
+
+  Widget getBox({Widget? child}) {
+    return SizedBox(
+      height: 180,
+      width: (context.mq.size.width - 40) / 4,
+      child: child,
+    );
+  }
+
+  Widget getChartCarousel({required bool start, required ChartPeriod period}) {
+    switch (period) {
+      case ChartPeriod.month:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            getBox(
+              child: getMonthCarousel(start: start),
+            ),
+            getBox(
+              child: getYearCarousel(start: start, key: ValueKey("month_year")),
+            ),
+          ],
+        );
+      case ChartPeriod.year:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            getBox(
+              child: getYearCarousel(start: start, key: ValueKey("year_year")),
+            ),
+          ],
+        );
+      case ChartPeriod.week:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            getBox(
+              child: getYearCarousel(start: start, key: ValueKey("week_year")),
+            ),
+            getBox(
+              child: getWeekCarousel(start: start),
+            ),
+          ],
+        );
+      default:
+        return Row();
+    }
+  }
+
+  // RotateCarousel getDayCarousel() {
+  //   return RotateCarousel(
+  //     itemList: List.generate(31, (i) => i.toString()),
+  //     currentIndex: _selectedIndex,
+  //     onChanged: (index, reason) {
+  //       setState(() {
+  //         _selectedIndex = index;
+  //       });
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -257,22 +583,45 @@ class CustomPeriodBottomSheet extends StatelessWidget {
           Row(
             spacing: 12,
             children: [
-              Flexible(
-                flex: 2,
-                fit: FlexFit.tight,
-                child: DropdownMenu(
-                  dropdownMenuEntries:
-                      [
-                        ChartPeriod.day,
-                        ChartPeriod.week,
-                        ChartPeriod.month,
-                        ChartPeriod.year,
-                      ].map((el) => DropdownMenuEntry(value: el, label: el.name)).toList(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Custom Period", style: context.customTt.dateLabel),
+                    Text(
+                      displayPeriod,
+                      style: context.customTt.paragraphTextSmall,
+                    ),
+                  ],
                 ),
-                //  Do(
-                //   "Month",
-                //   style: context.customTt.dateLabel,
-                // ),
+              ),
+              DropdownMenu(
+                textStyle: context.tt.bodyMedium,
+                initialSelection: _chartPeriod,
+                inputDecorationTheme: InputDecorationThemeData(
+                  visualDensity: VisualDensity(vertical: -3),
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                ),
+                onSelected: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _chartPeriod = value;
+                    });
+                    setStartDateTime();
+                    setEndDateTime();
+                    debugPrint("$_startYearIndex,$_endYearIndex");
+                  }
+                },
+                dropdownMenuEntries:
+                    [
+                          ChartPeriod.day,
+                          ChartPeriod.week,
+                          ChartPeriod.month,
+                          ChartPeriod.year,
+                        ]
+                        .map((el) => DropdownMenuEntry(value: el, label: el.name.capitalize()))
+                        .toList(),
               ),
               // ActionChip(
               //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -302,62 +651,40 @@ class CustomPeriodBottomSheet extends StatelessWidget {
             ],
           ),
           Divider(height: 20),
-          GestureDetector(
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedDateTime = _selectedDateTime.addYear(-1);
-                    });
-                  },
-                  icon: Icon(
-                    Icons.chevron_left_rounded,
-                    size: 30,
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      _selectedDateTime.year.toString(),
-                      style: context.customTt.dateLabel!.copyWith(fontSize: 30),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedDateTime = _selectedDateTime.addYear(1);
-                    });
-                  },
-                  icon: Icon(Icons.chevron_right_rounded, size: 30),
-                ),
-              ],
-            ),
-          ),
-          // Divider(
-          //   height: 30,
-          // ),
           Row(
             children: [
-              Expanded(
-                child: CustomTextButton(
-                  icon: FontAwesomeIcons.rotateLeft,
-                  text: "Reset",
-                  onTap: () {
-                    context.listMod.updateYearMonth(
-                      YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
-                    );
-                    context.pop();
-                  },
+              Container(
+                width: (context.mq.size.width - 40) / 2,
+                // decoration: BoxDecoration(color: Colors.white),
+                child: Column(
+                  spacing: 8,
+                  children: [
+                    Text("Start", style: context.customTt.paragraphText),
+                    getChartCarousel(period: _chartPeriod, start: true),
+                  ],
+                ),
+              ),
+              Container(
+                width: (context.mq.size.width - 40) / 2,
+                // decoration: BoxDecoration(color: Colors.white),
+                child: Column(
+                  spacing: 8,
+                  children: [
+                    Text(
+                      "End",
+                      style: context.customTt.paragraphText,
+                    ),
+                    getChartCarousel(period: _chartPeriod, start: false),
+                  ],
                 ),
               ),
             ],
           ),
-          // BottomSheetButtons(
-          //   popResult: YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
-          //   popResultFalse: YearMonth(useRange: false, date1: DateTime.now().startOfMonth),
-          // ),
+          SizedBox(height: 8),
+          BottomSheetButtons(
+            popResult: {"period": _chartPeriod, "range": DateTimeRange(start: _start, end: _end)},
+            popResultFalse: null,
+          ),
         ],
       ),
     );
@@ -616,7 +943,7 @@ class _DailyBarChartState extends State<DailyBarChart> {
                           0,
                           if (yLineValue != null) yLineValue,
                         ],
-                        dash: [false, false],
+                        dash: [true, false],
                         showYLabel: [false, true],
                         texts: [
                           null,
@@ -1239,7 +1566,7 @@ class _NewCumulativeLineChartState extends State<NewCumulativeLineChart> {
                   showingTooltipIndicators: [getTooltipIndicator()],
                   gridData: customGrid,
                   lineBarsData:
-                      cumulativeComparison.reversed.mapIndexed((i, element) {
+                      cumulativeComparison.reversed.mapIndexed((i, line) {
                         final bool isPrev = showPrevious ? i == 0 : false;
                         final Color mainColor =
                             isPrev
@@ -1261,15 +1588,9 @@ class _NewCumulativeLineChartState extends State<NewCumulativeLineChart> {
                             },
                           ),
                           spots: [
-                            ...element.entries.map(
-                              (entry) {
-                                int index;
-                                if (showMonths) {
-                                  index = entry.key.month - element.keys.first.month;
-                                } else {
-                                  index = entry.key.difference(element.keys.first).inDays;
-                                }
-                                return FlSpot(index.toDouble(), entry.value);
+                            ...line.entries.mapIndexed(
+                              (dataIndex, data) {
+                                return FlSpot(dataIndex.toDouble(), data.value);
                               },
                             ),
                           ],
@@ -1405,7 +1726,7 @@ class _NewAverageCumulativeLineChartState extends State<NewAverageCumulativeLine
                   showingTooltipIndicators: [getTooltipIndicator()],
                   gridData: customGrid,
                   lineBarsData:
-                      cumulativeComparison.reversed.mapIndexed((i, element) {
+                      cumulativeComparison.reversed.mapIndexed((i, line) {
                         final bool isPrev = showPrevious ? i == 0 : false;
                         final Color mainColor =
                             isPrev
@@ -1414,15 +1735,9 @@ class _NewAverageCumulativeLineChartState extends State<NewAverageCumulativeLine
                         return getCustomLineChartBarData(
                           showingIndicators: indicatorIndex != null ? [indicatorIndex] : [],
                           spots: [
-                            ...element.entries.map(
-                              (entry) {
-                                int index;
-                                if (showMonths) {
-                                  index = entry.key.month - element.keys.first.month;
-                                } else {
-                                  index = entry.key.difference(element.keys.first).inDays;
-                                }
-                                return FlSpot(index.toDouble(), entry.value);
+                            ...line.entries.mapIndexed(
+                              (dataIndex, data) {
+                                return FlSpot(dataIndex.toDouble(), data.value);
                               },
                             ),
                           ],

@@ -904,13 +904,13 @@ class SavedItemSelectionView extends StatelessWidget {
     if (savedItems.isNotEmpty) {
       return SliverPadding(
         padding: const EdgeInsets.only(top: 14.0, bottom: 120),
-        sliver: SliverGrid.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 1,
-            mainAxisSpacing: 0,
-            crossAxisSpacing: 12,
-            mainAxisExtent: 100,
-          ),
+        sliver: SliverList.builder(
+          // gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          //   crossAxisCount: 1,
+          //   mainAxisSpacing: 0,
+          //   crossAxisSpacing: 12,
+          //   mainAxisExtent: 100,
+          // ),
           itemCount: savedItems.length,
           itemBuilder: (context, index) {
             final SavedItem item = savedItems.elementAt(index);
@@ -921,9 +921,9 @@ class SavedItemSelectionView extends StatelessWidget {
                 // showSplash: false,
                 showBorder: true,
                 onTap: () => context.formMod.selectSavedItem(item),
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Column(
-                  spacing: 2,
+                  spacing: 8,
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -944,66 +944,66 @@ class SavedItemSelectionView extends StatelessWidget {
                         ),
                         Expanded(
                           child: Text(
-                            context.formMod.currencyFormat(item.amount ?? 0, showSymbol: false),
+                            context.formMod.currencyFormat(item.amount ?? 0, showSymbol: false, compact: true),
+                             style: context.customTt.numberFontSmall!.copyWith(fontSize: 16),
+                            textAlign: TextAlign.right,
                           ),
                         ),
                       ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8, top: 0),
-                      child: Row(
-                        spacing: 8,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            item.description ?? "[No Desc]",
+                    Row(
+                      spacing: 8,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          item.description ?? "[No Desc]",
+                          style: context.tt.bodyMedium!.copyWith(
+                            color: context.customCs.fadeColor1,
+                            fontStyle: item.description == null ? FontStyle.italic : null,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          " | ",
+                          style: context.tt.bodyMedium!.copyWith(
+                            color: context.customCs.fadeColor1,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Expanded(
+                          child: Text(
+                            item.date != null ? item.date!.formatShort() : "[Current Date]",
                             style: context.tt.bodyMedium!.copyWith(
                               color: context.customCs.fadeColor1,
-                              fontStyle: item.description == null ? FontStyle.italic : null,
+                              fontStyle: item.date == null ? FontStyle.italic : null,
                               fontSize: 12,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            " | ",
-                            style: context.tt.bodyMedium!.copyWith(
-                              color: context.customCs.fadeColor1,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Expanded(
-                            child: Text(
-                              item.date != null ? item.date!.formatShort() : "[Current Date]",
-                              style: context.tt.bodyMedium!.copyWith(
-                                color: context.customCs.fadeColor1,
-                                fontStyle: item.date == null ? FontStyle.italic : null,
-                                fontSize: 12,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () async {
-                              final response = await context.push<bool?>(
-                                '/form/edit-saved-item',
-                                extra: {'initSavedItem': item, 'initCostItem': null},
-                                // arguments: item,
-                              );
-                              if (response == null) return;
-                              if (response) {
-                                context.showSuccessNotification(message: "Saved item updated!");
-                                context.formMod.updateFormGroup(FormGroup.favorite);
-                              }
-                              context.formMod.refresh();
-                            },
-                            icon: FaIcon(
-                              FontAwesomeIcons.pencil,
-                              size: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                        // IconButton(
+                        //   iconSize: 12,
+                        //   onPressed: () async {
+                        //     final response = await context.push<bool?>(
+                        //       '/form/edit-saved-item',
+                        //       extra: {'initSavedItem': item, 'initCostItem': null},
+                        //       // arguments: item,
+                        //     );
+                        //     if (response == null) return;
+                        //     if (response) {
+                        //       context.showSuccessNotification(message: "Saved item updated!");
+                        //       context.formMod.updateFormGroup(FormGroup.favorite);
+                        //     }
+                        //     context.formMod.refresh();
+                        //   },
+                        //   icon: FaIcon(
+                        //     FontAwesomeIcons.pencil,
+                        //     size: 12,
+                        //   ),
+                        // ),
+                      ],
                     ),
                     // Divider(),
                   ],

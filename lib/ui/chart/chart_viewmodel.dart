@@ -70,11 +70,16 @@ class ChartViewModel extends ChangeNotifier {
   bool _showPrevious = true;
   bool get showPrevious => _showPrevious && _period != ChartPeriod.custom;
 
-  bool get showMonths => _period == ChartPeriod.year;
+  bool get showMonths =>
+      _period == ChartPeriod.year ||
+      (_period == ChartPeriod.custom && _curRange.duration.inDays > 90);
   // bool get showPrevious => _period != ChartPeriod.custom;
 
   ChartPeriod _period = ChartPeriod.month;
   ChartPeriod get period => _period;
+
+  ChartPeriod? _customPeriod;
+  ChartPeriod? get customPeriod => _customPeriod;
 
   final YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now());
   YearMonth get yearMonth => _yearMonth;
@@ -143,7 +148,15 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.year:
         return monthInitials.elementAtOrNull(index)?.substring(0, useInitials ? 1 : null) ?? "";
       case ChartPeriod.custom:
-        return (index + 1).toString();
+        if (showMonths) {
+          if (useDotForMonth && curRangeOverview.length > 12) {
+            return "•";
+          } else {
+            return DateFormat('MMMMM yy').format(_curRange.start.addMonth(index));
+          }
+        } else {
+          return (index + 1).toString();
+        }
     }
   }
 
@@ -199,7 +212,7 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.month:
         return DateFormat('MMMM yyyy').format(_prevRange.start);
       case ChartPeriod.week:
-        return "${_curRange.end.year}, Week ${_prevRange.start.weekNumber}";
+        return "${_prevRange.end.year}, Week ${_prevRange.start.weekNumber}";
       case ChartPeriod.year:
         return DateFormat('yyyy').format(_prevRange.start);
       case ChartPeriod.custom:
@@ -336,7 +349,7 @@ class ChartViewModel extends ChangeNotifier {
       case ChartPeriod.year:
         return 11;
       case ChartPeriod.custom:
-        return 0;
+        return curRangeOverview.length - 1;
     }
   }
 
@@ -444,7 +457,7 @@ class ChartViewModel extends ChangeNotifier {
     if (date.isWithinRange(_curRange)) {
       if (showMonths) {
         debugPrint("Showmonth");
-        return (date.month) - (_curRange.start.month);
+        return (date.year * 12 + date.month) - (_curRange.start.year * 12 + _curRange.start.month);
       } else {
         return date.difference(_curRange.start).inDays;
       }
@@ -582,11 +595,14 @@ class ChartViewModel extends ChangeNotifier {
     final DateTimeRange range = isCurrent ? _curRange : _prevRange;
 
     if (showMonths) {
-      result = List.generate(range.end.month - range.start.month + 1, (i) {
-        final date = range.start.addMonth(i);
-        final metrics = _monthSummary[date] ?? CostMetric();
-        return MapEntry(date, metrics);
-      });
+      result = List.generate(
+        (range.end.year * 12 + range.end.month) - (range.start.year * 12 + range.start.month) + 1,
+        (i) {
+          final date = range.start.addMonth(i);
+          final metrics = _monthSummary[date] ?? CostMetric();
+          return MapEntry(date, metrics);
+        },
+      );
     } else {
       result = List.generate(range.duration.inDays + 1, (i) {
         final date = range.start.addDay(i);
@@ -672,6 +688,7 @@ class ChartViewModel extends ChangeNotifier {
         result.add(MapEntry(key, totalMetric));
       }
     });
+
     return Map.fromEntries(result);
   }
 
@@ -866,6 +883,7 @@ class ChartViewModel extends ChangeNotifier {
 
   void updatePeriod(ChartPeriod selectedPeriod) {
     _period = selectedPeriod;
+    _customPeriod = null;
     switch (_period) {
       case ChartPeriod.month:
         _curRange = DateTimeRange(start: _periodStart.startOfMonth, end: _periodStart.endOfMonth);
@@ -879,9 +897,19 @@ class ChartViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateCustomPeriod({required DateTime start, required DateTime end}) {
+  void updateCustomPeriod({required DateTimeRange range, required ChartPeriod period}) {
     _period = ChartPeriod.custom;
-    _curRange = DateTimeRange(start: start, end: end);
+    _customPeriod = period;
+    _curRange = range;
+    switch (_customPeriod) {
+      case ChartPeriod.month:
+        _curRange = DateTimeRange(start: range.start.startOfMonth, end: range.end.endOfMonth);
+      case ChartPeriod.week:
+        _curRange = DateTimeRange(start: range.start.startOfWeek, end: range.end.endOfWeek);
+      case ChartPeriod.year:
+        _curRange = DateTimeRange(start: range.start.startOfYear, end: range.end.endOfYear);
+      default:
+    }
 
     notifyListeners();
   }

@@ -283,7 +283,9 @@ class _CumulativeBalanceDetailScreenState extends State<CumulativeBalanceDetailS
                       final current = overview.first.entries.elementAtOrNull(index);
 
                       final el = [prev, current];
-                      final currentVal = change.values.elementAt(index);
+                      final currentVal =
+                          change.values.elementAtOrNull(index) ?? {"change": 0, "percentage": 0};
+                      // final currentVal = change.values.elementAt(index -1);
                       final currentChange = currentVal['change'];
                       final currentPercentage = currentVal['percentage'];
                       return DataRow(

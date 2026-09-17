@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:another_flushbar/flushbar.dart';
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/ui/form/form_screen.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1084,6 +1085,63 @@ class BottomSheetButtons extends StatelessWidget {
             iconSize: 16,
             onTap: () => context.pop(popResult),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class RotateCarousel extends StatelessWidget {
+  const RotateCarousel({
+    super.key,
+    this.controller,
+    required this.itemList,
+    required this.currentIndex,
+    this.onChanged,
+    this.infiniteScroll = true,
+  });
+
+  final CarouselSliderController? controller;
+  final List<String> itemList;
+  final int currentIndex;
+  final bool infiniteScroll;
+  final Function(int index, CarouselPageChangedReason reason)? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final length = itemList.length;
+    return CarouselSlider(
+      carouselController: controller,
+      options: CarouselOptions(
+        initialPage: currentIndex,
+        enableInfiniteScroll: infiniteScroll,
+        height: 70,
+        aspectRatio: 4 / 3,
+        viewportFraction: 0.2,
+        onPageChanged: onChanged,
+        scrollDirection: Axis.vertical,
+      ),
+      items: [
+        ...itemList.mapIndexed(
+          (i, month) {
+            final isCurrent = i == currentIndex;
+            final isAdjacent =
+                (i == (currentIndex + 1) % length) || (i == (currentIndex + length - 1) % length);
+            return Center(
+              child: AnimatedScale(
+                scale: isCurrent ? 1.1 : 0.9,
+                duration: Durations.short4,
+                curve: Curves.easeOut,
+                child: Text(
+                  month,
+                  style: context.tt.bodyMedium!.copyWith(
+                    color: isCurrent ? Colors.white : Colors.white.withAlpha(isAdjacent ? 100 : 50),
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
