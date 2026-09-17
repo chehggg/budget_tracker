@@ -153,6 +153,32 @@ class LocalServices {
     }
   }
 
+  // Future<Result<List<Goal>>> loadGoalsFile() async {
+  //   try {
+  //     final fileResult = await _loadDefaultFile('goals');
+  //     if (fileResult == null) {
+  //       return Result.ok([]);
+  //     } else {
+  //       return await parseGoalsJson(fileResult);
+  //     }
+  //   } on Exception catch (e) {
+  //     return Result.error(e);
+  //   }
+  // }
+
+  // Future<Result<void>> writeGoalsFile(List<Goal> items) async {
+  //   try {
+  //     final List<Map<String, dynamic>> json = List.generate(
+  //       items.length,
+  //       (i) => items[i].toJson(),
+  //     );
+  //     await _writeToFile('goals', json);
+  //     return Result.ok(null);
+  //   } on Exception catch (e) {
+  //     return Result.error(e);
+  //   }
+  // }
+
   /// saved item
   Future<Result<List<SavedItem>>> loadSavedItems() async {
     try {

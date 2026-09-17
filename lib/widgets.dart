@@ -1147,3 +1147,49 @@ class RotateCarousel extends StatelessWidget {
     );
   }
 }
+
+class CustomTextField extends StatelessWidget {
+  const CustomTextField({
+    super.key,
+    this.controller,
+    required this.fieldLabel,
+    this.minLines,
+    this.hintText,
+    this.onChanged,
+  });
+
+  final TextEditingController? controller;
+  final String fieldLabel;
+  final int? minLines;
+  final String? hintText;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final inputDecoration = InputDecoration(
+      filled: true,
+      hintText: hintText,
+      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      isDense: true,
+      visualDensity: VisualDensity(vertical: -2),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Text(fieldLabel),
+        TextFormField(
+          onChanged: onChanged,
+          textCapitalization: TextCapitalization.sentences,
+          keyboardType: TextInputType.text,
+          style: context.tt.bodyMedium!.copyWith(fontSize: 14),
+          decoration: inputDecoration,
+          controller: controller,
+          minLines: minLines ?? 1,
+          maxLines: 10,
+        ),
+      ],
+    );
+  }
+}

@@ -585,10 +585,36 @@ class YearMonthRange extends YearMonthResult {
 }
 
 class MenuChild {
-  MenuChild({required this.icon, required this.name, this.onTap, this.color});
+  const MenuChild({required this.icon, required this.name, this.onTap, this.color});
 
   final FaIconData icon;
   final String name;
   final Color? color;
   final void Function()? onTap;
+}
+
+class CostGroup {
+  const CostGroup({this.id, this.name, this.description, this.items, this.addToMain});
+
+  final String? id;
+  final String? name;
+  final String? description;
+  final List<CostItem>? items;
+  final bool? addToMain;
+
+  CostGroup copyWith({
+    String? id,
+    String? name,
+    String? description,
+    bool? addToMain,
+    List<CostItem>? items,
+  }) {
+    return CostGroup(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: name ?? this.description,
+      items: items ?? this.items,
+      addToMain: addToMain ?? this.addToMain,
+    );
+  }
 }

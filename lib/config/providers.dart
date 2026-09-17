@@ -3,6 +3,7 @@ import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/exchange_rate_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
+import 'package:budget_tracker/data/repos/group_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:budget_tracker/data/services/api_service.dart';
@@ -25,6 +26,10 @@ List<SingleChildWidget> get providers => [
   ),
   Provider(
     create: (context) => CostItemRepository(localServices: context.read()),
+    lazy: false,
+  ),
+  Provider(
+    create: (context) => GroupRepository(localServices: context.read()),
     lazy: false,
   ),
   Provider(

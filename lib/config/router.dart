@@ -37,6 +37,8 @@ import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/display/global_display_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/group_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/group_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/keyboard_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/language_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/display/list_display_settings_screen.dart';
@@ -248,8 +250,7 @@ final goRouter = GoRouter(
                 GoRoute(
                   path: '/new-goal',
                   parentNavigatorKey: _rootNavigator,
-                  builder:
-                      (context, state) => GoalTypeSelectionScreen(),
+                  builder: (context, state) => GoalTypeSelectionScreen(),
                 ),
                 GoRoute(
                   // parentNavigatorKey: _rootNavigator,
@@ -309,6 +310,14 @@ final goRouter = GoRouter(
                 GoRoute(
                   path: '/keyboard',
                   builder: (context, state) => const KeyboardSettingsScreen(),
+                ),
+                GoRoute(
+                  path: '/group-form',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create: (context) => GroupSettingsViewModel(groupRepo: context.read()),
+                        child: const GroupSettingsScreen(),
+                      ),
                 ),
                 GoRoute(
                   path: '/currency-setting',

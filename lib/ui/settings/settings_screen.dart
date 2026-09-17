@@ -799,6 +799,60 @@ class ExportDataSettingsTile extends StatelessWidget {
   }
 }
 
+class AddGroupSettingsTile extends StatelessWidget {
+  const AddGroupSettingsTile({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSettingsTile(
+      title: "Budget group",
+      trailingWidget: const SizedBox.shrink(),
+      onTap: () async {
+        // final response = await showExportDialog(context);
+        // if (response == true && context.mounted) {
+        //   final exportResponse = await context.settingMod.exportData();
+        //   if (exportResponse.isNotEmpty) {
+        //     context.showErrorNotification(message: "Export failed: $exportResponse");
+        //   } else {
+        //     context.showSuccessNotification(message: "Export completed.");
+        //   }
+        // }
+
+        // if (response != null && context.mounted) {
+        //   debugPrint("save response: " + response.toString());
+        //   if (response == "") {
+        //     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Data saved")));
+        //   }
+        // }
+      },
+    );
+  }
+
+  Future<bool?> showExportDialog(BuildContext context) {
+    return showDialog<bool?>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Export data"),
+          content: const Text(
+            "Press confirm to export the cost item as CSV into your desired location",
+          ),
+          actions: [
+            DismissTextButton(
+              onTap: () => context.pop(),
+            ),
+            AffirmativeTextButton(
+              onTap: () async {
+                context.pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class LoadDataSettingsTile extends StatefulWidget {
   const LoadDataSettingsTile({super.key});
 
