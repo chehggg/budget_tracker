@@ -151,11 +151,13 @@ class FormArgument {
     // required this.isNew,
     this.oriRoute,
     this.selectedCostItem,
+    this.costGroup,
   });
 
   // final bool isNew;
   final String? oriRoute;
   final CostItem? selectedCostItem;
+  final CostGroup? costGroup;
 }
 
 class CostMetric {
@@ -617,4 +619,6 @@ class CostGroup {
       addToMain: addToMain ?? this.addToMain,
     );
   }
+
+  CostMetric get metric => CostMetric.fromCostItemList(items ?? []);
 }

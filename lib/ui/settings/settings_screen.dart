@@ -808,6 +808,7 @@ class AddGroupSettingsTile extends StatelessWidget {
       title: "Budget group",
       trailingWidget: const SizedBox.shrink(),
       onTap: () async {
+        context.push('/settings/group');
         // final response = await showExportDialog(context);
         // if (response == true && context.mounted) {
         //   final exportResponse = await context.settingMod.exportData();

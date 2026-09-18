@@ -37,6 +37,8 @@ import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/display/global_display_settings_screen.dart';
+import 'package:budget_tracker/ui/settings/group_details_screen.dart';
+import 'package:budget_tracker/ui/settings/group_details_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/group_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/group_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/keyboard_settings_screen.dart';
@@ -315,8 +317,25 @@ final goRouter = GoRouter(
                   path: '/group-form',
                   builder:
                       (context, state) => ChangeNotifierProvider(
-                        create: (context) => GroupSettingsViewModel(groupRepo: context.read()),
+                        create:
+                            (context) => GroupSettingsViewModel(
+                              groupRepo: context.read(),
+                              currencyRepo: context.read(),
+                            ),
                         child: const GroupSettingsScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/group-details',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => GroupDetailsViewModel(
+                              group: state.extra as CostGroup,
+                              groupRepo: context.read(),
+                              currencyRepo: context.read(),
+                            ),
+                        child: const GroupDetailsScreen(),
                       ),
                 ),
                 GoRoute(
@@ -413,6 +432,7 @@ final goRouter = GoRouter(
               (context) => FormViewModel(
                 sharedElRepo: context.read(),
                 initCostItem: arg?.selectedCostItem,
+                costGroup: arg?.costGroup,
                 costItemRepo: context.read(),
                 savedItemRepo: context.read(),
                 categoryRepo: context.read(),

@@ -13,6 +13,7 @@ import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
+import 'package:budget_tracker/ui/settings/group_details_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/group_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/setting_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ extension BuildContextExtension on BuildContext {
   CurrencyViewModel get currencyMod => read<CurrencyViewModel>();
   ExRateViewModel get exRateMod => read<ExRateViewModel>();
   GroupSettingsViewModel get groupMod => read<GroupSettingsViewModel>();
+  GroupDetailsViewModel get groupDetailsMod => read<GroupDetailsViewModel>();
   CategoryFormViewModel get catFormMod => read<CategoryFormViewModel>();
   AdditionalCurrencySettingsViewModel get currencySetMod =>
       read<AdditionalCurrencySettingsViewModel>();

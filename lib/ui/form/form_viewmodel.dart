@@ -18,6 +18,7 @@ class FormViewModel extends ChangeNotifier {
   FormViewModel({
     required CostItemRepository costItemRepo,
     required SavedItemRepository savedItemRepo,
+    required CostGroup? costGroup,
     required CategoryRepository categoryRepo,
     required CurrencyRepository currencyRepo,
     required SharedElementRepository sharedElRepo,
@@ -25,6 +26,7 @@ class FormViewModel extends ChangeNotifier {
   }) : _costItemRepo = costItemRepo,
        _savedItemRepo = savedItemRepo,
        _initCostItem = initCostItem,
+       _costGroup = costGroup,
        _currencyRepo = currencyRepo,
        _sharedElRepo = sharedElRepo,
        _categoryRepo = categoryRepo {
@@ -32,6 +34,7 @@ class FormViewModel extends ChangeNotifier {
   }
 
   final CostItem? _initCostItem;
+  final CostGroup? _costGroup;
   final CostItemRepository _costItemRepo;
   final SavedItemRepository _savedItemRepo;
   final CategoryRepository _categoryRepo;
