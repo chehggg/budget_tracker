@@ -8,10 +8,12 @@ import 'package:budget_tracker/custom/classes/saved_item_class.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
+import 'package:budget_tracker/data/repos/group_repository.dart';
 import 'package:budget_tracker/data/repos/saved_item_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:money2/money2.dart';
 import 'package:uuid/uuid.dart';
 
 class FormViewModel extends ChangeNotifier {
@@ -20,13 +22,14 @@ class FormViewModel extends ChangeNotifier {
     required SavedItemRepository savedItemRepo,
     required CostGroup? costGroup,
     required CategoryRepository categoryRepo,
+    required GroupRepository groupRepo,
     required CurrencyRepository currencyRepo,
     required SharedElementRepository sharedElRepo,
     CostItem? initCostItem,
   }) : _costItemRepo = costItemRepo,
        _savedItemRepo = savedItemRepo,
        _initCostItem = initCostItem,
-       _costGroup = costGroup,
+       _groupRepo = groupRepo,
        _currencyRepo = currencyRepo,
        _sharedElRepo = sharedElRepo,
        _categoryRepo = categoryRepo {
@@ -34,9 +37,9 @@ class FormViewModel extends ChangeNotifier {
   }
 
   final CostItem? _initCostItem;
-  final CostGroup? _costGroup;
   final CostItemRepository _costItemRepo;
   final SavedItemRepository _savedItemRepo;
+  final GroupRepository _groupRepo;
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
   final SharedElementRepository _sharedElRepo;
@@ -49,6 +52,7 @@ class FormViewModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _savedItemRepo.ready;
     await _currencyRepo.ready;
+    await _groupRepo.ready;
 
     _updateControllerValue();
 
@@ -70,14 +74,17 @@ class FormViewModel extends ChangeNotifier {
   void _populateInitValue() {
     debugPrint('initializing form model');
 
+    _useStickyDate = _sharedElRepo.useStickyDate;
+    
     if (_initCostItem != null) {
       _draftedItem = _initCostItem;
       _formGroup =
           _initCostItem.costType == CostType.expense ? FormGroup.expense : FormGroup.income;
     } else {
-      _draftedItem = CostItem(uuid: Uuid().v4(), date: DateTime.now().standard, name: "");
+      _draftedItem = CostItem(uuid: Uuid().v4(), date: _useStickyDate ? _sharedElRepo.stickyDate : DateTime.now().standard, name: "");
     }
-  }
+
+  } 
 
   String? validateFormResult() {
     if (_draftedItem.categoryId == null) {
@@ -91,6 +98,9 @@ class FormViewModel extends ChangeNotifier {
     }
     return null;
   }
+
+  CostGroup? get costGroup => _groupRepo.viewedGroup;
+  String get groupName => costGroup?.name ?? "Default";
 
   CostItem _draftedItem = CostItem();
   CostItem get draft => _draftedItem;
@@ -131,6 +141,9 @@ class FormViewModel extends ChangeNotifier {
   bool _editCategory = false;
   bool get editCategory => _editCategory;
 
+  bool _useStickyDate = false;
+  bool get useStickyDate => _useStickyDate;
+
   // description controller to be used in form
   // need to be here because the saved item need to be able to update this
   final TextEditingController _descriptionController = TextEditingController();
@@ -158,7 +171,9 @@ class FormViewModel extends ChangeNotifier {
           final catQuery = draft.categoryId == el.categoryId;
           final nameQuery =
               el.name?.toLowerCase().contains(descriptionController.text.toLowerCase()) ?? true;
-          return catQuery && nameQuery;
+          final nameNotEmpty = el.name != null && el.name?.length != 0;
+          final groupQuery = el.group == costGroup?.id;
+          return catQuery && nameQuery && nameNotEmpty && groupQuery;
         })
         .sorted((a, b) => b.date!.compareTo(a.date!));
 
@@ -184,6 +199,12 @@ class FormViewModel extends ChangeNotifier {
     //   _draftedItem = _draftedItem.copyWith(categoryId: null);
     //   notifyListeners();
     // }
+    notifyListeners();
+  }
+
+  void toggleStickyDate({bool? value}) {
+    _useStickyDate = value ?? !_useStickyDate;
+    _sharedElRepo.toggleStickyDate(value: value);
     notifyListeners();
   }
 
@@ -222,6 +243,10 @@ class FormViewModel extends ChangeNotifier {
 
   void updateDate(DateTime newDate) {
     _draftedItem = _draftedItem.copyWith(date: newDate);
+
+    if (_useStickyDate) {
+      _sharedElRepo.updateStickyDate(newDate);
+    }
     notifyListeners();
   }
 
@@ -272,11 +297,33 @@ class FormViewModel extends ChangeNotifier {
     final finalItem = _draftedItem.copyWith(
       lastModified: DateTime.now(),
       lastCreated: inEditMode ? null : DateTime.now(),
+      group: () => costGroup?.id,
+      baseAmount: _draftedItem.amount,
+      currencyIso: useCurrency.isoCode,
     );
+    // if (_costGroup != null) {
+    //   if (inEditMode) {
+    //     // final updatedGroup = _costGroup.items.remove
+    //     // await _groupRepo.updateGroup(_costGroup.copyWith(items: ));
+    //   } else {
+    //     final newItems = (_costGroup.items ?? [])..add(finalItem);
+    //     await _groupRepo.updateGroup(_costGroup.copyWith(items: newItems));
+    //   }
+    // } else {
+    //   if (inEditMode) {
+    //     await _costItemRepo.updateCostItem(finalItem);
+    //   } else {
+    //     await _costItemRepo.createCostItem(finalItem);
+    //   }
+    // }
     if (inEditMode) {
       await _costItemRepo.updateCostItem(finalItem);
     } else {
       await _costItemRepo.createCostItem(finalItem);
+    }
+
+    if (_useStickyDate) {
+      _sharedElRepo.updateStickyDate(_draftedItem.date!);
     }
   }
 
@@ -294,24 +341,39 @@ class FormViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get currencySymbol => _currencyRepo.currency.symbol;
-  bool get symbolOnLeft => _currencyRepo.currency.symbolOnLeft;
-  String Function(
+  Currency get useCurrency =>
+      costGroup?.currency != null
+          ? (Currencies().find(costGroup!.currency!) ?? _currencyRepo.currency)
+          : _currencyRepo.currency;
+  String get currencySymbol => useCurrency.symbol;
+  bool get symbolOnLeft => useCurrency.symbolOnLeft;
+
+  String currencyFormat(
     double value, {
-    bool abbreviated,
-    bool alwaysShowSign,
-    bool showSymbol,
-    bool compact,
+    bool abbreviated = false,
+    bool alwaysShowSign = false,
+    bool showSymbol = true,
+    bool compact = false,
     int? decimalDigits,
-  })
-  get currencyFormat => _currencyRepo.formatCurrency;
+  }) {
+    return _currencyRepo.formatCurrency(
+      value,
+      customIso: useCurrency.isoCode,
+      abbreviated: abbreviated,
+      alwaysShowSign: alwaysShowSign,
+      showSymbol: showSymbol,
+      compact: compact,
+      decimalDigits: decimalDigits,
+    );
+  }
+  
 
   KeyboardSettings get settings => _sharedElRepo.keyboardSettings;
   String get customButtonText =>
       settings.layout == KeyboardLayout.simple &&
               _sharedElRepo.keyboardButton == SimpleKeyboardButtonType.doubleZero
           ? "00"
-          : _currencyRepo.currency.decimalSeparator;
+          : useCurrency.decimalSeparator;
 
   @override
   void dispose() {

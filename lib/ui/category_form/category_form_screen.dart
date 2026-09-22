@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
 import 'package:budget_tracker/custom/classes/category_class.dart';
@@ -22,89 +23,183 @@ class CategoryFormScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final editMode = context.catFormMod.inEditMode;
     final defaultCat = context.catFormMod.defaultCat;
+    final ctxWatch = context.watch<CategoryFormViewModel>();
     final ready = context.select((CategoryFormViewModel state) => state.ready);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(editMode ? "Edit category" : "New category"),
-        actionsPadding: EdgeInsets.only(right: 8),
-        actions: [
-          if (editMode && defaultCat != null)
-            IconButton(
-              onPressed: () async {
-                final response = await showDialog(
-                  context: context,
-                  builder: (_) {
-                    return ResetDefaultDialog(
-                      initCategory: defaultCat,
-                      currentCategory: context.catFormMod.draft,
-                    );
-                  },
-                );
-                if (response == null) return;
-                if (response && context.mounted) {
-                  context.catFormMod.resetCategory();
-                }
-              },
-              icon: FaIcon(FontAwesomeIcons.clockRotateLeft, size: 20),
-            ),
-          if (editMode)
-            IconButton(
-              onPressed: () async {
-                final items = context.catFormMod.getCategoryItems();
-                final response = await showDialog(
-                  context: context,
-                  builder: (dialogContext) {
-                    if (items == null || items.isEmpty) {
-                      return DeleteItemDialog();
-                    } else {
-                      return CategoryFormDeleteDialog(items: items, currencyFormat: context.catFormMod.currencyFormat,);
-                    }
-                  },
-                );
-                if (response == null) return;
-                if (response && context.mounted) {
-                  await context.catFormMod.deleteCategoryItem();
-                  if (context.mounted) {
-                    context.pop();
-                  }
-                }
-              },
-              icon: FaIcon(FontAwesomeIcons.trash, size: 20,),
-            ),
-          IconButton(
-            onPressed: () {
-              final error = context.catFormMod.validateForm();
-              if (error == null) {
-                context.catFormMod.submitCategory();
-                context.pop();
-              } else {
-                context.showErrorNotification(message: error);
-              }
-            },
-            icon: FaIcon(FontAwesomeIcons.solidFloppyDisk, size: 20),
+    Widget getBottomSheetIcon(CostItemCategory cat) {
+      return Row(
+        spacing: 12,
+        children: [
+          CategoryIconContainer(
+            category: cat,
+            size: 22,
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                cat.name?.capitalize() ?? "Untitled",
+                style: context.customTt.numberFontSmall,
+              ),
+              Text(
+                cat.costType?.name.capitalize() ?? "",
+                style: context.customTt.paragraphTextSmall,
+              ),
+            ],
           ),
         ],
+      );
+    }
+
+    return CustomScaffold(
+      appBarTitle: Text(editMode ? "Edit category" : "New category"),
+      bottomSheet: CustomActionBottomSheet(
+        top: 20,
+        showNegativeButton: editMode,
+        onNegativeButtonPressed: () async {
+          final items = context.catFormMod.getCategoryItems();
+          final response = await showDialog(
+            context: context,
+            builder: (dialogContext) {
+              if (items == null || items.isEmpty) {
+                return DeleteItemDialog();
+              } else {
+                return CategoryFormDeleteDialog(
+                  items: items,
+                  currencyFormat: context.catFormMod.currencyFormat,
+                );
+              }
+            },
+          );
+          if (response == null) return;
+          if (response && context.mounted) {
+            await context.catFormMod.deleteCategoryItem();
+            if (context.mounted) {
+              context.pop();
+            }
+          }
+        },
+        onPrimaryButtonPressed: () {
+          final error = context.catFormMod.validateForm();
+          if (error == null) {
+            context.catFormMod.submitCategory();
+            context.pop();
+          } else {
+            context.showErrorNotification(message: error);
+          }
+        },
+        content: Column(
+          spacing: 10,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4.0),
+              child: Text(
+                editMode ? "Editing Category" : "Creating Category",
+                style: context.customTt.numberFontSmall,
+              ),
+            ),
+            if (editMode)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Initial",
+                      style: context.customTt.paragraphTextSmall,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      "New",
+                      style: context.customTt.paragraphTextSmall,
+                    ),
+                  ),
+                ],
+              ),
+            if (editMode)
+              Row(
+                children: [
+                  ...[
+                    ctxWatch.initCategory!,
+                    ctxWatch.draft,
+                  ].map((cat) => Expanded(child: getBottomSheetIcon(cat))),
+                ],
+              ),
+            if (!editMode) getBottomSheetIcon(ctxWatch.draft),
+          ],
+        ),
       ),
-      body: SafeArea(
-        minimum: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child:
-            ready
-                ? const CategoryFormBody()
-                : const Center(
-                  child: CircularProgressIndicator(),
-                ),
-      ),
+      // actions: [
+      //   if (editMode && defaultCat != null)
+      //     IconButton(
+      //       onPressed: () async {
+      //         final response = await showDialog(
+      //           context: context,
+      //           builder: (_) {
+      //             return ResetDefaultDialog(
+      //               initCategory: defaultCat,
+      //               currentCategory: context.catFormMod.draft,
+      //             );
+      //           },
+      //         );
+      //         if (response == null) return;
+      //         if (response && context.mounted) {
+      //           context.catFormMod.resetCategory();
+      //         }
+      //       },
+      //       icon: FaIcon(FontAwesomeIcons.clockRotateLeft, size: 20),
+      //     ),
+      //   if (editMode)
+      //     IconButton(
+      //       onPressed: () async {
+      //         final items = context.catFormMod.getCategoryItems();
+      //         final response = await showDialog(
+      //           context: context,
+      //           builder: (dialogContext) {
+      //             if (items == null || items.isEmpty) {
+      //               return DeleteItemDialog();
+      //             } else {
+      //               return CategoryFormDeleteDialog(
+      //                 items: items,
+      //                 currencyFormat: context.catFormMod.currencyFormat,
+      //               );
+      //             }
+      //           },
+      //         );
+      //         if (response == null) return;
+      //         if (response && context.mounted) {
+      //           await context.catFormMod.deleteCategoryItem();
+      //           if (context.mounted) {
+      //             context.pop();
+      //           }
+      //         }
+      //       },
+      //       icon: FaIcon(
+      //         FontAwesomeIcons.trash,
+      //         size: 20,
+      //       ),
+      //     ),
+        // IconButton(
+        //   onPressed: () {
+        //     final error = context.catFormMod.validateForm();
+        //     if (error == null) {
+        //       context.catFormMod.submitCategory();
+        //       context.pop();
+        //     } else {
+        //       context.showErrorNotification(message: error);
+        //     }
+        //   },
+        //   icon: FaIcon(FontAwesomeIcons.solidFloppyDisk, size: 20),
+        // ),
+      // ],
+      ready: ready,
+      child: CategoryFormBody(),
     );
   }
 }
 
 class CategoryFormDeleteDialog extends StatelessWidget {
-  const CategoryFormDeleteDialog({
-    super.key,
-    required this.items,
-    required this.currencyFormat
-  });
+  const CategoryFormDeleteDialog({super.key, required this.items, required this.currencyFormat});
 
   final List<CostItem> items;
   final String Function(
@@ -113,7 +208,8 @@ class CategoryFormDeleteDialog extends StatelessWidget {
     bool alwaysShowSign,
     bool compact,
     int? decimalDigits,
-  }) currencyFormat;
+  })
+  currencyFormat;
 
   @override
   Widget build(BuildContext context) {
@@ -214,7 +310,7 @@ class CategoryFormBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final contextWatch = context.watch<CategoryFormViewModel>();
     final draft = contextWatch.draft;
-    final type = contextWatch.draft.costType;
+    final selectedType = contextWatch.draft.costType;
     // final color = contextWatch.draft.color;
     // final path = contextWatch.draft.imagePath;
     // final iconData = contextWatch.draft.iconName;
@@ -224,95 +320,208 @@ class CategoryFormBody extends StatelessWidget {
       slivers: [
         SliverList(
           delegate: SliverChildListDelegate([
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 12,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    final result = await context.push<CategoryIconResult?>(
-                      '/form/edit-category/category-icon',
-                    );
-                    if (result == null) return;
-                    if (result.path != null) {
-                      context.catFormMod.updateIcon(result.path!);
-                    } else if (result.iconName != null) {
-                      context.catFormMod.updateIconData(result.iconName!);
-                    }
-                  },
-                  child: Stack(
-                    alignment: Alignment(0.85, 0.85),
-                    children: [
-                      CategoryIconContainer(
-                        category: draft,
-                        containerSize: 103,
-                        size: 60,
-                        radius: 20,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: context.cs.surface,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.all(4),
-                        child: Icon(Icons.edit, size: 20, color: context.cs.primary),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    spacing: 8,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextFormField(
-                        textCapitalization: TextCapitalization.words,
-                        keyboardType: TextInputType.name,
-                        initialValue: draft.name,
-                        onChanged: context.catFormMod.updateTitle,
-                        style: context.tt.bodyMedium,
-                        decoration: InputDecoration(
-                          hintText: "Name your category here...",
-                          visualDensity: VisualDensity(vertical: -1),
-                          isDense: true,
-                        ),
-                      ),
-                      SegmentedButton(
-                        onSelectionChanged: (value) {
-                          if (value.isEmpty) return;
-                          context.catFormMod.updateCostType(value.first!);
-                        },
-                        style: SegmentedButton.styleFrom(
-                          // selectedBackgroundColor: color,
-                          visualDensity: VisualDensity(vertical: 1),
-                          side: BorderSide(color: context.customCs.fadeColor2 ?? Colors.white),
-                        ),
-                        segments:
-                            CostType.values
-                                .map(
-                                  (type) => ButtonSegment(
-                                    value: type,
-                                    label: Text(type.name.capitalize()),
-                                  ),
-                                )
-                                .toList(),
-                        selected: {type},
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            HorizontalPadding(
+              child: Text("Category Info", style: context.customTt.numberFontSmall),
             ),
+            SizedBox(
+              height: 20,
+            ),
+            HorizontalPadding(
+              child: CustomTextField(
+                fieldLabel: "Name",
+                // textCapitalization: TextCapitalization.words,
+                keyboardType: TextInputType.name,
+                initialValue: draft.name,
+                onChanged: context.catFormMod.updateTitle,
+                hintText: "Name your category here...",
+              ),
+            ),
+            // SizedBox(height: 16),
+            // HorizontalPadding(
+            //   child: CustomTextField(
+            //     fieldLabel: "Description",
+            //     keyboardType: TextInputType.name,
+            //     initialValue: draft.name,
+            //     onChanged: context.catFormMod.updateTitle,
+            //     hintText: "Name your category here...",
+            //     minLines: 3,
+            //   ),
+            // ),
+            SizedBox(height: 24,),
+            // Divider(height: 40),
+            HorizontalPadding(child: Text("Cost Type", style: context.tt.bodyMedium)),
+            SizedBox(
+              height: 10,
+            ),
+            
+            RadioGroup<CostType>(
+              groupValue: selectedType,
+              onChanged: (value) {
+                if (value != null) context.catFormMod.updateCostType(value);
+              },
+              child: Column(
+                children:
+                    CostType.values
+                        .map(
+                          (type) => CustomRadioListTile<CostType>(
+                            title: type.name.capitalize(),
+                            value: type,
+                            groupValue: selectedType,
+                            dense: true,
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
+            Divider(height: 40),
+            SizedBox(
+              height: 4,
+            ),
+            HorizontalPadding(child: Text("Category View", style: context.customTt.numberFontSmall)),
+            // HorizontalPadding(child: Text("Applicable for ", style: context.customTt.numberFontSmall)),
+            SizedBox(
+              height: 10,
+            ),
+            RadioGroup<CostType>(
+              groupValue: selectedType,
+              onChanged: (value) {
+                if (value != null) context.catFormMod.updateCostType(value);
+              },
+              child: Column(
+                children:
+                    CostType.values
+                        .map(
+                          (type) => CustomRadioListTile<CostType>(
+                            title: "Applicable for all groups",
+                            value: type,
+                            groupValue: selectedType,
+                            dense: true,
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
+            Divider(height: 40),
+            GestureDetector(
+              onTap: () async {
+                final result = await context.push<CategoryIconResult?>(
+                  '/form/edit-category/category-icon',
+                );
+                if (result == null) return;
+                if (result.path != null) {
+                  context.catFormMod.updateIcon(result.path!);
+                } else if (result.iconName != null) {
+                  context.catFormMod.updateIconData(result.iconName!);
+                }
+              },
+              child: HorizontalPadding(
+                child: Row(
+                  children: [
+                    Expanded(child: Text("Category Icon", style: context.customTt.numberFontSmall)),
+                    CategoryIconContainer(
+                      category: draft,
+                      containerSize: 40,
+                      size: 30,
+                      radius: 8,
+                      inContainer: false,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Divider(height: 40),
+            HorizontalPadding(
+              child: Text("Category Color", style: context.customTt.numberFontSmall),
+            ),
+            SizedBox(
+              height: 20,
+            ),
+            // Row(
+            //   crossAxisAlignment: CrossAxisAlignment.start,
+            //   spacing: 12,
+            //   children: [
+            //     GestureDetector(
+            //       onTap: () async {
+            //         final result = await context.push<CategoryIconResult?>(
+            //           '/form/edit-category/category-icon',
+            //         );
+            //         if (result == null) return;
+            //         if (result.path != null) {
+            //           context.catFormMod.updateIcon(result.path!);
+            //         } else if (result.iconName != null) {
+            //           context.catFormMod.updateIconData(result.iconName!);
+            //         }
+            //       },
+            //       child: Stack(
+            //         alignment: Alignment(0.85, 0.85),
+            //         children: [
+            //           CategoryIconContainer(
+            //             category: draft,
+            //             containerSize: 103,
+            //             size: 60,
+            //             radius: 20,
+            //           ),
+            //           Container(
+            //             decoration: BoxDecoration(
+            //               color: context.cs.surface,
+            //               borderRadius: BorderRadius.circular(8),
+            //             ),
+            //             padding: EdgeInsets.all(4),
+            //             child: Icon(Icons.edit, size: 20, color: context.cs.primary),
+            //           ),
+            //         ],
+            //       ),
+            //     ),
+            //     Expanded(
+            //       child: Column(
+            //         spacing: 8,
+            //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //         crossAxisAlignment: CrossAxisAlignment.stretch,
+            //         children: [
+            //           TextFormField(
+            //             textCapitalization: TextCapitalization.words,
+            //             keyboardType: TextInputType.name,
+            //             initialValue: draft.name,
+            //             onChanged: context.catFormMod.updateTitle,
+            //             style: context.tt.bodyMedium,
+            //             decoration: InputDecoration(
+            //               hintText: "Name your category here...",
+            //               visualDensity: VisualDensity(vertical: -1),
+            //               isDense: true,
+            //             ),
+            //           ),
+            //           SegmentedButton(
+            //             onSelectionChanged: (value) {
+            //               if (value.isEmpty) return;
+            //               context.catFormMod.updateCostType(value.first!);
+            //             },
+            //             style: SegmentedButton.styleFrom(
+            //               // selectedBackgroundColor: color,
+            //               visualDensity: VisualDensity(vertical: 1),
+            //               side: BorderSide(color: context.customCs.fadeColor2 ?? Colors.white),
+            //             ),
+            //             segments:
+            //                 CostType.values
+            //                     .map(
+            //                       (type) => ButtonSegment(
+            //                         value: type,
+            //                         label: Text(type.name.capitalize()),
+            //                       ),
+            //                     )
+            //                     .toList(),
+            //             selected: {type},
+            //           ),
+            //         ],
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ]),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          sliver: SliverToBoxAdapter(
-            child: Text("Color", style: context.customTt.paragraphTitle),
-          ),
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 220),
+          sliver: CategoryColorSelectionGrid(),
         ),
-        CategoryColorSelectionGrid(),
       ],
     );
   }
@@ -328,12 +537,12 @@ class CategoryColorSelectionGrid extends StatefulWidget {
 }
 
 class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid> {
-  List<Color> _colors = [...Colors.primaries, ...Colors.accents];
+  List<Color> _colors = [...Colors.primaries];
 
   @override
   void initState() {
     super.initState();
-    generateColorGrid(context.catFormMod.draft.color);
+    generateColorGrid(null);
   }
 
   void generateColorGrid(Color? selectedColor) {
@@ -351,9 +560,9 @@ class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid>
   Widget build(BuildContext context) {
     final color = context.select((CategoryFormViewModel state) => state.draft.color);
     return SliverGrid.count(
-      crossAxisCount: 8,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
+      crossAxisCount: 10,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
       children: [
         ..._colors.map(
           (el) {
@@ -361,7 +570,7 @@ class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid>
             return Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 onTap: () {
                   context.catFormMod.updateColor(el);
                 },
@@ -374,7 +583,7 @@ class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid>
                       decoration: BoxDecoration(
                         border: BoxBorder.all(color: context.customCs.fadeColor2!),
                         color: el.withAlpha(selected ? 255 : 200),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: AnimatedOpacity(
                         opacity: selected ? 1 : 0,
@@ -457,7 +666,10 @@ class _CategoryColorSelectionGridState extends State<CategoryColorSelectionGrid>
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: FaIcon(FontAwesomeIcons.plus, size: 16,),
+              child: FaIcon(
+                FontAwesomeIcons.plus,
+                size: 16,
+              ),
             ),
           ),
         ),

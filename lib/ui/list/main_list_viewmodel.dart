@@ -7,6 +7,7 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
+import 'package:budget_tracker/data/repos/group_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -17,15 +18,18 @@ class ListViewModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required CategoryRepository categoryRepo,
     required CurrencyRepository currencyRepo,
+    required GroupRepository groupRepo,
     required SharedElementRepository sharedRepo,
   }) : _costItemRepo = costItemRepo,
        _currencyRepo = currencyRepo,
+       _groupRepo = groupRepo,
        _sharedRepo = sharedRepo,
        _categoryRepo = categoryRepo {
     init();
   }
   final CostItemRepository _costItemRepo;
   final CategoryRepository _categoryRepo;
+  final GroupRepository _groupRepo;
   final CurrencyRepository _currencyRepo;
   final SharedElementRepository _sharedRepo;
 
@@ -33,6 +37,7 @@ class ListViewModel extends ChangeNotifier {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
     await _currencyRepo.ready;
+    await _groupRepo.ready;
     await _sharedRepo.ready;
 
     _itemSubscription = _costItemRepo.valueStream.listen((value) {
@@ -63,6 +68,11 @@ class ListViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    _groupSubscription = _groupRepo.streamValue.listen((value) {
+      _viewedGroup = _groupRepo.viewedGroup;
+      notifyListeners();
+    });
+
     _sharedDateSubscription = _sharedRepo.sharedDateStream.listen((value) {
       if (_sharedRepo.syncDate) {
         _yearMonth = value;
@@ -81,6 +91,12 @@ class ListViewModel extends ChangeNotifier {
   StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
   StreamSubscription<Currency>? _currencySubscription;
   StreamSubscription<List<CostItemCategory>>? _categorySubscription;
+  StreamSubscription<bool>? _groupSubscription;
+
+  List<CostGroup>? get group => _groupRepo.groups;
+
+  CostGroup? _viewedGroup;
+  CostGroup? get viewedGroup => _viewedGroup;
 
   bool _isInitialized = false;
   bool get ready => _isInitialized;
@@ -157,6 +173,8 @@ class ListViewModel extends ChangeNotifier {
                         (item.amount ?? 0) >= _incomeRange!.start)
                     : true);
           }
+          final groupQuery = item.group == _viewedGroup?.id;
+
           // final bool rangeQuery =
           //     (_expenseRange != null
           //         ? ((item.absoluteAmount) <= _expenseRange!.end &&
@@ -170,7 +188,7 @@ class ListViewModel extends ChangeNotifier {
               _filteredCategories != null
                   ? _filteredCategories!.map((cat) => cat.id).contains(item.categoryId)
                   : true;
-          return rangeQuery && searchQuery && categoryQuery;
+          return rangeQuery && searchQuery && categoryQuery && groupQuery;
         }).toList(),
       ),
     );
@@ -205,6 +223,12 @@ class ListViewModel extends ChangeNotifier {
         )
         .sorted((a, b) => b.key.compareTo(a.key)),
   );
+
+  void updateViewedGroup(CostGroup? newGroup) {
+    _groupRepo.changeGroupView(newGroup);
+    // _viewedGroup = group;
+    // notifyListeners();
+  }
 
   void getScrollPosition(DateTime date) {
     final index = outputCostItems.entries.toList().indexWhere((entry) => entry.key == date);
@@ -323,15 +347,24 @@ class ListViewModel extends ChangeNotifier {
 
   List<CostItem> get items => curMonthGbDateCostItems.values.flattenedToList;
 
-  String Function(
+  String currencyFormat(
     double value, {
-    bool abbreviated,
-    bool alwaysShowSign,
-    bool showSymbol,
-    bool compact,
+    bool abbreviated = false,
+    bool alwaysShowSign = false,
+    bool showSymbol = true,
+    bool compact = false,
     int? decimalDigits,
-  })
-  get currencyFormat => _currencyRepo.formatCurrency;
+  }) {
+    return _currencyRepo.formatCurrency(
+      value,
+      customIso: viewedGroup?.currency,
+      abbreviated: abbreviated,
+      alwaysShowSign: alwaysShowSign,
+      showSymbol: showSymbol,
+      compact: compact,
+      decimalDigits: decimalDigits,
+    );
+  }
 
   @override
   void dispose() {
@@ -340,6 +373,7 @@ class ListViewModel extends ChangeNotifier {
     _categorySubscription?.cancel();
     _currencySubscription?.cancel();
     _sharedDateSubscription?.cancel();
+    _groupSubscription?.cancel();
     super.dispose();
   }
 }

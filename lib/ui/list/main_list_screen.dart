@@ -154,6 +154,8 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
     final selectionMode = context.select((ListViewModel state) => state.selectionMode);
     final selectedItemLength = context.select((ListViewModel state) => state.selectedItems.length);
+    final groups = context.select((ListViewModel state) => state.group);
+    final curGroup = context.select((ListViewModel state) => state.viewedGroup);
 
     if (selectionMode) {
       return AppBar(
@@ -203,29 +205,199 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
       return AppBar(
         scrolledUnderElevation: 0,
         actionsPadding: EdgeInsets.only(right: 8),
-        title: Text(AppLocale.overview.getString(context), style: context.customTt.dateLabel),
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.listMod.toggleSearch();
-              context.navMod.toggleFab(show: false);
-            },
-            icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 18),
-          ),
-          IconButton(
-            onPressed: context.listMod.toggleBlur,
-            icon: FaIcon(
-              !isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash,
-              size: 18,
+        title: Row(
+          children: [
+            Text(curGroup != null ? (curGroup.name ?? "") : AppLocale.overview.getString(context), style: context.customTt.dateLabel),
+            SizedBox(
+              width: 6,
             ),
+            IconButton(
+              icon: FaIcon(FontAwesomeIcons.list, size: 18,),
+              onPressed: () {
+                showCustomModalSheet(
+                  context: context,
+                  builder: (_) {
+                    return GroupBottomSheet(
+                      group: groups,
+                      curGroup: curGroup,
+                      onTap: (e) => context.listMod.updateViewedGroup(e),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          Row(
+            children: [
+              //     IconButton(
+              //       onPressed: () {
+              //         showCustomModalSheet(
+              //           context: context,
+              //           builder: (_) {
+              //             return GroupBottomSheet(
+              //               group: groups,
+              //               curGroup: curGroup,
+              //               onTap: (e) => context.listMod.changeView(e),
+              //             );
+              //           },
+              //         );
+              //         // context.listMod.toggleSearch();
+              //         // context.navMod.toggleFab(show: false);
+              //       },
+              //       icon: FaIcon(
+              //         FontAwesomeIcons.list,
+              //         size: 18,
+              //       ),
+              //     ),
+              //     Padding(
+              //       padding: const EdgeInsets.only(right: 2.0),
+              //       child: Text(
+              //         "${curGroup?.name ?? ""}",
+              //         style: context.customTt.paragraphText,
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              IconButton(
+                onPressed: () {
+                  context.listMod.toggleSearch();
+                  context.navMod.toggleFab(show: false);
+                },
+                icon: FaIcon(FontAwesomeIcons.magnifyingGlass, size: 18),
+              ),
+              CustomMenuAnchor(
+                items: [
+                  MenuChild(
+                    icon: !isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash,
+                    name: "Hide Amount",
+                    onTap: context.listMod.toggleBlur,
+                  ),
+                  MenuChild(
+                    icon: FontAwesomeIcons.list,
+                    name: "Group View",
+                    onTap:
+                        () => showCustomModalSheet(
+                          context: context,
+                          builder: (_) {
+                            return GroupBottomSheet(
+                              group: groups,
+                              curGroup: curGroup,
+                              onTap: (e) => context.listMod.updateViewedGroup(e),
+                            );
+                          },
+                        ),
+                  ),
+                ],
+              ),
+
+              // IconButton(
+              //   onPressed: context.listMod.toggleBlur,
+              //   icon: FaIcon(
+              //     !isBlurred ? FontAwesomeIcons.solidEye : FontAwesomeIcons.solidEyeSlash,
+              //     size: 18,
+              //   ),
+              // ),
+              // IconButton(
+              //   onPressed: context.listMod.getCurMonthData,
+              //   icon: Icon(Icons.refresh),
+              // ),
+            ],
           ),
-          // IconButton(
-          //   onPressed: context.listMod.getCurMonthData,
-          //   icon: Icon(Icons.refresh),
-          // ),
         ],
       );
     }
+  }
+}
+
+class GroupBottomSheet extends StatelessWidget {
+  const GroupBottomSheet({
+    required this.group,
+    required this.curGroup,
+    required this.onTap,
+    super.key,
+  });
+
+  final List<CostGroup>? group;
+  final CostGroup? curGroup;
+  final void Function(CostGroup?) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 30, 20, 40),
+      child: Column(
+        spacing: 0,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            "Current View",
+            style: context.customTt.dateLabel,
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          ReusableContainer(
+            padding: EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+            showBorder: false,
+            onTap: () {
+              onTap.call(null);
+              context.pop();
+            },
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Main",
+                    style: context.customTt.numberFontSmall,
+                  ),
+                ),
+                if (curGroup == null)
+                  FaIcon(
+                    FontAwesomeIcons.check,
+                    size: 16,
+                  ),
+              ],
+            ),
+          ),
+          Divider(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              "Custom Group",
+              style: context.customTt.paragraphTextSmall,
+            ),
+          ),
+          ...(group ?? []).map(
+            (e) => ReusableContainer(
+              padding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+              showBorder: false,
+              onTap: () {
+                onTap.call(e);
+                context.pop();
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      e.name ?? 'Group',
+                      style: context.customTt.paragraphTitle!.copyWith(height: 1.8),
+                    ),
+                  ),
+                  if (curGroup?.id == e.id)
+                    FaIcon(
+                      FontAwesomeIcons.check,
+                      size: 14,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

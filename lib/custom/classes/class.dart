@@ -1,7 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/enums/match_type.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
+import 'package:money2/money2.dart';
 
 class CostItem {
   const CostItem({
@@ -21,6 +21,10 @@ class CostItem {
     this.date,
     this.image,
     this.costType,
+    this.group,
+    this.baseAmount,
+    this.currencyIso,
+    this.active = true,
   });
 
   final String? uuid;
@@ -32,6 +36,10 @@ class CostItem {
   final CostType? costType;
   final DateTime? lastCreated;
   final DateTime? lastModified;
+  final String? group;
+  final bool active;
+  final double? baseAmount;
+  final String? currencyIso;
 
   // create cost item into json
   Map<String, dynamic> toJson() => {
@@ -44,6 +52,10 @@ class CostItem {
     'image': image,
     'lastCreated': lastCreated?.toString(),
     'lastModified': lastModified?.toString(),
+    'baseAmount': baseAmount,
+    'currencyIso': currencyIso?.toString(),
+    'group': group,
+    'active': active,
   };
 
   CostItem.fromJson(Map<String, dynamic> json)
@@ -55,7 +67,11 @@ class CostItem {
       costType = CostType.values.byName(json['costType'] as String? ?? 'expense'),
       date = (json['date'] as String?)?.dateParseStd(),
       lastCreated = DateTime.tryParse(json['lastCreated'] ?? "") ?? DateTime.now(),
-      lastModified = DateTime.tryParse(json['lastModified'] ?? "") ?? DateTime.now();
+      lastModified = DateTime.tryParse(json['lastModified'] ?? "") ?? DateTime.now(),
+      baseAmount = json['baseAmount'] as double?,
+      currencyIso = json['currencyIso'] as String?,
+      group = json['group'] as String?,
+      active = json['active'] as bool? ?? true;
 
   bool get isExpense => costType == CostType.expense;
   double get absoluteAmount => costType == CostType.expense ? 0 - (amount ?? 0) : (amount ?? 0);
@@ -98,6 +114,10 @@ class CostItem {
     CostType? costType,
     DateTime? lastCreated,
     DateTime? lastModified,
+    String? currencyIso,
+    double? baseAmount,
+    bool? active,
+    String? Function()? group,
   }) {
     return CostItem(
       uuid: uuid ?? this.uuid,
@@ -109,6 +129,10 @@ class CostItem {
       image: image != null ? image.call() : this.image,
       lastCreated: lastCreated ?? this.lastCreated,
       lastModified: lastModified ?? this.lastModified,
+      currencyIso: currencyIso ?? this.currencyIso,
+      baseAmount: baseAmount ?? this.baseAmount,
+      active: active ?? this.active,
+      group: group != null ? group.call() : this.group,
     );
   }
 }
@@ -181,6 +205,14 @@ class CostMetric {
     income = income! + (costItem.costType == CostType.income ? costItem.amount ?? 0 : 0);
   }
 
+  CostMetric add(CostItem costItem) {
+    return CostMetric(
+      expense: expense! + (costItem.costType == CostType.expense ? costItem.amount ?? 0 : 0),
+      income: income! + (costItem.costType == CostType.income ? costItem.amount ?? 0 : 0)
+    );
+  }
+
+
   void minusFromMetric(CostItem costItem) {
     expense = expense! - (costItem.costType == CostType.expense ? costItem.amount ?? 0 : 0);
     income = income! - (costItem.costType == CostType.income ? costItem.amount ?? 0 : 0);
@@ -207,6 +239,7 @@ class CostMetric {
       income: (income ?? 0) + (otherMetric.income ?? 0),
     );
   }
+
 
   bool get isEmpty => income == 0 && expense == 0;
 }
@@ -596,29 +629,54 @@ class MenuChild {
 }
 
 class CostGroup {
-  const CostGroup({this.id, this.name, this.description, this.items, this.addToMain});
+  const CostGroup({this.id, this.name, this.description, this.addToMain, this.currency});
 
   final String? id;
   final String? name;
   final String? description;
-  final List<CostItem>? items;
+  final String? currency;
   final bool? addToMain;
 
   CostGroup copyWith({
     String? id,
     String? name,
     String? description,
+    String? currency,
     bool? addToMain,
-    List<CostItem>? items,
   }) {
     return CostGroup(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: name ?? this.description,
-      items: items ?? this.items,
+      description: description ?? this.description,
+      currency: currency ?? this.currency,
       addToMain: addToMain ?? this.addToMain,
     );
   }
 
-  CostMetric get metric => CostMetric.fromCostItemList(items ?? []);
+  CostMetric get metric => CostMetric();
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'description': description,
+      'currency': currency,
+      'addToMain': addToMain,
+    };
+  }
+
+  factory CostGroup.fromMap(Map<String, dynamic> map) {
+    return CostGroup(
+      id: map['id'] != null ? map['id'] as String : null,
+      name: map['name'] != null ? map['name'] as String : null,
+      description: map['description'] != null ? map['description'] as String : null,
+      currency: map['currency'] != null ? map['currency'] as String : null,
+      addToMain: map['addToMain'] != null ? map['addToMain'] as bool : null,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory CostGroup.fromJson(String source) =>
+      CostGroup.fromMap(json.decode(source) as Map<String, dynamic>);
+
 }

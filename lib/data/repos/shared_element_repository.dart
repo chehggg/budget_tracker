@@ -81,7 +81,7 @@ class SharedElementRepository {
   final StreamController<YearMonth> _sharedDateController = StreamController<YearMonth>.broadcast();
   Stream<YearMonth> get sharedDateStream => _sharedDateController.stream;
 
-  
+
   KeyboardSettings _keyboardSettings = KeyboardSettings();
   KeyboardSettings get keyboardSettings => _keyboardSettings;
 
@@ -90,6 +90,12 @@ class SharedElementRepository {
 
   bool _syncDate = false;
   bool get syncDate => _syncDate;
+
+  bool _useStickyDate = false;
+  bool get useStickyDate => _useStickyDate;
+  
+  DateTime? _stickyDate;
+  DateTime? get stickyDate => _stickyDate;
 
   YearMonth _yearMonth = YearMonth(useRange: false, date1: DateTime.now().startOfMonth);
   YearMonth get currentYearMonth => _yearMonth;
@@ -122,6 +128,18 @@ class SharedElementRepository {
     current: Colors.amber,
   );
   AccentColor get accentColors => _accColor;
+
+  void updateStickyDate(DateTime date) {
+    _stickyDate = date.standard;
+  }
+
+  void toggleStickyDate({bool? value}) {
+    _useStickyDate = value ?? !_useStickyDate;
+
+    if (!_useStickyDate) {
+      _stickyDate = null;
+    }
+  }
 
   void updateDisplayDate(DateTime newDate) {
     _displayDate = newDate;

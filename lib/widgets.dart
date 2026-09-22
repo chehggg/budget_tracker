@@ -825,7 +825,11 @@ class CustomSwitchListTile extends StatelessWidget {
       title: Text(
         title,
         textAlign: TextAlign.left,
-        style: customStyle ?? context.tt.bodyMedium,
+        style:
+            customStyle ??
+            context.tt.bodyMedium!.copyWith(
+              color: enabled ? context.cs.primary : context.customCs.fadeColor1,
+            ),
       ),
       trailing: Transform.scale(
         alignment: Alignment.centerRight,
@@ -946,14 +950,18 @@ class CustomSpacedScrollView extends StatelessWidget {
 }
 
 class CustomMenuAnchor extends StatelessWidget {
-  const CustomMenuAnchor({super.key, this.animated = false, required this.items});
+  const CustomMenuAnchor({super.key, this.animated = false, required this.items, this.controller});
 
   final bool animated;
   final List<MenuChild> items;
+  final MenuController? controller;
 
   @override
   Widget build(BuildContext context) {
+    final MenuController menuController = controller ?? MenuController();
+
     return MenuAnchor(
+      controller: menuController,
       animated: animated,
       builder: (context, controller, child) {
         return IconButton(
@@ -978,7 +986,10 @@ class CustomMenuAnchor extends StatelessWidget {
       menuChildren:
           items.map((el) {
             return ListTile(
-              onTap: el.onTap,
+              onTap: () {
+                menuController.close(); // Close overlay before navigating
+                el.onTap?.call();
+              },
               title: Row(
                 spacing: 12,
                 children: [
@@ -1032,7 +1043,7 @@ class CustomTextButton extends StatelessWidget {
         ),
         visualDensity: VisualDensity(vertical: -3),
         padding: EdgeInsets.all(24),
-        foregroundColor: fgColor ?? (inverse ? context.cs.surface : context.cs.primary),
+        // foregroundColor: fgColor ?? (inverse ? context.cs.surface : context.cs.primary),
       ),
       onPressed: onTap,
       child: Row(
@@ -1042,10 +1053,14 @@ class CustomTextButton extends StatelessWidget {
           FaIcon(
             icon ?? FontAwesomeIcons.elementor,
             size: iconSize,
+            color: fgColor ?? (inverse ? context.cs.surface : context.cs.primary),
           ),
           Text(
             text,
-            style: context.customTt.numberFontMedium!.copyWith(fontSize: 16),
+            style: context.customTt.numberFontMedium!.copyWith(
+              fontSize: 16,
+              color: fgColor ?? (inverse ? context.cs.surface : context.cs.primary),
+            ),
           ),
         ],
       ),
@@ -1152,17 +1167,32 @@ class CustomTextField extends StatelessWidget {
   const CustomTextField({
     super.key,
     this.controller,
-    required this.fieldLabel,
+    this.fieldLabel = "",
+    this.enabled = true,
+    this.initialValue,
+    this.showFieldLabel = true,
+    this.keyboardType = TextInputType.text,
     this.minLines,
     this.hintText,
+    this.focusNode,
     this.onChanged,
+    this.onTap,
+    this.readOnly = false,
   });
 
   final TextEditingController? controller;
   final String fieldLabel;
+  final bool enabled;
+  final bool showFieldLabel;
   final int? minLines;
   final String? hintText;
   final ValueChanged<String>? onChanged;
+  final String? initialValue;
+  final TextInputType keyboardType;
+  final FocusNode? focusNode;
+  final GestureTapCallback? onTap;
+
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -1171,25 +1201,174 @@ class CustomTextField extends StatelessWidget {
       hintText: hintText,
       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       isDense: true,
-      visualDensity: VisualDensity(vertical: -2),
+      visualDensity: VisualDensity(vertical: -3),
+      fillColor: enabled ? context.customCs.fadeColor4 : context.customCs.fadeColor3,
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.customCs.fadeColor4!),
+      ),
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
+      spacing: 12,
       children: [
-        Text(fieldLabel),
+        if (showFieldLabel) Text(fieldLabel),
         TextFormField(
+          readOnly: readOnly,
+          focusNode: focusNode,
+          initialValue: initialValue,
+          scrollPadding: EdgeInsets.only(bottom: 150),
           onChanged: onChanged,
           textCapitalization: TextCapitalization.sentences,
-          keyboardType: TextInputType.text,
-          style: context.tt.bodyMedium!.copyWith(fontSize: 14),
+          keyboardType: keyboardType,
+          style: context.tt.bodyMedium!.copyWith(
+            fontSize: 14,
+            color: enabled ? context.cs.primary : context.customCs.fadeColor1,
+          ),
+          onTap: onTap,
           decoration: inputDecoration,
           controller: controller,
           minLines: minLines ?? 1,
           maxLines: 10,
+          enabled: enabled,
         ),
       ],
+    );
+  }
+}
+
+class HorizontalPadding extends StatelessWidget {
+  const HorizontalPadding({super.key, this.customValue = 12, this.child});
+
+  final double customValue;
+
+  final Widget? child;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: customValue),
+      child: child,
+    );
+  }
+}
+
+class CustomRadioListTile<T> extends StatelessWidget {
+  const CustomRadioListTile({
+    super.key,
+    required this.title,
+    required this.value,
+    this.groupValue,
+    this.dense = false,
+    this.trailing,
+  });
+
+  final String title;
+  final T value;
+  final T? groupValue;
+  final Widget? trailing;
+
+  final bool? dense;
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: groupValue == null ? 1 : (groupValue! == value ? 1 : 0.7),
+      child: RadioListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+        dense: dense,
+        visualDensity: VisualDensity(vertical: -3),
+        // toggleable: true,
+        title: Row(
+          children: [
+            Flexible(fit: FlexFit.tight, child: Text(title, style: context.tt.bodyMedium)),
+            if (trailing != null) trailing!,
+          ],
+        ),
+        value: value,
+      ),
+    );
+  }
+}
+
+class CustomActionBottomSheet extends StatelessWidget {
+  const CustomActionBottomSheet({
+    super.key,
+    required this.showNegativeButton,
+    this.negativeButtonText = "Delete",
+    this.negativeButtonIcon = FontAwesomeIcons.trash,
+    this.negativeButtonColor,
+    this.onNegativeButtonPressed,
+    this.primaryButtonText = "Save",
+    this.primaryButtonIcon = FontAwesomeIcons.solidFloppyDisk,
+    this.onPrimaryButtonPressed,
+    this.content,
+    this.top = 30,
+  });
+
+  final bool showNegativeButton;
+  final String negativeButtonText;
+  final FaIconData? negativeButtonIcon;
+  final Color? negativeButtonColor;
+  final void Function()? onNegativeButtonPressed;
+  final String primaryButtonText;
+  final FaIconData? primaryButtonIcon;
+  final void Function()? onPrimaryButtonPressed;
+  final Widget? content;
+
+  final double top;
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomSheet(
+      enableDrag: false,
+      onClosing: () {},
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.fromLTRB(30,top,30,30),
+          child: Column(
+            spacing: 20,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (content != null) content!,
+              Row(
+                spacing: 12,
+                children: [
+                  if (showNegativeButton)
+                    Flexible(
+                      fit: FlexFit.tight,
+                      flex: 1,
+                      child: CustomTextButton(
+                        bgColor:
+                            negativeButtonColor?.withAlpha(50) ?? Colors.red.shade800.withAlpha(50),
+                        fgColor: Colors.white,
+                        borderColor: negativeButtonColor ?? Colors.red.shade800,
+                        inverse: true,
+                        icon: negativeButtonIcon,
+                        text: negativeButtonText,
+                        onTap: onNegativeButtonPressed,
+                      ),
+                    ),
+                  Flexible(
+                    fit: FlexFit.tight,
+                    flex: 2,
+                    child: CustomTextButton(
+                      bgColor: context.cs.secondary,
+                      fgColor: context.cs.surface,
+                      inverse: true,
+                      icon: primaryButtonIcon,
+                      text: primaryButtonText,
+                      onTap: onPrimaryButtonPressed,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -38,6 +38,7 @@ class CostItemRepository {
 
   Map<DateTime, CostMetric> _daySummary = {};
   Map<DateTime, CostMetric> get daySummary => UnmodifiableMapView(_daySummary);
+  // Map<DateTime, CostMetric> getgroupedDaySummary => UnmodifiableMapView(_daySummary);
 
   Map<DateTime, CostMetric> _monthSummary = {};
   Map<DateTime, CostMetric> get monthSummary => UnmodifiableMapView(_monthSummary);

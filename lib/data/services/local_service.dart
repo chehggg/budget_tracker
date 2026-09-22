@@ -153,31 +153,44 @@ class LocalServices {
     }
   }
 
-  // Future<Result<List<Goal>>> loadGoalsFile() async {
-  //   try {
-  //     final fileResult = await _loadDefaultFile('goals');
-  //     if (fileResult == null) {
-  //       return Result.ok([]);
-  //     } else {
-  //       return await parseGoalsJson(fileResult);
-  //     }
-  //   } on Exception catch (e) {
-  //     return Result.error(e);
-  //   }
-  // }
 
-  // Future<Result<void>> writeGoalsFile(List<Goal> items) async {
-  //   try {
-  //     final List<Map<String, dynamic>> json = List.generate(
-  //       items.length,
-  //       (i) => items[i].toJson(),
-  //     );
-  //     await _writeToFile('goals', json);
-  //     return Result.ok(null);
-  //   } on Exception catch (e) {
-  //     return Result.error(e);
-  //   }
-  // }
+  /// groups file
+  Future<Result<List<CostGroup>>> parseGroupsJson(File file) async {
+    try {
+      final jsonString = file.readAsStringSync();
+      final List<dynamic> decodedData = jsonDecode(jsonString);
+      final List<CostGroup> items = decodedData.map((item) => CostGroup.fromMap(item)).toList();
+      return Result.ok(items);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> writeGroupsFile(List<CostGroup> items) async {
+    try {
+      final List<Map<String, dynamic>> json = List.generate(
+        items.length,
+        (i) => items[i].toMap(),
+      );
+      await _writeToFile('groups', json);
+      return Result.ok(null);
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<List<CostGroup>>> loadGroupsFile() async {
+    try {
+      final fileResult = await _loadDefaultFile('groups');
+      if (fileResult == null) {
+        return Result.ok([]);
+      } else {
+        return await parseGroupsJson(fileResult);
+      }
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
 
   /// saved item
   Future<Result<List<SavedItem>>> loadSavedItems() async {

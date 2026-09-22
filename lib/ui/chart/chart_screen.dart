@@ -94,8 +94,30 @@ class ChartScreen extends StatelessWidget {
     );
 
     return CustomScaffold(
-      appBarTitle: Text(
-        AppLocale.aboutTitle.getString(context),
+      appBarTitle: Row(
+        children: [
+          Text(
+            AppLocale.aboutTitle.getString(context),
+          ),
+          SizedBox(
+              width: 6,
+            ),
+            IconButton(
+              icon: FaIcon(FontAwesomeIcons.list, size: 18,),
+              onPressed: () {
+                showCustomModalSheet(
+                  context: context,
+                  builder: (_) {
+                    return GroupBottomSheet(
+                      group: contextWatch.groups,
+                      curGroup: contextWatch.viewedGroup,
+                      onTap: (e) => context.chartMod.updateViewedGroup(e),
+                    );
+                  },
+                );
+              },
+            ),
+        ],
       ),
       actions: [
         IconButton(

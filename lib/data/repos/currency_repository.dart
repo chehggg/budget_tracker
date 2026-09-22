@@ -124,6 +124,7 @@ class CurrencyRepository {
 
   String formatCurrency(
     double value, {
+    String? customIso,
     bool abbreviated = false,
     bool alwaysShowSign = false,
     bool showSymbol = true,
@@ -132,7 +133,8 @@ class CurrencyRepository {
   }) {
     double transformedValue = value;
     String suffix = "";
-    String pattern = _currency.pattern;
+    Currency defCurrency = customIso != null ? Currencies().find(customIso) ?? _currency : _currency; 
+    String pattern = defCurrency.pattern;
 
     if (abbreviated) {
       if (value.abs() >= pow(10, 3) && value.abs() < pow(10, 6)) {
@@ -168,7 +170,7 @@ class CurrencyRepository {
     if (!showSymbol) {
       pattern = pattern.replaceAll(r"S", "");
     }
-    final money = Money.fromNumWithCurrency(transformedValue, _currency);
+    final money = Money.fromNumWithCurrency(transformedValue, defCurrency);
 
     final firstFormat = money.format(pattern).replaceAll("-", "");
     if (transformedValue < 0) {

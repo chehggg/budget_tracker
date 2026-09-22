@@ -166,6 +166,7 @@ extension StringExtension on String {
   DateTime dateParseShort() => DateFormat('dd-MM-yyyy').parse(this);
 
   String capitalize() {
+    if (length == 0) return this;
     final first = substring(0, 1).toUpperCase();
     final second = substring(1, length);
     return first + second;

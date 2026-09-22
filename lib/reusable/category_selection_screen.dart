@@ -10,8 +10,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-class CategorySelectionScreen extends StatelessWidget {
-  const CategorySelectionScreen({super.key, this.initSelection, this.goalType});
+class CategoryMultiSelectScreen extends StatelessWidget {
+  const CategoryMultiSelectScreen({super.key, this.initSelection, this.goalType});
 
   final List<CostItemCategory>? initSelection;
   final GoalType? goalType;
@@ -24,19 +24,290 @@ class CategorySelectionScreen extends StatelessWidget {
     //   _ => null,
     // };
 
-    return const CategorySelectionBody();
+    return const CategoryMultiSelectBody();
   }
 }
 
-class CategorySelectionBody extends StatefulWidget {
-  const CategorySelectionBody({super.key});
+class CategoryMultiSelectBody extends StatelessWidget {
+  const CategoryMultiSelectBody({super.key});
 
   @override
-  State<CategorySelectionBody> createState() => _CategorySelectionBodyState();
+  Widget build(BuildContext context) {
+    final readCatMod = context.read<CategorySelectionViewModel>();
+    final selectedCategories = context.select(
+      (CategorySelectionViewModel state) => state.selectedCategories,
+    );
+    return CategorySelectionSkeleton(
+      title: Text("Filter category"),
+      multiSelect: true,
+      bottomSheet: CustomActionBottomSheet(
+        showNegativeButton: false,
+        primaryButtonText: "Filter ${selectedCategories.length} Categories",
+      ),
+      onCategoryTapped: (cat) {
+        return selectedCategories.contains(cat)
+            ? readCatMod.removeCategory(cat)
+            : readCatMod.selectCategory(cat);
+      },
+    );
+  }
 }
 
-class _CategorySelectionBodyState extends State<CategorySelectionBody> {
+class CategorySingleSelectBody extends StatelessWidget {
+  const CategorySingleSelectBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final readCatMod = context.read<CategorySelectionViewModel>();
+    final selectedCategories = context.select(
+      (CategorySelectionViewModel state) => state.selectedCategories,
+    );
+    return CategorySelectionSkeleton(
+      title: Text("Filter category"),
+      multiSelect: false,
+      // bottomSheet: CustomActionBottomSheet(
+      //   showNegativeButton: false,
+      //   primaryButtonText: "Filter ${selectedCategories.length} Categories",
+      // ),
+      onCategoryTapped: (cat) {
+        context.pop(cat);
+      },
+    );
+  }
+}
+// class CategorySelectionBody extends StatefulWidget {
+//   const CategorySelectionBody({super.key});
+
+//   @override
+//   State<CategorySelectionBody> createState() => _CategorySelectionBodyState();
+// }
+
+// class _CategorySelectionBodyState extends State<CategorySelectionBody> {
+//   late final TextEditingController _controller;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _controller =
+//         TextEditingController()..addListener(
+//           () => context.read<CategorySelectionViewModel>().updateFilterString(
+//             _controller.text,
+//           ),
+//         );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final readCatMod = context.read<CategorySelectionViewModel>();
+//     final displayCat = context.select(
+//       (CategorySelectionViewModel state) => state.displayedCategories,
+//     );
+//     final areAllSelected = context.select(
+//       (CategorySelectionViewModel state) => state.areAllSelected,
+//     );
+//     final selectedCategories = context.select(
+//       (CategorySelectionViewModel state) => state.selectedCategories,
+//     );
+
+//     final ready = context.select((CategorySelectionViewModel state) => state.ready);
+//     // ignore: unused_local_variable
+//     final length = context.select(
+//       (CategorySelectionViewModel state) => state.selectedCategories.length,
+//     );
+//     // final length2 = context.select(
+//     //   (CategorySelectionViewmodel state) => state.displayedCategories.length,
+//     // );
+//     return CustomScaffold(
+//       appBarTitle: Text("Filter Category"),
+//       bottomSheet: CustomActionBottomSheet(showNegativeButton: false, primaryButtonText: "Filter ${selectedCategories.length} Categories",),
+//       actions: [
+//         IconButton(
+//           onPressed: () {
+//             debugPrint('are all selected :$areAllSelected');
+//             context.pop(areAllSelected ? () => null : () => selectedCategories);
+//           },
+//           icon: FaIcon(
+//             FontAwesomeIcons.check,
+//             size: 20,
+//           ),
+//         ),
+//       ],
+//       ready: ready,
+//       child: Column(
+//         children: [
+//           Padding(
+//             padding: const EdgeInsets.symmetric(horizontal: 12.0),
+//             child: Row(
+//               spacing: 12,
+//               children: [
+//                 Flexible(
+//                   fit: FlexFit.tight,
+//                   flex: 2,
+//                   child: TextFormField(
+//                     style: context.tt.bodyMedium,
+//                     decoration: InputDecoration(
+//                       isDense: true,
+//                       visualDensity: VisualDensity(vertical: -1),
+//                       hintText: "Search for categories...",
+//                       prefixIcon: Icon(
+//                         Icons.search,
+//                         size: 20,
+//                       ),
+//                       hintStyle: TextStyle(color: context.customCs.fadeColor2),
+//                       prefixIconConstraints: BoxConstraints(minWidth: 40, minHeight: 0),
+//                       contentPadding: EdgeInsets.symmetric(vertical: 13, horizontal: 10),
+//                     ),
+//                     controller: _controller,
+//                   ),
+//                 ),
+//                 Flexible(
+//                   fit: FlexFit.tight,
+//                   flex: 1,
+//                   child: CustomDropDownMenu(
+//                     onSelected: (value) {
+//                       readCatMod.updateCostTypeFilter(value);
+//                     },
+//                     entries:
+//                         readCatMod.costTypeMenu
+//                             .map(
+//                               (type) => DropdownMenuEntry(
+//                                 value: type,
+//                                 label: type?.name.capitalize() ?? "All",
+//                               ),
+//                             )
+//                             .toList(),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//           InkWell(
+//             onTap: () {
+//               return readCatMod.areAllSelected
+//                   ? readCatMod.removeAllCategories()
+//                   : readCatMod.selectAllCategories();
+//             },
+//             child: Padding(
+//               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16),
+//               child: Row(
+//                 spacing: 8,
+//                 children: [
+//                   Text(
+//                     readCatMod.areAllSelected ? "Unselect All" : "Select All",
+//                     style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
+//                   ),
+//                   Expanded(
+//                     child: Text(
+//                       "(${selectedCategories.length} selected)",
+//                       style: context.customTt.paragraphText,
+//                     ),
+//                   ),
+//                   SizedBox(
+//                     height: 20,
+//                     child: Transform.scale(
+//                       scale: 0.9,
+//                       child: Checkbox(
+//                         value: readCatMod.areAllSelected,
+//                         onChanged: (val) {
+//                           if (val == null) return;
+//                           return val
+//                               ? readCatMod.selectAllCategories()
+//                               : readCatMod.removeAllCategories();
+//                         },
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//           Padding(
+//             padding: EdgeInsets.only(top: 0),
+//             child: Divider(),
+//           ),
+//           Expanded(
+//             child: CustomScrollView(
+//               slivers: [
+//                 SliverList.builder(
+//                   itemCount: displayCat.length,
+//                   itemBuilder: (context, index) {
+//                     final category = displayCat.elementAt(index);
+//                     final selected = selectedCategories.contains(category);
+//                     return InkWell(
+//                       onTap: () {
+//                         return selected
+//                             ? readCatMod.removeCategory(category)
+//                             : readCatMod.selectCategory(category);
+//                       },
+//                       child: Padding(
+//                         padding: const EdgeInsets.symmetric(
+//                           horizontal: 12.0,
+//                           vertical: 6,
+//                         ),
+//                         child: Row(
+//                           spacing: 16,
+//                           children: [
+//                             CategoryIconContainer(
+//                               category: category,
+//                               size: 18,
+//                             ),
+//                             Expanded(child: Text(category.name!.capitalize())),
+//                             SizedBox(
+//                               height: 20,
+//                               child: Transform.scale(
+//                                 scale: 0.9,
+//                                 child: Checkbox(
+//                                   value: selected,
+//                                   onChanged: (val) {
+//                                     if (val == null) return;
+//                                     return val
+//                                         ? readCatMod.selectCategory(category)
+//                                         : readCatMod.removeCategory(category);
+//                                   },
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                     );
+//                   },
+//                 ),
+//                 SliverToBoxAdapter(child: SizedBox(height: 140,),)
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+class CategorySelectionSkeleton extends StatefulWidget {
+  const CategorySelectionSkeleton({
+    super.key,
+    this.title,
+    this.bottomSheet,
+    this.onCategoryTapped,
+    this.multiSelect = true,
+  });
+
+  final Widget? title;
+  final Widget? bottomSheet;
+  final bool multiSelect;
+  final void Function(CostItemCategory)? onCategoryTapped;
+
+  @override
+  State<CategorySelectionSkeleton> createState() => _CategorySelectionSkeletonState();
+}
+
+class _CategorySelectionSkeletonState extends State<CategorySelectionSkeleton> {
   late final TextEditingController _controller;
+
+  // Widget? title;
+  // Widget? bottomSheet;
+  // bool multiSelect = true;
+  // GestureTapCallback? onCategoryTapped;
 
   @override
   void initState() {
@@ -71,18 +342,19 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
     //   (CategorySelectionViewmodel state) => state.displayedCategories.length,
     // );
     return CustomScaffold(
-      appBarTitle: Text("Filter Category"),
+      appBarTitle: widget.title,
+      bottomSheet: widget.bottomSheet,
       actions: [
-        IconButton(
-          onPressed: () {
-            debugPrint('are all selected :$areAllSelected');
-            context.pop(areAllSelected ? () => null : () => selectedCategories);
-          },
-          icon: FaIcon(
-            FontAwesomeIcons.check,
-            size: 20,
+        if (widget.multiSelect)
+          IconButton(
+            onPressed: () {
+              context.pop(areAllSelected ? () => null : () => selectedCategories);
+            },
+            icon: FaIcon(
+              FontAwesomeIcons.check,
+              size: 20,
+            ),
           ),
-        ),
       ],
       ready: ready,
       child: Column(
@@ -133,46 +405,47 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
               ],
             ),
           ),
-          InkWell(
-            onTap: () {
-              return readCatMod.areAllSelected
-                  ? readCatMod.removeAllCategories()
-                  : readCatMod.selectAllCategories();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16),
-              child: Row(
-                spacing: 8,
-                children: [
-                  Text(
-                    readCatMod.areAllSelected ? "Unselect All" : "Select All",
-                    style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
-                  ),
-                  Expanded(
-                    child: Text(
-                      "(${selectedCategories.length} selected)",
-                      style: context.customTt.paragraphText,
+          if (widget.multiSelect)
+            InkWell(
+              onTap: () {
+                return readCatMod.areAllSelected
+                    ? readCatMod.removeAllCategories()
+                    : readCatMod.selectAllCategories();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16),
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    Text(
+                      readCatMod.areAllSelected ? "Unselect All" : "Select All",
+                      style: context.customTt.numberFontSmall!.copyWith(fontSize: 14),
                     ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                    child: Transform.scale(
-                      scale: 0.9,
-                      child: Checkbox(
-                        value: readCatMod.areAllSelected,
-                        onChanged: (val) {
-                          if (val == null) return;
-                          return val
-                              ? readCatMod.selectAllCategories()
-                              : readCatMod.removeAllCategories();
-                        },
+                    Expanded(
+                      child: Text(
+                        "(${selectedCategories.length} selected)",
+                        style: context.customTt.paragraphText,
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(
+                      height: 20,
+                      child: Transform.scale(
+                        scale: 0.9,
+                        child: Checkbox(
+                          value: readCatMod.areAllSelected,
+                          onChanged: (val) {
+                            if (val == null) return;
+                            return val
+                                ? readCatMod.selectAllCategories()
+                                : readCatMod.removeAllCategories();
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           Padding(
             padding: EdgeInsets.only(top: 0),
             child: Divider(),
@@ -186,11 +459,7 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
                     final category = displayCat.elementAt(index);
                     final selected = selectedCategories.contains(category);
                     return InkWell(
-                      onTap: () {
-                        return selected
-                            ? readCatMod.removeCategory(category)
-                            : readCatMod.selectCategory(category);
-                      },
+                      onTap: () => widget.onCategoryTapped?.call(category),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12.0,
@@ -204,26 +473,32 @@ class _CategorySelectionBodyState extends State<CategorySelectionBody> {
                               size: 18,
                             ),
                             Expanded(child: Text(category.name!.capitalize())),
-                            SizedBox(
-                              height: 20,
-                              child: Transform.scale(
-                                scale: 0.9,
-                                child: Checkbox(
-                                  value: selected,
-                                  onChanged: (val) {
-                                    if (val == null) return;
-                                    return val
-                                        ? readCatMod.selectCategory(category)
-                                        : readCatMod.removeCategory(category);
-                                  },
+                            if (widget.multiSelect)
+                              SizedBox(
+                                height: 20,
+                                child: Transform.scale(
+                                  scale: 0.9,
+                                  child: Checkbox(
+                                    value: selected,
+                                    onChanged: (val) {
+                                      if (val == null) return;
+                                      return val
+                                          ? readCatMod.selectCategory(category)
+                                          : readCatMod.removeCategory(category);
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),
                     );
                   },
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 140,
+                  ),
                 ),
               ],
             ),

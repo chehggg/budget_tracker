@@ -11,36 +11,36 @@ import 'package:uuid/uuid.dart';
 
 class CategoryFormViewModel extends ChangeNotifier {
   CategoryFormViewModel({
-    CostItemCategory? initCategory,
+    this.initCategory,
     required CategoryRepository categoryRepo,
     required CostItemRepository costItemRepo,
     required CurrencyRepository currencyRepo,
-  }) : _initCategory = initCategory,
+  }) :
        _categoryRepo = categoryRepo,
        _currencyRepo = currencyRepo,
        _costItemRepo = costItemRepo {
     init();
   }
 
-  final CostItemCategory? _initCategory;
+  final CostItemCategory? initCategory;
   final CategoryRepository _categoryRepo;
   final CostItemRepository _costItemRepo;
   final CurrencyRepository _currencyRepo;
 
-  CostItemCategory _draft = CostItemCategory(id: Uuid().v7());
+  CostItemCategory _draft = CostItemCategory(id: Uuid().v7(), costType: CostType.expense);
   CostItemCategory get draft => _draft;
 
   CostItemCategory? _default;
   CostItemCategory? get defaultCat => _default;
 
-  bool get inEditMode => _initCategory != null;
+  bool get inEditMode => initCategory != null;
 
   final bool _isCostItemLoaded = false;
   bool get costItemReady => _isCostItemLoaded;
 
   void init() async {
     if (inEditMode) {
-      _draft = _initCategory!;
+      _draft = initCategory!;
     }
     await _categoryRepo.ready;
     await _costItemRepo.ready;

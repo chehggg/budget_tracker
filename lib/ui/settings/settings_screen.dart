@@ -101,6 +101,7 @@ class SettingsList extends StatelessWidget {
                   ),
                 ),
                 CurrencyAdditionalSettingsTile(),
+                AddGroupSettingsTile(),
                 KeyboardSettingsTile(),
                 ChangeLanguageSettingsTile(),
                 const SettingsDivider(),
@@ -808,7 +809,8 @@ class AddGroupSettingsTile extends StatelessWidget {
       title: "Budget group",
       trailingWidget: const SizedBox.shrink(),
       onTap: () async {
-        context.push('/settings/group');
+        context.navMod.toggleFab(show: false);
+        context.push('/settings/groups');
         // final response = await showExportDialog(context);
         // if (response == true && context.mounted) {
         //   final exportResponse = await context.settingMod.exportData();

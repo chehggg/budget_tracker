@@ -8,6 +8,7 @@ import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
+import 'package:budget_tracker/data/repos/group_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,9 +23,11 @@ class ChartViewModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required CurrencyRepository currencyRepo,
     required CategoryRepository categoryRepo,
+    required GroupRepository groupRepo,
     required SharedElementRepository sharedRepo,
   }) : _costItemRepo = costItemRepo,
        _currencyRepo = currencyRepo,
+       _groupRepo = groupRepo,
        _sharedRepo = sharedRepo,
        _categoryRepo = categoryRepo {
     init();
@@ -32,12 +35,16 @@ class ChartViewModel extends ChangeNotifier {
   final CostItemRepository _costItemRepo;
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
+  final GroupRepository _groupRepo;
   final SharedElementRepository _sharedRepo;
 
   void init() async {
     await _costItemRepo.ready;
     await _categoryRepo.ready;
     await _currencyRepo.ready;
+    await _groupRepo.ready;
+
+    _viewedGroup = _groupRepo.viewedGroup;
 
     getInitValue();
 
@@ -52,6 +59,13 @@ class ChartViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    _groupSubscription = _groupRepo.streamValue.listen((value) {
+      _viewedGroup = _groupRepo.viewedGroup;
+      debugPrint('group sub called from chart model, current group: ${_viewedGroup?.name}');
+      getInitValue();
+      notifyListeners();
+    });
+
     _isInitalized = true;
 
     notifyListeners();
@@ -59,10 +73,40 @@ class ChartViewModel extends ChangeNotifier {
 
   void getInitValue() {
     debugPrint("chartviewmodel, get init value");
-    _costItems = _costItemRepo.costItems.toList();
-    _daySummary = _costItemRepo.daySummary;
-    _monthSummary = _costItemRepo.monthSummary;
+
+    _costItems = _costItemRepo.costItems.where((el) => el.group == _viewedGroup?.id).toList();
+
+    _daySummary = _costItems.groupFoldBy<DateTime, CostMetric>((CostItem item) => item.date!, (
+      CostMetric? prev,
+      CostItem el,
+    ) {
+      return (prev ?? CostMetric()).add(el);
+    });
+    // _daySummary = _costItemRepo.daySummary;
+    _monthSummary = _costItems.groupFoldBy<DateTime, CostMetric>(
+      (CostItem item) => item.date!.startOfMonth,
+      (
+        CostMetric? prev,
+        CostItem el,
+      ) {
+        return (prev ?? CostMetric()).add(el);
+      },
+    );
+    _yearSummary = _costItems.groupFoldBy<DateTime, CostMetric>(
+      (CostItem item) => item.date!.startOfYear,
+      (
+        CostMetric? prev,
+        CostItem el,
+      ) {
+        return (prev ?? CostMetric()).add(el);
+      },
+    );
   }
+
+  CostGroup? _viewedGroup;
+  CostGroup? get viewedGroup => _viewedGroup;
+  List<CostGroup> get groups => _groupRepo.groups;
+  // CostGroup? group;
 
   bool _isInitalized = false;
   bool get ready => _isInitalized;
@@ -90,11 +134,13 @@ class ChartViewModel extends ChangeNotifier {
   DateTime _periodStart = DateTime.now().standard;
 
   StreamSubscription<CostItemRepoDataStream>? _itemSubscription;
+  StreamSubscription<bool>? _groupSubscription;
   StreamSubscription<List<CostItemCategory>>? _categorySubscription;
 
   List<CostItem> _costItems = [];
   Map<DateTime, CostMetric> _daySummary = {};
   Map<DateTime, CostMetric> _monthSummary = {};
+  Map<DateTime, CostMetric> _yearSummary = {};
 
   ChartMetric _chartMetric = ChartMetric.expense;
   ChartMetric get chartMetric => _chartMetric;
@@ -232,7 +278,7 @@ class ChartViewModel extends ChangeNotifier {
         return Map.fromEntries(
           List.generate(9, (i) {
             final month = startMonth.addMonth(i);
-            final entry = _costItemRepo.monthSummary.entries.firstWhereOrNull(
+            final entry = _monthSummary.entries.firstWhereOrNull(
               (el) => el.key.isInSameYearMonthAs(month),
             );
             return MapEntry(month, entry?.value ?? CostMetric());
@@ -244,7 +290,7 @@ class ChartViewModel extends ChangeNotifier {
           List.generate(9, (i) {
             final week = startWeek.addWeek(i);
             CostMetric costMetric = CostMetric();
-            _costItemRepo.daySummary.entries
+            _daySummary.entries
                 .where(
                   (el) => el.key.year == week.year && el.key.weekNumber == week.weekNumber,
                 )
@@ -259,7 +305,7 @@ class ChartViewModel extends ChangeNotifier {
         return Map.fromEntries(
           List.generate(9, (i) {
             final year = startYear.addYear(i);
-            final entry = _costItemRepo.yearSummary.entries.firstWhereOrNull(
+            final entry = _yearSummary.entries.firstWhereOrNull(
               (el) => el.key.year == year.year,
             );
             return MapEntry(year, entry?.value ?? CostMetric());
@@ -269,7 +315,7 @@ class ChartViewModel extends ChangeNotifier {
         return {};
       case ChartPeriod.day:
         return Map.fromEntries([
-          _costItemRepo.daySummary.entries.firstWhere(
+          _daySummary.entries.firstWhere(
             (entry) => entry.key.isAtSameMomentAs(rangeStart),
           ),
         ]);
@@ -353,18 +399,29 @@ class ChartViewModel extends ChangeNotifier {
     }
   }
 
-  String Function(
+  String? get useCurrencyIso => viewedGroup?.currency;
+
+  String currencyFormat(
     double value, {
-    bool abbreviated,
-    bool alwaysShowSign,
-    bool showSymbol,
-    bool compact,
+    bool abbreviated = false,
+    bool alwaysShowSign = false,
+    bool showSymbol = true,
+    bool compact = false,
     int? decimalDigits,
-  })
-  get currencyFormat => _currencyRepo.formatCurrency;
+  }) {
+    return _currencyRepo.formatCurrency(
+      value,
+      customIso: useCurrencyIso,
+      abbreviated: abbreviated,
+      alwaysShowSign: alwaysShowSign,
+      showSymbol: showSymbol,
+      compact: compact,
+      decimalDigits: decimalDigits,
+    );
+  }
 
   String compactCurrencyFormat(double value) =>
-      _currencyRepo.formatCurrency(value, abbreviated: true, compact: true, showSymbol: false);
+      currencyFormat(value, abbreviated: true, compact: true, showSymbol: false);
 
   Map<CostItemCategory, List<CostItem>> getItemsGroupedByCategory({
     bool curRange = true,
@@ -961,10 +1018,15 @@ class ChartViewModel extends ChangeNotifier {
     _costItemRepo.redirectListScroll(dateTime, showMonth: showMonths);
   }
 
+  void updateViewedGroup(CostGroup? newGroup) {
+    _groupRepo.changeGroupView(newGroup);
+  }
+
   @override
   void dispose() {
     _itemSubscription?.cancel();
     _categorySubscription?.cancel();
+    _groupSubscription?.cancel();
     super.dispose();
   }
 }

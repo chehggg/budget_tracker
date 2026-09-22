@@ -30,6 +30,8 @@ import 'package:budget_tracker/ui/goal/goal_info_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_info_viewmodel.dart';
 import 'package:budget_tracker/ui/goal/goal_list_screen.dart';
 import 'package:budget_tracker/ui/goal/goal_list_viewmodel.dart';
+import 'package:budget_tracker/ui/group/group_add_screen.dart';
+import 'package:budget_tracker/ui/group/group_add_viewmodel.dart';
 import 'package:budget_tracker/ui/list/main_list_screen.dart';
 import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/ui/saved_item/saved_item_screen.dart';
@@ -37,10 +39,12 @@ import 'package:budget_tracker/ui/saved_item/saved_item_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/additional_currency_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/display/global_display_settings_screen.dart';
-import 'package:budget_tracker/ui/settings/group_details_screen.dart';
-import 'package:budget_tracker/ui/settings/group_details_viewmodel.dart';
-import 'package:budget_tracker/ui/settings/group_settings_screen.dart';
-import 'package:budget_tracker/ui/settings/group_settings_viewmodel.dart';
+import 'package:budget_tracker/ui/group/group_details_screen.dart';
+import 'package:budget_tracker/ui/group/group_details_viewmodel.dart';
+import 'package:budget_tracker/ui/group/group_form_settings_screen.dart';
+import 'package:budget_tracker/ui/group/group_form_viewmodel.dart';
+import 'package:budget_tracker/ui/group/group_settings_screen.dart';
+import 'package:budget_tracker/ui/group/group_settings_viewmodel.dart';
 import 'package:budget_tracker/ui/settings/keyboard_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/language_settings_screen.dart';
 import 'package:budget_tracker/ui/settings/display/list_display_settings_screen.dart';
@@ -76,6 +80,7 @@ final goRouter = GoRouter(
                   create:
                       (context) => ListViewModel(
                         costItemRepo: context.read(),
+                        groupRepo: context.read(),
                         categoryRepo: context.read(),
                         currencyRepo: context.read(),
                         sharedRepo: context.read(),
@@ -94,7 +99,7 @@ final goRouter = GoRouter(
                               categoryRepo: context.read(),
                               initSelection: state.extra as List<CostItemCategory>?,
                             ),
-                        child: const CategorySelectionScreen(),
+                        child: const CategoryMultiSelectScreen(),
                       ),
                 ),
               ],
@@ -110,6 +115,7 @@ final goRouter = GoRouter(
                     create:
                         (context) => ChartViewModel(
                           sharedRepo: context.read(),
+                          groupRepo: context.read(),
                           costItemRepo: context.read(),
                           currencyRepo: context.read(),
                           categoryRepo: context.read(),
@@ -217,7 +223,7 @@ final goRouter = GoRouter(
                               categoryRepo: context.read(),
                               initSelection: state.extra as List<CostItemCategory>?,
                             ),
-                        child: const CategorySelectionScreen(),
+                        child: const CategoryMultiSelectScreen(),
                       ),
                 ),
                 GoRoute(
@@ -318,8 +324,21 @@ final goRouter = GoRouter(
                   builder:
                       (context, state) => ChangeNotifierProvider(
                         create:
+                            (context) => GroupFormViewModel(
+                              groupRepo: context.read(),
+                              initGroup: state.extra as CostGroup?,
+                            ),
+                        child: const GroupFormSettingsScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/groups',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
                             (context) => GroupSettingsViewModel(
                               groupRepo: context.read(),
+                              costItemRepo: context.read(),
                               currencyRepo: context.read(),
                             ),
                         child: const GroupSettingsScreen(),
@@ -333,9 +352,44 @@ final goRouter = GoRouter(
                             (context) => GroupDetailsViewModel(
                               group: state.extra as CostGroup,
                               groupRepo: context.read(),
+                              costItemRepo: context.read(),
+                              sharedRepo: context.read(),
                               currencyRepo: context.read(),
                             ),
                         child: const GroupDetailsScreen(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/group-currency',
+                  builder:
+                      (context, state) => const CurrencySelectionScreenWrapper(
+                        currencyExchange: false,
+                      ),
+                ),
+                GoRoute(
+                  path: '/group-category',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => CategorySelectionViewModel(
+                              categoryRepo: context.read(),
+                              initSelection: state.extra as List<CostItemCategory>?,
+                            ),
+                        child: CategorySingleSelectBody(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/group-add',
+                  builder:
+                      (context, state) => ChangeNotifierProvider(
+                        create:
+                            (context) => GroupAddViewmodel(
+                              group: state.extra as CostGroup,
+                              groupRepo: context.read(),
+                              costItemRepo: context.read(),
+                              currencyRepo: context.read(),
+                            ),
+                        child: const GroupAddScreen(),
                       ),
                 ),
                 GoRoute(
@@ -437,6 +491,7 @@ final goRouter = GoRouter(
                 savedItemRepo: context.read(),
                 categoryRepo: context.read(),
                 currencyRepo: context.read(),
+                groupRepo: context.read(),
               ),
           child: CostFormScreen(arg: arg),
         );

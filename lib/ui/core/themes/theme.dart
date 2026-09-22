@@ -146,6 +146,9 @@ ThemeData getAppTheme(Locale locale) {
     appBarTheme: AppBarTheme(
       titleTextStyle: customTextExtension.dateLabel,
     ),
+    listTileTheme: ListTileThemeData(
+      titleTextStyle: customTextTheme.bodyMedium
+    ),
     colorScheme: customColorScheme,
     visualDensity: VisualDensity(horizontal: -4, vertical: -4),
     dialogTheme: DialogThemeData(

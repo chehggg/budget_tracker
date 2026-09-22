@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'dart:ui' as ui;
@@ -33,39 +32,72 @@ class CostFormScreen extends StatelessWidget {
     final inEditMode = context.select((FormViewModel state) => state.inEditMode);
     final selectedCategory = context.select((FormViewModel state) => state.selectedCategory);
     final formGroup = context.select((FormViewModel state) => state.formGroup);
+    final useStickyDate = context.select((FormViewModel state) => state.useStickyDate);
 
     return Scaffold(
       appBar: AppBar(
         actionsPadding: EdgeInsets.only(right: 8),
-        title: Text(inEditMode ? "Edit Item" : "New Item"),
+        title: Text((inEditMode ? "Edit Item" : "New Item") + " - ${context.formMod.groupName}"),
         actions: [
           if (formGroup != FormGroup.favorite)
-            IconButton(
-              onPressed: () async {
-                await context.push('/form/edit-category');
-              },
-              icon: FaIcon(
-                FontAwesomeIcons.folderPlus,
-                size: 20,
-              ),
+            CustomMenuAnchor(
+              items: [
+                MenuChild(
+                  icon: FontAwesomeIcons.folderPlus,
+                  name: "New category",
+                  onTap: () {
+                    context.push('/form/edit-category');
+                  },
+                ),
+                MenuChild(
+                  icon: editCat ? FontAwesomeIcons.xmark : FontAwesomeIcons.solidPenToSquare,
+                  name: "Edit category",
+                  onTap: () async {
+                    if (selectedCategory != null) {
+                      await context.push(
+                        '/form/edit-category',
+                        extra: selectedCategory,
+                      );
+                    } else if (selectedCategory == null) {
+                      context.formMod.toggleEditCategory();
+                    }
+                  },
+                ),
+                MenuChild(
+                  icon: useStickyDate ? FontAwesomeIcons.xmark : FontAwesomeIcons.check,
+                  name: "${useStickyDate ?  'Disable' : "Enable"} sticky date",
+                  onTap: () async {
+                    context.formMod.toggleStickyDate();
+                  },
+                ),
+              ],
             ),
-          if (formGroup != FormGroup.favorite)
-            IconButton(
-              onPressed: () async {
-                if (selectedCategory != null) {
-                  await context.push(
-                    '/form/edit-category',
-                    extra: selectedCategory,
-                  );
-                } else if (selectedCategory == null) {
-                  context.formMod.toggleEditCategory();
-                }
-              },
-              icon: FaIcon(
-                editCat ? FontAwesomeIcons.xmark : FontAwesomeIcons.solidPenToSquare,
-                size: 20,
-              ),
-            ),
+          // IconButton(
+          //   onPressed: () async {
+          //     await context.push('/form/edit-category');
+          //   },
+          //   icon: FaIcon(
+          //     FontAwesomeIcons.folderPlus,
+          //     size: 20,
+          //   ),
+          // ),
+          // if (formGroup != FormGroup.favorite)
+          //   IconButton(
+          //     onPressed: () async {
+          //       if (selectedCategory != null) {
+          //         await context.push(
+          //           '/form/edit-category',
+          //           extra: selectedCategory,
+          //         );
+          //       } else if (selectedCategory == null) {
+          //         context.formMod.toggleEditCategory();
+          //       }
+          //     },
+          //     icon: FaIcon(
+          //       editCat ? FontAwesomeIcons.xmark : FontAwesomeIcons.solidPenToSquare,
+          //       size: 20,
+          //     ),
+          //   ),
         ],
       ),
       bottomSheet: FormBottomSheet(
@@ -134,7 +166,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
       context: context,
       initialDatePickerMode: DatePickerMode.day,
       initialEntryMode: DatePickerEntryMode.calendarOnly,
-      currentDate: _selectedDate,
+      // currentDate: _selectedDate,
       initialDate: _selectedDate,
       firstDate: DateTime(now.year - 5, now.month, 1),
       lastDate: DateTime(now.year + 5, now.month, 1),
@@ -191,11 +223,11 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
       return SizedBox.shrink();
     }
 
-    Widget getCustomMenuAnchor(BuildContext context) {
+    Widget getCustomFormMenuAnchor() {
       return Directionality(
         textDirection: ui.TextDirection.rtl,
         child: MenuAnchor(
-          alignmentOffset: Offset(0, -100),
+          alignmentOffset: Offset(0, context.formMod.inEditMode ? -170 : -135),
           // animated: true,
           builder: (context, controller, child) {
             return IconButton(
@@ -240,6 +272,132 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                 ),
                 child: Text(
                   "Exchange",
+                  style: context.tt.bodyMedium!.copyWith(
+                    // color: context.cs.surface,
+                    fontWeight: FontWeight(600),
+                  ),
+                ),
+              ),
+            ),
+            Directionality(
+              textDirection: ui.TextDirection.ltr,
+              child: MenuItemButton(
+                onPressed: () async {
+                  Future<void> selectImage() async {
+                    final response = await FilePicker.pickFiles(
+                      type: FileType.image,
+                      compressionQuality: 70,
+                      withData: true,
+                    );
+                    if (response != null) {
+                      showOverlay();
+                      await Future.microtask(() {
+                        final baseString = base64Encode(response.files.first.bytes!.toList());
+                        if (context.mounted) {
+                          context.formMod.updateImage(baseString);
+                        }
+                      });
+                      removeOverlay();
+                    }
+                  }
+
+                  if (contextWatch.draft.image != null) {
+                    final decodedImage = base64Decode(contextWatch.draft.image!);
+                    await showDialog(
+                      context: context,
+                      builder: (dialogContext) {
+                        return AlertDialog(
+                          // title: Row(
+                          //   mainAxisAlignment: MainAxisAlignment.end,
+                          //   children: [
+                          //     // Text("Image"),
+                          //     IconButton(
+                          //       onPressed: () {
+                          //         context.pop();
+                          //       },
+                          //       icon: FaIcon(FontAwesomeIcons.xmark, size: 16,),
+                          //     ),
+                          //   ],
+                          // ),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            spacing: 12,
+                            children: [
+                              Text(
+                                "File size: ${(decodedImage.lengthInBytes / 1024).roundToDouble()}kB",
+                                // textAlign: TextAlign.center,
+                                style: context.customTt.paragraphTextSmall,
+                              ),
+                              Image.memory(
+                                decodedImage,
+                                fit: BoxFit.cover,
+                                height: context.mq.size.height * 0.5,
+                                // cacheHeight: (context.mq.size.height * 0.5).round(),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            PrimaryNegativeTextButton(
+                              text: "Remove",
+                              onTap: () async {
+                                context.formMod.updateImage(null);
+                                context.pop();
+                              },
+                            ),
+                            AffirmativeTextButton(
+                              text: "Change",
+                              onTap: () async {
+                                await selectImage();
+                                context.pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } else {
+                    await selectImage();
+                  }
+                },
+                leadingIcon: FaIcon(
+                  FontAwesomeIcons.fileImage,
+                  size: 16,
+                  // color: context.cs.surface,
+                ),
+                child: Text(
+                  "Add image",
+                  style: context.tt.bodyMedium!.copyWith(
+                    // color: context.cs.surface,
+                    fontWeight: FontWeight(600),
+                  ),
+                ),
+              ),
+            ),
+            Directionality(
+              textDirection: ui.TextDirection.ltr,
+              child: MenuItemButton(
+                onPressed: () async {
+                  final response = await context.push<bool?>(
+                    '/form/edit-saved-item',
+                    extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
+                  );
+                  if (response == null) return;
+                  if (context.mounted) {
+                    if (response) {
+                      context.formMod.updateFormGroup(FormGroup.favorite);
+                      context.showSuccessNotification(message: "Saved item updated!");
+                    }
+                    context.formMod.refresh();
+                  }
+                },
+                leadingIcon: FaIcon(
+                  FontAwesomeIcons.heart,
+                  size: 16,
+                  // color: context.cs.surface,
+                ),
+                child: Text(
+                  "Save",
                   style: context.tt.bodyMedium!.copyWith(
                     // color: context.cs.surface,
                     fontWeight: FontWeight(600),
@@ -364,115 +522,6 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                     ),
                   ),
                   if (context.formMod.selectedCategory != null) ...[
-                    IconButton(
-                      onPressed: () async {
-                        final response = await context.push<bool?>(
-                          '/form/edit-saved-item',
-                          extra: {'initSavedItem': null, 'initCostItem': context.formMod.draft},
-                        );
-                        if (response == null) return;
-                        if (context.mounted) {
-                          if (response) {
-                            context.formMod.updateFormGroup(FormGroup.favorite);
-                            context.showSuccessNotification(message: "Saved item updated!");
-                          }
-                          context.formMod.refresh();
-                        }
-                      },
-                      icon: FaIcon(
-                        FontAwesomeIcons.heart,
-                        size: 20,
-                        color: context.cs.surface,
-                        // color: context.cs.error,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () async {
-                        Future<void> selectImage() async {
-                          final response = await FilePicker.pickFiles(
-                            type: FileType.image,
-                            compressionQuality: 70,
-                            withData: true,
-                          );
-                          if (response != null) {
-                            showOverlay();
-                            await Future.microtask(() {
-                              final baseString = base64Encode(response.files.first.bytes!.toList());
-                              if (context.mounted) {
-                                context.formMod.updateImage(baseString);
-                              }
-                            });
-                            removeOverlay();
-                          }
-                        }
-
-                        if (contextWatch.draft.image != null) {
-                          final decodedImage = base64Decode(contextWatch.draft.image!);
-                          await showDialog(
-                            context: context,
-                            builder: (dialogContext) {
-                              return AlertDialog(
-                                // title: Row(
-                                //   mainAxisAlignment: MainAxisAlignment.end,
-                                //   children: [
-                                //     // Text("Image"),
-                                //     IconButton(
-                                //       onPressed: () {
-                                //         context.pop();
-                                //       },
-                                //       icon: FaIcon(FontAwesomeIcons.xmark, size: 16,),
-                                //     ),
-                                //   ],
-                                // ),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  spacing: 12,
-                                  children: [
-                                    Text(
-                                      "File size: ${(decodedImage.lengthInBytes / 1024).roundToDouble()}kB",
-                                      // textAlign: TextAlign.center,
-                                      style: context.customTt.paragraphTextSmall,
-                                    ),
-                                    Image.memory(
-                                      decodedImage,
-                                      fit: BoxFit.cover,
-                                      height: context.mq.size.height * 0.5,
-                                      // cacheHeight: (context.mq.size.height * 0.5).round(),
-                                    ),
-                                  ],
-                                ),
-                                actions: [
-                                  PrimaryNegativeTextButton(
-                                    text: "Remove",
-                                    onTap: () async {
-                                      context.formMod.updateImage(null);
-                                      context.pop();
-                                    },
-                                  ),
-                                  AffirmativeTextButton(
-                                    text: "Change",
-                                    onTap: () async {
-                                      await selectImage();
-                                      context.pop();
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        } else {
-                          await selectImage();
-                        }
-                      },
-                      icon: FaIcon(
-                        contextWatch.draft.image != null
-                            ? FontAwesomeIcons.solidFileImage
-                            : FontAwesomeIcons.fileImage,
-                        size: 20,
-                        color: context.cs.surface,
-                      ),
-                    ),
                     if (context.formMod.inEditMode)
                       IconButton(
                         onPressed: () async {
@@ -498,7 +547,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                           size: 18,
                         ),
                       ),
-                    getCustomMenuAnchor(context),
+                    getCustomFormMenuAnchor(),
                     SizedBox(
                       width: 8,
                     ),
@@ -531,7 +580,7 @@ class _FormBottomSheetState extends State<FormBottomSheet> {
                           Expanded(
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerRight,
+                              alignment: context.formMod.symbolOnLeft ? Alignment.centerRight : Alignment.centerLeft,
                               child: Text(
                                 // textDirection: !context.formMod.symbolOnLeft ? ui.TextDirection.rtl : ui.TextDirection.ltr,
                                 amountController.text.isEmpty ? "0.00" : amountController.text,
@@ -944,8 +993,12 @@ class SavedItemSelectionView extends StatelessWidget {
                         ),
                         Expanded(
                           child: Text(
-                            context.formMod.currencyFormat(item.amount ?? 0, showSymbol: false, compact: true),
-                             style: context.customTt.numberFontSmall!.copyWith(fontSize: 16),
+                            context.formMod.currencyFormat(
+                              item.amount ?? 0,
+                              showSymbol: false,
+                              compact: true,
+                            ),
+                            style: context.customTt.numberFontSmall!.copyWith(fontSize: 16),
                             textAlign: TextAlign.right,
                           ),
                         ),
