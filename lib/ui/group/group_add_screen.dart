@@ -1,6 +1,5 @@
 import 'package:budget_tracker/custom/classes/category_class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
-import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/group/group_add_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
@@ -15,6 +14,22 @@ class GroupAddScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctxWatch = context.watch<GroupAddViewmodel>();
+    OverlayEntry? _overlayEntry;
+
+    void showOverlay() {
+      _overlayEntry = OverlayEntry(
+        builder: (context) {
+          return LoadingOverlay();
+        },
+      );
+      Overlay.of(context).insert(_overlayEntry!);
+    }
+
+    void discardOverlay() {
+      _overlayEntry?.dispose();
+      _overlayEntry = null;
+    }
+
     return CustomScaffold(
       ready: ctxWatch.isInit,
       appBarTitle: Text("Add item to main"),
@@ -51,7 +66,10 @@ class GroupAddScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  ctxWatch.currencyFormat(ctxWatch.metric.balance, customIso: ctxWatch.group.currency),
+                  ctxWatch.currencyFormat(
+                    ctxWatch.metric.balance,
+                    customIso: ctxWatch.group.currency,
+                  ),
                   style: context.customTt.numberFontSmall,
                 ),
                 Text(
@@ -64,11 +82,22 @@ class GroupAddScreen extends StatelessWidget {
         ),
         showNegativeButton: true,
         negativeButtonText: "Back",
+        onNegativeButtonPressed: () => context.pop(),
         negativeButtonColor: Colors.grey.shade700,
         negativeButtonIcon: FontAwesomeIcons.leftLong,
         primaryButtonText: "Add to main",
-        onPrimaryButtonPressed: () {
-          context.pop(false);
+        onPrimaryButtonPressed: () async {
+          final response = ctxWatch.validateForm();
+          if (response != null) {
+            context.showErrorNotification(message: response);
+          } else {
+            showOverlay();
+            await ctxWatch.submitForm();
+            if (context.mounted) {
+              discardOverlay();
+              context.pop();
+            }
+          }
         },
         primaryButtonIcon: FontAwesomeIcons.solidSquarePlus,
       ),
@@ -116,7 +145,10 @@ class GroupAddScreen extends StatelessWidget {
                 child: Row(
                   spacing: 12,
                   children: [
-                    Text("Add item(s) as", style: context.customTt.numberFontSmall,),
+                    Text(
+                      "Add item(s) as",
+                      style: context.customTt.numberFontSmall,
+                    ),
                     IconButton(
                       onPressed: () {},
                       icon: FaIcon(FontAwesomeIcons.circleQuestion),
@@ -190,10 +222,42 @@ class GroupAddScreen extends StatelessWidget {
   }
 }
 
-class ExchangeRateSection extends StatelessWidget {
+class ExchangeRateSection extends StatefulWidget {
   const ExchangeRateSection({
     super.key,
   });
+
+  @override
+  State<ExchangeRateSection> createState() => _ExchangeRateSectionState();
+}
+
+class _ExchangeRateSectionState extends State<ExchangeRateSection> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: context.read<GroupAddViewmodel>().useExRate.toStringAsFixed(4),
+    );
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _controller.value = _controller.value.copyWith(
+      text: context.read<GroupAddViewmodel>().useExRate.toStringAsFixed(4),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +279,12 @@ class ExchangeRateSection extends StatelessWidget {
           groupValue: ctxWatch.useCustomRate,
           onChanged: (value) {
             if (value != null) ctxWatch.toggleCustomExRate(value);
+
+            if (value == true) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _focusNode.requestFocus();
+              });
+            }
           },
           child: Column(
             children: [
@@ -243,7 +313,8 @@ class ExchangeRateSection extends StatelessWidget {
                       ),
                       Expanded(
                         child: CustomTextField(
-                          // initialValue: ctxWatch.exchangeRate.toStringAsFixed(4),
+                          controller: _controller,
+                          focusNode: _focusNode,
                           showFieldLabel: false,
                           keyboardType: TextInputType.number,
                           enabled: ctxWatch.useCustomRate,
@@ -387,19 +458,27 @@ class AddGroupRenameGroupSection extends StatefulWidget {
 }
 
 class _AddGroupRenameGroupSectionState extends State<AddGroupRenameGroupSection> {
-  late FocusNode _focusCustom;
+  late TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    _focusCustom = FocusNode();
+    _controller = TextEditingController(text: context.read<GroupAddViewmodel>().groupName);
   }
 
   @override
   void dispose() {
-    _focusCustom.dispose();
+    _controller.dispose();
 
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _controller.value = _controller.value.copyWith(
+      text: context.read<GroupAddViewmodel>().groupName,
+    );
   }
 
   @override
@@ -413,8 +492,10 @@ class _AddGroupRenameGroupSectionState extends State<AddGroupRenameGroupSection>
         children: [
           Text("Group Name"),
           CustomTextField(
+            controller: _controller,
             showFieldLabel: false,
             initialValue: ctxWatch.group.name,
+            onChanged: (value) => ctxWatch.updateGroupName(value),
           ),
         ],
       ),
