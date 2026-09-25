@@ -4,6 +4,7 @@ import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/classes/goal_category.dart';
 import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/classes/saved_item_class.dart';
+import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/category_selection_screen.dart';
 import 'package:budget_tracker/reusable/category_selection_viewmodel.dart';
 import 'package:budget_tracker/reusable/text_selection_screen.dart';
@@ -176,6 +177,7 @@ final goRouter = GoRouter(
                     create: (context) {
                       return GoalViewModel(
                         costItemRepo: context.read(),
+                        groupRepo: context.read(),
                         goalRepo: context.read(),
                         sharedElementRepo: context.read(),
                       );
@@ -191,6 +193,7 @@ final goRouter = GoRouter(
                         create:
                             (context) => GoalFormViewModel(
                               categoryRepo: context.read(),
+                              groupRepo: context.read(),
                               goalRepo: context.read(),
                               goalCategory: state.extra as GoalCategory?,
                               initGoal: null,
@@ -206,6 +209,7 @@ final goRouter = GoRouter(
                         create:
                             (context) => GoalFormViewModel(
                               categoryRepo: context.read(),
+                              groupRepo: context.read(),
                               goalRepo: context.read(),
                               goalCategory: state.extra as GoalCategory?,
                               initGoal: null,
@@ -249,6 +253,7 @@ final goRouter = GoRouter(
                             (context) => GoalFormViewModel(
                               categoryRepo: context.read(),
                               goalRepo: context.read(),
+                              groupRepo: context.read(),
                               goalCategory: null,
                               initGoal: state.extra as Goal,
                             ),
@@ -263,19 +268,19 @@ final goRouter = GoRouter(
                 GoRoute(
                   // parentNavigatorKey: _rootNavigator,
                   path: '/details',
-                  builder:
-                      (context, state) => ChangeNotifierProvider(
-                        create:
-                            (context) => GoalInfoViewModel(
-                              goalRepos: context.read(),
-                              costItemRepo: context.read(),
-                              categoryRepo: context.read(),
-                              currencyRepo: context.read(),
-                              sharedElementRepo: context.read(),
-                              goal: state.extra as Goal,
-                            ),
-                        child: const GoalDetailsScreen(),
-                      ),
+                  builder: (context, state) => ChangeNotifierProvider(
+                      create:
+                          (context) => GoalInfoViewModel(
+                            goalRepos: context.read(),
+                            costItemRepo: context.read(),
+                            groupRepo: context.read(),
+                            categoryRepo: context.read(),
+                            currencyRepo: context.read(),
+                            sharedElementRepo: context.read(),
+                            goal: state.extra as Goal,
+                          ),
+                      child: const GoalDetailsScreen(),
+                    ),
                 ),
                 GoRoute(
                   path: '/details-past',
@@ -376,6 +381,18 @@ final goRouter = GoRouter(
                               initSelection: state.extra as List<CostItemCategory>?,
                             ),
                         child: CategorySingleSelectBody(),
+                      ),
+                ),
+                GoRoute(
+                  path: '/group-item-filter',
+                  builder:
+                      (context, state) => GroupAddItemFilterScreen(
+                        items:
+                            ((state.extra as Map<String, dynamic>?)?['items'] ?? [])
+                                as List<CostItem>,
+                        selectedItems:
+                            ((state.extra as Map<String, dynamic>?)?['selected'] ?? [])
+                                as List<CostItem>?,
                       ),
                 ),
                 GoRoute(

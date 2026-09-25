@@ -100,23 +100,28 @@ class ChartScreen extends StatelessWidget {
             AppLocale.aboutTitle.getString(context),
           ),
           SizedBox(
-              width: 6,
+            width: 6,
+          ),
+          IconButton(
+            icon: FaIcon(
+              FontAwesomeIcons.list,
+              size: 18,
             ),
-            IconButton(
-              icon: FaIcon(FontAwesomeIcons.list, size: 18,),
-              onPressed: () {
-                showCustomModalSheet(
-                  context: context,
-                  builder: (_) {
-                    return GroupBottomSheet(
-                      group: contextWatch.groups,
-                      curGroup: contextWatch.viewedGroup,
-                      onTap: (e) => context.chartMod.updateViewedGroup(e),
-                    );
-                  },
-                );
-              },
-            ),
+            onPressed: () {
+              showCustomModalSheet(
+                context: context,
+                builder: (_) {
+                  return GroupBottomSheet(
+                    // costItems: context.listMod.items,
+                    // numberFormatter: context.listMod.currencyFormat,
+                    group: contextWatch.groups,
+                    curGroup: contextWatch.viewedGroup,
+                    onTap: (e) => context.chartMod.updateViewedGroup(e),
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
       actions: [
@@ -330,7 +335,6 @@ class _CustomPeriodBottomSheetState extends State<CustomPeriodBottomSheet> {
 
     _startWeekIndex = _start.weekNumber;
     _endWeekIndex = _end.weekNumber;
-
   }
 
   String get displayPeriod {

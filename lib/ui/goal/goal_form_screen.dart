@@ -297,12 +297,7 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
     });
   }
 
-  Widget get customDivider => SliverPadding(
-    padding: EdgeInsets.symmetric(vertical: 12),
-    sliver: SliverToBoxAdapter(
-      child: Divider(),
-    ),
-  );
+  Widget get customDivider => Divider(height: 40);
 
   @override
   Widget build(BuildContext context) {
@@ -324,104 +319,128 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
         // SliverToBoxAdapter(
         //   child: Text('Basic Infomation', style: context.customTt.dateLabel),
         // ),
-        if (!context.goalFormMod.isEditMode)
-          SliverPadding(
-            padding: const EdgeInsets.all(12),
-            sliver: SliverToBoxAdapter(
-              child: SvgPicture.asset(
-                'assets/images/piggy.svg',
-                height: 300,
-                // width: 100,
-                fit: BoxFit.contain,
+        // if (!context.goalFormMod.isEditMode)
+        // SliverPadding(
+        //   padding: const EdgeInsets.all(12),
+        //   sliver: SliverToBoxAdapter(
+        //     child: SvgPicture.asset(
+        //       'assets/images/piggy.svg',
+        //       height: 300,
+        //       // width: 100,
+        //       fit: BoxFit.contain,
+        //     ),
+        //   ),
+        // ),
+        // SliverPadding(
+        //   padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
+        //   sliver: SliverToBoxAdapter(
+        //     child: ReusableContainer(
+        //       padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
+        //       // filled: true,
+        //       // highlight: true,
+        //       showBorder: false,
+        //       filled: false,
+        //       child: Column(
+        //         crossAxisAlignment: CrossAxisAlignment.start,
+        //         children: [
+        //           Text(
+        //             mainSubtitle,
+        //             style: TextStyle(color: context.cs.surface),
+        //           ),
+        //           TextFormField(
+        //             controller: _targetController,
+        //             cursorColor: context.cs.surface,
+        //             textAlign: TextAlign.end,
+        //             keyboardType: TextInputType.numberWithOptions(),
+        //             style: context.customTt.elegantLabelLarge?.copyWith(
+        //               fontSize: 50,
+        //               height: 1.2,
+        //               color: context.cs.surface,
+        //             ),
+        //             decoration: InputDecoration(
+        //               border: InputBorder.none,
+        //               prefixIcon: Text(
+        //                 "RM",
+        //                 style: context.customTt.elegantLabelLarge?.copyWith(
+        //                   fontSize: 50,
+        //                   color: context.cs.surface,
+        //                 ),
+        //               ),
+        //               hintText: "0.00",
+        //               isDense: true,
+        //               visualDensity: VisualDensity(horizontal: -4, vertical: -4),
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //     ),
+        //   ),
+        // ),
+        SliverList(
+          delegate: SliverChildListDelegate([
+            TextFormField(
+              controller: _targetController,
+              cursorColor: context.cs.surface,
+              textAlign: TextAlign.end,
+              keyboardType: TextInputType.numberWithOptions(),
+              style: context.customTt.elegantLabelLarge?.copyWith(
+                fontSize: 50,
+                height: 1.2,
+                color: context.cs.surface,
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                prefixIcon: Text(
+                  "RM",
+                  style: context.customTt.elegantLabelLarge?.copyWith(
+                    fontSize: 50,
+                    color: context.cs.surface,
+                  ),
+                ),
+                hintText: "0.00",
+                isDense: true,
+                visualDensity: VisualDensity(horizontal: -4, vertical: -4),
               ),
             ),
-          ),
-        SliverPadding(
-          padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
-          sliver: SliverToBoxAdapter(
-            child: ReusableContainer(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
-              // filled: true,
-              // highlight: true,
-              showBorder: false,
-              filled: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mainSubtitle,
-                    style: TextStyle(color: context.cs.surface),
-                  ),
-                  TextFormField(
-                    controller: _targetController,
-                    cursorColor: context.cs.surface,
-                    textAlign: TextAlign.end,
-                    keyboardType: TextInputType.numberWithOptions(),
-                    style: context.customTt.elegantLabelLarge?.copyWith(
-                      fontSize: 50,
-                      height: 1.2,
-                      color: context.cs.surface,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      prefixIcon: Text(
-                        "RM",
-                        style: context.customTt.elegantLabelLarge?.copyWith(
-                          fontSize: 50,
-                          color: context.cs.surface,
-                        ),
-                      ),
-                      hintText: "0.00",
-                      isDense: true,
-                      visualDensity: VisualDensity(horizontal: -4, vertical: -4),
-                    ),
-                  ),
-                ],
+            customDivider,
+            HorizontalPadding(
+              child: CustomTextField(
+                fieldLabel: "Name",
+                hintText: "Name this goal...",
+                controller: _titleController,
               ),
             ),
-          ),
-        ),
-        customDivider,
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
-          sliver: SliverToBoxAdapter(
-            child: GoalsTextField(
-              fieldLabel: "Name",
-              hintText: "Name this goal...",
-              controller: _titleController,
+            HorizontalPadding(
+              child: CustomTextField(
+                fieldLabel: "Description",
+                hintText: "Describe your goal...",
+                controller: _descController,
+              ),
             ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12),
-          sliver: SliverToBoxAdapter(
-            child: GoalsTextField(
-              fieldLabel: "Description",
-              hintText: "Describe this goal...",
-              controller: _descController,
-              minLines: 3,
+            CustomDropdownListTile<String?>(
+              entries: [
+                DropdownMenuEntry(value: null, label: "Main"),
+                ...context.goalFormMod.costGroups.map(
+                  (group) => DropdownMenuEntry(value: group.id, label: group.name ?? ""),
+                ),
+              ],
+              initSelection: draftedGoal.group,
+              onSelected: context.goalFormMod.updateGoalGroup,
+              title: "Apply to Group",
             ),
-          ),
-        ),
-        customDivider,
-        SliverToBoxAdapter(
-          child: CustomSwitchListTile(
-            dense: true,
-            title: "Custom Month",
-            customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
-            value: _openDate,
-            onSelected: (value) {
-              setState(() {
-                _openDate = value;
-              });
-            },
-          ),
-        ),
-        if (_openDate)
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            sliver: SliverToBoxAdapter(
-              child: Padding(
+            CustomSwitchListTile(
+              dense: true,
+              title: "Custom Month",
+              customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+              value: _openDate,
+              onSelected: (value) {
+                setState(() {
+                  _openDate = value;
+                });
+              },
+            ),
+            if (_openDate)
+              Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: Row(
                   spacing: 20,
@@ -471,27 +490,20 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
                   ],
                 ),
               ),
+            customDivider,
+            CustomSwitchListTile(
+              dense: true,
+              title: "Item Filter",
+              customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+              value: _openFilter,
+              onSelected: (value) {
+                setState(() {
+                  _openFilter = value;
+                });
+              },
             ),
-          ),
-        customDivider,
-        SliverToBoxAdapter(
-          child: CustomSwitchListTile(
-            dense: true,
-            title: "Item Filter",
-            customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
-            value: _openFilter,
-            onSelected: (value) {
-              setState(() {
-                _openFilter = value;
-              });
-            },
-          ),
-        ),
-        if (_openFilter)
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            sliver: SliverToBoxAdapter(
-              child: Column(
+            if (_openFilter)
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Text(
@@ -515,61 +527,51 @@ class _GoalInfoFormBodyState extends State<GoalInfoFormBody> {
                   ),
                 ],
               ),
+            customDivider,
+            CustomSwitchListTile(
+              dense: true,
+              title: "Show Advanced",
+              customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
+              value: _openAdvanced,
+              onSelected: (value) {
+                setState(() {
+                  _openAdvanced = value;
+                });
+              },
             ),
-          ),
-        customDivider,
-        SliverToBoxAdapter(
-          child: CustomSwitchListTile(
-            dense: true,
-            title: "Show Advanced",
-            customStyle: context.customTt.dateLabel!.copyWith(fontSize: 20),
-            value: _openAdvanced,
-            onSelected: (value) {
-              setState(() {
-                _openAdvanced = value;
-              });
-            },
-          ),
-        ),
-        if (_openAdvanced)
-          SliverPadding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                CustomDropdownListTile(
-                  initSelection: context.goalFormMod.draftGoal.goalTracking,
-                  onSelected: (value) {
-                    if (value != null) {
-                      context.goalFormMod.updateTracking(value);
-                    }
-                  },
-                  entries:
-                      GoalTrackingPeriod.values
-                          .map((el) => DropdownMenuEntry(value: el, label: el.title))
-                          .toList(),
-                  title: "Goal Tracking",
-                ),
-                CustomSwitchListTile(
-                  value: true,
-                  // initSelection: context.goalFormMod.draftGoal.goalTracking,
-                  onSelected: (value) {
-                    if (value != null) {
-                      // context.goalFormMod.update(value);
-                    }
-                  },
-                  // entries:
-                  //     GoalTrackingPeriod.values
-                  //         .map((el) => DropdownMenuEntry(value: el, label: el.title))
-                  //         .toList(),
-                  title: "Track goal against daily target",
-                ),
-              ]),
-            ),
-          ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 100,
-          ),
+            if (_openAdvanced)
+              Column(
+                children: [
+                  CustomDropdownListTile(
+                    initSelection: context.goalFormMod.draftGoal.goalTracking,
+                    onSelected: (value) {
+                      if (value != null) {
+                        context.goalFormMod.updateTracking(value);
+                      }
+                    },
+                    entries:
+                        GoalTrackingPeriod.values
+                            .map((el) => DropdownMenuEntry(value: el, label: el.title))
+                            .toList(),
+                    title: "Goal Tracking",
+                  ),
+                  CustomSwitchListTile(
+                    value: true,
+                    // initSelection: context.goalFormMod.draftGoal.goalTracking,
+                    onSelected: (value) {
+                      if (value != null) {
+                        // context.goalFormMod.update(value);
+                      }
+                    },
+                    // entries:
+                    //     GoalTrackingPeriod.values
+                    //         .map((el) => DropdownMenuEntry(value: el, label: el.title))
+                    //         .toList(),
+                    title: "Track goal against daily target",
+                  ),
+                ],
+              ),
+          ]),
         ),
       ],
     );

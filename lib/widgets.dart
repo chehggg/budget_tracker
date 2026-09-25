@@ -424,7 +424,7 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final monthlyOverview = context.listMod.monthlyOverview;
+    final monthlyOverview = context.listMod.selectorMonthlySummary;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
@@ -434,6 +434,8 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            // crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             spacing: 12,
             children: [
               Flexible(
@@ -444,34 +446,53 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                   style: context.customTt.dateLabel,
                 ),
               ),
-              ActionChip(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                visualDensity: VisualDensity(vertical: 0),
-                backgroundColor:
-                    _yearMonth.useRange
-                        ? context.customCs.fadeColor2
-                        : context.cs.surfaceContainerHigh,
-                onPressed: () {
-                  final prevDate2 = _yearMonth.date2;
-                  setState(
-                    () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
-                  );
-                  if (!_yearMonth.useRange) {
-                    context.listMod.updateYearMonth(
-                      YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
+              Text("Use Range"),
+              Transform.scale(
+                scale: 0.8,
+                child: Switch(
+                  value: _yearMonth.useRange,
+                  onChanged: (value) {
+                    final prevDate2 = _yearMonth.date2;
+                    setState(
+                      () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
                     );
-                    context.pop();
-                  }
-                },
-                avatar: FaIcon(
-                  _yearMonth.useRange ? FontAwesomeIcons.check : FontAwesomeIcons.calendarWeek,
-                  size: 14,
+                    if (!_yearMonth.useRange) {
+                      context.listMod.updateYearMonth(
+                        YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
+                      );
+                      context.pop();
+                    }
+                  },
                 ),
-                label: Text("Use Range"),
               ),
+              // ActionChip(
+              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              //   visualDensity: VisualDensity(vertical: 0),
+              //   backgroundColor:
+              //       _yearMonth.useRange
+              //           ? context.customCs.fadeColor2
+              //           : context.cs.surfaceContainerHigh,
+              //   onPressed: () {
+              //     final prevDate2 = _yearMonth.date2;
+              //     setState(
+              //       () => _yearMonth = _yearMonth.copyWith(useRange: !_yearMonth.useRange),
+              //     );
+              //     if (!_yearMonth.useRange) {
+              //       context.listMod.updateYearMonth(
+              //         YearMonth(useRange: false, date1: prevDate2 ?? _yearMonth.date1),
+              //       );
+              //       context.pop();
+              //     }
+              //   },
+              //   avatar: FaIcon(
+              //     _yearMonth.useRange ? FontAwesomeIcons.check : FontAwesomeIcons.calendarWeek,
+              //     size: 14,
+              //   ),
+              //   label: Text("Use Range"),
+              // ),
             ],
           ),
-          Divider(height: 20),
+          // Divider(height: 20),
           GestureDetector(
             child: Row(
               children: [
@@ -510,8 +531,8 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
             physics: NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               // mainAxisSpacing: 2,
-              crossAxisCount: 4,
-              childAspectRatio: 1.3,
+              crossAxisCount: 6,
+              childAspectRatio: 1,
             ),
             children: [
               ...List.generate(12, (i) => i + 1).map((value) {
@@ -553,11 +574,11 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                     });
                   },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 2),
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 200),
                       curve: Curves.easeOut,
-                      padding: EdgeInsets.symmetric(vertical: 4),
+                      padding: EdgeInsets.symmetric(vertical: 2),
                       decoration: BoxDecoration(
                         color: color,
                         borderRadius: BorderRadius.circular(8),
@@ -569,12 +590,13 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                           children: [
                             Text(
                               DateFormat('MMM').format(date),
-                              style: context.customTt.dateLabel!.copyWith(fontSize: 24),
+                              style: context.customTt.numberFontSmall!.copyWith(fontSize: 16),
                             ),
                             Text(
                               displayText,
                               style: context.customTt.numberFontSmall!.copyWith(
-                                fontSize: 14,
+                                fontSize: 12,
+                                height: 1.8,
                                 color:
                                     balance == 0
                                         ? context.customCs.fadeColor1
@@ -1270,7 +1292,6 @@ class CustomRadioListTile<T> extends StatelessWidget {
 
   final bool? dense;
 
-
   @override
   Widget build(BuildContext context) {
     return Opacity(
@@ -1326,7 +1347,7 @@ class CustomActionBottomSheet extends StatelessWidget {
       onClosing: () {},
       builder: (context) {
         return Container(
-          padding: EdgeInsets.fromLTRB(30,top,30,30),
+          padding: EdgeInsets.fromLTRB(30, top, 30, 30),
           child: Column(
             spacing: 20,
             crossAxisAlignment: CrossAxisAlignment.stretch,

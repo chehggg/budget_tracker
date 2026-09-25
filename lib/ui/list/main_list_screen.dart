@@ -11,6 +11,7 @@ import 'package:budget_tracker/ui/list/main_list_viewmodel.dart';
 import 'package:budget_tracker/models/theme_model.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/widgets.dart';
+import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -154,7 +155,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isSearchOpened = context.select((ListViewModel state) => state.isSearchOpened);
     final selectionMode = context.select((ListViewModel state) => state.selectionMode);
     final selectedItemLength = context.select((ListViewModel state) => state.selectedItems.length);
-    final groups = context.select((ListViewModel state) => state.group);
+    final groups = context.select((ListViewModel state) => state.groups);
     final curGroup = context.select((ListViewModel state) => state.viewedGroup);
 
     if (selectionMode) {
@@ -207,25 +208,34 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
         actionsPadding: EdgeInsets.only(right: 8),
         title: Row(
           children: [
-            Text(curGroup != null ? (curGroup.name ?? "") : AppLocale.overview.getString(context), style: context.customTt.dateLabel),
+            Text(
+              curGroup != null ? (curGroup.name ?? "") : AppLocale.overview.getString(context),
+              style: context.customTt.dateLabel,
+            ),
             SizedBox(
               width: 6,
             ),
-            IconButton(
-              icon: FaIcon(FontAwesomeIcons.list, size: 18,),
-              onPressed: () {
-                showCustomModalSheet(
-                  context: context,
-                  builder: (_) {
-                    return GroupBottomSheet(
-                      group: groups,
-                      curGroup: curGroup,
-                      onTap: (e) => context.listMod.updateViewedGroup(e),
-                    );
-                  },
-                );
-              },
-            ),
+            if (context.listMod.groups?.isNotEmpty ?? false)
+              IconButton(
+                icon: FaIcon(
+                  FontAwesomeIcons.list,
+                  size: 18,
+                ),
+                onPressed: () {
+                  showCustomModalSheet(
+                    context: context,
+                    builder: (_) {
+                      return GroupBottomSheet(
+                        showNumber: true,
+                        group: groups,
+                        curGroup: curGroup,
+                        groupMapping: context.listMod.costGroupBalance,
+                        onTap: (e) => context.listMod.updateViewedGroup(e),
+                      );
+                    },
+                  );
+                },
+              ),
           ],
         ),
         actions: [
@@ -274,21 +284,23 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
                     name: "Hide Amount",
                     onTap: context.listMod.toggleBlur,
                   ),
-                  MenuChild(
-                    icon: FontAwesomeIcons.list,
-                    name: "Group View",
-                    onTap:
-                        () => showCustomModalSheet(
-                          context: context,
-                          builder: (_) {
-                            return GroupBottomSheet(
-                              group: groups,
-                              curGroup: curGroup,
-                              onTap: (e) => context.listMod.updateViewedGroup(e),
-                            );
-                          },
-                        ),
-                  ),
+                  // MenuChild(
+                  //   icon: FontAwesomeIcons.list,
+                  //   name: "Group View",
+                  //   onTap:
+                  //       () => showCustomModalSheet(
+                  //         context: context,
+                  //         builder: (_) {
+                  //           return GroupBottomSheet(
+                  //             group: groups,
+                  //             curGroup: curGroup,
+                  //             costItems: context.listMod.items,
+                  //             numberFormatter: context.listMod.currencyFormat,
+                  //             onTap: (e) => context.listMod.updateViewedGroup(e),
+                  //           );
+                  //         },
+                  //       ),
+                  // ),
                 ],
               ),
 
@@ -316,11 +328,17 @@ class GroupBottomSheet extends StatelessWidget {
     required this.group,
     required this.curGroup,
     required this.onTap,
+    this.showNumber = false,
     super.key,
+    // this.mainNum,
+    this.groupMapping,
   });
 
   final List<CostGroup>? group;
   final CostGroup? curGroup;
+  final bool showNumber;
+  // final String? mainNum;
+  final Map<String?, String>? groupMapping;
   final void Function(CostGroup?) onTap;
 
   @override
@@ -333,7 +351,7 @@ class GroupBottomSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "Current View",
+            "View Group",
             style: context.customTt.dateLabel,
           ),
           SizedBox(
@@ -347,18 +365,26 @@ class GroupBottomSheet extends StatelessWidget {
               context.pop();
             },
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              spacing: 12,
               children: [
-                Expanded(
-                  child: Text(
-                    "Main",
-                    style: context.customTt.numberFontSmall,
-                  ),
+                Text(
+                  "Main",
+                  style: context.customTt.numberFontSmall,
                 ),
                 if (curGroup == null)
-                  FaIcon(
-                    FontAwesomeIcons.check,
-                    size: 16,
+                  Expanded(
+                    child: FaIcon(
+                      FontAwesomeIcons.check,
+                      size: 16,
+                    ),
                   ),
+                if (showNumber) Text(groupMapping?[null] ?? ""),
+                // if (curGroup == null)
+                //   FaIcon(
+                //     FontAwesomeIcons.check,
+                //     size: 16,
+                //   ),
               ],
             ),
           ),
@@ -370,30 +396,35 @@ class GroupBottomSheet extends StatelessWidget {
               style: context.customTt.paragraphTextSmall,
             ),
           ),
-          ...(group ?? []).map(
-            (e) => ReusableContainer(
-              padding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-              showBorder: false,
-              onTap: () {
-                onTap.call(e);
-                context.pop();
-              },
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
+          ...(group ?? []).mapIndexed(
+            (index, e) {
+              return ReusableContainer(
+                padding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+                showBorder: false,
+                onTap: () {
+                  onTap.call(e);
+                  context.pop();
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  spacing: 12,
+                  children: [
+                    Text(
                       e.name ?? 'Group',
                       style: context.customTt.paragraphTitle!.copyWith(height: 1.8),
                     ),
-                  ),
-                  if (curGroup?.id == e.id)
-                    FaIcon(
-                      FontAwesomeIcons.check,
-                      size: 14,
-                    ),
-                ],
-              ),
-            ),
+                    if (curGroup?.id == e.id)
+                      Expanded(
+                        child: FaIcon(
+                          FontAwesomeIcons.check,
+                          size: 14,
+                        ),
+                      ),
+                    if (showNumber) Text(groupMapping?[e.id] ?? ""),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

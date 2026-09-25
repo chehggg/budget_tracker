@@ -45,114 +45,122 @@ class GoalDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final goal = context.select((GoalInfoViewModel state) => state.goal);
     final ready = context.select((GoalInfoViewModel state) => state.ready);
-    return CustomScaffold(
-      appBarTitle: Text("Goal Details"),
-      // padHorizontal: true,
-      actions: [
-        // IconButton(
-        //   onPressed: () async {
-        //     final response = await showDialog(
-        //       context: context,
-        //       builder: (context) => DeleteItemDialog(),
-        //     );
-        //     if (response == null) return;
-        //     if (response && context.mounted) {
-        //       await context.goalInfoMod.deleteGoal();
-        //       if (context.mounted) {
-        //         context.pop();
-        //       }
-        //     }
-        //   },
-        //   icon: FaIcon(
-        //     FontAwesomeIcons.trash,
-        //     size: 18,
-        //   ),
-        // ),
-        IconButton(
-          onPressed: () {
-            context.push('/goals/edit-goal', extra: goal);
-          },
-          icon: FaIcon(FontAwesomeIcons.pencil, size: 18),
-        ),
-        CustomMenuAnchor(
-          animated: true,
-          items: [
-            MenuChild(
-              icon: FontAwesomeIcons.copy,
-              name: "Duplicate",
-              onTap: () async {
-                final response = await showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text("Copy Goal"),
-                      content: Text(
-                        "Create a copy of this goal?",
-                      ),
-                      actions: [
-                        DismissTextButton(
-                          onTap: () => context.pop(false),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.navMod.toggleFab(show: true);
+        context.pop();
+      },
+      child: CustomScaffold(
+        appBarTitle: Text("Goal Details"),
+        // padHorizontal: true,
+        actions: [
+          // IconButton(
+          //   onPressed: () async {
+          //     final response = await showDialog(
+          //       context: context,
+          //       builder: (context) => DeleteItemDialog(),
+          //     );
+          //     if (response == null) return;
+          //     if (response && context.mounted) {
+          //       await context.goalInfoMod.deleteGoal();
+          //       if (context.mounted) {
+          //         context.pop();
+          //       }
+          //     }
+          //   },
+          //   icon: FaIcon(
+          //     FontAwesomeIcons.trash,
+          //     size: 18,
+          //   ),
+          // ),
+          IconButton(
+            onPressed: () {
+              context.push('/goals/edit-goal', extra: goal);
+            },
+            icon: FaIcon(FontAwesomeIcons.pencil, size: 18),
+          ),
+          CustomMenuAnchor(
+            animated: true,
+            items: [
+              MenuChild(
+                icon: FontAwesomeIcons.copy,
+                name: "Duplicate",
+                onTap: () async {
+                  final response = await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text("Copy Goal"),
+                        content: Text(
+                          "Create a copy of this goal?",
                         ),
-                        AffirmativeTextButton(onTap: () => context.pop(true)),
-                      ],
-                    );
-                  },
-                );
-                if (response == true) {
-                  context.goalInfoMod.createDuplicate();
-                  context.pop();
-                }
-              },
-            ),
-            MenuChild(
-              icon: FontAwesomeIcons.calendarCheck,
-              name: "Mark as done",
-              onTap: () async {
-                final response = await showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text("End Goal"),
-                      content: Text(
-                        "Mark this goal as completed? \nThis month's progress will be discarded, but previous goal progress will still be visible.",
-                      ),
-                      actions: [
-                        DismissTextButton(
-                          onTap: () => context.pop(false),
+                        actions: [
+                          DismissTextButton(
+                            onTap: () => context.pop(false),
+                          ),
+                          AffirmativeTextButton(onTap: () => context.pop(true)),
+                        ],
+                      );
+                    },
+                  );
+                  if (response == true) {
+                    context.goalInfoMod.createDuplicate();
+                    context.pop();
+                  }
+                },
+              ),
+              MenuChild(
+                icon: FontAwesomeIcons.calendarCheck,
+                name: "Mark as done",
+                onTap: () async {
+                  final response = await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text("End Goal"),
+                        content: Text(
+                          "Mark this goal as completed? \nThis month's progress will be discarded, but previous goal progress will still be visible.",
                         ),
-                        AffirmativeTextButton(onTap: () => context.pop(true)),
-                      ],
-                    );
-                  },
-                );
-                if (response == true) {
-                  context.goalInfoMod.updateEndDate();
-                  context.pop();
-                }
-              },
-            ),
-            MenuChild(
-              onTap: () async {
-                final response = await showDialog(
-                  context: context,
-                  builder: (context) {
-                    return DeleteItemDialog();
-                  },
-                );
-                if (response == true) {
-                  context.goalInfoMod.deleteGoal();
-                  context.pop();
-                }
-              },
-              color: Colors.red,
-              icon: FontAwesomeIcons.trash,
-              name: "Delete",
-            ),
-          ],
-        ),
-      ],
-      ready: ready,
-      child: const GoalInfoBody(),
+                        actions: [
+                          DismissTextButton(
+                            onTap: () => context.pop(false),
+                          ),
+                          AffirmativeTextButton(onTap: () => context.pop(true)),
+                        ],
+                      );
+                    },
+                  );
+                  if (response == true) {
+                    context.goalInfoMod.updateEndDate();
+                    context.pop();
+                  }
+                },
+              ),
+              MenuChild(
+                onTap: () async {
+                  final response = await showDialog(
+                    context: context,
+                    builder: (context) {
+                      return DeleteItemDialog();
+                    },
+                  );
+                  if (response == true) {
+                    context.goalInfoMod.deleteGoal();
+                    context.pop();
+                  }
+                },
+                color: Colors.red,
+                icon: FontAwesomeIcons.trash,
+                name: "Delete",
+              ),
+            ],
+          ),
+        ],
+        ready: ready,
+        child: const GoalInfoBody(),
+      ),
     );
   }
 }

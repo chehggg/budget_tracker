@@ -8,6 +8,7 @@ import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
 import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
+import 'package:budget_tracker/data/repos/group_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -15,10 +16,12 @@ class GoalFormViewModel extends ChangeNotifier {
   GoalFormViewModel({
     required GoalRepository goalRepo,
     required CategoryRepository categoryRepo,
+    required GroupRepository groupRepo,
     Goal? initGoal,
     GoalCategory? goalCategory,
   }) : _initGoal = initGoal,
        _goalRepo = goalRepo,
+       _groupRepo = groupRepo,
        _categoryRepo = categoryRepo,
        _goalCategory = goalCategory {
     init();
@@ -26,6 +29,7 @@ class GoalFormViewModel extends ChangeNotifier {
 
   final GoalRepository _goalRepo;
   final CategoryRepository _categoryRepo;
+  final GroupRepository _groupRepo;
   final Goal? _initGoal;
   final GoalCategory? _goalCategory;
 
@@ -61,6 +65,7 @@ class GoalFormViewModel extends ChangeNotifier {
 
     await _goalRepo.ready;
     await _categoryRepo.ready;
+    await _groupRepo.ready;
 
     _isInitialized = true;
     notifyListeners();
@@ -73,6 +78,8 @@ class GoalFormViewModel extends ChangeNotifier {
 
   final TextEditingController _endDateController = TextEditingController();
   TextEditingController get endDateController => _endDateController;
+
+  List<CostGroup> get costGroups => _groupRepo.groups;
 
   Goal _draftedGoal = Goal();
   Goal get draftGoal => _draftedGoal;
@@ -123,6 +130,11 @@ class GoalFormViewModel extends ChangeNotifier {
 
   void updateDesc(String text) {
     _draftedGoal = _draftedGoal.copyWith(description: text);
+    notifyListeners();
+  }
+
+  void updateGoalGroup(String? groupId) {
+    _draftedGoal = _draftedGoal.copyWith(group: () => groupId);
     notifyListeners();
   }
 

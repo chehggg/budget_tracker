@@ -93,7 +93,7 @@ class ListViewModel extends ChangeNotifier {
   StreamSubscription<List<CostItemCategory>>? _categorySubscription;
   StreamSubscription<bool>? _groupSubscription;
 
-  List<CostGroup>? get group => _groupRepo.groups;
+  List<CostGroup>? get groups => _groupRepo.groups;
 
   CostGroup? _viewedGroup;
   CostGroup? get viewedGroup => _viewedGroup;
@@ -149,6 +149,47 @@ class ListViewModel extends ChangeNotifier {
 
   AccentColor get accentColors => _sharedRepo.accentColors;
 
+  bool matchItem(
+    CostItem item, {
+    // bool matchCat = true,
+    bool matchGroup = true,
+    // bool matchQuery = true,
+    // bool matchRange = true,
+  }) {
+    bool rangeQuery, groupQuery, searchQuery, categoryQuery;
+    if (item.isExpense) {
+      rangeQuery =
+          (_expenseRange != null
+              ? ((item.amount ?? 0) <= _expenseRange!.end &&
+                  (item.amount ?? 0) >= _expenseRange!.start)
+              : true);
+    } else {
+      rangeQuery =
+          (_incomeRange != null
+              ? ((item.amount ?? 0) <= _incomeRange!.end &&
+                  (item.amount ?? 0) >= _incomeRange!.start)
+              : true);
+    }
+    groupQuery = matchGroup ? item.group == _viewedGroup?.id : true;
+
+    searchQuery =
+        (_searchText.isNotEmpty
+            ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) ?? false
+            : true);
+    categoryQuery =
+        _filteredCategories != null
+            ? _filteredCategories!.map((cat) => cat.id).contains(item.categoryId)
+            : true;
+
+    return rangeQuery && rangeQuery && groupQuery && searchQuery;
+  }
+
+  bool queryByCat(CostItem item) =>
+      _filteredCategories != null
+          ? _filteredCategories!.map((cat) => cat.id).contains(item.categoryId)
+          : true;
+  bool queryByGroup(CostItem item) => item.group == _viewedGroup?.id;
+
   Map<DateTime, List<CostItem>> get outputCostItems {
     final sorted = curMonthGbDateCostItems.map(
       (key, value) =>
@@ -158,41 +199,37 @@ class ListViewModel extends ChangeNotifier {
     final filteredItems = sorted.map(
       (key, value) => MapEntry(
         key,
-        value.where((item) {
-          bool rangeQuery = true;
-          if (item.isExpense) {
-            rangeQuery =
-                (_expenseRange != null
-                    ? ((item.amount ?? 0) <= _expenseRange!.end &&
-                        (item.amount ?? 0) >= _expenseRange!.start)
-                    : true);
-          } else {
-            rangeQuery =
-                (_incomeRange != null
-                    ? ((item.amount ?? 0) <= _incomeRange!.end &&
-                        (item.amount ?? 0) >= _incomeRange!.start)
-                    : true);
-          }
-          final groupQuery = item.group == _viewedGroup?.id;
-
-          // final bool rangeQuery =
-          //     (_expenseRange != null
-          //         ? ((item.absoluteAmount) <= _expenseRange!.end &&
-          //             (item.absoluteAmount) >= _expenseRange!.start)
-          //         : true);
-          final bool searchQuery =
-              (_searchText.isNotEmpty
-                  ? item.name?.toLowerCase().contains(_searchText.toLowerCase()) ?? false
-                  : true);
-          final bool categoryQuery =
-              _filteredCategories != null
-                  ? _filteredCategories!.map((cat) => cat.id).contains(item.categoryId)
-                  : true;
-          return rangeQuery && searchQuery && categoryQuery && groupQuery;
-        }).toList(),
+        value.where((item) => matchItem(item)).toList(),
       ),
     );
     return Map.fromEntries(filteredItems.entries.where((entry) => entry.value.isNotEmpty));
+  }
+
+  Map<DateTime, List<CostItem>> get unfilteredOutputCostItems {
+    final sorted = curMonthGbDateCostItems.map(
+      (key, value) =>
+          MapEntry(key, value.sorted((a, b) => b.lastModified!.compareTo(a.lastModified!))),
+    );
+    // if (_searchText == "") return sorted;
+    final filteredItems = sorted.map(
+      (key, value) => MapEntry(
+        key,
+        value.where((item) => matchItem(item, matchGroup: false)).toList(),
+      ),
+    );
+    return Map.fromEntries(filteredItems.entries.where((entry) => entry.value.isNotEmpty));
+  }
+
+  Map<String?, String> get costGroupBalance {
+    final mapping = unfilteredOutputCostItems.values.flattenedToList
+        .groupFoldBy<String?, CostMetric>(
+          (item) => item.group,
+          (CostMetric? prev, CostItem item) => (prev ?? CostMetric()).add(item),
+        );
+    return mapping.map((key, value) {
+      final group = groups?.firstWhereOrNull((grp) => grp.id == key);
+      return MapEntry(key, currencyFormat(value.balance, customIso: group?.currency));
+    });
   }
 
   Map<DateTime, CostMetric> get outputDailySummary {
@@ -223,6 +260,14 @@ class ListViewModel extends ChangeNotifier {
         )
         .sorted((a, b) => b.key.compareTo(a.key)),
   );
+
+  Map<DateTime, CostMetric> get selectorMonthlySummary {
+    final filteredItems = _costItemRepo.costItems.where(((item) => matchItem(item)));
+    return filteredItems.groupFoldBy<DateTime, CostMetric>(
+      (item) => item.date!.startOfMonth,
+      (CostMetric? prev, item) => (prev ?? CostMetric()).add(item),
+    );
+  }
 
   void updateViewedGroup(CostGroup? newGroup) {
     _groupRepo.changeGroupView(newGroup);
@@ -349,6 +394,7 @@ class ListViewModel extends ChangeNotifier {
 
   String currencyFormat(
     double value, {
+    String? customIso,
     bool abbreviated = false,
     bool alwaysShowSign = false,
     bool showSymbol = true,
@@ -357,7 +403,7 @@ class ListViewModel extends ChangeNotifier {
   }) {
     return _currencyRepo.formatCurrency(
       value,
-      customIso: viewedGroup?.currency,
+      customIso: customIso ?? viewedGroup?.currency,
       abbreviated: abbreviated,
       alwaysShowSign: alwaysShowSign,
       showSymbol: showSymbol,

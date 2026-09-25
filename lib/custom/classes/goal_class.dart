@@ -19,6 +19,7 @@ class Goal {
     this.filterString,
     this.matchType,
     this.goalType,
+    this.group,
     this.goalTracking,
     this.lastCreated,
     this.lastModified,
@@ -32,6 +33,7 @@ class Goal {
   final DateTime? endDate;
   final List<String>? categories;
   final String? filterString;
+  final String? group;
   final StringMatchType? matchType;
   final GoalType? goalType;
   final GoalTrackingPeriod? goalTracking;
@@ -50,6 +52,7 @@ class Goal {
     filterString: json["filterString"] as String?,
     matchType: json["matchType"] != null ? StringMatchType.values.byName(json["matchType"]) : null,
     goalType: GoalType.values.byName(json["goalType"]),
+    group: json["group"] as String?,
     goalTracking: GoalTrackingPeriod.values.byName(json["goalTracking"]),
     lastCreated: DateTime.tryParse(json["lastCreated"] as String? ?? "") ?? DateTime.now(),
     lastModified: DateTime.tryParse(json["lastModified"] as String? ?? "") ?? DateTime.now(),
@@ -65,6 +68,7 @@ class Goal {
     "endDate": endDate?.formatFull(),
     "categories": categories != null ? List<dynamic>.from(categories!) : null,
     "filterString": filterString,
+    "group": group,
     "matchType": matchType?.name,
     "goalType": goalType?.name,
     "goalTracking": goalTracking?.name,
@@ -169,6 +173,7 @@ class Goal {
     DateTime? endDate,
     List<String>? categories,
     String? filterString,
+    String? Function()? group,
     StringMatchType? matchType,
     GoalType? goalType,
     GoalTrackingPeriod? goalTracking,
@@ -183,6 +188,7 @@ class Goal {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       categories: categories ?? this.categories,
+      group: group != null ? group.call() : this.group,
       filterString: filterString ?? this.filterString,
       matchType: matchType ?? this.matchType,
       goalType: goalType ?? this.goalType,

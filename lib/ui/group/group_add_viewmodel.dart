@@ -102,11 +102,13 @@ class GroupAddViewmodel extends ChangeNotifier {
   List<CostItem> _selectedCostItems = [];
   List<CostItem> get selectedCostItems {
     if (_addGroupType == AddGroupType.all) {
-      return _costItemRepo.costItems.where((item) => item.group == group.id).toList();
+      return initCostItem;
     } else {
       return _selectedCostItems;
     }
   }
+
+  List<CostItem> get initCostItem => _costItemRepo.costItems.where((item) => item.group == group.id).toList();
 
   CostMetric get metric => CostMetric.fromCostItemList(selectedCostItems);
   double get convertedBalance => metric.balance * useExRate;
@@ -174,6 +176,11 @@ class GroupAddViewmodel extends ChangeNotifier {
 
   void updateAddGroupRename(AddGroupRename value) {
     _addGroupRename = value;
+    notifyListeners();
+  }
+
+  void updateCostItems(List<CostItem> costItems) {
+    _selectedCostItems = costItems;
     notifyListeners();
   }
 

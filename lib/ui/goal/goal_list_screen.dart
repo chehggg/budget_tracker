@@ -319,6 +319,7 @@ class GoalBody extends StatelessWidget {
                             ),
                             child: GestureDetector(
                               onTap: () {
+                                context.navMod.toggleFab(show: false);
                                 context.push('/goals/details', extra: entry.key);
                               },
                               behavior: HitTestBehavior.translucent,
@@ -379,6 +380,7 @@ class GoalTile extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
+        context.navMod.toggleFab(show: false);
         context.push('/goals/details', extra: goal);
       },
       child: Column(

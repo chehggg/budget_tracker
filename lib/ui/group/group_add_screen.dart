@@ -1,8 +1,10 @@
 import 'package:budget_tracker/custom/classes/category_class.dart';
+import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/reusable/reusable_widgets.dart';
 import 'package:budget_tracker/ui/group/group_add_viewmodel.dart';
 import 'package:budget_tracker/widgets.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
@@ -116,8 +118,24 @@ class GroupAddScreen extends StatelessWidget {
               ),
               RadioGroup<AddGroupType>(
                 groupValue: ctxWatch.addGroupType,
-                onChanged: (value) {
+                onChanged: (value) async {
+                  final selected = [...ctxWatch.selectedCostItems];
+                  
                   if (value != null) ctxWatch.updateAddGroupType(value);
+
+                  if (value == AddGroupType.partial) {
+                    final List<CostItem>? response = await context.push(
+                      'settings/group-item-filter',
+                      extra: {
+                        "items": ctxWatch.initCostItem,
+                        "selected": selected,
+                      },
+                    );
+                    if (response != null) {
+                      debugPrint("update");
+                      ctxWatch.updateCostItems(response);
+                    }
+                  }
                 },
                 child: Column(
                   children: [
@@ -689,16 +707,16 @@ class OverallGroupDateSection extends StatelessWidget {
       // context.formMod.updateDate(_selectedDate);
     }
 
-    void redirectToCategorySelection() async {
-      final CostItemCategory? response = await context.push(
-        'settings/group-category',
-        extra: ctxWatch.singleItemCategory != null ? [ctxWatch.singleItemCategory!] : null,
-      );
+    // void redirectToCategorySelection() async {
+    //   final CostItemCategory? response = await context.push(
+    //     'settings/group-category',
+    //     extra: ctxWatch.singleItemCategory != null ? [ctxWatch.singleItemCategory!] : null,
+    //   );
 
-      if (response != null) {
-        ctxWatch.updateCategory(response);
-      }
-    }
+    //   if (response != null) {
+    //     ctxWatch.updateCategory(response);
+    //   }
+    // }
 
     return Padding(
       padding: EdgeInsetsGeometry.symmetric(horizontal: 12, vertical: 12),
@@ -712,6 +730,95 @@ class OverallGroupDateSection extends StatelessWidget {
               onTap: () async {
                 selectDate();
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class GroupAddItemFilterScreen extends StatefulWidget {
+  const GroupAddItemFilterScreen({super.key, required this.items, this.selectedItems});
+
+  final List<CostItem> items;
+  final List<CostItem>? selectedItems;
+
+  @override
+  State<GroupAddItemFilterScreen> createState() => _GroupAddItemFilterScreenState();
+}
+
+class _GroupAddItemFilterScreenState extends State<GroupAddItemFilterScreen> {
+  List<CostItem> _selected = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.selectedItems ?? [];
+  }
+
+
+  void addItem(CostItem item) {
+    setState(() {
+      _selected.add(item);
+    });
+  }
+
+  void removeItem(CostItem item) {
+    setState(() {
+      _selected.remove(item);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScaffold(
+      appBarTitle: Text("Select Cost Items"),
+      child: Column(
+        children: [
+          RadioGroup<bool>(
+            onChanged: (value) {},
+            child: Column(
+              children: [
+                CustomRadioListTile(title: "Manual select", value: false),
+                CustomRadioListTile(title: "Use custom filter query", value: false),
+              ],
+            ),
+          ),
+          Divider(
+            height: 40,
+          ),
+          HorizontalPadding(
+            child: CustomTextField(
+              showFieldLabel: false,
+              hintText: "Search for item...",
+            ),
+          ),
+          Divider(
+            height: 40,
+          ),
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                SliverList.builder(
+                  itemCount: widget.items.length,
+                  itemBuilder: (context, index) {
+                    final item = widget.items.elementAt(index);
+                    return CheckboxListTile(
+                      title: Text(item.name ?? ""),
+                      value:
+                          widget.selectedItems?.firstWhereOrNull(
+                            (selectedItem) => selectedItem.uuid == item.uuid,
+                          ) !=
+                          null,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        return value ? addItem(item) : removeItem(item);
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ],

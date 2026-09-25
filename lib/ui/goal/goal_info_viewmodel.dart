@@ -8,6 +8,7 @@ import 'package:budget_tracker/data/repos/category_repository.dart';
 import 'package:budget_tracker/data/repos/cost_item_repository.dart';
 import 'package:budget_tracker/data/repos/currency_repository.dart';
 import 'package:budget_tracker/data/repos/goal_repository.dart';
+import 'package:budget_tracker/data/repos/group_repository.dart';
 import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ class GoalInfoViewModel extends ChangeNotifier {
     required CostItemRepository costItemRepo,
     required GoalRepository goalRepos,
     required CategoryRepository categoryRepo,
+    required GroupRepository groupRepo,
     required CurrencyRepository currencyRepo,
     required SharedElementRepository sharedElementRepo,
     required Goal goal,
@@ -25,6 +27,7 @@ class GoalInfoViewModel extends ChangeNotifier {
        _goalRepo = goalRepos,
        _categoryRepo = categoryRepo,
        _currencyRepo = currencyRepo,
+       _groupRepo = groupRepo,
        _sharedElementRepo = sharedElementRepo,
        _goal = goal {
     init();
@@ -34,6 +37,7 @@ class GoalInfoViewModel extends ChangeNotifier {
   final GoalRepository _goalRepo;
   final CategoryRepository _categoryRepo;
   final CurrencyRepository _currencyRepo;
+  final GroupRepository _groupRepo;
   final SharedElementRepository _sharedElementRepo;
 
   Future<void> init() async {
@@ -41,6 +45,7 @@ class GoalInfoViewModel extends ChangeNotifier {
     await _goalRepo.ready;
     await _categoryRepo.ready;
     await _sharedElementRepo.ready;
+    await _groupRepo.ready;
 
     _getInitValue();
     _isInit = true;
@@ -66,10 +71,10 @@ class GoalInfoViewModel extends ChangeNotifier {
   }
 
   void _getInitValue() {
-    _pastProgress = _goal.getPastGoalProgress(_costItemRepo.costItems).reversed.toList();
+    _pastProgress = _goal.getPastGoalProgress(_items).reversed.toList();
     _currentGoalProgress =
         _goal.getGoalProgress(
-          _costItemRepo.costItems,
+          _items,
           _goal.isEnded ? goal.endDate! : DateTime.now(),
         )!;
 
@@ -83,6 +88,9 @@ class GoalInfoViewModel extends ChangeNotifier {
 
   final int dayinCurrentMonth = DateTime.now().dayinCurrentMonth;
 
+  // List<CostItem> get _curGroupItems =>
+  //   _items = _costItemRepo.costItems.where((item) => item.group == _groupRepo.viewedGroup?.id).toList();
+  
   DateTime? _previousDate;
   DateTime? get prevDate => _previousDate;
   bool get showHistory => _pastProgress.isNotEmpty;
@@ -90,7 +98,9 @@ class GoalInfoViewModel extends ChangeNotifier {
   final Goal _goal;
   Goal get goal => _goal;
 
-  bool _isInit = false;
+  List<CostItem> _items = [];
+
+  bool _isInit = false; 
   bool get ready => _isInit;
 
   List<GoalProgress> _pastProgress = [];
@@ -98,7 +108,7 @@ class GoalInfoViewModel extends ChangeNotifier {
 
   GoalProgress getDynamicProgress({bool previous = false}) =>
       previous ? currentViewedPastGoalProgress : currentGoalProgress;
-      
+
   int get streak {
     final index = _pastProgress.indexWhere((progress) => !progress.achieved);
     if (index == -1) return _pastProgress.length;

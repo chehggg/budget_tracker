@@ -32,6 +32,10 @@ class CostItemRepository {
 
   List<CostItem> _costItems = List<CostItem>.empty(growable: true);
   List<CostItem> get costItems => UnmodifiableListView(_costItems);
+  // List<CostItem> getFilteredCostItems({CostGroup? group}) {
+  //   debugPrint("filter items by group");
+  //   return UnmodifiableListView(_costItems.where((item) => item.group == group?.id));
+  // }
 
   Map<DateTime, List<CostItem>> _gbDateCostItems = {};
   Map<DateTime, List<CostItem>> get gbDateCostItems => UnmodifiableMapView(_gbDateCostItems);
@@ -171,7 +175,7 @@ class CostItemRepository {
         daySummary: daySummary,
         monthSummary: monthSummary,
         date: date,
-        showMonth: showMonth
+        showMonth: showMonth,
       ),
     );
   }

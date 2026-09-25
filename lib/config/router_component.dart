@@ -22,7 +22,7 @@ class CustomMainScaffold extends StatelessWidget {
         onTap: shell.goBranch,
       ): null,
       resizeToAvoidBottomInset: true,
-      floatingActionButton: navWatch.showFab ? CustomFAB() : null,
+      floatingActionButton: navWatch.showFab ? CustomFAB(show: navWatch.showFab,) : null,
     );
   }
 }
@@ -108,26 +108,33 @@ class CustomBottomNavBar extends StatelessWidget {
 }
 
 class CustomFAB extends StatelessWidget {
-  const CustomFAB({super.key});
+  final bool show;
+
+  const CustomFAB({super.key, required this.show});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: FloatingActionButton(
-        onPressed: () {
-          context.push('/form');
-          HapticFeedback.mediumImpact();
-        },
-        shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(24)),
-        enableFeedback: true,
-        elevation: 0,
-        foregroundColor: context.cs.surfaceContainer,
-        backgroundColor: context.cs.primary,
-        child: FaIcon(
-          FontAwesomeIcons.plus,
-          size: 40,
+    return AnimatedScale(
+      scale: show ? 1 : 0.5,
+      curve: Curves.easeInOut,
+      duration: Durations.medium1,
+      child: SizedBox(
+        width: 80,
+        height: 80,
+        child: FloatingActionButton(
+          onPressed: () {
+            context.push('/form');
+            HapticFeedback.mediumImpact();
+          },
+          shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(24)),
+          enableFeedback: true,
+          elevation: 0,
+          foregroundColor: context.cs.surfaceContainer,
+          backgroundColor: context.cs.primary,
+          child: FaIcon(
+            FontAwesomeIcons.plus,
+            size: 40,
+          ),
         ),
       ),
     );
