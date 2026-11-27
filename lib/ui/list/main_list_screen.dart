@@ -354,6 +354,11 @@ class GroupBottomSheet extends StatelessWidget {
             "View Group",
             style: context.customTt.dateLabel,
           ),
+          SizedBox(height: 4,),
+          Text(
+            "You can categorize cost items (e.g., travel expense) into separate views called groups. ",
+            style: context.customTt.paragraphTextSmall,
+          ),
           SizedBox(
             height: 10,
           ),
@@ -379,7 +384,7 @@ class GroupBottomSheet extends StatelessWidget {
                       size: 16,
                     ),
                   ),
-                if (showNumber) Text(groupMapping?[null] ?? ""),
+                if (showNumber)  Text(groupMapping?[null] ?? "", style: context.tt.bodyMedium!.copyWith(color: Colors.green),),
                 // if (curGroup == null)
                 //   FaIcon(
                 //     FontAwesomeIcons.check,
@@ -388,14 +393,14 @@ class GroupBottomSheet extends StatelessWidget {
               ],
             ),
           ),
-          Divider(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              "Custom Group",
-              style: context.customTt.paragraphTextSmall,
-            ),
-          ),
+          Divider(height: 16),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(vertical: 8.0),
+          //   child: Text(
+          //     "Custom Group",
+          //     style: context.customTt.paragraphTextSmall,
+          //   ),
+          // ),
           ...(group ?? []).mapIndexed(
             (index, e) {
               return ReusableContainer(
@@ -407,7 +412,7 @@ class GroupBottomSheet extends StatelessWidget {
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  spacing: 12,
+                  spacing: 10,
                   children: [
                     Text(
                       e.name ?? 'Group',
@@ -425,6 +430,29 @@ class GroupBottomSheet extends StatelessWidget {
                 ),
               );
             },
+          ),
+          ReusableContainer(
+            padding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+            showBorder: false,
+            onTap: () {
+              context.go('settings/group');
+              // onTap.call(e);
+              // context.pop();
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              spacing: 12,
+              children: [
+                FaIcon(FontAwesomeIcons.plus, size: 16, color: context.cs.secondary,),
+                Text(
+                  'Create new group',
+                  style: context.customTt.paragraphTitle!.copyWith(
+                    height: 1.8,
+                    color: context.cs.secondary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

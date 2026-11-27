@@ -424,7 +424,9 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final monthlyOverview = context.listMod.selectorMonthlySummary;
+    final monthlyOverview = context.listMod.currentGroupMonthlyOverview;
+    final yearlyOverviewBalance =
+        context.listMod.currentGroupYearlyOverview[_selectedDateTime.startOfYear]?.balance ?? 0;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
@@ -504,14 +506,33 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                   },
                   icon: Icon(
                     Icons.chevron_left_rounded,
-                    size: 30,
+                    size: 32,
                   ),
                 ),
                 Expanded(
                   child: Center(
-                    child: Text(
-                      _selectedDateTime.year.toString(),
-                      style: context.customTt.dateLabel!.copyWith(fontSize: 30),
+                    child: Column(
+                      children: [
+                        Text(
+                          _selectedDateTime.year.toString(),
+                          style: context.customTt.dateLabel!.copyWith(fontSize: 32, height: 1),
+                        ),
+                        Text(
+                          yearlyOverviewBalance == 0
+                              ? "N/A"
+                              : context.listMod.currencyFormat(yearlyOverviewBalance, showSymbol: false, alwaysShowSign: true),
+                          style: context.customTt.numberFontSmall!.copyWith(
+                            fontSize: 12,
+                            height: 1.8,
+                            color:
+                                yearlyOverviewBalance == 0
+                                    ? context.customCs.fadeColor1
+                                    : context.listMod.accentColors.getColorByValue(
+                                      yearlyOverviewBalance,
+                                    ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -521,7 +542,7 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
                       _selectedDateTime = _selectedDateTime.addYear(1);
                     });
                   },
-                  icon: Icon(Icons.chevron_right_rounded, size: 30),
+                  icon: Icon(Icons.chevron_right_rounded, size: 32),
                 ),
               ],
             ),
@@ -620,7 +641,7 @@ class _MonthSelectorSheetState extends State<MonthSelectorSheet> {
               Expanded(
                 child: CustomTextButton(
                   icon: FontAwesomeIcons.rotateLeft,
-                  text: "Reset",
+                  text: "Back to Current Month",
                   onTap: () {
                     context.listMod.updateYearMonth(
                       YearMonth(useRange: false, date1: DateTime.now().startOfMonth),

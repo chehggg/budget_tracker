@@ -47,6 +47,11 @@ class GoalViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
+    _groupSubscription = _groupRepo.streamValue.listen((value) {
+      getInitialValue();
+      notifyListeners();
+    });
+
     debugPrint("done goal view model initialization");
     _isInit = true;
     notifyListeners();
@@ -55,6 +60,7 @@ class GoalViewModel extends ChangeNotifier {
   StreamSubscription<bool>? _subscription;
   StreamSubscription? _costItemSubscription;
   StreamSubscription<bool>? _sharedElementSubscription;
+  StreamSubscription<bool>? _groupSubscription;
 
   void getInitialValue() {
     debugPrint("get initial vlaue");
@@ -117,5 +123,6 @@ class GoalViewModel extends ChangeNotifier {
     _subscription?.cancel();
     _sharedElementSubscription?.cancel();
     _costItemSubscription?.cancel();
+    _groupSubscription?.cancel();
   }
 }

@@ -228,7 +228,7 @@ class ListViewModel extends ChangeNotifier {
         );
     return mapping.map((key, value) {
       final group = groups?.firstWhereOrNull((grp) => grp.id == key);
-      return MapEntry(key, currencyFormat(value.balance, customIso: group?.currency));
+      return MapEntry(key, currencyFormat(value.balance, customIso: group?.currency, alwaysShowSign: true));
     });
   }
 
@@ -250,6 +250,22 @@ class ListViewModel extends ChangeNotifier {
   }
 
   Map<DateTime, CostMetric> get monthlyOverview => _costItemRepo.monthSummary;
+
+  Map<DateTime, CostMetric> get currentGroupMonthlyOverview {
+    final curGroupItems = _costItemRepo.costItems.where((item) => item.group == _viewedGroup?.id);
+    return curGroupItems.groupFoldBy<DateTime, CostMetric>(
+      (item) => item.date!.startOfMonth,
+      (CostMetric? previous, CostItem element) => (previous ?? CostMetric()).add(element),
+    );
+  }
+
+  Map<DateTime, CostMetric> get currentGroupYearlyOverview {
+    return currentGroupMonthlyOverview.entries.groupFoldBy<DateTime, CostMetric>(
+      (item) => item.key.startOfYear,
+      (CostMetric? previous, MapEntry<DateTime, CostMetric> element) =>
+          (previous ?? CostMetric()).combineWith(element.value),
+    );
+  }
 
   Map<DateTime, List<CostItem>> get curMonthGbDateCostItems => Map.fromEntries(
     _costItemRepo.gbDateCostItems.entries
