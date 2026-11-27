@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:budget_tracker/custom/classes/class.dart';
-import 'package:budget_tracker/custom/classes/goal_class.dart';
 import 'package:budget_tracker/custom/enums/enum.dart';
 import 'package:budget_tracker/custom/extensions/context_extensions.dart';
 import 'package:budget_tracker/custom/extensions/extensions.dart';
@@ -181,13 +180,11 @@ class GoalInfoBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pastProgress = context.select((GoalInfoViewModel state) => state.pastProgress.reversed);
     final curProgress = context.select(
       (GoalInfoViewModel state) =>
           showPrevious ? state.currentViewedPastGoalProgress : state.currentGoalProgress,
     );
     final progress = curProgress.progress;
-    final streak = context.goalInfoMod.streak;
     final chartProgress = progress.clamp(0.0, 1.0);
     final extraProgress = (1 - progress).abs();
     final dividerPercentage = progress * 0.008;

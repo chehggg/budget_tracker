@@ -27,6 +27,8 @@ extension BuildContextExtension on BuildContext {
   ColorScheme get cs => _theme.colorScheme;
   MyTexts get customTt => _theme.extension<MyTexts>()!;
   MyColors get customCs => _theme.extension<MyColors>()!;
+  Color get primaryColor => cs.primary;
+  Color get secondaryColor => cs.secondary;
 
   MediaQueryData get mq => MediaQuery.of(this);
 

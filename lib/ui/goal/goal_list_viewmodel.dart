@@ -64,7 +64,7 @@ class GoalViewModel extends ChangeNotifier {
 
   void getInitialValue() {
     debugPrint("get initial vlaue");
-    _items = _costItemRepo.costItems.where((item) => item.group == _groupRepo.viewedGroup?.id).toList();
+    _items = _costItemRepo.costItems;
   }
 
   List<CostItem> _items = [];

@@ -1,6 +1,5 @@
 import 'package:budget_tracker/custom/classes/class.dart';
 import 'package:budget_tracker/data/repos/group_repository.dart';
-import 'package:budget_tracker/data/repos/shared_element_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:money2/money2.dart';
 import 'package:uuid/uuid.dart';

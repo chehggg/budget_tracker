@@ -126,9 +126,10 @@ class Goal {
     }
     final filteredItems =
         items.where((item) {
+          final groupQuery = group == item.group;
           final categoryQuery = categories?.contains(item.categoryId) ?? true;
           final nameQuery = item.name != null ? (filter?.checkMatch(item.name!) ?? true) : true;
-          return categoryQuery && nameQuery;
+          return categoryQuery && nameQuery && groupQuery;
         }).toList();
 
     if (goalTracking == GoalTrackingPeriod.monthly) {

@@ -71,6 +71,7 @@ class GoalInfoViewModel extends ChangeNotifier {
   }
 
   void _getInitValue() {
+    _items = _costItemRepo.costItems;
     _pastProgress = _goal.getPastGoalProgress(_items).reversed.toList();
     _currentGoalProgress =
         _goal.getGoalProgress(

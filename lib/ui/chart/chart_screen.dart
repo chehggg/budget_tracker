@@ -112,6 +112,7 @@ class ChartScreen extends StatelessWidget {
                 context: context,
                 builder: (_) {
                   return GroupBottomSheet(
+                    accentColor: context.chartMod.accentColors,
                     // costItems: context.listMod.items,
                     // numberFormatter: context.listMod.currencyFormat,
                     group: contextWatch.groups,

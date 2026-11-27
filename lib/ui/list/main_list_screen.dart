@@ -228,6 +228,7 @@ class ListViewAppBar extends StatelessWidget implements PreferredSizeWidget {
                       return GroupBottomSheet(
                         showNumber: true,
                         group: groups,
+                        accentColor: context.listMod.accentColors,
                         curGroup: curGroup,
                         groupMapping: context.listMod.costGroupBalance,
                         onTap: (e) => context.listMod.updateViewedGroup(e),
@@ -327,6 +328,7 @@ class GroupBottomSheet extends StatelessWidget {
   const GroupBottomSheet({
     required this.group,
     required this.curGroup,
+    required this.accentColor,
     required this.onTap,
     this.showNumber = false,
     super.key,
@@ -336,6 +338,7 @@ class GroupBottomSheet extends StatelessWidget {
 
   final List<CostGroup>? group;
   final CostGroup? curGroup;
+  final AccentColor accentColor;
   final bool showNumber;
   // final String? mainNum;
   final Map<String?, String>? groupMapping;
@@ -354,7 +357,9 @@ class GroupBottomSheet extends StatelessWidget {
             "View Group",
             style: context.customTt.dateLabel,
           ),
-          SizedBox(height: 4,),
+          SizedBox(
+            height: 4,
+          ),
           Text(
             "You can categorize cost items (e.g., travel expense) into separate views called groups. ",
             style: context.customTt.paragraphTextSmall,
@@ -373,23 +378,22 @@ class GroupBottomSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               spacing: 12,
               children: [
-                Text(
-                  "Main",
-                  style: context.customTt.numberFontSmall,
-                ),
                 if (curGroup == null)
-                  Expanded(
-                    child: FaIcon(
-                      FontAwesomeIcons.check,
-                      size: 16,
-                    ),
+                  FaIcon(
+                    FontAwesomeIcons.check,
+                    size: 16,
                   ),
-                if (showNumber)  Text(groupMapping?[null] ?? "", style: context.tt.bodyMedium!.copyWith(color: Colors.green),),
-                // if (curGroup == null)
-                //   FaIcon(
-                //     FontAwesomeIcons.check,
-                //     size: 16,
-                //   ),
+                Expanded(
+                  child: Text(
+                    "Main",
+                    style: context.customTt.numberFontSmall,
+                  ),
+                ),
+                if (showNumber)
+                  Text(
+                    groupMapping?[null] ?? "",
+                    style: context.tt.bodyMedium!.copyWith(color: groupMapping?[null]?[0] == "+" ?  accentColor.positive : accentColor.negative),
+                  ),
               ],
             ),
           ),
@@ -414,18 +418,18 @@ class GroupBottomSheet extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   spacing: 10,
                   children: [
-                    Text(
-                      e.name ?? 'Group',
-                      style: context.customTt.paragraphTitle!.copyWith(height: 1.8),
-                    ),
                     if (curGroup?.id == e.id)
-                      Expanded(
-                        child: FaIcon(
-                          FontAwesomeIcons.check,
-                          size: 14,
-                        ),
+                      FaIcon(
+                        FontAwesomeIcons.check,
+                        size: 14,
                       ),
-                    if (showNumber) Text(groupMapping?[e.id] ?? ""),
+                    Expanded(
+                      child: Text(
+                        e.name ?? 'Untitled Group',
+                        style: context.customTt.paragraphTitle!.copyWith(height: 1.8),
+                      ),
+                    ),
+                    if (showNumber) Text(groupMapping?[e.id] ?? "-"),
                   ],
                 ),
               );
@@ -435,7 +439,7 @@ class GroupBottomSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
             showBorder: false,
             onTap: () {
-              context.go('settings/group');
+              context.push('/settings/group-form');
               // onTap.call(e);
               // context.pop();
             },
@@ -443,7 +447,11 @@ class GroupBottomSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               spacing: 12,
               children: [
-                FaIcon(FontAwesomeIcons.plus, size: 16, color: context.cs.secondary,),
+                FaIcon(
+                  FontAwesomeIcons.plus,
+                  size: 16,
+                  color: context.cs.secondary,
+                ),
                 Text(
                   'Create new group',
                   style: context.customTt.paragraphTitle!.copyWith(
